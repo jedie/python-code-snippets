@@ -1,0 +1,18 @@
+[Tue Nov 29 12:51:50 2005] [error] [client 192.168.6.3]   File "/daten/www/PyLucid/trunk/install_PyLucid.py", line 331, referer: http://192.168.6.2:83/install_PyLucid.py?re_init
+[Tue Nov 29 12:51:50 2005] [error] [client 192.168.6.3]     pritn "</li>", referer: http://192.168.6.2:83/install_PyLucid.py?re_init
+[Tue Nov 29 12:51:50 2005] [error] [client 192.168.6.3]                 ^, referer: http://192.168.6.2:83/install_PyLucid.py?re_init
+[Tue Nov 29 12:51:50 2005] [error] [client 192.168.6.3] SyntaxError: invalid syntax, referer: http://192.168.6.2:83/install_PyLucid.py?re_init
+[Tue Nov 29 12:51:50 2005] [error] [client 192.168.6.3] Premature end of script headers: install_PyLucid.py, referer: http://192.168.6.2:83/install_PyLucid.py?re_init
+[Tue Nov 29 13:02:57 2005] [error] [client 192.168.6.3] File does not exist: /daten/www/PyLucid/trunk/LinkManager.js, referer: http://192.168.6.2:83/index.py
+[Sun Dec 04 15:39:35 2005] [error] [client 192.168.6.165] File does not exist: /daten/www/PyLucid/trunk/LinkManager.js, referer: http://192.168.6.2:83/
+[Sun Dec 04 15:39:36 2005] [error] [client 192.168.6.165] File does not exist: /daten/www/PyLucid/trunk/favicon.ico
+[Mon Dec 05 10:19:34 2005] [error] [client 192.168.6.165] File does not exist: /daten/www/PyLucid/trunk/LinkManager.js, referer: http://192.168.6.2:83/
+[Tue Dec 06 14:31:32 2005] [error] [client 192.168.6.165] File does not exist: /daten/www/PyLucid/trunk/LinkManager.js, referer: http://192.168.6.2:83/
+[Tue Dec 06 14:31:32 2005] [error] [client 192.168.6.165] File does not exist: /daten/www/PyLucid/trunk/favicon.ico
+[Tue Dec 06 14:40:52 2005] [error] [client 192.168.6.165] File does not exist: /daten/www/PyLucid/trunk/LinkManager.js, referer: http://192.168.6.2:83/
+[Tue Dec 06 14:42:16 2005] [error] [client 192.168.6.165] File does not exist: /daten/www/PyLucid/trunk/LinkManager.js, referer: http://192.168.6.2:83/index.py
+[Tue Dec 06 14:43:12 2005] [error] [client 192.168.6.165] File does not exist: /daten/www/PyLucid/trunk/LinkManager.js, referer: http://192.168.6.2:83/index.py
+[Tue Dec 06 15:51:59 2005] [error] [client 192.168.6.165] File does not exist: /daten/www/PyLucid/trunk/LinkManager.js, referer: http://192.168.6.2:83/index.py
+[Tue Dec 06 17:10:48 2005] [error] [client 192.168.6.165] File does not exist: /daten/www/PyLucid/trunk/LinkManager.js, referer: http://192.168.6.2:83/
+[Tue Dec 06 17:23:06 2005] [error] [client 192.168.6.165] File does not exist: /daten/www/PyLucid/trunk/LinkManager.js, referer: http://192.168.6.2:83/
+[Tue Dec 06 17:47:50 2005] [error] [client 192.168.6.165] File does not exist: /daten/www/PyLucid/trunk/LinkManager.js, referer: http://192.168.6.2:83/
