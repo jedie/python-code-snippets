@@ -39,11 +39,13 @@ __author__      = "Jens Diemer"
 __url__         = "http://www.jensdiemer.de"
 __license__     = "GNU General Public License (GPL)"
 __description__ = "a small upload-form used WSGI"
-__version__     = "0.1"
+__version__     = "0.1.2"
 
 __info__        = 'uploader v%s' % __version__
 
 __history__ = """
+v0.1.2
+    - Small handling changes
 v0.1.1
     - Bugfix with filenames from IE
 v0.1
@@ -70,8 +72,8 @@ only_https = True
 #~ only_https = False
 only_auth_users = True
 #~ only_auth_users = False
-#~ send_email_notify = True
-send_email_notify = False
+send_email_notify = True
+#~ send_email_notify = False
 notifer_email_from_adress = "auto_mailer@htfx-mirror.de"
 notifer_email_to_adress = "uploader@jensdiemer.de"
 bufsize = 8192
@@ -122,7 +124,7 @@ table.filelist {
 
 
 html_form = """
-    <h1>File Upload</h1>
+    <h2>File Upload</h2>
     <form action="" method="post" enctype="multipart/form-data">
         <p><input type="file" name="upload" size="40" />
         <input type="submit" value="upload" /></p>
@@ -166,8 +168,9 @@ class Application:
 
         filename = formdata['upload']['filename']
         if filename == "":
-            yield "<h2>ERROR: No File!</h2>"
-            yield '<a href="?">continue</a>'
+            yield "<h1>ERROR: No File!</h1>"
+            #~ for line in self.view_uploaded_files():
+                #~ yield line
             return
 
         # IE unter Windows, schickt den Pfad mit
@@ -229,7 +232,7 @@ class Application:
         yield '<a href="?">continue</a>'
 
     def view_uploaded_files(self):
-        yield "<h2>Filellist:</h2>"
+        yield "<h3>Filellist:</h3>"
 
         yield '<table class="filelist">\n'
         for filename in os.listdir(upload_dir):
@@ -318,9 +321,9 @@ class Application:
             formdata = tools.get_files(self.environ)
             if formdata:
                 for line in self.incoming(formdata): yield line
-            else:
-                yield html_form
-                for line in self.view_uploaded_files(): yield line
+
+            yield html_form
+            for line in self.view_uploaded_files(): yield line
 
         else:
             raise RuntimeError, 'Invalid Request'
