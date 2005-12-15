@@ -1,0 +1,43 @@
+/* PyAdmin Base-CSS definitions */
+
+* {
+	font-family: "Courier New", Courier, mono;
+}
+body {
+    font-size: 0.9em;
+    background-color: #DDDDDD;
+}
+#menu, #content, body {
+	padding: 5px;
+}
+#menu {
+	float: left;
+	background-color: #AEBDCA;
+	height: 500px;
+	width: 8em;
+	border: 1px solid #000066;
+}
+#menu li {
+	line-height: 1.5em;
+	list-style-type: none;
+	text-indent: 0px;
+}
+#menu ul {
+	margin:0px;
+	padding:0px;
+}
+#menu h1 {
+	font-size: 1.5em;
+	text-align: center;
+}
+#content {
+	margin-left: 9.5em;
+	border: 1px solid #999999;
+}
+#FooterInfo{
+    /* Zeitanzeige am Ende der Seite */
+	font-size: 0.7em;
+	color: #999999;
+	text-align: right;
+	margin: 1em;
+}
