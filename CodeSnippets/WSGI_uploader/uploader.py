@@ -4,6 +4,10 @@
 """ uploader
 used WSGI: http://wsgiarea.pocoo.org by Armin Ronacher <armin.ronacher@active-4.com>
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! NOTE: Please change the notifer email adress to you own !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 Konfiguration:
 ==============
  only_https
@@ -25,6 +29,10 @@ Ablauf:
     * client_info: Username (nur bei only_auth_users=True) und socket.getfqdn()-Info
 
  Beim generieren der Dateiliste werden die *.nfo-Dateien wieder ausgelesen.
+
+Hinweis:
+Die Preformance Werte stimmen nicht wirklich...
+Also es ist nicht die echte Upload-Geschwindigkeit.
 """
 
 __author__      = "Jens Diemer"
@@ -36,6 +44,8 @@ __version__     = "0.1"
 __info__        = 'uploader v%s' % __version__
 
 __history__ = """
+v0.1.1
+    - Bugfix with filenames from IE
 v0.1
     - erste Version
 """
@@ -57,8 +67,11 @@ from wsgi import tools, http
 
 
 only_https = True
+#~ only_https = False
 only_auth_users = True
-send_email_notify = True
+#~ only_auth_users = False
+#~ send_email_notify = True
+send_email_notify = False
 notifer_email_from_adress = "auto_mailer@htfx-mirror.de"
 notifer_email_to_adress = "uploader@jensdiemer.de"
 bufsize = 8192
@@ -142,8 +155,6 @@ class Application:
         self.start_response = start_response
 
     def incoming(self, formdata):
-        filename = os.path.join(upload_dir, formdata['upload']['filename'])
-
         try:
             client_info = socket.getfqdn(os.environ["REMOTE_ADDR"])
         except Exception, e:
@@ -152,6 +163,19 @@ class Application:
         if only_auth_users == True:
             # Usernamen hinzufügen
             client_info = "%s - %s" % (os.environ["REMOTE_USER"], client_info)
+
+        filename = formdata['upload']['filename']
+        if filename == "":
+            yield "<h2>ERROR: No File!</h2>"
+            yield '<a href="?">continue</a>'
+            return
+
+        # IE unter Windows, schickt den Pfad mit
+        filename = filename.replace("\\","/")
+        filename = os.path.basename(filename)
+        yield "<h2>File '%s' save...</h2>" % filename
+
+        filename = os.path.join(upload_dir, filename)
 
         file_obj = formdata['upload']['descriptor']
         bytesreaded = 0
@@ -176,7 +200,7 @@ class Application:
             f.close()
 
             performance = bytesreaded / (end_time-start_time) / 1024
-            yield "<h2>File saved (%.2fKByes/sec.)</h2>" % performance
+            yield "</h3>saved with %.2fKByes/sec.</h3>" % performance
         except Exception, e:
             yield "<h2>ERROR: Can't write file: %s</h2>" % e
             return
