@@ -1,0 +1,16 @@
+
+table {
+	min-width: 100%%;
+	white-space: nowrap;
+}
+td {
+	padding: 1px;
+	padding-right: 5px;
+	padding-left: 5px;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+	border-bottom-color: #BBBBBB;
+}
+td:first-child {
+	background-color: #DDDDDD;
+}
