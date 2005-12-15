@@ -18,8 +18,10 @@ __author__  = "Jens Diemer"
 __license__ = "GNU General Public License http://www.opensource.org/licenses/gpl-license.php"
 __info__    = "md5sum_calc"
 __url__     = "http://www.jensdiemer.de"
-__version__ = "0.2.2"
+__version__ = "0.2.3"
 __history__ = """
+v0.2.3
+    - NEU: Overall performance ;)
 v0.2.2
     - Fehler in Verarbeitung mehrere Dateien behoben (Dateien wurden ausgelassen)
 v0.2.1
@@ -43,6 +45,7 @@ print "  %s v%s\n" % (__info__, __version__)
 
 class md5sum:
     def __init__(self, argv):
+        self.overall_performance = []
         if type(argv) != list:
             print "sys.argv not type list!"
             return
@@ -54,6 +57,9 @@ class md5sum:
                 self.calc_dir(arg)
             else:
                 sys.stderr.write("'%s' no file/dir!\n" % arg)
+
+        overall_performance = sum(self.overall_performance)/len(self.overall_performance)
+        print "Overall performance: %.1fMB/sec" % overall_performance
         print
         raw_input("(press enter to continue)")
 
@@ -174,6 +180,8 @@ class md5sum:
                 m.update(data)
             end_time = time.time()
             performance = file_size / (end_time-start_time) / 1024 / 1024
+
+            self.overall_performance.append(performance)
 
             sys.stdout.write("\r")
             sys.stdout.write(" "*79) # Zeile "löschen"
