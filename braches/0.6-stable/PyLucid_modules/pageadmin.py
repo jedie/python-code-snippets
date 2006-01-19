@@ -74,7 +74,7 @@ class pageadmin:
         self.config         = PyLucid["config"]
         #~ self.config.debug()
         self.CGIdata        = PyLucid["CGIdata"]
-        self.CGIdata.debug()
+        #~ self.CGIdata.debug()
         self.session        = PyLucid["session"]
         #~ self.session.debug()
         self.db             = PyLucid["db"]
