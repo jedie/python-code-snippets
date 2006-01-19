@@ -74,7 +74,7 @@ class pageadmin:
         self.config         = PyLucid["config"]
         #~ self.config.debug()
         self.CGIdata        = PyLucid["CGIdata"]
-        #~ self.CGIdata.debug()
+        self.CGIdata.debug()
         self.session        = PyLucid["session"]
         #~ self.session.debug()
         self.db             = PyLucid["db"]
@@ -225,7 +225,7 @@ class pageadmin:
             internal_page_name = "pageadmin_edit_page",
             page_dict = {
                 # hidden Felder
-                "new_page"                  : edit_page_data["new_page"],
+                "new_page"                  : edit_page_data.get("new_page",""),
                 # Textfelder
                 "url"                       : self.URLs["main_action"],
                 "abort_url"                 : self.URLs["base"],
