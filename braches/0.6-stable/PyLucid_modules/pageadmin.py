@@ -350,7 +350,7 @@ class pageadmin:
             self.save_new(page_data)
             return
 
-        self.page_msg(page_data)
+        #~ self.page_msg(page_data)
 
         # Archivieren der alten Daten
         if self.CGIdata.has_key("trivial"):
