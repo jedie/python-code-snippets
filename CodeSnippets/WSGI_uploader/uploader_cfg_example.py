@@ -10,19 +10,24 @@ http://wsgiarea.pocoo.org/colubrid/
 
 import uploader
 
-#~ uploader.cfg.only_https = True
-uploader.cfg.only_https = False
+cfg = uploader.cfg
 
-#~ uploader.cfg.only_auth_users = True
-uploader.cfg.only_auth_users = False
+#~ cfg.allow_download = True
+cfg.allow_download = False
 
-#~ uploader.cfg.send_email_notify = True
-uploader.cfg.send_email_notify = False
+#~ cfg.only_https = True
+cfg.only_https = False
 
-#~ uploader.cfg.notifer_email_from_adress = "uploader@example.com"
-#~ uploader.cfg.notifer_email_to_adress = "uploader@example.com"
-#~ uploader.cfg.bufsize = 8192
-#~ uploader.cfg.upload_dir = "uploads"
+#~ cfg.only_auth_users = True
+cfg.only_auth_users = False
+
+#~ cfg.send_email_notify = True
+cfg.send_email_notify = False
+
+#~ cfg.notifer_email_from_adress = "uploader@example.com"
+#~ cfg.notifer_email_to_adress = "uploader@example.com"
+#~ cfg.bufsize = 8192
+#~ cfg.upload_dir = "uploads"
 
 
 #___________________________________________________________________________

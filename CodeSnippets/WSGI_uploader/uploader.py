@@ -59,11 +59,13 @@ __author__      = "Jens Diemer"
 __url__         = "http://www.jensdiemer.de"
 __license__     = "GNU General Public License (GPL)"
 __description__ = "a small upload-form used WSGI"
-__version__     = "0.2 alpha"
+__version__     = "0.3 alpha"
 
 __info__        = 'uploader v%s' % __version__
 
 __history__ = """
+v0.3
+    - Neu: Download der hochgeladenen Dateien möglich, wenn cfg.allow_download == True ist
 v0.2
     - Umbau/rewrite für colubird
 v0.1.2
@@ -74,7 +76,7 @@ v0.1
     - erste Version
 """
 
-import sys, os, time, socket, ConfigParser, subprocess
+import sys, os, time, socket, ConfigParser, subprocess, urllib, cgi
 
 from colubrid import BaseApplication
 
@@ -85,6 +87,8 @@ class cfg:
     """
     Default config
     """
+    allow_download = False
+
     only_https = True
     #~ only_https = False
 
@@ -198,8 +202,6 @@ class uploader(BaseApplication):
             self.request.write("<h1>ERROR: No File!</h1>")
             return
 
-        # IE unter Windows, schickt den Pfad mit
-        filename = filename.replace("\\","/")
         filename = os.path.basename(filename)
         self.request.write("<h2>File '%s' save...</h2>" % filename)
 
@@ -235,7 +237,10 @@ class uploader(BaseApplication):
         return filename, bytesreaded
 
     def view_uploaded_files(self):
-        """ Erzeugt eine Tabelle, der schon hochgeladenen Dateien """
+        """
+        Erzeugt eine Tabelle, der schon hochgeladenen Dateien
+        wenn cfg.allow_download == True, dann werden auch die Links zum download eingeblendet
+        """
         self.request.write("<h3>Filellist:</h3>")
         try:
             filelist = os.listdir(self.request.cfg.upload_dir)
@@ -248,7 +253,15 @@ class uploader(BaseApplication):
             if filename.endswith(".nfo"):
                 continue
             self.request.write("<tr>\n")
-            self.request.write("\t<td>%s</td>\n" % filename)
+
+            if self.request.cfg.allow_download:
+                html_part = '<a href="?download=%s">%s</a>' % (
+                    urllib.quote_plus(filename), cgi.escape(filename)
+                )
+            else:
+                html_part = cgi.escape(filename)
+
+            self.request.write("\t<td>%s</td>\n" % html_part)
 
             try:
                 client_info, size, fileinfo, upload_time = self.read_info_file(filename)
@@ -378,39 +391,72 @@ class uploader(BaseApplication):
         if self.request.cfg.only_https:
             # Nur https Verbindungen "erlauben"
             if self.request.environ.get("HTTPS", False) != "on":
-                msg = "Only HTTPs connections allow!"
-                self.request.write("<h2>Error: %s</h2>" % msg)
-                link = "https://%s%s" % (
-                    self.request.environ["HTTP_HOST"],
-                    self.request.environ["SCRIPT_NAME"]
-                )
-                self.request.write(
-                    '<h4>try: <a href="%s">%s</a></h4>' % (link, link)
-                )
-                raise RightsError(msg)
+                raise RightsError("Only HTTPs connections allow!")
 
         if self.request.cfg.only_auth_users:
             # Der User muß über Apache's basic auth eingeloggt sein
             if not (self.request.environ.has_key("AUTH_TYPE") and \
             self.request.environ.has_key("REMOTE_USER")):
-                msg = "Only identified users allow!"
-                self.request.write("<h2>Error: %s</h2>" % msg)
-                raise RightsError(msg)
+                raise RightsError("Only identified users allow!")
+
+    #_________________________________________________________________________
+
+    def download_file(self, filename):
+        """
+        Downloaden einer Datei, nur erlaubt, wenn cfg.allow_download == True
+        """
+        if not self.request.cfg.allow_download:
+            raise RightsError("Downloads are not permitted!")
+
+        absolute_filename = os.path.join(self.request.cfg.upload_dir, filename)
+
+        file_handle = file(absolute_filename, "rb")
+
+        #~ self.print_head()
+        #~ self.request.write("Download: %s" % filename)
+
+        self.request.headers['Content-Disposition'] = 'attachment; filename=%s' % filename
+        self.request.headers['Content-Length'] = '%s' % os.path.getsize(absolute_filename)
+        self.request.headers['Content-Transfer-Encoding'] = 'binary'
+        self.request.headers['Content-Type'] = 'application/octet-stream; charset=utf-8'
+
+        while 1:
+            data = file_handle.read(self.request.cfg.bufsize)
+            if not data:
+                break
+            self.request.write(data)
+
+    #_________________________________________________________________________
+
+    def print_error(self, msg):
+        self.print_head()
+        self.request.write("<h2>Error: %s</h2>" % msg)
+        self.write_footer()
 
     #_________________________________________________________________________
 
     def process_request(self):
         """ Haupt-Methode, die vom WSGI Server aufgerufen wird """
 
-        self.print_head()
         try:
             self.check_rights()
-        except RightsError:
-            self.write_footer()
+        except RightsError, e:
+            print_error(e)
             return
 
         #~ self.print_debug()
         #~ raise
+
+        if 'download' in self.request.GET:
+            try:
+                self.download_file(self.request.GET["download"])
+            except Exception, e:
+                self.print_error(e)
+                return
+            else:
+                return
+
+        self.print_head()
 
         if 'upload' in self.request.FILES:
             client_info = self.get_client_info()
@@ -443,8 +489,8 @@ class uploader(BaseApplication):
             self.request.echo("%s: %s\n" % (k,v))
         self.request.echo("\n===========================\n")
         self.request.echo("GET:")
-        for i in self.request.GET:
-            self.request.echo("%s\n" % i)
+        for k,v in self.request.GET.iteritems():
+            self.request.echo("%s: %s\n" % (k,v))
         self.request.echo("</pre>")
 
 
