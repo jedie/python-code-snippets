@@ -59,11 +59,13 @@ __author__      = "Jens Diemer"
 __url__         = "http://www.jensdiemer.de"
 __license__     = "GNU General Public License (GPL)"
 __description__ = "a small upload-form used WSGI"
-__version__     = "0.3 alpha"
+__version__     = "0.4 alpha"
 
 __info__        = 'uploader v%s' % __version__
 
 __history__ = """
+v0.4
+    - Umbau zu einer PathApplication
 v0.3
     - Neu: Download der hochgeladenen Dateien möglich, wenn cfg.allow_download == True ist
 v0.2
@@ -77,8 +79,10 @@ v0.1
 """
 
 import sys, os, time, socket, ConfigParser, subprocess, urllib, cgi
+import posixpath
 
-from colubrid import BaseApplication
+from colubrid import PathApplication
+
 
 
 
@@ -152,7 +156,7 @@ class cfg:
     """
 
     html_form = """
-    <form action="" method="post" enctype="multipart/form-data">
+    <form action="%s" method="post" enctype="multipart/form-data">
         <p><input type="file" name="upload" size="40" />
         <input type="submit" value="upload" /></p>
     </form>"""
@@ -173,12 +177,62 @@ class cfg:
     """
 
 
-class uploader(BaseApplication):
+class uploader(PathApplication):
 
     def __init__(self, *args):
         super(uploader, self).__init__(*args)
         self.request.cfg = cfg
         #~ self.request.exposed.append("cfg")
+
+
+    #_________________________________________________________________________
+    ## Haupt-Methoden
+
+    def show_index(self, *args):
+        """ Normaler Aufruf des Skriptes """
+        self.print_head()
+        #~ self.request.debug_info()
+        self.write_footer()
+
+    def show_upload(self, *args):
+        """ Datei wird hochgeladen """
+
+        self.print_head()
+
+        client_info = self.get_client_info()
+        try:
+            filename, bytes = self.save_file(self.request.FILES['upload'])
+        except CanNotSaveFile, e:
+            self.request.write("<h2>ERROR: Can't write file: %s</h2>" % e)
+        else:
+            self.write_info_file(client_info, filename, bytes)
+            self.email_notify()
+
+        self.write_footer()
+
+    def show_download(self, filename):
+        """
+        Downloaden einer Datei, nur erlaubt, wenn cfg.allow_download == True
+        """
+        if not self.request.cfg.allow_download:
+            raise RightsError("Downloads are not permitted!")
+
+        absolute_filename = os.path.join(self.request.cfg.upload_dir, filename)
+
+        file_handle = file(absolute_filename, "rb")
+
+        self.request.headers['Content-Disposition'] = 'attachment; filename=%s' % filename
+        self.request.headers['Content-Length'] = '%s' % os.path.getsize(absolute_filename)
+        self.request.headers['Content-Transfer-Encoding'] = 'binary'
+        self.request.headers['Content-Type'] = 'application/octet-stream; charset=utf-8'
+
+        while 1:
+            data = file_handle.read(self.request.cfg.bufsize)
+            if not data:
+                break
+            self.request.write(data)
+
+    #_________________________________________________________________________
 
     def get_client_info(self):
         """
@@ -255,8 +309,12 @@ class uploader(BaseApplication):
             self.request.write("<tr>\n")
 
             if self.request.cfg.allow_download:
-                html_part = '<a href="?download=%s">%s</a>' % (
-                    urllib.quote_plus(filename), cgi.escape(filename)
+                url = posixpath.join(
+                    self.request.environ.get('SCRIPT_NAME', ''),
+                    "download/%s" % urllib.quote_plus(filename)
+                )
+                html_part = '<a href="%s">%s</a>' % (
+                    url, cgi.escape(filename)
                 )
             else:
                 html_part = cgi.escape(filename)
@@ -307,6 +365,8 @@ class uploader(BaseApplication):
 
         return mtime, size, file_cmd_out
 
+    #_________________________________________________________________________
+
     def write_info_file(self, client_info, filename, bytesreaded):
         """ Info-Datei zur hochgeladenen Datei schreiben """
         f = file(filename+".nfo", "wU")
@@ -337,6 +397,8 @@ class uploader(BaseApplication):
 
         return client_info, size, fileinfo, upload_time
 
+    #_________________________________________________________________________
+
     def email_notify(self):
         """
         Sendet eine eMail, das eine neue Datei hochgeladen wurde
@@ -362,28 +424,6 @@ class uploader(BaseApplication):
 
         self.request.write('<a href="?">continue</a>')
 
-    def print_head(self):
-        """ Header und HTML-Kopf ausgeben und dabei das CSS einbinden """
-        self.request.headers['Content-Type'] = 'text/html'
-
-        self.request.echo(
-            self.request.cfg.html_head % {
-                "CSS"   : self.request.cfg.css,
-                "title" : self.request.cfg.html_title
-            }
-        )
-
-    def write_footer(self):
-        """ HTML-Fuss ausgeben und dabei die Konfiguration anzeigen """
-        self.request.write(
-            self.request.cfg.html_footer % (
-                self.request.cfg.only_https,
-                self.request.cfg.only_auth_users,
-                self.request.cfg.send_email_notify,
-                __info__
-            )
-        )
-
     def check_rights(self):
         """
         Überprüft only_https und only_auth_users
@@ -401,102 +441,51 @@ class uploader(BaseApplication):
 
     #_________________________________________________________________________
 
-    def download_file(self, filename):
+    def print_head(self):
+        """ Header und HTML-Kopf ausgeben und dabei das CSS einbinden """
+        self.request.headers['Content-Type'] = 'text/html'
+
+        self.request.echo(
+            self.request.cfg.html_head % {
+                "CSS"   : self.request.cfg.css,
+                "title" : self.request.cfg.html_title
+            }
+        )
+
+    def write_footer(self):
         """
-        Downloaden einer Datei, nur erlaubt, wenn cfg.allow_download == True
+        Footer anzeigen, bestehent aus:
+            - HTML-Form für den Upload
+            - Tabelle der schon hochgeladenen Dateien
+            - die Konfiguration
         """
-        if not self.request.cfg.allow_download:
-            raise RightsError("Downloads are not permitted!")
 
-        absolute_filename = os.path.join(self.request.cfg.upload_dir, filename)
+        url = posixpath.join(self.request.environ.get('SCRIPT_NAME', ''), "upload")
 
-        file_handle = file(absolute_filename, "rb")
+        # Form zum Uploaden anzeigen
+        self.request.write(self.request.cfg.html_form % url)
 
-        #~ self.print_head()
-        #~ self.request.write("Download: %s" % filename)
+        # Tabelle der schon hochgeladenen Dateien aufbauen
+        self.view_uploaded_files()
 
-        self.request.headers['Content-Disposition'] = 'attachment; filename=%s' % filename
-        self.request.headers['Content-Length'] = '%s' % os.path.getsize(absolute_filename)
-        self.request.headers['Content-Transfer-Encoding'] = 'binary'
-        self.request.headers['Content-Type'] = 'application/octet-stream; charset=utf-8'
-
-        while 1:
-            data = file_handle.read(self.request.cfg.bufsize)
-            if not data:
-                break
-            self.request.write(data)
-
-    #_________________________________________________________________________
-
-    def print_error(self, msg):
-        self.print_head()
-        self.request.write("<h2>Error: %s</h2>" % msg)
-        self.write_footer()
-
-    #_________________________________________________________________________
-
-    def process_request(self):
-        """ Haupt-Methode, die vom WSGI Server aufgerufen wird """
-
-        try:
-            self.check_rights()
-        except RightsError, e:
-            print_error(e)
-            return
-
-        #~ self.print_debug()
-        #~ raise
-
-        if 'download' in self.request.GET:
-            try:
-                self.download_file(self.request.GET["download"])
-            except Exception, e:
-                self.print_error(e)
-                return
-            else:
-                return
-
-        self.print_head()
-
-        if 'upload' in self.request.FILES:
-            client_info = self.get_client_info()
-            try:
-                filename, bytes = self.save_file(self.request.FILES['upload'])
-            except CanNotSaveFile, e:
-                self.request.write("<h2>ERROR: Can't write file: %s</h2>" % e)
-                self.write_footer()
-                return
-
-            self.write_info_file(client_info, filename, bytes)
-            self.email_notify()
-
-        self.request.write(self.request.cfg.html_form) # Form zum Uploaden anzeigen
-        self.view_uploaded_files() # Tabelle der schon hochgeladenen Dateien aufbauen
-        self.write_footer()
+        self.request.write(
+            self.request.cfg.html_footer % (
+                self.request.cfg.only_https,
+                self.request.cfg.only_auth_users,
+                self.request.cfg.send_email_notify,
+                __info__
+            )
+        )
 
 
-
-    def print_debug(self):
-        """ Nur zum debuggen """
-        self.request.echo("<pre>")
-        for k,v in self.request.environ.iteritems():
-            self.request.echo("%s: %s\n" % (k,v))
-        self.request.echo("\n===========================\n")
-        self.request.echo("POST:")
-        for i in self.request.POST:
-            self.request.echo("%s\n" % i)
-        for k,v in self.request.POST.iteritems():
-            self.request.echo("%s: %s\n" % (k,v))
-        self.request.echo("\n===========================\n")
-        self.request.echo("GET:")
-        for k,v in self.request.GET.iteritems():
-            self.request.echo("%s: %s\n" % (k,v))
-        self.request.echo("</pre>")
 
 
 
 
 class email:
+    """
+    Kleine Hilfsklasse um Text-EMails zu versenden
+    """
     def send(self, from_adress, to_adress, subject, text):
         import time, smtplib
         from email.MIMEText import MIMEText
