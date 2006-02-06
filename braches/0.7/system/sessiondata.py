@@ -28,15 +28,6 @@ import os, sys, cgi, urllib, UserDict
 from socket import getfqdn
 
 
-# PyLucid Module
-import config
-
-
-if config.system.page_msg_debug:
-    import inspect
-
-
-
 
 class CGIdata(UserDict.UserDict):
     """
@@ -186,15 +177,14 @@ class page_msg:
     Die Nachrichten werden ganz zum Schluß in der index.py in die
     generierten Seite eingeblendet. Dazu dient der Tag <lucidTag:page_msg/>
     """
-    def __init__(self):
-        if config.system.page_msg_debug:
-            self.data = "<p>[config.system.page_msg_debug = True!]</p>"
-        else:
-            self.data = ""
+    def __init__(self, debug = False):
+        self.debug = debug
+        self.data = ""
 
     def __call__(self, *msg):
         """ Fügt eine neue Zeile mit einer Nachricht hinzu """
-        if config.system.page_msg_debug:
+        if self.debug:
+            import inspect
             # Angaben zur Datei, Zeilennummer, aus dem die Nachricht stammt
             filename = inspect.stack()[1][1].split("/")[-1][-20:]
             fileinfo = "%-20s line %3s: " % (filename, inspect.stack()[1][2])

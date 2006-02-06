@@ -55,49 +55,32 @@ import urllib, pickle, sys, time
 
 # Interne PyLucid-Module einbinden
 from mySQL import mySQL
-from config import dbconf
 
 
 
-
-class db( mySQL ):
+class db(mySQL):
     """
     Erweitert den allgemeinen SQL-Wrapper (mySQL.py) um
     spezielle PyLucid-Funktionen.
     """
-    def __init__( self, PyLucid ):
-        #~ print "Content-type: text/html\n"
-        #~ print "<h2>Connecte zur DB!</h2>"
-        #~ import inspect
-        #~ for line in inspect.stack(): print line,"<br>"
+    def __init__(self, request):
+        # SQL connection aufbauen
+        mySQL.__init__(self, request)
 
-        #~ try:
-            # SQL connection aufbauen
-        mySQL.__init__( self, PyLucid )
-                #~ unicode = 'utf-8'
-                #~ use_unicode = True
-            #~ )
-        #~ except Exception, e:
-            #~ print "Content-type: text/html\n"
-            #~ print "<h1>PyLucid - Error</h1>"
-            #~ print "<h2>Can't connect to SQL-DB: '%s'</h2>" % e
-            #~ import sys
-            #~ sys.exit()
-
-        self.page_msg   = PyLucid["page_msg"]
-        self.CGIdata    = PyLucid["CGIdata"]
-        self.tools      = PyLucid["tools"]
-        self.config     = PyLucid["config"]
+        # shorthands
+        self.page_msg       = self.request.page_msg
+        self.CGIdata        = self.request.CGIdata
+        self.tools          = self.request.tools
+        self.preferences    = self.request.preferences
 
         # Table-Prefix for all SQL-commands:
-        self.tableprefix = dbconf["dbTablePrefix"]
+        self.tableprefix = self.preferences["dbTablePrefix"]
 
     def _error( self, type, txt ):
-        print "Content-type: text/html\n"
-        print "<h1>SQL error</h1>"
-        print "<h1>%s</h1>" % type
-        print "<p>%s</p>" % txt
-        print
+        self.request.headers['Content-Type'] = 'text/html'
+        self.request.echo("<h1>SQL error</h1>")
+        self.request.echo("<h1>%s</h1>" % type)
+        self.request.echo("<p>%s</p>" % txt)
         import sys
         sys.exit()
 

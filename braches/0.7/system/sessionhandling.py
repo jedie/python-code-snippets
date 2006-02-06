@@ -68,9 +68,11 @@ den Client geschickt worden sein! Ansonsten zählt der Cookie-Print nicht mehr z
 einfach nur angezeigt ;)
 """
 
-__version__ = "v0.1.1"
+__version__ = "v0.2"
 
 __history__ = """
+v0.2
+    - NEU: Klasse erbt von dict
 v0.1.1
     - Umstallung auf neue Art Log-Ausgaben zu machen
 v0.1.0
@@ -109,22 +111,23 @@ if base64format == True:
 
 
 
-class sessionhandler:
+class sessionhandler(dict):
     """
     CGI-Session Handler
     used mySQL and Cookies
 
-    by JensDiemer.de
-
     http://www.python-forum.de/viewtopic.php?p=19523#19523
     """
 
-    def __init__ ( self, PyLucid, page_msg_debug ):
-        self.db             = PyLucid["db"]
-        self.log            = PyLucid["log"]
-        self.page_msg       = PyLucid["page_msg"]
-        self.config         = PyLucid["config"]
-        self.CGIdata        = PyLucid["CGIdata"]
+    def __init__ (self, request, page_msg_debug):
+        dict.__init__(self)
+
+        # shorthands
+        self.request        = request
+        self.db             = request.db
+        self.log            = request.log
+        self.page_msg       = request.page_msg
+        self.preferences    = request.preferences
 
         self.page_msg_debug = page_msg_debug
 
@@ -153,17 +156,18 @@ class sessionhandler:
         self.__init__()
         self.delete_session()
         """
-        self.client_IP          = "not available"
-        self.client_domain_name = "not available"
+        self.set_client_info()
 
         self.RAW_session_data_len   = -1
 
-        self.ID = False
-        self.session_data = {
-            "isadmin"   : False,
-            "user_id"   : False,
-            "user"      : False,
-        }
+        self["user_id"] = False
+        self.update(
+            {
+                "isadmin"   : False,
+                "user_id"   : False,
+                "user"      : False,
+            }
+        )
 
     def detectSession( self ):
         "Prüft ob eine Session schon besteht"
@@ -189,7 +193,7 @@ class sessionhandler:
                 self.log.write( self.status, "sessionhandling", "error" )
             return
 
-        if len( cookie_id ) != 32:
+        if len(cookie_id) != 32:
             # Mit dem Cookie stimmt wohl was nicht ;)
             self.deleteCookie()
             msg = "wrong Cookie len: %s !" % len( cookie_id )
@@ -201,7 +205,7 @@ class sessionhandler:
             return
 
         try:
-            self.read_session_data( cookie_id )
+            self.read_session_data(cookie_id)
         except Exception, e:
             # Es gibt keine Daten zur ID / Falsche Daten vorhanden
             self.deleteCookie()
@@ -229,7 +233,7 @@ class sessionhandler:
                 self.page_msg( "Your logged out!" )
                 return
 
-        msg = "found Session: %s" % self.ID
+        msg = "found Session: %s" % self["user_id"]
         if self.verbose_log == True:
             self.log.write( msg, "sessionhandling", "OK" )
         if self.page_msg_debug == True:
@@ -238,26 +242,29 @@ class sessionhandler:
             #~ for k,v in self.session_data.iteritems():
                 #~ self.page_msg( "%s - %s" % (k,v) )
 
-    def read_session_data( self, cookie_id ):
+    def read_session_data(self, cookie_id):
         "Liest Session-Daten zur angegebenen ID aus der DB"
-        DB_data = self.read_from_DB( cookie_id )
+        DB_data = self.read_from_DB(cookie_id)
 
-        current_IP, current_domain_name = self.get_client_info()
-        if not (DB_data["ip"] == current_IP) and (DB_data["domain_name"] == current_domain_name):
+        if not (DB_data["ip"] == self.client_IP) and\
+        (DB_data["domain_name"] == self.client_domain_name):
             self.delete_session()
-            raise IndexError, "Wrong client IP / domain name: %s-%s / %s-%s" % (
-                DB_data["ip"], current_IP, DB_data["domain_name"], current_domain_name
+            raise IndexError(
+                "Wrong client IP / domain name: %s-%s / %s-%s" % (
+                    DB_data["ip"], current_IP,
+                    DB_data["domain_name"], current_domain_name
+                )
             )
 
         # Session ist OK
-        msg = "Session is OK\nSession-Data %.2fSec old" % (time.time()-DB_data["timestamp"])
+        msg = "Session is OK\nSession-Data %.2fSec old" % (
+            time.time()-DB_data["timestamp"]
+        )
         if self.verbose_log == True:
             self.log.write( msg, "sessionhandling", "OK" )
         if self.page_msg_debug == True: self.page_msg( msg )
 
-        self.ID                 = cookie_id
-        self.client_IP          = current_IP
-        self.client_domain_name = current_domain_name
+        self["user_id"]                 = cookie_id
         self.session_data       = DB_data["session_data"]
 
 
@@ -277,11 +284,11 @@ class sessionhandler:
         self.insert_session( session_id )
 
         # Aktualisiert ID global
-        self.ID = session_id
+        self["user_id"] = session_id
 
     def delete_session( self ):
         "Löscht die aktuelle Session"
-        if self.ID == False:
+        if self["user_id"] == False:
             self.status = "OK;Client is LogOut, can't LogOut a second time :-)!"
             return
 
@@ -290,11 +297,11 @@ class sessionhandler:
         if self.page_msg_debug == True: self.debug_session_data()
         self.db.delete(
             table = self.sql_tablename,
-            where = ("session_id",self.ID)
+            where = ("session_id",self["user_id"])
         )
         if self.page_msg_debug == True: self.debug_session_data()
 
-        oldID = self.ID
+        oldID = self["user_id"]
 
         # Interne-Session-Variablen rücksetzten
         self.set_default_values()
@@ -307,14 +314,16 @@ class sessionhandler:
         self.writeCookie( session_id )
         return session_id
 
-    def get_client_info( self ):
+    def set_client_info(self):
         """
         Information vom Client feststellen
         wird von read_session_data() und makeSession() verwendet
         """
-        IP          = os.environ["REMOTE_ADDR"]
-        domain_name = getfqdn( IP )
-        return IP, domain_name
+        self.client_IP = self.request.environ["REMOTE_ADDR"]
+        try:
+            self.client_domain_name = getfqdn(IP)
+        except Exception, e:
+            self.client_domain_name = "Can't get: '%s'" % e
 
     #____________________________________________________________________________________________
     # Allgemeine Cookie-Funktionen
@@ -335,7 +344,7 @@ class sessionhandler:
         """
         #~ if expires==None: expires=self.timeout_sec
         self.Cookie[self.CookieName] = Text
-        self.Cookie[self.CookieName]["path"] = self.config.system.poormans_url
+        self.Cookie[self.CookieName]["path"] = self.preferences["poormans_url"]
 
         #~ self.Cookie[self.CookieName]["expires"] = expires
 
@@ -354,7 +363,7 @@ class sessionhandler:
         "Eröffnet eine Session"
         self.delete_old_sessions() # L�schen veralteter Sessions in der DB
 
-        session_data = pickle.dumps( self.session_data )
+        session_data = pickle.dumps(self)
         if base64format == True:
             session_data = base64.b64encode( session_data )
         self.RAW_session_data_len = len( session_data )
@@ -378,7 +387,7 @@ class sessionhandler:
         "Aktualisiert die Session-Daten"
         self.delete_old_sessions() # Löschen veralteter Sessions in der DB
 
-        session_data = pickle.dumps( self.session_data )
+        session_data = pickle.dumps(self)
         if base64format == True:
             session_data = base64.b64encode( session_data )
 
@@ -390,15 +399,15 @@ class sessionhandler:
                 "session_data"  : session_data,
                 "timestamp"     : time.time()
             },
-            where   = ("session_id", self.ID),
+            where   = ("session_id", self["user_id"]),
             limit   = 1,
         )
         #~ self.debug_session_data()
 
         if self.verbose_log == True:
-            self.log.write( "update Session: ID:%s" % self.ID, "sessionhandling", "OK" )
+            self.log.write( "update Session: ID:%s" % self["user_id"], "sessionhandling", "OK" )
         if self.page_msg_debug == True:
-            self.page_msg("update Session: ID:%s" % self.ID)
+            self.page_msg("update Session: ID:%s" % self["user_id"])
             self.debug_session_data()
 
     def read_from_DB( self, session_id ):
@@ -461,7 +470,7 @@ class sessionhandler:
             RAW_db_data = self.db.select(
                 select_items    = ['timestamp', 'session_data','session_id'],
                 from_table      = self.sql_tablename,
-                where           = [("session_id",self.ID)]
+                where           = [("session_id",self["user_id"])]
             )[0]
             self.page_msg( "Debug from %s: %s<br />" % (stack_info, RAW_db_data) )
         except Exception, e:
@@ -469,27 +478,7 @@ class sessionhandler:
             #~ for i in inspect.stack(): self.page_msg( i )
 
     #____________________________________________________________________________________________
-    # Funktionen zum abfragen/setzten der Session-Daten
-
-    def __setitem__( self, key, value):
-        "Ermöglicht das direkte setzten der Session-Daten"
-        self.session_data[key] = value
-
-    def __str__(self):
-        "Liefer Session-Daten als String zurück, also: retrun str(dict)"
-        return str( self.session_data )
-
-    def __getitem__( self, key ):
-        return self.session_data[key]
-
-    def __delitem__( self, key ):
-        del self.session_data[key]
-
-    def has_key( self, key ):
-        return self.session_data.has_key(key)
-
-    def iteritems( self ):
-        return self.session_data.iteritems()
+    ## Debug
 
     def debug( self ):
         "Zeigt alle Session Informationen an"
@@ -501,10 +490,10 @@ class sessionhandler:
             "Session Debug (from '%s' line %s):" % (inspect.stack()[1][1][-20:], inspect.stack()[1][2])
         )
 
-        self.page_msg( "len:", len( self.session_data ) )
-        for k,v in self.session_data.iteritems():
+        self.page_msg("len:", len(self))
+        for k,v in self.iteritems():
             self.page_msg( "%s - %s" % (k,v) )
-        self.page_msg("ID:", self.ID)
+        self.page_msg("ID:", self["user_id"])
         self.page_msg( "-"*30 )
 
     def debug_last(self):

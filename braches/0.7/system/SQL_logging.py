@@ -5,9 +5,11 @@
 Allgemeiner SQL-Logger
 """
 
-__version__ = "v0.0.6"
+__version__ = "v0.1"
 
 __history__ = """
+v0.1
+    - Neu: items-Methode für die Debug-Ausgabe
 v0.0.6
     - Fehlerabfrage, wenn nicht in sql log table geschrieben werden kann
 v0.0.5
@@ -31,26 +33,18 @@ enty_timeout_sec = 259200
 
 sql_tablename = "log"
 
-dbconf = {
-    "dbHost"            : "localhost",
-    "dbDatabaseName"    : '',
-    "dbUserName"        : '',
-    "dbPassword"        : '',
-}
-# dbconfig mit abgespeicherten DB-Config Daten überschreiben
-from config import dbconf
-
-
 
 class log:
     """
     Allgemeine SQL-Logging Klasse
     """
-    def __init__ ( self, PyLucid ):
-        self.db         = PyLucid["db"]
-        self.tools      = PyLucid["tools"]
-        self.CGIdata    = PyLucid["CGIdata"]
-        self.page_msg   = PyLucid["page_msg"]
+    def __init__ (self, request):
+
+        # shorthands
+        self.db         = request.db
+        self.tools      = request.tools
+        self.CGIdata    = request.CGIdata
+        self.page_msg   = request.page_msg
 
         # auf Default-Werte setzten
         # Nachdem eine Session erstellt wurde, werden diese Werte von index.py gesetzt
@@ -58,7 +52,7 @@ class log:
         self.client_user_name   = "unknown"
 
 
-    def check_type( self, type ):
+    def check_type(self, type):
         if type != False:
             return type
 
@@ -73,19 +67,18 @@ class log:
 
         return type
 
-
     #________________________________________________________________________________________
     ## Log-Datei schreiben / verwalten
 
-    def write( self, log_message, type=False, status="-1" ):
+    def write(self, log_message, type=False, status="-1"):
         "File like writing method"
         self.put( log_message, type, status )
 
-    def __call__( self, log_message, type=False, status="-1" ):
+    def __call__(self, log_message, type=False, status="-1"):
         # Direkter Call-Aufruf zum schreiben
         self.put( log_message, type, status )
 
-    def put( self, log_message, type=False, status="-1" ):
+    def put(self, log_message, type=False, status="-1"):
         "Schreib einen Eintag in die SQL-Log-Tabelle"
 
         type = self.check_type( type )
@@ -95,36 +88,45 @@ class log:
 
         try:
             self.db.insert(
-                    table = "log", # Prefix wird bei db.insert eingefügt
-                    data  = {
-                        "timestamp" : self.tools.convert_time_to_sql( time.time() ),
-                        "sid"       : self.client_sID,
-                        "user_name" : self.client_user_name,
-                        "ip"        : self.CGIdata["client_ip"],
-                        "domain"    : self.CGIdata["client_domain"],
-                        "message"   : log_message,
-                        "typ"       : type,
-                        "status"    : status,
-                    }
-                )
+                table = "log", # Prefix wird bei db.insert eingefügt
+                data  = {
+                    "timestamp" : self.tools.convert_time_to_sql(time.time()),
+                    "sid"       : self.client_sID,
+                    "user_name" : self.client_user_name,
+                    "ip"        : self.CGIdata.get("client_ip","unknown"),
+                    "domain"    : self.CGIdata.get("client_domain","unknown"),
+                    "message"   : log_message,
+                    "typ"       : type,
+                    "status"    : status,
+                }
+            )
         except Exception, e:
             self.page_msg("Can't write to SQL log table: %s" % e)
 
-    def delete_old_logs( self ):
+    def delete_old_logs(self):
         "Löscht veraltete Log-Einträge in der DB"
 
-        SQLcommand  = "DELETE FROM %s%s" % ( dbconf["dbTablePrefix"], sql_tablename )
+        SQLcommand  = "DELETE FROM $$%s" % sql_tablename
         SQLcommand += " WHERE timestamp < %s"
 
         current_timeout = time.time() - enty_timeout_sec
 
-        self.db.cursor.execute(
-            SQLcommand,
-            ( current_timeout, )
-        )
+        self.db.cursor.execute(SQLcommand, (current_timeout,))
 
     #________________________________________________________________________________________
     ## Log-Datei lesen
+
+    def items(self):
+        """ Generiert eine Liste der letzten 5 Logeinträge für die Debug Anzeige """
+        #~ self.page_msg("lastLog: %s" % self.get_last_logs())
+        result = []
+        for item in self.get_last_logs(limit=5):
+            line = "User: %s - ID: %s - typ: %s - msg: %s" % (
+                item["user_name"], item["sid"], item["typ"], item["message"]
+            )
+            result.append((str(item["timestamp"]), line))
+        return result
+
 
     def get_last_logs( self, limit=10 ):
         """ Liefert die letzten >limit< Logeinträge zurück """
