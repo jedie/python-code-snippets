@@ -33,14 +33,11 @@ v0.0.1
 
 import os, sys, cgi, time, re, htmlentitydefs, threading, signal
 
-from PyLucid_python_backports.utils import *
+from PyLucid.python_backports.utils import *
 
 # Für Debug-print-Ausgaben
 #~ print "Content-type: text/html\n\n<pre>%s</pre>" % __file__
 #~ print "<pre>"
-
-
-PyLucid = {} # Dieses dict wird von index.py mit den Objekt-Klassen "gefüllt"
 
 
 #________________________________________________________________________________________________
@@ -54,7 +51,7 @@ def convert_date_from_sql( RAWsqlDate, format="preferences" ):
     date = str( RAWsqlDate )
     try:
         # SQL Datum in das Python time-Format wandeln
-        date = time.strptime( date, PyLucid["config"].dbconf["dbdatetime_format"] )
+        date = time.strptime( date, request.preferences["dbdatetime_format"] )
     except ValueError:
         # Datumsformat stimmt nicht, aber besser das was schon da
         # ist, mit einem Hinweis, zurück liefern, als garnichts ;)
@@ -62,7 +59,7 @@ def convert_date_from_sql( RAWsqlDate, format="preferences" ):
 
     if format == "preferences":
         # Python-time-Format zu einem String laut preferences wandeln
-        return time.strftime( PyLucid["preferences"]["core"]["formatDateTime"], date )
+        return time.strftime( request.preferences["core"]["formatDateTime"], date )
     elif format == "DCTERMS.W3CDTF":
         return time.strftime( "%Y-%m-%d", date )
     else:
@@ -78,7 +75,7 @@ def convert_time_to_sql( time_value ):
         except:
             return "ERROR: convert '%s'" % time_value
 
-    return time.strftime( PyLucid["config"].dbconf["dbdatetime_format"], time_value )
+    return time.strftime(request.preferences["dbdatetime_format"], time_value)
 
 #________________________________________________________________________________________________
 
@@ -140,7 +137,7 @@ class parent_tree_maker:
     Wird beim editieren für die parent-Seiten-Auswahl benötigt
     """
     def __init__( self ):
-        self.db = PyLucid["db"]
+        self.db = request.db
 
     def make_parent_option( self ):
         # Daten aus der DB holen
@@ -407,7 +404,7 @@ class subprocess2(threading.Thread):
             import subprocess
         except ImportError:
             # subprocess gibt's erst mit Python 2.4
-            from PyLucid_python_backports import subprocess
+            from PyLucid.python_backports import subprocess
 
         self.process = subprocess.Popen(
                 self.command,

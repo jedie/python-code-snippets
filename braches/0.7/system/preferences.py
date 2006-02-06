@@ -1,15 +1,13 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 
-# by jensdiemer.de (steht unter GPL-License)
-
 """
 Verwaltung der Einstellungen
 """
 
 __author__ = "Jens Diemer (www.jensdiemer.de)"
 
-__version__="0.0.2"
+__version__="0.1"
 
 __history__="""
 v0.0.2
@@ -19,78 +17,105 @@ v0.0.1
 """
 
 
-
-
-# F�r Debug-print-Ausgaben
-#~ print "Content-type: text/html\n\n<pre>%s</pre>" % __file__
-#~ print "<pre>"
+import os
 
 
 
-
-
-class preferences:
+class preferences(dict):
     """
-    lucid-preferences aus Datenbank lesen und im preferences-Dict eintragen
+    preferences Tabelle aus Datenbank lesen und als Dict zur verfügung stellen
     """
 
-    def __init__( self, PyLucid_objects ):
-        self.db = PyLucid_objects["db"]
+    def __init__(self, request, config):
+        dict.__init__(self)
 
-        self.data = {} # In diese Dict werden die preferences gespeichert
+        self.update(config)
 
-        # Daten aus der SQL lesen und speichern
-        self.read_from_sql()
+        self.request    = request
 
-    def read_from_sql( self ):
-        """ Preferences aus der DB lesen und in self.data speichern """
+        #~ self.request.page_msg(self)
+
+    def update_from_sql( self ):
+        """ Preferences aus der DB lesen und in self speichern """
 
         try:
-            RAWdata = self.db.get_all_preferences()
+            RAWdata = self.request.db.get_all_preferences()
         except Exception, e:
-            print "Content-type: text/html; charset=utf-8\r\n\r\n"
-            print "<h1>Error: Can't read preferences:</h1>"
-            print e
-            print "<p>(Did you install PyLucid correctly?)</p>"
-            print "<hr><address>%s</address>" % __info__
-            import sys
-            sys.exit()
-        #~ "section", "varName", "value"
+            self.request.echo("<h1>Error: Can't read preferences:</h1>")
+            self.request.echo(e)
+            self.request.echo("<p>(Did you install PyLucid correctly?)</p>")
+            self.request.echo("<hr><address>%s</address>" % __info__)
+            raise Exception(e)
 
         for line in RAWdata:
             # Die Values sind in der SQL-Datenbank als Type varchar() angelegt.
             # Doch auch Zahlenwerte sind gespeichert, die PyLucid doch lieber
-            # auch als Zahlen sehen m�chte ;)
+            # auch als Zahlen sehen möchte ;)
             try:
-                line["value"] = int( line["value"] )
+                line["value"] = int(line["value"])
             except ValueError:
                 pass
 
-            if not self.data.has_key( line["section"] ):
+            if not self.has_key(line["section"]):
                 # Neue Sektion
-                self.data[ line["section"] ] = {}
+                self[line["section"]] = {}
 
-            self.data[ line["section"] ][ line["varName"] ] = line["value"]
+            self[line["section"]][line["varName"]] = line["value"]
 
 
-    #______________________________________________________________________________
-    # allgemeine Methoden um an die Daten zu kommen ;)
 
-    #~ def __getitem__( self, section, varName ):
-        #~ return self.data[section][varName]
-    def __getitem__( self, key ):
-        return self.data[key]
 
-    def iteritems( self ):
-        return self.data.iteritems()
 
-    def __setitem__( self, key, value ):
-        self.data[key] = value
+class URLs(dict):
+    """
+    Passt die verwendeten Pfade an.
+    Ist ausgelagert, weil hier und auch gleichzeitig von install_PyLucid verwendet wird.
+    """
+    def __init__(self, request):
+        dict.__init__(self)
 
-    def has_key( self, key ):
-        return self.data.has_key( key )
+        # shorthands
+        self.request    = request
+        self.environ    = request.environ
+        self.page_msg   = request.page_msg
+        self.preferences     = request.preferences
 
-    def __str__( self ):
-        return str( self.data )
+        self.setup()
 
-    #______________________________________________________________________________
+    def setup(self):
+        if self.preferences["script_filename"] == "":
+            self.preferences["script_filename"] = self.environ["APPLICATION_REQUEST"]
+            #~ "script_filename"   : os.environ['SCRIPT_FILENAME'],
+
+        if self.preferences["document_root"] == "":
+            self.preferences["document_root"] = os.environ['DOCUMENT_ROOT']
+
+        # Dateinamen rausschneiden
+        self.preferences["script_filename"] = os.path.split(self.preferences["script_filename"])[0]
+
+        self.preferences["script_filename"] = os.path.normpath(self.preferences["script_filename"])
+        self.preferences["document_root"]   = os.path.normpath(self.preferences["document_root"])
+
+        # Pfad für Links festlegen
+        self["real_self_url"] = self.preferences["script_filename"][len(self.preferences["document_root"]):]
+        self["real_self_url"] += "/index.py"
+
+        self["poormans_url"] = self["real_self_url"]
+
+        self["link"] = "%s%s" % (
+            self["poormans_url"], self.preferences["page_ident"]
+        )
+        self["base"] = "%s?page_id=%s" % (
+            self["real_self_url"], -1#CGIdata["page_id"]
+        )
+
+    def items(self):
+        """ Überschreibt das items() von dict, um eine Reihenfolge zu erwirken """
+        values = [(len(v),k,v) for k,v in self.iteritems()]
+        values.sort()
+
+        result = []
+        for _,k,v in values:
+            result.append((k,v))
+
+        return result

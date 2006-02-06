@@ -5,7 +5,8 @@ __author__  = "Jens Diemer (www.jensdiemer.de)"
 __license__ = "GNU General Public License http://www.opensource.org/licenses/gpl-license.php"
 __url__     = "http://www.PyLucid.org"
 
-__info__ = """<a href="%s" title="PyLucid - A OpenSource CMS in pure Python CGI by Jens Diemer">PyLucid</a> v0.7.0Alpha""" % __url__
+__info__ = """<a href="%s" title="PyLucid - A OpenSource CMS in pure Python CGI by Jens Diemer">\
+PyLucid</a> v0.7.0Alpha""" % __url__
 
 """
 Rendert eine komplette Seite
@@ -138,15 +139,14 @@ from PyLucid_python_backports.utils import *
 
 # Interne PyLucid-Module einbinden
 import config # PyLucid Konfiguration
-from PyLucid_system import SQL
-from PyLucid_system import sessiondata
-from PyLucid_system import sessionhandling
-from PyLucid_system import SQL_logging
-#~ from PyLucid_system import userhandling
-from PyLucid_system import module_manager
-from PyLucid_system import tools
-from PyLucid_system import preferences
-from PyLucid_system import page_parser
+from system import SQL
+from system import sessiondata
+from system import sessionhandling
+from system import SQL_logging
+from system import module_manager
+from system import tools
+from system import preferences
+from system import page_parser
 
 # Versions-Information übertragen
 preferences.__info__    = __info__
@@ -154,39 +154,7 @@ preferences.__info__    = __info__
 
 
 
-class path:
-    """
-    Passt die verwendeten Pfade an.
-    Ist ausgelagert, weil hier und auch gleichzeitig von install_PyLucid verwendet wird.
-    """
-    def __init__(self, PyLucid):
-        self.PyLucid = PyLucid
-        self.config = PyLucid["config"]
 
-    def setup(self):
-        self.config.system.script_filename = os.path.split(self.config.system.script_filename)[0]
-
-        self.config.system.script_filename = os.path.normpath(self.config.system.script_filename)
-        self.config.system.document_root   = os.path.normpath(self.config.system.document_root)
-
-        # Pfad für Links festlegen
-        self.config.system.real_self_url = self.config.system.script_filename[len(self.config.system.document_root):]
-        self.config.system.real_self_url += "/index.py"
-
-        self.config.system.poormans_url = self.config.system.real_self_url
-
-    def setup_URLs(self):
-        URLs    = self.PyLucid["URLs"]
-        CGIdata = self.PyLucid["CGIdata"]
-
-        URLs["link"] = "%s%s" % (
-            self.config.system.poormans_url, self.config.system.page_ident
-        )
-        URLs["base"] = "%s?page_id=%s" % (
-            self.config.system.real_self_url, CGIdata["page_id"]
-        )
-        URLs["real_self_url"] = self.config.system.real_self_url
-        URLs["poormans_url"] = self.config.system.poormans_url
 
 
 

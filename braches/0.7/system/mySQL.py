@@ -79,35 +79,30 @@ from __future__ import generators
 import sys
 
 try:
-    from PyLucid_python_backports.utils import *
+    from PyLucid.python_backports.utils import *
 except ImportError:
     # Beim direkten Aufruf, zum Modul-Test!
     import sys
     sys.path.insert(0,"../")
-    from PyLucid_python_backports.utils import *
+    from PyLucid.python_backports.utils import *
 
-def error(msg, e):
-    print "Content-type: text/html\n"
-    print "<h1>SQL Error</h1>"
-    print "<h3>%s</h3>" % msg
-    print "<p>Error Msg.:<br/>%s</p>" % e
-    import sys
-    sys.exit(0)
+
 
 
 class mySQL:
     """
     Klasse, die nur allgemeine SQL-Funktionen beinhaltet
     """
-    def __init__(self, PyLucid, debug=False):
-        self.config = PyLucid["config"]
+    def __init__(self, request, debug=False):
+        self.request = request
+        self.preferences = request.preferences
 
         # Zum speichern der letzten SQL-Statements (evtl. für Fehlerausgabe)
         self.last_SQLcommand = ""
         self.last_SQL_values = ()
 
         self.debug = debug
-        self.tableprefix = self.config.dbconf["dbTablePrefix"]
+        self.tableprefix = self.preferences["dbTablePrefix"]
 
         #~ try:
         self._make_connection()
@@ -119,12 +114,7 @@ class mySQL:
         Baut den connect mit dem Modul auf, welches in der config.py
         ausgewählt wurde.
         """
-        if not self.config.dbconf.has_key("dbTyp"):
-            self.config.dbconf["dbTyp"] = "MySQLdb"
-            self.dbTyp = "MySQLdb"
-        else:
-            self.dbTyp = self.config.dbconf["dbTyp"]
-
+        self.dbTyp = self.preferences.get("dbTyp","MySQLdb")
 
         #_____________________________________________________________________________________________
         if self.dbTyp == "MySQLdb":
@@ -133,25 +123,26 @@ class mySQL:
             except ImportError, e:
                 msg  = "MySQLdb import error! Modul"
                 msg += """ '<a href="http://sourceforge.net/projects/mysql-python/">python-mysqldb</a>' """
-                msg += "not installed???"""
-                error( msg, e )
+                msg += "not installed??? [%s]""" % e
+                raise ImportError(msg)
 
             try:
                 self.conn = WrappedConnection(
                     dbapi.connect(
-                        host    = self.config.dbconf["dbHost"],
-                        user    = self.config.dbconf["dbUserName"],
-                        passwd  = self.config.dbconf["dbPassword"],
-                        db      = self.config.dbconf["dbDatabaseName"],
+                        host    = self.preferences["dbHost"],
+                        user    = self.preferences["dbUserName"],
+                        passwd  = self.preferences["dbPassword"],
+                        db      = self.preferences["dbDatabaseName"],
                     ),
                     placeholder = '%s',
                     prefix = self.tableprefix
                 )
             except Exception, e:
-                msg = "Can't connect"
+                msg = "Can't connect to DB"
                 if e[1].startswith("Can't connect to local MySQL server through socket"):
-                    msg += ", probably the server '%s' is wrong!" % self.config.dbconf["dbHost"]
-                error(msg, e)
+                    msg += ", probably the server '%s' is wrong!" % self.preferences["dbHost"]
+                msg += " [%s]" % e
+                raise ConnectionError(msg)
 
             self.cursor = self.conn.cursor()
 
@@ -269,16 +260,11 @@ class mySQL:
                 "values"        : ",".join( ["%s"]*len(values) ) # Platzhalter für SQLdb-escape
             }
 
-        if debug or self.debug:
-            print "-"*80
-            print "db.insert - Debug:"
-            print "SQLcommand.:", SQLcommand
-            print "values.....:", values
-            print "-"*80
+        if debug or self.debug: debug_command("insert", SQLcommand, values)
 
         return self.fetchall(SQLcommand, values)
 
-    def update(self, table, data, where, limit=False):
+    def update(self, table, data, where, limit=False, debug=False):
         """
         Vereinfachte SQL-update Funktion
         """
@@ -295,12 +281,7 @@ class mySQL:
                 "limit"     : self._make_limit(limit)
             }
 
-        if self.debug:
-            print "-"*80
-            print "db.update - Debug:"
-            print "SQLcommand.:", SQLcommand
-            print "values.....:", values
-            print "-"*80
+        if debug or self.debug: debug_command("update", SQLcommand, values)
 
         return self.fetchall(SQLcommand, values)
 
@@ -326,10 +307,10 @@ class mySQL:
         SQLcommand = "SELECT " + ",".join( select_items )
         SQLcommand += " FROM $$%s" % from_table
 
-        SQL_parameters_values = []
+        values = []
 
         if where:
-            where_string, SQL_parameters_values = self._make_where( where )
+            where_string, values = self._make_where( where )
             SQLcommand += where_string
 
         if order:
@@ -340,13 +321,9 @@ class mySQL:
 
         SQLcommand += self._make_limit(limit)
 
-        if self.debug or debug:
-            print "-"*80
-            print "db.select - Debug:"
-            print "SQLcommand.:", SQLcommand
-            print "values.....:", SQL_parameters_values
+        if debug or self.debug: debug_command("select", SQLcommand, values)
 
-        return self.fetchall(SQLcommand, SQL_parameters_values)
+        return self.fetchall(SQLcommand, values)
 
     def delete(self, table, where, limit=1, debug=False):
         """
@@ -354,19 +331,14 @@ class mySQL:
         """
         SQLcommand = "DELETE FROM $$%s" % table
 
-        where_string, SQL_parameters_values = self._make_where(where)
+        where_string, values = self._make_where(where)
 
         SQLcommand += where_string
         SQLcommand += self._make_limit(limit)
 
-        if self.debug or debug:
-            print "-"*80
-            print "db.delete - Debug:"
-            print "SQLcommand:", SQLcommand
-            print "values.....:", SQL_parameters_values
-            print "-"*80
+        if debug or self.debug: debug_command("delete", SQLcommand, values)
 
-        return self.fetchall(SQLcommand, SQL_parameters_values)
+        return self.fetchall(SQLcommand, values)
 
     #_____________________________________________________________________________________________
 
@@ -419,12 +391,12 @@ class mySQL:
             SQLcommand = "SHOW FIELDS FROM $$%s;" % table_name
 
         if self.debug or debug:
-            print "-"*80
-            print "get_table_field_information:", SQLcommand
+            self.request.echo("-"*80)
+            self.request.echo("get_table_field_information: %s" % SQLcommand)
 
         result = self.fetchall(SQLcommand)
         if self.debug or debug:
-            print "result:", result
+            self.request.echo("result: %s" % result)
         return result
 
     def get_table_fields(self, table_name):
@@ -471,9 +443,16 @@ class mySQL:
     #_____________________________________________________________________________________________
 
     def dump_select_result(self, result):
-        print "*** dumb select result ***"
+        self.request.echo("*** dumb select result ***")
         for i in xrange( len(result)):
-            print "%s - %s" % (i, result[i])
+            self.request.echo("%s - %s" % (i, result[i]))
+
+    def debug_command(self, methodname, SQLcommand, values):
+        self.request.echo("-"*80)
+        self.request.echo("db.%s - Debug:" % methodname)
+        self.request.echo("SQLcommand.: %s" % SQLcommand)
+        self.request.echo("values.....: %s" % values)
+        self.request.echo("-"*80)
 
     def close(self):
         "Connection schließen"
@@ -572,7 +551,8 @@ class IterableDictCursor(object):
 
 
 
-
+class ConnectionError(Exception):
+    pass
 
 
 
