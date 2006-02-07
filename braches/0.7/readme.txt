@@ -30,3 +30,10 @@ http://www.pylucid.org
 
 http://www.sourceforge.net/projects/pylucid/
 
+
+ SVN Info
+==========
+$Date$
+$Rev$
+$Author$
+$URL$
