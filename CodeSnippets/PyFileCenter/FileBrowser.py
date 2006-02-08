@@ -3,6 +3,7 @@
 
 __author__      = "Jens Diemer"
 __url__         = "http://www.jensdiemer.de/Programmieren/Python/PyFileCenter"
+#SVN: http://pylucid.python-hosting.com/file/CodeSnippets/PyFileCenter/FileBrowser.py
 __license__     = "GNU General Public License (GPL)"
 __description__ = "a pure Python-CGI-FileBrowser (Download-Center)"
 
