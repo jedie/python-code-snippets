@@ -77,12 +77,14 @@ debug = False
 
 
 class plugin_data:
-    def __init__(self, PyLucid):
-        self.CGIdata    = PyLucid["CGIdata"]
-        self.db         = PyLucid["db"]
-        self.session    = PyLucid["session"]
-        self.page_msg   = PyLucid["page_msg"]
-        self.URLs       = PyLucid["URLs"]
+    def __init__(self, request):
+
+        # shorthands
+        self.CGIdata        = request.CGIdata
+        self.page_msg       = request.page_msg
+        self.db             = request.db
+        self.session        = request.session
+        self.URLs           = request.URLs
 
         self.plugindata = {}
 
@@ -128,6 +130,8 @@ class plugin_data:
             self.plugindata[module_name][main_method]["CGI_dependent_data"] = CGI_dependent_data
 
         self.package_name = self.plugins[module_name]["package_name"]
+        # Fast Patch to new Filesystem (v0.7)!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        self.package_name = self.package_name.replace("PyLucid_", "PyLucid.")
 
         self.current_properties = self.plugindata[self.module_name][self.main_method]
 
@@ -278,19 +282,22 @@ class plugin_data:
 
 
 class module_manager:
-    def __init__( self, PyLucid ):
-        self.PyLucid        = PyLucid
-        self.db             = PyLucid["db"]
-        self.page_msg       = PyLucid["page_msg"]
-        self.session        = PyLucid["session"]
-        self.CGIdata        = PyLucid["CGIdata"]
-        self.tools          = PyLucid["tools"]
-        self.config         = PyLucid["config"]
-        self.parser         = PyLucid["parser"]
-        self.render         = PyLucid["render"]
-        self.URLs           = PyLucid["URLs"]
+    def __init__(self, request):
 
-        self.plugin_data = plugin_data(PyLucid)
+        # shorthands
+        self.request        = request
+        self.CGIdata        = request.CGIdata
+        self.page_msg       = request.page_msg
+        self.db             = request.db
+        self.session        = request.session
+        self.preferences    = request.preferences
+        self.environ        = request.environ
+        self.URLs           = request.URLs
+        self.parser         = request.parser
+        self.render         = request.render
+        self.tools          = request.tools
+
+        self.plugin_data = plugin_data(request)
 
         # Alle Angaben werden bei run_tag oder run_function ausgefüllt...
         self.module_name    = "undefined"
@@ -404,10 +411,10 @@ class module_manager:
 
         if self.plugin_data.plugin_debug():
             self.page_msg(
-                "Import module mit error handling: %s" % self.config.system.ModuleManager_error_handling
+                "Import module mit error handling: %s" % self.preferences["ModuleManager_error_handling"]
             )
 
-        if self.config.system.ModuleManager_error_handling == False:
+        if self.preferences["ModuleManager_error_handling"] == False:
             import_object = _import()
 
         try:
@@ -486,14 +493,14 @@ class module_manager:
 
             msg = "[Can't run '%s.%s': %s]" % (self.module_name, self.current_method, msg)
 
-            if self.config.system.ModuleManager_error_handling == True:
+            if self.preferences["ModuleManager_error_handling"] == True:
                 raise run_module_error(msg)
             else:
                 raise Exception(msg)
 
 
         # Instanz erstellen und PyLucid-Objekte übergeben
-        if self.config.system.ModuleManager_error_handling == True:
+        if self.preferences["ModuleManager_error_handling"] == True:
             try:
                 class_instance = module_class(self.PyLucid)
             except Exception, e:
@@ -501,11 +508,11 @@ class module_manager:
                     "[Can't make class intance from module '%s': %s]" % (self.module_name, e)
                 )
         else:
-            class_instance = module_class(self.PyLucid)
+            class_instance = module_class(self.request)
 
 
         # Methode aus Klasse erhalten
-        if self.config.system.ModuleManager_error_handling == True:
+        if self.preferences["ModuleManager_error_handling"] == True:
             try:
                 unbound_method = getattr( class_instance, self.plugin_data.current_method )
             except Exception, e:
@@ -523,7 +530,7 @@ class module_manager:
             redirector = self.tools.redirector()
 
         # Methode "ausführen"
-        if self.config.system.ModuleManager_error_handling == False:
+        if self.preferences["ModuleManager_error_handling"] == False:
             #~ self.page_msg(self.plugin_data.get_CGI_data)
             #~ direct_output = unbound_method(**self.plugin_data.get_CGI_data)
             #~ try:

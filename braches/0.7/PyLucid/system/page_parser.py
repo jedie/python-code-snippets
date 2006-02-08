@@ -36,8 +36,10 @@ class parser:
     """
     Der Parser füllt alle bekannten lucid-Tags (lucidTag & lucidFunction) aus.
     """
-    def __init__( self, PyLucid ):
-        self.page_msg       = PyLucid["page_msg"]
+    def __init__(self, request):
+
+        # shorthands
+        self.page_msg       = request.page_msg
 
         # self.module_manager --> Wird in der index.py setup_parser() hierhin "übertragen"
 
@@ -46,19 +48,23 @@ class parser:
         # Tags die nicht bearbeitet werden:
         self.ignore_tag = ("page_msg","script_duration")
 
-
-    def parse( self, content ):
+    def parse(self, content, out_object):
         """
         Die Hauptfunktion.
         per re.sub() werden die Tags ersetzt
+
+        out_object muß eine write Methode besitzten
         """
         #~ print "OK", content
         if type(content)!=str:
-            return "page_parser Error! Content not string. Content is type %s" % cgi.escape(str(type(content)))
+            out_object.write("page_parser Error! Content not string.\n")
+            out_object.write("Content is type %s\n" % cgi.escape(str(type(content))))
+            out_object.write("Content: %s" % content)
+            return
 
         #~ start_time = time.time()
         #~ try:
-        content = re.sub( "<lucidTag:(.*?)/?>", self.handle_tag, content )
+        content = re.sub("<lucidTag:(.*?)/?>", self.handle_tag, content)
         #~ except Exception, e:
             #~ print "ERROR:", e, content
             #~ return "ERROR:", e
@@ -66,13 +72,13 @@ class parser:
 
         #~ start_time = time.time()
         #~ try:
-        content = re.sub( "<lucidFunction:(.*?)>(.*?)</lucidFunction>", self.handle_function, content )
+        content = re.sub("<lucidFunction:(.*?)>(.*?)</lucidFunction>", self.handle_function, content)
         #~ except Exception, e:
             #~ print "ERROR:", e, content
             #~ return "ERROR:", e
         #~ self.page_msg( "Zeit (re.sub-lucidFunction) :", time.time()-start_time )
 
-        return content
+        out_object.write(content)
 
     def handle_tag( self, matchobj ):
         """
@@ -129,16 +135,24 @@ class render:
     """
     Parsed die Seite und wendes das Markup an.
     """
-    def __init__( self, PyLucid ):
-        self.PyLucid    = PyLucid
-        self.page_msg   = PyLucid["page_msg"]
-        self.CGIdata    = PyLucid["CGIdata"]
-        self.config     = PyLucid["config"]
-        self.session    = PyLucid["session"]
-        self.parser     = PyLucid["parser"]
-        self.tools      = PyLucid["tools"]
-        self.db         = PyLucid["db"]
+    def __init__(self, request):
 
+        # shorthands
+        self.request        = request
+        self.CGIdata        = request.CGIdata
+        self.page_msg       = request.page_msg
+        self.db             = request.db
+        self.session        = request.session
+        self.preferences    = request.preferences
+        self.environ        = request.environ
+        self.URLs           = request.URLs
+        self.parser         = request.parser
+        self.tools          = request.tools
+
+    def render_page(self):
+        """ Baut die Seite zusammen """
+        template_data = self.db.side_template_by_id(self.session["page_id"])
+        self.parser.parse(template_data, self.request)
 
     def render( self, side_data ):
 
@@ -196,12 +210,12 @@ class render:
             return content
 
 
-    def apply_template( self, side_content, template ):
-        """
-        Alle Tags im Template ausfüllen und dabei die Seite in Template einbauen
-        """
-        self.parser.tag_data["page_body"]    = side_content
+    #~ def apply_template( self, side_content, template ):
+        #~ """
+        #~ Alle Tags im Template ausfüllen und dabei die Seite in Template einbauen
+        #~ """
+        #~ self.parser.tag_data["page_body"]    = side_content
 
-        side_content = self.parser.parse( template )
+        #~ side_content = self.parser.parse( template )
 
-        return side_content
+        #~ return side_content
