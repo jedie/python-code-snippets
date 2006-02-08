@@ -75,30 +75,37 @@ class URLs(dict):
         dict.__init__(self)
 
         # shorthands
-        self.request    = request
-        self.environ    = request.environ
-        self.page_msg   = request.page_msg
-        self.preferences     = request.preferences
+        self.request        = request
+        self.environ        = request.environ
+        self.page_msg       = request.page_msg
+        self.preferences    = request.preferences
 
         self.setup()
 
     def setup(self):
-        if self.preferences["script_filename"] == "":
-            self.preferences["script_filename"] = self.environ["APPLICATION_REQUEST"]
+        #~ if self.preferences["script_filename"] == "":
+            #~ self.preferences["script_filename"] = self.environ["APPLICATION_REQUEST"]
             #~ "script_filename"   : os.environ['SCRIPT_FILENAME'],
 
-        if self.preferences["document_root"] == "":
-            self.preferences["document_root"] = os.environ['DOCUMENT_ROOT']
+        #~ if self.preferences["document_root"] == "":
+            #~ self.preferences["document_root"] = os.environ['DOCUMENT_ROOT']
 
-        # Dateinamen rausschneiden
-        self.preferences["script_filename"] = os.path.split(self.preferences["script_filename"])[0]
+        #~ # Dateinamen rausschneiden
+        #~ self.preferences["script_filename"] = os.path.split(self.preferences["script_filename"])[0]
 
-        self.preferences["script_filename"] = os.path.normpath(self.preferences["script_filename"])
-        self.preferences["document_root"]   = os.path.normpath(self.preferences["document_root"])
+        #~ self.preferences["script_filename"] = os.path.normpath(self.preferences["script_filename"])
+        #~ self.preferences["document_root"]   = os.path.normpath(self.preferences["document_root"])
 
         # Pfad für Links festlegen
-        self["real_self_url"] = self.preferences["script_filename"][len(self.preferences["document_root"]):]
-        self["real_self_url"] += "/index.py"
+        self["real_self_url"] = self.environ["APPLICATION_REQUEST"]
+
+        if self.preferences["poormans_modrewrite"] == True:
+            self.preferences["page_ident"] = ""
+        else:
+            if self["real_self_url"][-1] == "/": # Slash am Ende entfernen
+                self["real_self_url"] = self["real_self_url"][:-1]
+
+            self["real_self_url"] += "/index.py"
 
         self["poormans_url"] = self["real_self_url"]
 

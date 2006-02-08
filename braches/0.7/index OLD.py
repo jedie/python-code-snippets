@@ -567,7 +567,6 @@ class LucidRender:
         # Alle Tags ausfüllen und Markup anwenden
         side_content = self.render.render( side_data )
 
-
         # Alle Tags im Template ausfüllen und dabei die Seite in Template einbauen
         page = self.render.apply_template( side_content, side_data["template"] )
 
