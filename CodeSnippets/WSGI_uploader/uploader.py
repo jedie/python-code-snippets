@@ -59,11 +59,13 @@ __author__      = "Jens Diemer"
 __url__         = "http://www.jensdiemer.de"
 __license__     = "GNU General Public License (GPL)"
 __description__ = "a small upload-form used WSGI"
-__version__     = "0.4 alpha"
+__version__     = "0.4.1 alpha"
 
 __info__        = 'uploader v%s' % __version__
 
 __history__ = """
+v0.4.1
+    - import-Fehler Abfrage
 v0.4
     - Umbau zu einer PathApplication
 v0.3
@@ -81,7 +83,20 @@ v0.1
 import sys, os, time, socket, ConfigParser, subprocess, urllib, cgi
 import posixpath
 
-from colubrid import PathApplication
+try:
+    from colubrid import PathApplication
+except ImportError:
+    msg = (
+        "Content-type: text/html; charset=utf-8\r\n\r\n"
+        "<pre>ERROR:\n"
+        "colubrid import Error!\n"
+        "used WSGI colubrid by Armin Ronacher <armin.ronacher@active-4.com>\n"
+        "http://wsgiarea.pocoo.org/colubrid/\n"
+        "</pre>"
+    )
+    sys.stderr.write(msg)
+    sys.stdout.write(msg)
+    sys.exit()
 
 
 

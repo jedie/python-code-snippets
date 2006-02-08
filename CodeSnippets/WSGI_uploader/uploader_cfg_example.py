@@ -12,8 +12,8 @@ import uploader
 
 cfg = uploader.cfg
 
-#~ cfg.allow_download = True
-cfg.allow_download = False
+cfg.allow_download = True
+#~ cfg.allow_download = False
 
 #~ cfg.only_https = True
 cfg.only_https = False
