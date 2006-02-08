@@ -80,9 +80,12 @@ CREATE TABLE `FileCenter_Stat_Item` (
 
 """
 
-__version__ = "v0.5.1"
+__version__ = "v0.5.2"
 
 __history__ = """
+v0.5.2
+    - Bugfix: print_back_link() nutzt nun urllib.quote_plus() damit auch Sonderzeichen in
+        den Verzeichnisnamen erlaubt sind
 v0.5.1
     - NEU: cfg.use_sql_statistic, damit es auch ohne SQL eingesetzt werden kann!
     - NEU: cfg.debug
@@ -513,7 +516,6 @@ class zipmanager:
 
 class mySQL_statistic:
     def __init__( self ):
-        import mySQL
         self.db = self.connect()
         self.db_conf = {
             "path" : "FileCenter_Stat_Path",
@@ -521,6 +523,7 @@ class mySQL_statistic:
         }
 
     def connect( self ):
+        import mySQL
         try:
             # SQL connection aufbauen
             return mySQL.mySQL(
@@ -675,7 +678,7 @@ class FileBrowser:
     ## Allgemeine Routinen
 
     def print_back_link( self ):
-        print '<p><a href="?path=%s">&lt; back</a></p>' % self.relativ_path
+        print '<p><a href="?path=%s">&lt; back</a></p>' % urllib.quote_plus(self.relativ_path)
 
     def get_current_path( self ):
         if self.CGIdata.has_key( "path" ):
