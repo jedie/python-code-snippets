@@ -68,8 +68,10 @@ class SystemInfo:
         """
         print "<h3>%s</h3>" % filename
 
-        f = file( filename, "r" )
+        f = file(filename, "r")
         seekpos = -80*max
+        if seekpos<0:
+            seekpos = 0
         f.seek( seekpos, 2)
         print "<pre>"
         print " ".join( f.readlines()[-max:] )
