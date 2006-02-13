@@ -138,16 +138,14 @@ class sessionhandler(dict):
 
         self.Cookie         = SimpleCookie()
 
-        #~ self.db_cursor      = db_cursor
-        #~ self.log            = log_fileobj
-
-        #~ self.sql_tablename  = sql_tablename
-        #~ self.timeout_sec    = timeout_sec
-        #~ self.CookieName     = CookieName
-        #~ self.verbose_log    = verbose_log
-
         self.set_default_values()
         self.detectSession()
+
+        # Daten die erst mit dem sessionhandling verfügbar sind,
+        # in das Logging Module übertragen
+        self.log.client_sID = self["user_id"]
+        self.log.client_user_name = self["user"]
+        self.log.client_domain_name = self["client_domain_name"]
 
     def set_default_values( self ):
         """
@@ -156,18 +154,14 @@ class sessionhandler(dict):
         self.__init__()
         self.delete_session()
         """
-        self.set_client_info()
-
-        self.RAW_session_data_len   = -1
+        self["client_IP"] = self.request.environ.get("REMOTE_ADDR","unknown")
+        self["client_domain_name"] = "[not detected]"
 
         self["user_id"] = False
-        self.update(
-            {
-                "isadmin"   : False,
-                "user_id"   : False,
-                "user"      : False,
-            }
-        )
+        self["isadmin"] = False
+        self["user"] = False
+
+        self.RAW_session_data_len   = -1
 
     def detectSession( self ):
         "Prüft ob eine Session schon besteht"
@@ -246,13 +240,11 @@ class sessionhandler(dict):
         "Liest Session-Daten zur angegebenen ID aus der DB"
         DB_data = self.read_from_DB(cookie_id)
 
-        if not (DB_data["ip"] == self.client_IP) and\
-        (DB_data["domain_name"] == self.client_domain_name):
+        if DB_data["ip"] != self["client_IP"]:
             self.delete_session()
             raise IndexError(
-                "Wrong client IP / domain name: %s-%s / %s-%s" % (
-                    DB_data["ip"], current_IP,
-                    DB_data["domain_name"], current_domain_name
+                "Wrong client IP from DB: %s from Client: %s" % (
+                    DB_data["ip"], current_IP
                 )
             )
 
@@ -264,11 +256,11 @@ class sessionhandler(dict):
             self.log.write( msg, "sessionhandling", "OK" )
         if self.page_msg_debug == True: self.page_msg( msg )
 
-        self["user_id"]                 = cookie_id
-        self.session_data       = DB_data["session_data"]
+        self["user_id"]     = cookie_id
+        self.session_data   = DB_data["session_data"]
 
 
-    def makeSession( self ):
+    def makeSession(self):
         """
         Startet eine Session
         noch darf kein "Content-type" zum Browser geschickt worden sein
@@ -277,11 +269,14 @@ class sessionhandler(dict):
         # Schreibt ID-Cookie
         session_id = self.write_session_cookie()
 
-        # Stellt Client Info's fest
-        self.client_IP, self.client_domain_name = self.get_client_info()
+        # Stellt Client-Domain-Name fest
+        try:
+            self["client_domain_name"] = getfqdn(IP)
+        except Exception, e:
+            self["client_domain_name"] = "[getfqdn Error: %s]" % e
 
         # Speichert den User in der SQL-DB
-        self.insert_session( session_id )
+        self.insert_session(session_id)
 
         # Aktualisiert ID global
         self["user_id"] = session_id
@@ -313,17 +308,6 @@ class sessionhandler(dict):
         session_id = md5.new( str(time.time()) + os.environ["REMOTE_ADDR"] ).hexdigest()
         self.writeCookie( session_id )
         return session_id
-
-    def set_client_info(self):
-        """
-        Information vom Client feststellen
-        wird von read_session_data() und makeSession() verwendet
-        """
-        self.client_IP = self.request.environ["REMOTE_ADDR"]
-        try:
-            self.client_domain_name = getfqdn(IP)
-        except Exception, e:
-            self.client_domain_name = "Can't get: '%s'" % e
 
     #____________________________________________________________________________________________
     # Allgemeine Cookie-Funktionen
@@ -373,8 +357,8 @@ class sessionhandler(dict):
             data  = {
                 "session_id"    : session_id,
                 "timestamp"     : time.time(),
-                "ip"            : self.client_IP,
-                "domain_name"   : self.client_domain_name,
+                "ip"            : self["client_IP"],
+                "domain_name"   : self["client_domain_name"],
                 "session_data"  : session_data,
             }
         )

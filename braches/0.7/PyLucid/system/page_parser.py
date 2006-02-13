@@ -139,7 +139,7 @@ class render:
 
         # shorthands
         self.request        = request
-        self.CGIdata        = request.CGIdata
+        self.GET            = request.GET
         self.page_msg       = request.page_msg
         self.db             = request.db
         self.session        = request.session
@@ -169,7 +169,7 @@ class render:
         self.parser.tag_data["page_keywords"]       = side_data["keywords"]
         self.parser.tag_data["page_description"]    = side_data["description"]
 
-        if self.CGIdata.has_key("command"):
+        if self.GET.has_key("command"):
             # Ein Kommando soll ausgeführt werden -> Interne Seite
             self.parser.tag_data["robots"] = self.config.system.robots_tag["internal_pages"]
         else:
