@@ -69,7 +69,7 @@ class db(mySQL):
 
         # shorthands
         self.page_msg       = self.request.page_msg
-        self.CGIdata        = self.request.CGIdata
+        #~ self.CGIdata        = self.request.CGIdata
         self.tools          = self.request.tools
         self.preferences    = self.request.preferences
 

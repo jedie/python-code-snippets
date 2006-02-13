@@ -96,6 +96,11 @@ class plugin_data:
             self.page_msg("You must update PyLucid with install_PyLucid.py!")
             self.plugins = {}
 
+        # Fast Patch to new Filesystem (v0.7)!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        for k,v in self.plugins.iteritems():
+            v['package_name'] = v['package_name'].replace("PyLucid_", "PyLucid.")
+            #~ self.page_msg(k,v)
+
         if debug:
             self.page_msg("Available Modules:",self.plugins.keys())
 
@@ -130,8 +135,6 @@ class plugin_data:
             self.plugindata[module_name][main_method]["CGI_dependent_data"] = CGI_dependent_data
 
         self.package_name = self.plugins[module_name]["package_name"]
-        # Fast Patch to new Filesystem (v0.7)!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        self.package_name = self.package_name.replace("PyLucid_", "PyLucid.")
 
         self.current_properties = self.plugindata[self.module_name][self.main_method]
 
@@ -147,8 +150,6 @@ class plugin_data:
         den tatsälich vorhandenen CGIdaten
         """
         self.current_method = self.main_method
-
-        if self.plugin_debug(): self.CGIdata.debug()
 
         if not self.current_properties["CGI_dependent_data"]:
             # Es gibt keine CGI-Abhängigkeiten
@@ -267,11 +268,14 @@ class plugin_data:
     def debug_data(self):
         self.page_msg(" -"*40)
         self.page_msg("Debug module_manager.plugin_data:")
-        self.page_msg(self.plugins)
-        self.page_msg(self.plugindata)
+        self.page_msg("self.plugins:")
+        for k,v in self.plugins.iteritems():
+            self.page_msg("%s: %s" % (k,v))
+        self.page_msg(" -"*40)
+        self.page_msg("self.plugindata:", self.plugindata)
         #~ for k,v in self.cache.iteritems():
             #~ self.page_msg(k,v)
-        self.page_msg(" -"*40)
+
 
 
 
@@ -350,13 +354,13 @@ class module_manager:
         self.page_msg(e)
         return str(e)
 
-    def run_command( self ):
+    def run_command(self):
         """
         ein Kommando ausführen.
         """
         try:
-            self.module_name = self.CGIdata["command"]
-            self.main_method = self.CGIdata["action"]
+            self.module_name = self.request.GET["command"]
+            self.main_method = self.request.GET["action"]
         except KeyError, e:
             self.page_msg( "Error in command: KeyError", e )
             return
@@ -617,6 +621,13 @@ class module_manager:
                 )
             print "</ul>"
         print "</ul>"
+
+    #________________________________________________________________________________________
+    # page_msg debug
+
+    def debug(self):
+        self.page_msg("Module Manager debug:")
+        self.page_msg(self.plugin_data.debug_data())
 
 class run_module_error(Exception):
     pass

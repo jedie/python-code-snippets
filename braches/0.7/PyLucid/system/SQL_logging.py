@@ -36,21 +36,22 @@ sql_tablename = "log"
 
 class log:
     """
-    Allgemeine SQL-Logging Klasse
+    PyLucid SQL-Logging Klasse
     """
     def __init__ (self, request):
 
         # shorthands
+        self.request    = request
         self.db         = request.db
         self.tools      = request.tools
-        self.CGIdata    = request.CGIdata
         self.page_msg   = request.page_msg
 
         # auf Default-Werte setzten
         # Nachdem eine Session erstellt wurde, werden diese Werte von index.py gesetzt
         self.client_sID         = "unknown"
         self.client_user_name   = "unknown"
-
+        self.client_ip = self.request.environ.get("REMOTE_ADDR","unknown")
+        self.client_domain_name = "unknown"
 
     def check_type(self, type):
         if type != False:
@@ -93,8 +94,8 @@ class log:
                     "timestamp" : self.tools.convert_time_to_sql(time.time()),
                     "sid"       : self.client_sID,
                     "user_name" : self.client_user_name,
-                    "ip"        : self.CGIdata.get("client_ip","unknown"),
-                    "domain"    : self.CGIdata.get("client_domain","unknown"),
+                    "ip"        : self.client_ip,
+                    "domain"    : self.client_domain_name,
                     "message"   : log_message,
                     "typ"       : type,
                     "status"    : status,
