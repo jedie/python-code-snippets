@@ -66,7 +66,7 @@ import os, sys, cgi, md5
 
 
 # eigene Module
-from PyLucid_system import crypt
+from PyLucid.system import crypt
 
 
 

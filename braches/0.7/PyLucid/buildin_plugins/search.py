@@ -32,12 +32,19 @@ import cgi, time, urllib
 
 
 class search:
-    def __init__(self, PyLucid):
-        self.db         = PyLucid["db"]
-        self.CGIdata    = PyLucid["CGIdata"]
-        self.page_msg   = PyLucid["page_msg"]
-        self.log        = PyLucid["log"]
-        self.URLs       = PyLucid["URLs"]
+    def __init__(self, request):
+
+        # shorthands
+        #~ self.request        = request
+        self.db             = request.db
+        self.session        = request.session
+        self.preferences    = request.preferences
+        self.URLs           = request.URLs
+        self.page_msg       = request.page_msg
+
+        #~ self.CGIdata    = PyLucid["CGIdata"]
+        self.log            = request.log
+
 
     def lucidTag(self, search_string=""):
 
