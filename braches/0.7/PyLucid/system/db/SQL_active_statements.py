@@ -4,7 +4,8 @@
 # copyleft: jensdiemer.de (GPL v2 or above)
 
 """
-Anbindung an die SQL-Datenbank
+Alle vorgefertigten Methoden, die aktiv Daten in der DB verändern und
+über einfache SELECT Befehle hinausgehen
 """
 
 __version__="0.1"

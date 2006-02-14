@@ -4,7 +4,9 @@
 # copyleft: jensdiemer.de (GPL v2 or above)
 
 """
-Anbindung an die SQL-Datenbank
+Hier sind alle vorgefertigen Module zu finden, die eigentlich nur
+ein normaler SELECT Befehl ist. Also nur Methoden die nur Daten aus
+der DB bereitstellen.
 """
 
 __version__="0.1"

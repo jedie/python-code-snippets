@@ -3,6 +3,13 @@
 
 # copyleft: jensdiemer.de (GPL v2 or above)
 
+"""
+database.py - Stellt die DB Verbindung her, bietet Dict-Cursor und Conn.Objekt
+SQL_wrapper.py - Mein Wrapper für die SQL-Befehle, erbt von database.py
+SQL_passive_statements.py - Alle "nur select" Befehle, erbt von SQL_wrapper.py
+SQL_active_statements.py - Alle SQL Sachen die Daten verändern, erbt von SQL_passive_statements.py
+"""
+
 __version__="0.3"
 
 __history__="""

@@ -3,6 +3,18 @@
 
 # copyleft: jensdiemer.de (GPL v2 or above)
 
+"""
+SQL-Statements Wrapper
+
+Sammlung von Methoden für grundlegenden SQL-Statements:
+    * SELECT
+    * INSERT
+    * UPDATE
+    * DELETE
+
+Zusätzlich ein paar Allgemeine Information Methoden.
+"""
+
 __version__="0.1"
 
 __history__="""
@@ -167,6 +179,7 @@ class SQL_wrapper(Database):
         return self.fetchall(SQLcommand, values)
 
     #_________________________________________________________________________
+    # Hilfsmethoden
 
     def _make_where(self, where):
         """
@@ -208,7 +221,7 @@ class SQL_wrapper(Database):
 
     def get_table_field_information(self, table_name, debug=False):
         """
-        Liefert "SHOW FIELDS"-Information in Roh-Daten zur�ck
+        Liefert "SHOW FIELDS"-Information in Roh-Daten zurück
         """
         if self.dbTyp == "adodb":
             SQLcommand = (
@@ -229,7 +242,7 @@ class SQL_wrapper(Database):
 
     def get_table_fields(self, table_name):
         """
-        Liefert nur die Tabellen-Feld-Namen zur�ck
+        Liefert nur die Tabellen-Feld-Namen zurück
         """
         field_information = self.get_table_field_information(table_name)
 

@@ -2,6 +2,8 @@
 # -*- coding: UTF-8 -*-
 
 """
+OBSOLETE!
+
 Testet den Zugriff auf die Datenbank, bzw. die richtigkeit
 der Daten in ./system/config.dbconf
 """
