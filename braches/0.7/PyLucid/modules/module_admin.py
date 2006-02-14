@@ -75,15 +75,22 @@ internal_page_file = "PyLucid_modules/module_admin_administation_menu.html"
 
 class module_admin:
 
-    def __init__(self, PyLucid, call_from_install_PyLucid=False):
-        self.PyLucid        = PyLucid
-        self.page_msg       = PyLucid["page_msg"]
-        self.db             = PyLucid["db"]
-        if debug == True: self.db.debug = True
-        self.URLs           = PyLucid["URLs"]
-        self.module_manager = PyLucid["module_manager"]
-        self.CGIdata        = PyLucid["CGIdata"]
+    def __init__(self, request, call_from_install_PyLucid=False):
+
+        # shorthands
+        self.request        = request
+        self.db             = request.db
+        self.session        = request.session
+        self.preferences    = request.preferences
+        self.URLs           = request.URLs
+        self.page_msg       = request.page_msg
+        self.log            = request.log
+        self.module_manager = request.module_manager
+
+        #~ if debug == True: self.db.debug = True
+
         self.call_from_install_PyLucid = call_from_install_PyLucid
+
 
     def menu(self):
         print "<h4>Module/Plugin Administration v%s</h4>" % __version__
