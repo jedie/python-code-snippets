@@ -59,7 +59,7 @@ __todo__="""
     - Fehlerausgabe bei check_module_data
 """
 
-#~ print "Content-type: text/html; charset=utf-8\r\n\r\nDEBUG!" # Debugging
+#~ self.request.write("Content-type: text/html; charset=utf-8\r\n\r\nDEBUG!" # Debugging)
 
 import sys, os, glob, imp, cgi, urllib, pickle
 
@@ -93,11 +93,11 @@ class module_admin:
 
 
     def menu(self):
-        print "<h4>Module/Plugin Administration v%s</h4>" % __version__
+        self.request.write("<h4>Module/Plugin Administration v%s</h4>" % __version__)
         self.module_manager.build_menu()#self.module_manager_data, self.URLs["action"] )
 
     def link(self, action):
-        print '<p><a href="%s%s">%s</a></p>' % (self.URLs["action"], action, action)
+        self.request.write('<p><a href="%s%s">%s</a></p>' % (self.URLs["action"], action, action))
 
     def administation_menu(self, print_link=True):
         """
@@ -130,7 +130,7 @@ class module_admin:
                 install_template = f.read()
                 f.close()
             except Exception, e:
-                print "Can't read internal_page file '%s': %s" % (internal_page_file, e)
+                self.request.write("Can't read internal_page file '%s': %s" % (internal_page_file, e))
                 return
 
             template = simpleTAL.compileHTMLTemplate(install_template, inputEncoding="UTF-8")
@@ -151,27 +151,27 @@ class module_admin:
         Das sind alle Module, bei denen:
         "essential_buildin" == True oder "important_buildin" == True
         """
-        print "<h2>First time install</h2>"
-        print "<p><strong>Note:</strong> All plugin-config and all internal pages would reseted!</p>"
-        print '<a href="%s&amp;confirm=yes">confirm</a>' % self.URLs['current_action']
+        self.request.write("<h2>First time install</h2>")
+        self.request.write("<p><strong>Note:</strong> All plugin-config and all internal pages would reseted!</p>")
+        self.request.write('<a href="%s&amp;confirm=yes">confirm</a>' % self.URLs['current_action'])
 
     def first_time_install_confirmed(self):
         """
         Installiert alle wichtigen Module/Plugins
         """
-        print "<h2>First time install:</h2>"
-        print "<pre>"
+        self.request.write("<h2>First time install:</h2>")
+        self.request.write("<pre>")
         for table in ("plugins", "plugindata", "pages_internal", "pages_internal_category"):
             tablename = self.db.tableprefix + table
-            print "truncate table %s..." % tablename,
+            self.request.write("truncate table %s..." % tablename,)
             try:
                 self.db.cursor.execute("TRUNCATE TABLE %s" % tablename)
             except Exception, e:
-                print sys.exc_info()[0],":", e
-                print "(Have you first init the tables?)"
+                self.request.write(sys.exc_info()[0],":", e)
+                self.request.write("(Have you first init the tables?)")
                 return
             else:
-                print "OK"
+                self.request.write("OK")
 
         self.installed_modules_info = [] # Wir tun mal so, als wenn es keine installierten Module gibt
         data = self._read_packages()
@@ -186,15 +186,15 @@ class module_admin:
             try:
                 self.install(module['package_name'], module['module_name'], print_info=False)
             except Exception, e:
-                print "*** Error:", e
+                self.request.write("*** Error:", e)
 
             # essential_buildin werden automatisch aktiviert mit active = -1
             # important_buildin müßen normal aktiviert werden (active = 1)
             if module["important_buildin"] == True:
-                print "Activate plugin with ID:",self.registered_plugin_id
+                self.request.write("Activate plugin with ID:",self.registered_plugin_id)
                 self.activate(self.registered_plugin_id, print_info=False)
 
-        print "</pre>"
+        self.request.write("</pre>")
 
 
     #________________________________________________________________________________________
@@ -205,26 +205,26 @@ class module_admin:
         """
         def register_method(plugin_id, method, method_data):
             for k,v in method_data.iteritems():
-                print "***", k, "-", v
+                self.request.write("***", k, "-", v)
 
-        print "Find id for %s.%s..." % (package, module_name),
+        self.request.write("Find id for %s.%s..." % (package, module_name),)
         try:
             plugin_id = self.db.get_plugin_id(package, module_name)
         except Exception, e:
             if not error_handling: raise Exception(e)
-            print sys.exc_info()[0],":", e
+            self.request.write(sys.exc_info()[0],":", e)
         else:
-            print "OK, id is:", plugin_id
+            self.request.write("OK, id is:", plugin_id)
         print
 
         # module_manager_data in Tabelle "plugindata" eintragen
-        print "register methods:"
+        self.request.write("register methods:")
         for method_name in module_data["module_manager_data"]:
-            print "*", method_name,
+            self.request.write("*", method_name,)
             method_cfg = module_data["module_manager_data"][method_name]
 
             if type(method_cfg) != dict:
-                print "- Error, %s-value, in module_manager_data, is not typed dict!!!" % method_name
+                self.request.write("- Error, %s-value, in module_manager_data, is not typed dict!!!" % method_name)
                 continue
 
             method_cfg = method_cfg.copy()
@@ -235,16 +235,16 @@ class module_admin:
             try:
                 self.db.register_plugin_method(plugin_id, method_name, method_cfg)
             except Exception, e:
-                print sys.exc_info()[0],":", e
+                self.request.write(sys.exc_info()[0],":", e)
             else:
-                print "OK"
+                self.request.write("OK")
         print
 
         for parent_method in module_data["module_manager_data"]:
             method_cfg = module_data["module_manager_data"][parent_method]
 
             if type(method_cfg) != dict:
-                print "Error in data!!!"
+                self.request.write("Error in data!!!")
                 continue
 
             if not method_cfg.has_key('CGI_dependent_actions'):
@@ -258,24 +258,28 @@ class module_admin:
             try:
                 parent_method_id = self.db.get_method_id(plugin_id, parent_method)
             except Exception, e:
-                print "ERROR: Can't get parent method ID for plugin_id '%s' and method_name '%s'" % (
-                    plugin_id, parent_method
+                self.request.write(
+                    "ERROR: Can't get parent method ID for plugin_id '%s' and method_name '%s'" % (
+                        plugin_id, parent_method
+                    )
                 )
                 continue
 
-            print "register CGI_dependent_actions for method '%s' with id '%s':" % (
-                parent_method, parent_method_id
+            self.request.write(
+                "register CGI_dependent_actions for method '%s' with id '%s':" % (
+                    parent_method, parent_method_id
+                )
             )
 
             for method_name, cfg in dependent_cfg.iteritems():
-                print "*",method_name,
+                self.request.write("*",method_name,)
 
                 try:
                     self.db.register_plugin_method(plugin_id, method_name, cfg, parent_method_id)
                 except Exception, e:
-                    print sys.exc_info()[0],":", e
+                    self.request.write(sys.exc_info()[0],":", e)
                 else:
-                    print "OK"
+                    self.request.write("OK")
             print
 
     #________________________________________________________________________________________
@@ -287,17 +291,17 @@ class module_admin:
         """
         if print_info:
             self.link("administation_menu")
-            print "<h3>Install %s.<strong>%s</strong></h3>" % (package, module_name)
-            print "<pre>"
+            self.request.write("<h3>Install %s.<strong>%s</strong></h3>" % (package, module_name))
+            self.request.write("<pre>")
         else:
-            print "_"*80
-            print "Install %s.<strong>%s</strong>" % (package, module_name)
+            self.request.write("_"*80)
+            self.request.write("Install %s.<strong>%s</strong>" % (package, module_name))
             print
 
         module_data = self._get_module_data(package, module_name)
 
         if self.check_module_data(module_data) == True:
-            print "<h3>Error</h3><h4>module config data failed. Module was not installed!!!</h4>"
+            self.request.write("<h3>Error</h3><h4>module config data failed. Module was not installed!!!</h4>")
             self.debug_package_data([module_data])
             return
 
@@ -305,55 +309,55 @@ class module_admin:
 
         ##_____________________________________________
         # In Tabelle "plugins" eintragen
-        print "register plugin %s.%s..." % (package, module_name),
-        #~ print package, module_name
-        #~ print module_data
+        self.request.write("register plugin %s.%s..." % (package, module_name),)
+        #~ self.request.write(package, module_name)
+        #~ self.request.write(module_data)
         try:
             self.registered_plugin_id = self.db.install_plugin(module_data)
         except Exception, e:
-            print sys.exc_info()[0],":", e
+            self.request.write(sys.exc_info()[0],":", e)
             # Wahscheinlich ist das Plugin schon installiert.
             try:
                 self.registered_plugin_id = self.db.get_plugin_id(module_data['package_name'], module_data['module_name'])
             except Exception, e:
-                print "Can't get Module/Plugin ID:", e
-                print "Aborted!"
+                self.request.write("Can't get Module/Plugin ID:", e)
+                self.request.write("Aborted!")
                 return
         else:
-            print "OK"
+            self.request.write("OK")
         print
 
         ##_____________________________________________
         # Stylesheets
         if module_data["styles"] != None:
-            print "install stylesheet:"
+            self.request.write("install stylesheet:")
             for style in module_data["styles"]:
-                print "* %-25s" % style["name"],
+                self.request.write("* %-25s" % style["name"],)
                 css_filename = os.path.join(
                     module_data['package_name'],
                     "%s_%s.css" % (module_data['module_name'], style["name"])
                 )
-                print "%s..." % css_filename,
+                self.request.write("%s..." % css_filename,)
                 try:
                     f = file(css_filename, "rU")
                     style["content"] = f.read()
                     f.close()
                 except Exception, e:
-                    print "Error reading CSS-File: %s" % e
+                    self.request.write("Error reading CSS-File: %s" % e)
                     return
                 else:
                     try:
                         style["plugin_id"] = self.registered_plugin_id
                         self.db.new_style(style)
                     except Exception, e:
-                        print sys.exc_info()[0],":", e
+                        self.request.write(sys.exc_info()[0],":", e)
                     else:
-                        print "OK"
+                        self.request.write("OK")
             print
 
         ##_____________________________________________
         # internal_pages
-        print "install internal_page:"
+        self.request.write("install internal_page:")
         for method_name, method_data in module_data["module_manager_data"].iteritems():
             self._install_internal_page(method_data, package, module_name, method_name)
 
@@ -371,9 +375,11 @@ class module_admin:
         self.register_methods(package, module_name, module_data)
 
         if print_info:
-            print "</pre>"
-            print 'activate this Module? <a href="%sactivate&id=%s">yes, enable it</a>' % (
-                self.URLs["action"], self.registered_plugin_id
+            self.request.write("</pre>")
+            self.request.write(
+                'activate this Module? <a href="%sactivate&id=%s">yes, enable it</a>' % (
+                    self.URLs["action"], self.registered_plugin_id
+                )
             )
             self.link("administation_menu")
 
@@ -397,12 +403,12 @@ class module_admin:
             "markup"            : data["markup"],
         }
 
-        print "* %-25s" % internal_page["name"],
+        self.request.write("* %-25s" % internal_page["name"],)
 
         internal_page_filename = os.path.join(
             package, "%s.html" % internal_page["name"]
         )
-        print "%s..." % internal_page_filename,
+        self.request.write("%s..." % internal_page_filename,)
         try:
             lastupdatetime = os.stat(internal_page_filename).st_mtime
         except:
@@ -413,15 +419,15 @@ class module_admin:
             internal_page["content"] = f.read()
             f.close()
         except Exception, e:
-            print "Error reading Template-File: %s" % e
+            self.request.write("Error reading Template-File: %s" % e)
             return
 
         try:
             self.db.new_internal_page(internal_page, lastupdatetime)
         except Exception, e:
-            print sys.exc_info()[0],":", e
+            self.request.write(sys.exc_info()[0],":", e)
         else:
-            print "OK"
+            self.request.write("OK")
 
 
     def check_module_data(self, data):
@@ -460,63 +466,65 @@ class module_admin:
             return
 
         if print_info:
-            print "<h3>DEinstall Plugin %s.%s (ID %s)</h3>" % (
-                deinstall_info["package_name"], deinstall_info["module_name"], id)
+            self.request.write("<h3>DEinstall Plugin %s.%s (ID %s)</h3>" % (
+                    deinstall_info["package_name"], deinstall_info["module_name"], id
+                )
+            )
 
             self.link("administation_menu")
-            print "<pre>"
+            self.request.write("<pre>")
 
         ##_____________________________________________
         # Einträge in Tabelle 'plugindata' löschen
-        print "delete plugin-data...",
+        self.request.write("delete plugin-data...",)
         try:
             self.db.delete_plugindata(id)
         except Exception, e:
-            print sys.exc_info()[0],":", e
+            self.request.write(sys.exc_info()[0],":", e)
         else:
-            print "OK"
+            self.request.write("OK")
 
         ##_____________________________________________
         # Einträge in Tabelle 'plugin' löschen
-        print "delete plugin registration...",
+        self.request.write("delete plugin registration...",)
         try:
             self.db.delete_plugin(id)
         except Exception, e:
-            print sys.exc_info()[0],":", e
+            self.request.write(sys.exc_info()[0],":", e)
         else:
-            print "OK"
+            self.request.write("OK")
 
         print
 
         ##_____________________________________________
         # Stylesheets löschen
-        print "delete stylesheet...",
+        self.request.write("delete stylesheet...",)
         try:
             deleted_styles = self.db.delete_style_by_plugin_id(id)
         except Exception, e:
-            print sys.exc_info()[0],":", e
+            self.request.write(sys.exc_info()[0],":", e)
         else:
-            print "OK, deleted:", deleted_styles
+            self.request.write("OK, deleted:", deleted_styles)
         print
 
         ##_____________________________________________
         # internal_pages löschen
-        print "delete internal_pages...",
+        self.request.write("delete internal_pages...",)
         try:
             deleted_pages = self.db.delete_internal_page_by_plugin_id(id)
         except Exception, e:
-            print sys.exc_info()[0],":", e
+            self.request.write(sys.exc_info()[0],":", e)
         else:
-            print "OK, deleted pages: %s" % deleted_pages
+            self.request.write("OK, deleted pages: %s" % deleted_pages)
         print
 
-        print "Cleanup internal page categories...",
+        self.request.write("Cleanup internal page categories...",)
         try:
             deleted_categories = self.db.delete_blank_pages_internal_categories()
         except Exception, e:
-            print sys.exc_info()[0],":", e
+            self.request.write(sys.exc_info()[0],":", e)
         else:
-            print "deleted_categories:", deleted_categories
+            self.request.write("deleted_categories:", deleted_categories)
 
         ##_____________________________________________
         # SQL Kommandos ausführen
@@ -524,7 +532,7 @@ class module_admin:
             self.execute_SQL_commands(deinstall_info["SQL_deinstall_commands"])
 
         if print_info:
-            print "</pre>"
+            self.request.write("</pre>")
             self.link("administation_menu")
 
     #________________________________________________________________________________________
@@ -536,20 +544,20 @@ class module_admin:
         try:
             package_name, module_name = self.db.get_plugin_info_by_id(id)
         except Exception, e:
-            print "ERROR: Can't get plugin information (ID %s): %s" % (id, e)
+            self.request.write("ERROR: Can't get plugin information (ID %s): %s" % (id, e))
             return
 
-        print "<h3>reinit Plugin %s.%s (ID %s)</h3>" % (package_name, module_name, id)
+        self.request.write("<h3>reinit Plugin %s.%s (ID %s)</h3>" % (package_name, module_name, id))
 
-        print "<pre>"
+        self.request.write("<pre>")
 
-        print " *** deinstall ***"
+        self.request.write(" *** deinstall ***")
         self.deinstall(id, print_info=False)
 
-        print " *** install ***"
+        self.request.write(" *** install ***")
         self.install(package_name, module_name, print_info=False)
 
-        print "</pre>"
+        self.request.write("</pre>")
         self.link("administation_menu")
 
     #________________________________________________________________________________________
@@ -632,7 +640,7 @@ class module_admin:
         Liefert alle Daten zu einem Modul, aus der zugehörigen config-Datei.
         """
         def _import(package_name, module_name):
-            #~ print package_name, module_name
+            #~ self.request.write(package_name, module_name)
             return __import__(
                 "%s.%s" % (package_name, module_name),
                 globals(), locals(),
@@ -687,7 +695,7 @@ class module_admin:
         """
         result = []
         for module_name, module_data in package_data.iteritems():
-            #~ print module_name
+            #~ self.request.write(module_name)
             try:
                 module_data.update(self._get_module_data(module_data["package"], module_name))
             except Exception, e:
@@ -716,10 +724,10 @@ class module_admin:
         try:
             installed_modules_info = self.db.get_installed_modules_info()
         except Exception, e:
-            print "Content-type: text/html; charset=utf-8\r\n\r\n"
-            print "<h1>Can't get installed module data from DB:</h1>"
-            print "<h4>%s</h4>" % e
-            print "<h3>Did you run install_PyLucid.py ???</h3>"
+            self.request.write("Content-type: text/html; charset=utf-8\r\n\r\n")
+            self.request.write("<h1>Can't get installed module data from DB:</h1>")
+            self.request.write("<h4>%s</h4>" % e)
+            self.request.write("<h3>Did you run install_PyLucid.py ???</h3>")
             sys.exit()
         return installed_modules_info
 
@@ -731,20 +739,20 @@ class module_admin:
         Wird beim installalieren und deinstallieren verwendet.
         """
         for command in command_list:
-            print "execute '%s...'" % cgi.escape(" ".join(command.split(" ",3)[:3])),
+            self.request.write("execute '%s...'" % cgi.escape(" ".join(command.split(" ",3)[:3])),)
             try:
                 self.db.get(command)
             except Exception, e:
-                print "Error: %s" % e
+                self.request.write("Error: %s" % e)
             else:
-                print "OK"
+                self.request.write("OK")
 
     def debug_installed_modules_info(self):
         """
         Listet alle Module/Plugins, mit ihren registrierten Methoden und CGI-depent-Daten auf
         """
-        print "<h3>Registered Methods of all installed Plugins</h3>"
-        print "<p>select Module to get more Infomation</p>"
+        self.request.write("<h3>Registered Methods of all installed Plugins</h3>")
+        self.request.write("<p>select Module to get more Infomation</p>")
 
         self.link("menu")
 
@@ -752,25 +760,30 @@ class module_admin:
 
         data_dict = {}
 
-        print "<ul>"
+        self.request.write("<ul>")
         for plugin in plugins_data:
             data_dict[plugin['id']] = plugin["package_name"], plugin['module_name']
-            print '<li><a href="%s&amp;module_id=%s">' % (self.URLs['current_action'], plugin['id'])
-            print '%s.<strong style="color:blue">%s</strong> <small style="color:grey">(plugin id: %s)</small>' % (
-                plugin["package_name"], plugin['module_name'], plugin['id']
+            self.request.write('<li><a href="%s&amp;module_id=%s">' % (self.URLs['current_action'], plugin['id']))
+            self.request.write(
+                '%s.<strong style="color:blue">%s</strong>' % (
+                    plugin["package_name"], plugin['module_name']
+                )
             )
-            print "</a></li>"
-        print "</ul>"
+            self.request.write('<small style="color:grey">(plugin id: %s)</small>' % plugin['id'])
+            self.request.write("</a></li>")
+        self.request.write("</ul>")
 
-        print "<pre>"
+        self.request.write("<pre>")
         module_id = self.CGIdata.get("module_id",False)
         if module_id != False:
-            print '%s.<strong>%s</strong> <small>(plugin id:%s)</small>' % (
-                data_dict[module_id][0], data_dict[module_id][1], module_id
+            self.request.write(
+                '%s.<strong>%s</strong> <small>(plugin id:%s)</small>' % (
+                    data_dict[module_id][0], data_dict[module_id][1], module_id
+                )
             )
-            #~ print data_dict[module_id]
+            #~ self.request.write(data_dict[module_id])
             self.debug_module_info(module_id)
-        print "</pre>"
+        self.request.write("</pre>")
 
     def debug_module_info(self, module_id):
 
@@ -785,7 +798,7 @@ class module_admin:
 
         # Methoden mit Untermethoden verknüpfen
         for id, methoddata in data.iteritems():
-            #~ print id, methoddata
+            #~ self.request.write(id, methoddata)
             parent_method_id, method_id, methodname = methoddata[:3]
             if parent_method_id != None:
                 data[parent_method_id].append([method_id, methodname])#methodname)
@@ -794,57 +807,63 @@ class module_admin:
         for id, methoddata in data.iteritems():
             if methoddata[0] != None:
                 continue
-            print ' * <em style="color:blue">%s</em> <small style="color:grey">(method id: %s)</small>' % (methoddata[2], id) #Main-Method
-            #~ print "+++", methoddata
+            self.request.write(' * <em style="color:blue">%s</em>' % methoddata[2])
+            self.request.write('<small style="color:grey">(method id: %s)</small>' % id)
+            #~ self.request.write("+++", methoddata)
             if len(methoddata)>3:
                 for id,methodname in methoddata[3:]:
-                    #~ print i
-                    print '     ^- <em style="color:blue">%s</em> <small style="color:grey">(method id:%s)</small>' % (methodname, id)
+                    #~ self.request.write(i)
+                    self.request.write('     ^- <em style="color:blue">%s</em> <small style="color:grey">(method id:%s)</small>' % (methodname, id))
 
                     for item in ("CGI_laws", "get_CGI_data"):
                         data = plugindata[id][item]
                         if data != None:
-                            print "%25s:" % item,
+                            self.request.write("%25s:" % item,)
                             try:
-                                print "<var>%s</var>" % cgi.escape(str(pickle.loads(data)))
+                                self.request.write("<var>%s</var>" % cgi.escape(str(pickle.loads(data))))
                             except Exception, e:
-                                print "pickle.loads ERROR: %s" % s
+                                self.request.write("pickle.loads ERROR: %s" % s)
 
-                    #~ print plugindata[id]["get_CGI_data"]
-                    #~ print plugindata[id]
+                    #~ self.request.write(plugindata[id]["get_CGI_data"])
+                    #~ self.request.write(plugindata[id])
                 print
         print
-        print "_"*80
-        print "<em>Internal pages info:</em>"
+        self.request.write("_"*80)
+        self.request.write("<em>Internal pages info:</em>")
         print
         for page_info in self.db.get_internal_pages_info_by_module(module_id):
-            #~ print page_info
-            print "<strong>%s</strong> - %s" % (page_info['name'], page_info['description'])
-            print "   ^- <small>markup: '%s', updated by: %s, last update: %s</small>" % (
-                page_info['markup'], page_info['lastupdateby'], page_info['lastupdatetime']
+            #~ self.request.write(page_info)
+            self.request.write("<strong>%s</strong> - %s" % (
+                    page_info['name'], page_info['description']
+                )
+            )
+            self.request.write(
+                "   ^- <small>markup: '%s', updated by: %s, last update: %s</small>" % (
+                    page_info['markup'], page_info['lastupdateby'], page_info['lastupdatetime']
+                )
             )
 
 
     def debug_package_data(self, data):
-        print "<h3>Debug package data:</h3>"
+        self.request.write("<h3>Debug package data:</h3>")
         for module_data in data:
             keys = module_data.keys()
             keys.sort()
-            print "<h3>%s</h3>" % module_data["module_name"]
-            print "<pre>"
+            self.request.write("<h3>%s</h3>" % module_data["module_name"])
+            self.request.write("<pre>")
             for key in keys:
                 value = module_data[key]
                 if type(value) == dict: # module_manager_data
-                    print " -"*40
-                    print "%22s :" % key
+                    self.request.write(" -"*40)
+                    self.request.write("%22s :" % key)
                     keys2 = value.keys()
                     keys2.sort()
                     for key2 in keys2:
-                        print "\t%20s : %s" % (key2,cgi.escape(str(value[key2]).encode("String_Escape")))
-                    print " -"*40
+                        self.request.write("\t%20s : %s" % (key2,cgi.escape(str(value[key2]).encode("String_Escape"))))
+                    self.request.write(" -"*40)
                 else:
-                    print "%22s : %s" % (key,cgi.escape(str(value).encode("String_Escape")))
-            print "</pre>"
+                    self.request.write("%22s : %s" % (key,cgi.escape(str(value).encode("String_Escape"))))
+            self.request.write("</pre>")
 
 
 
