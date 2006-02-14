@@ -17,40 +17,19 @@ v0.1.0
 import sys
 
 class page_style:
-
-    #_______________________________________________________________________
-    # Module-Manager Daten
-
-    module_manager_data = {
-        #~ "debug" : True,
-        "debug" : False,
-
-        "lucidTag" : {
-            "must_login"    : False,
-            "must_admin"    : False,
-        },
-        "print_current_style" : {
-            "must_login"    : False,
-            "must_admin"    : False,
-        },
-        "embed" : {
-            "must_login"    : False,
-            "must_admin"    : False,
-            "get_CGI_data"  : {"page_id": int},
-            #~ "direct_out"    : True,
-        },
-    }
-
-    #_______________________________________________________________________
-
-    def __init__(self, PyLucid):
-        self.db = PyLucid["db"]
-        self.URLs = PyLucid["URLs"]
+    def __init__(self, request):
+        # shorthands
+        self.request    = request
+        self.db         = request.db
+        self.URLs       = request.URLs
 
     def lucidTag(self):
-        sys.stdout.write(
-            '<link rel="stylesheet" type="text/css" href="%s%s" />' % (self.URLs["action"], "print_current_style")
-        )
+        #~ self.request.write(
+        print '<link rel="stylesheet" type="text/css" href="static_serve_handler.py" />'
+        #~ )
+        #~ self.request.write(
+            #~ '<link rel="stylesheet" type="text/css" href="%s%s" />' % (self.URLs["action"], "print_current_style")
+        #~ )
 
     def print_current_style(self):
         """

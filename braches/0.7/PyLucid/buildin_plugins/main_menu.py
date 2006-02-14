@@ -55,24 +55,23 @@ import re, os, sys, urllib, cgi
 
 class main_menu:
 
-    def __init__( self, PyLucid ):
-        self.PyLucid = PyLucid
-        self.CGIdata        = PyLucid["CGIdata"]
-        #~ self.CGIdata.debug()
-        self.db             = PyLucid["db"]
-        self.session        = PyLucid["session"]
-        #~ self.session.debug()
-        self.config         = PyLucid["config"]
-        self.preferences    = PyLucid["preferences"]
-        self.URLs           = PyLucid["URLs"]
-        self.page_msg       = PyLucid["page_msg"]
+    def __init__(self, request):
 
+        # shorthands
+        #~ self.request        = request
+        self.db             = request.db
+        #~ self.CGIdata        = PyLucid["CGIdata"]
+        self.session        = request.session
+        #~ self.config         = PyLucid["config"]
+        self.preferences    = request.preferences
+        self.URLs           = request.URLs
+        self.page_msg       = request.page_msg
 
         self.menulink  = '<a%(style)s class="level%(level)s" href="'
         self.menulink += self.URLs["link"]
         self.menulink += '%(link)s" title="%(title)s">%(name)s</a>'
 
-        self.current_page_id  = self.CGIdata["page_id"]
+        self.current_page_id  = request.session["page_id"]
 
         # Wird von self.create_menudata() "befüllt"
         self.menudata = []

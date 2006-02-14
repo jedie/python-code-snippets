@@ -1,17 +1,16 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 
+# copyleft: jensdiemer.de (GPL v2 or above)
+
 __author__  = "Jens Diemer (www.jensdiemer.de)"
-__license__ = "GNU General Public License http://www.opensource.org/licenses/gpl-license.php"
+__license__ = "GNU General Public License v2 or above - http://www.opensource.org/licenses/gpl-license.php"
 __url__     = "http://www.PyLucid.org"
 
 __info__ = """<a href="%s" title="PyLucid - A OpenSource CMS in pure Python CGI by Jens Diemer">\
 PyLucid</a> v0.7.0Alpha""" % __url__
 
-# Als erstes Mal die Zeit stoppen ;)
-import time
-start_time = time.time()
-start_clock = time.clock()
+
 
 #_________________________________________________________________________
 ## Python-Basis Module einbinden
@@ -24,7 +23,7 @@ import os, sys, urllib, cgi
 from PyLucid.python_backports.utils import *
 
 import config # PyLucid Konfiguration
-from PyLucid.system import SQL
+from PyLucid.system import db
 from PyLucid.system import sessiondata
 from PyLucid.system import sessionhandling
 from PyLucid.system import SQL_logging
@@ -58,10 +57,11 @@ class PyLucid(BaseApplication):
         super(PyLucid, self).__init__(*args)
 
         # POST und GET Daten zusammen fassen
+        # wird u.a. für's ModuleManager "CGI_laws" und "get_CGI_data" verwendet
         import copy
         self.request.CGIdata = copy.copy(self.request.GET)
         self.request.CGIdata.update(self.request.POST)
-        #~ self.request.CGIdata = dict(self.request.CGIdata)
+        self.request.CGIdata = dict(self.request.CGIdata)
         self.request.exposed.append("CGIdata")# An Debug-Info dranpacken
 
         # Speichert Nachrichten die in der Seite angezeigt werden sollen
@@ -83,7 +83,8 @@ class PyLucid(BaseApplication):
         self.request.tools      = tools
 
         # Anbindung an die SQL-Datenbank, mit speziellen PyLucid Methoden
-        self.request.db = SQL.db(self.request)
+        self.request.db = db.get_PyLucid_Database(self.request)
+        #~ self.request.db = SQL_wrapper.SQL_wrapper(self.request)
         self.db = self.request.db
 
         # URLs zusammenbauen, die immer gleich sind.
@@ -133,24 +134,27 @@ class PyLucid(BaseApplication):
 
     def process_request(self):
         self.request.headers['Content-Type'] = 'text/html'
-        self.request.echo(__info__)
+        #~ self.request.echo(__info__)
 
-        self.page_msg("get_available_markups:", self.db.get_available_markups())
+        #~ self.page_msg("get_available_markups:", self.db.get_available_markups())
 
         self.init2()
 
+        # "Statische" Tag's definieren
+        self.parser.tag_data["powered_by"]  = __info__
+        if self.session["user"] != False:
+            self.parser.tag_data["script_login"] = \
+            '<a href="%s&amp;command=auth&amp;action=logout">logout [%s]</a>' % (
+                self.request.URLs["base"], self.request.session["user"]
+            )
+        else:
+            self.parser.tag_data["script_login"] = \
+            '<a href="%s&amp;command=auth&amp;action=login">login</a>' % (
+                self.request.URLs["base"]
+            )
+
         self.render.render_page()
 
-
-        #~ self.request.echo("<pre>")
-        #~ for k,v in self.request.environ.iteritems():
-            #~ self.request.echo("%s - %s\n" % (k,v))
-
-        #~ self.request.echo("- "*40)
-
-        #~ for k,v in os.environ.iteritems():
-            #~ self.request.echo("%s - %s\n" % (k,v))
-        #~ self.request.echo("</pre>")
 
         # Debug
         #~ self.request.log.debug_last()
@@ -162,9 +166,11 @@ class PyLucid(BaseApplication):
         self.db.close()
 
 
+from PyLucid.middlewares.replacer import replacer
+
+app = replacer(PyLucid)
 
 
-app = PyLucid
     #~ os.environ['SERVER_NAME'] = "colubird CGIServer"
     #~ os.environ['SERVER_PORT'] = "8080"
     #~ exports = {}

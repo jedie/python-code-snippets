@@ -47,35 +47,24 @@ indexSide = "Start"
 
 
 class back_links:
+    def __init__(self, request):
 
-    #_______________________________________________________________________
-    # Module-Manager Daten
-
-    module_manager_data = {
-        "lucidTag" : {
-            "must_login"    : False,
-            "must_admin"    : False,
-        }
-    }
-
-    #_______________________________________________________________________
-
-    def __init__( self, PyLucid ):
-        self.CGIdata        = PyLucid["CGIdata"]
-        self.db             = PyLucid["db"]
-        self.config         = PyLucid["config"]
-        self.preferences    = PyLucid["preferences"]
+        # shorthands
+        self.db             = request.db
+        #~ self.session        = request.session
+        self.preferences    = request.preferences
+        self.URLs           = request.URLs
+        #~ self.page_msg       = request.page_msg
+        #~ self.log            = request.log
 
         self.indexlink = '<a href="%s">Index</a>' % (
-            self.config.system.real_self_url + self.config.system.page_ident
+            self.URLs["link"]
         )
 
-        self.backlink  = '<a href="'
-        self.backlink += self.config.system.real_self_url + self.config.system.page_ident
+        self.backlink  = '<a href="%s' % self.URLs["link"]
         self.backlink += '%(url)s">%(title)s</a>'
 
-        #~ self.config.debug()
-        self.current_page_id  = self.CGIdata["page_id"]
+        self.current_page_id  = request.session["page_id"]
 
     def lucidTag( self ):
         "Backlinks generieren"
