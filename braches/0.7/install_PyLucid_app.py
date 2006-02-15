@@ -16,30 +16,30 @@ v0.5
     - Neu: "Information about installed modules"
     - ein paar "confirm"-Dialoge eingebaut...
 v0.4.1
-    - Ein wenig Aufgeräumt
+    - Ein wenig AufgerÃ¤umt
 v0.4
     - Anderer Aufbau der actions: In Sektionen unterteilt.
     - Neu: db_info
 v0.3.1
-    - Packports Pfad hinzugefügt
+    - Packports Pfad hinzugefÃ¼gt
 v0.3
     - Es kann nur einmal ein Admin angelegt werden
-    - Benutzt nun einige PyLucid-Objekte (erforderlich für neues userhandling)
-    - Möglichkeit dir Markup-String zu IDs zu konvertieren (Änderung in PyLucid v0.5)
+    - Benutzt nun einige PyLucid-Objekte (erforderlich fÃ¼r neues userhandling)
+    - MÃ¶glichkeit dir Markup-String zu IDs zu konvertieren (Ã„nderung in PyLucid v0.5)
     - CSS Spielereien 2
 v0.2
     - Anpassung an neue install-Daten-Struktur.
-    - "add Admin"-Formular wird mit JavaScript überprüft.
+    - "add Admin"-Formular wird mit JavaScript Ã¼berprÃ¼ft.
     - NEU Path Check: allerdings wird erstmal nur die Pfade angezeigt, mehr nicht...
     - CSS Spielereien
-    - Aussehen geändert
+    - Aussehen geÃ¤ndert
 v0.1.0
     - NEU: "partially re-initialisation DB tables" damit kann man nur ausgesuhte
-        Tabellen mit den Defaultwerten überschrieben.
+        Tabellen mit den Defaultwerten Ã¼berschrieben.
 v0.0.8
-    - Fehler in SQL_dump(): Zeigte SQL-Befehle nur an, anstatt sie auszuführen :(
+    - Fehler in SQL_dump(): Zeigte SQL-Befehle nur an, anstatt sie auszufÃ¼hren :(
 v0.0.7
-    - Neue Art die nötigen Tabellen anzulegen.
+    - Neue Art die nÃ¶tigen Tabellen anzulegen.
 v0.0.6
     - Einige anpassungen
 v0.0.5
@@ -56,7 +56,7 @@ v0.0.1
 """
 
 __todo__ = """
-Sicherheitslücke: Es sollte nur ein Admin angelegt werden können, wenn noch keiner existiert!
+SicherheitslÃ¼cke: Es sollte nur ein Admin angelegt werden kÃ¶nnen, wenn noch keiner existiert!
 """
 
 
@@ -130,17 +130,17 @@ class ObjectApp_MenuGenerator(object):
         self.root = root
 
     def root_link(self, path, info):
-        "Methode zum überscheiben"
+        "Methode zum Ã¼berscheiben"
         self.request.write('<a href="%s">%s</a>' % (path, info))
 
     def sub_link(self, path, info):
-        "Methode zum überscheiben"
+        "Methode zum Ã¼berscheiben"
         self.request.write('<a href="%s">%s</a>' % (path, info))
 
     def _get_objnamelist(self, obj, attr_type):
         """
-        Baut eine Liste mit den nötigen Informationen für ein Menü zusammen
-        Hilfmethode für make_menu
+        Baut eine Liste mit den nÃ¶tigen Informationen fÃ¼r ein MenÃ¼ zusammen
+        Hilfmethode fÃ¼r make_menu
         """
         result = []
         for objname in dir(obj):
@@ -170,7 +170,7 @@ class ObjectApp_MenuGenerator(object):
         return result
 
     def get_menu_data(self):
-        """ Liefert eine verschachtelre Liste mit den Menüdaten zurück """
+        """ Liefert eine verschachtelre Liste mit den MenÃ¼daten zurÃ¼ck """
         result = []
         objnamelist = self._get_objnamelist(self.root, attr_type="class")
         for info, path, obj_attr in objnamelist:
@@ -183,21 +183,21 @@ class ObjectApp_MenuGenerator(object):
             result.append(temp)
         return result
 
-    # Zum überschreiben/Anpassen:
+    # Zum Ã¼berschreiben/Anpassen:
     root_list_tags = ('\n<ul>\n', '</ul>\n', '\t<li>', '</li>\n')
     sub_list_tags = ('\t<ul>\n', '\t</ul>\n', '\t\t<li>', '</li>\n')
 
     def make_menu(self):
         """
-        Generiert ein Menü für alle vorhandenen Objekte/Pfade und nutzt
+        Generiert ein MenÃ¼ fÃ¼r alle vorhandenen Objekte/Pfade und nutzt
         dabei die erste Zeile des DocString von jeder Klasse/Methode.
-        Generell wird das Menü nach DocString sortiert, d.h. wenn man
+        Generell wird das MenÃ¼ nach DocString sortiert, d.h. wenn man
         gezielt eine sortierung haben will, kann man z.B. den DocString
         mit 1., 2., 3. anfangen.
         """
         def write_menu(handler, item, tags):
             """Ruft den passenden Handler, also self.sub_link oder
-            self.root_link mit den Menü-Daten auf"""
+            self.root_link mit den MenÃ¼-Daten auf"""
             self.request.write(tags[2])
             handler(*item)
             self.request.write(tags[3])
@@ -205,18 +205,34 @@ class ObjectApp_MenuGenerator(object):
         self.request.write(self.root_list_tags[0])
         for item in self.get_menu_data():
             if isinstance(item, list):
-                # Untermenüpunkte
+                # UntermenÃ¼punkte
                 self.request.write(self.sub_list_tags[0])
                 for sub_item in item:
                     write_menu(self.sub_link, sub_item, self.sub_list_tags)
                 self.request.write(self.sub_list_tags[1])
             else:
-                # Hauptmenüpunkt
+                # HauptmenÃ¼punkt
                 write_menu(
                     self.root_link, item, self.root_list_tags
                 )
 
         self.request.write(self.root_list_tags[1])
+
+
+class MyMenuGenerator(ObjectApp_MenuGenerator):
+    """
+    Anpassen des MenÃ¼generators
+    """
+    # id="menu" in ul einbauen
+    root_list_tags = ('\n<ul id="menu">\n', '</ul>\n', '\t<li>', '</li>\n')
+
+    def root_link(self, path, info):
+        "Methode zum Ãœberscheiben"
+        try: # Zahlen bei den HauptmenÃ­Â±Âµnkten weg schneiden
+            info = info.split(" ",1)[1]
+        except:
+            pass
+        self.request.write('<h4>%s</h4>' % info)
 
 
 
@@ -231,7 +247,7 @@ from PyLucid.system import db
 
 
 class base(object):
-
+    """ Basisklasse von der jede ObjApp-Klasse ableitet """
     def _get_module_admin(self):
         #~ self.PyLucid["URLs"]["action"] = "?action=module_admin&sub_action="
 
@@ -273,7 +289,7 @@ class index(base):
         self.MenuGenerator.make_menu()
 
     def name(self, arg1="Default", arg2="Default"):
-        """Beispiel für eine Parameter übergabe"""
+        """Beispiel fÃ¼r eine Parameter Ã¼bergabe"""
         self._info('index.name')
         self.request.write(
             'arg1="%s" - arg2="%s"' % (arg1, arg2)
@@ -417,7 +433,7 @@ class LowLevelAdmin(ObjectApplication):
         self.request.page_msg   = self.page_msg
         #~ self.request.exposed.append("page_msg") # An Debug-Info dranpacken
 
-        # Verwaltung für Einstellungen aus der Datenbank
+        # Verwaltung fÃ¼r Einstellungen aus der Datenbank
         self.preferences            = preferences.preferences(self.request, config.config)
         self.request.preferences    = self.preferences
         self.request.exposed.append("preferences") # An Debug-Info dranpacken
@@ -426,7 +442,7 @@ class LowLevelAdmin(ObjectApplication):
         self.request.URLs = preferences.URLs(self.request)
         self.request.exposed.append("URLs") # An Debug-Info dranpacken
 
-        tools.request           = self.request # Request Objekt an tools übergeben
+        tools.request           = self.request # Request Objekt an tools Ã¼bergeben
         self.request.tools      = tools
 
         # Anbindung an die SQL-Datenbank, mit speziellen PyLucid Methoden
@@ -434,22 +450,9 @@ class LowLevelAdmin(ObjectApplication):
         #~ self.request.db = SQL_wrapper.SQL_wrapper(self.request)
         self.db = self.request.db
 
-        #___________________________________________________________________
+        # MenÃ¼generator in die Basisklasse "einflanzen"
+        base.MenuGenerator = MyMenuGenerator(self.request, self.root)
 
-        MenuGenerator = ObjectApp_MenuGenerator(self.request, self.root)
-        MenuGenerator.root_list_tags = ( # id="menu" in ul einbauen
-            '\n<ul id="menu">\n', '</ul>\n', '\t<li>', '</li>\n'
-        )
-        MenuGenerator.root_link = self.root_link # Methode überschreiben
-        base.MenuGenerator = MenuGenerator # In zentraler Klasse einflanzen
-
-    def root_link(self, path, info):
-        "Methode zum überscheiben"
-        try: # Zahlen bei den Hauptmenüpunkten weg schneiden
-            info = info.split(" ",1)[1]
-        except:
-            pass
-        self.request.write('<h4>%s</h4>' % info)
 
     def process_request(self):
         super(LowLevelAdmin, self).process_request()
