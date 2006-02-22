@@ -12,6 +12,7 @@ Nur diese Datei benötigt Ausführungsrechte!
 #~ print "Content-type: text/html; charset=utf-8\r\n"
 #~ import cgitb;cgitb.enable()
 
+
 try:
     from colubrid.server import CGIServer
     from colubrid.debug import DebuggedApplication
@@ -21,6 +22,7 @@ except ImportError, e:
     print "Download at: http://wsgiarea.pocoo.org/colubrid/"
     import sys
     sys.exit()
+
 
 if __name__ == "__main__":
     app = DebuggedApplication('PyDown_config:app')
