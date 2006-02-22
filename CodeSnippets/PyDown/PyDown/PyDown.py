@@ -53,6 +53,7 @@ import posixpath, subprocess, stat, time, locale
 # Für den tausender-Punkt bei Bytes-Angaben (nur Linux!)
 try:
     locale.setlocale(locale.LC_ALL, "de_DE.UTF-8")
+    #~ locale.setlocale(locale.LC_COLLATE, "german")
 except:
     pass
 
@@ -177,7 +178,9 @@ class base(object):
             if x and y: return 0
             if x: return -1
             if y: return 1
-            return cmp(a,b)
+            # strcoll -> Damit auch äöü richtig einsortiert werden
+            return locale.strcoll(a[0],b[0])
+            #~ return cmp(a,b)
 
         files.sort()
         dirs.sort(spezial_cmp)
