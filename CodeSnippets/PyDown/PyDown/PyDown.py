@@ -50,8 +50,11 @@ import os, zipfile, cStringIO, urllib, cgi
 import posixpath, subprocess, stat, time, locale
 
 
-# Für den tausender-Punkt bei Bytes-Angaben
-locale.setlocale(locale.LC_ALL, "de_DE.UTF-8")
+# Für den tausender-Punkt bei Bytes-Angaben (nur Linux!)
+try:
+    locale.setlocale(locale.LC_ALL, "de_DE.UTF-8")
+except:
+    pass
 
 
 
@@ -406,24 +409,35 @@ class index(base):
 
         filename = posixpath.split(self.request_path)[-1]
 
-        if not simulation:
-            self.request.headers['Content-Disposition'] = 'attachment; filename="%s.zip"' % filename
-            self.request.headers['Content-Length'] = '%s' % buffer_len
-            self.request.headers['Content-Transfer-Encoding'] = 'binary'
-            self.request.headers['Content-Type'] = 'application/octet-stream; charset=utf-8'
-            self.request.write(buffer.getvalue())
-        else:
+        if simulation:
             self.request.echo('Filename........: "%s.zip"\n' % filename)
             self.request.echo("Content-Length..: %sBytes\n" % buffer_len)
             self.request.echo("\n")
 
             l = 120
             self.request.echo("First %s Bytes:\n" % l)
-            buffer = buffer.getvalue()[:l]
+            buffer = buffer.read(l)
             #~ buffer = buffer.encode("String_Escape")
             self.request.write("<hr />%s...<hr />" % cgi.escape(buffer))
 
             self.request.echo("Duration: <script_duration />")
+            return
+
+        self.request.headers['Content-Disposition'] = 'attachment; filename="%s.zip"' % filename
+        self.request.headers['Content-Length'] = '%s' % buffer_len
+        self.request.headers['Content-Transfer-Encoding'] = 'binary'
+        self.request.headers['Content-Type'] = 'application/octet-stream; charset=utf-8'
+
+        def send_data(buffer):
+            while 1:
+                data = buffer.read(2048)
+                if not data:
+                    return
+                yield data
+                time.sleep(0.1)
+
+        self.request.send_response(send_data(buffer))
+
 
 
 
