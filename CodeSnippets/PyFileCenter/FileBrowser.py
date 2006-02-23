@@ -16,10 +16,10 @@ sys.path.insert( 0, os.environ["DOCUMENT_ROOT"] + "cgi-bin/PyFileCenter/" )
 import FileBrowser
 
 # db-config Überschreiben mit den richtigen Daten
-FileBrowser.dbconfig.dbHost         = 'localhost'
-FileBrowser.dbconfig.dbDatabaseName = 'DatabaseName'
-FileBrowser.dbconfig.dbUserName     = 'UserName'
-FileBrowser.dbconfig.dbPassword     = 'Password'
+FileBrowser.cfg.dbHost         = 'localhost'
+FileBrowser.cfg.dbDatabaseName = 'DatabaseName'
+FileBrowser.cfg.dbUserName     = 'UserName'
+FileBrowser.cfg.dbPassword     = 'Password'
 
 # Nur Endungen anzeigen, die in der Liste vorkommen
 FileBrowser.cfg.ext_whitelist   = [ ".7z", ".zip", ".py" ]
@@ -73,7 +73,7 @@ CREATE TABLE `FileCenter_Stat_Path` (
     `id` INT NOT NULL AUTO_INCREMENT ,
     `name` VARCHAR( 255 ) NOT NULL ,
     PRIMARY KEY ( `id` )
-) TYPE = MYISAM ;
+);
 
 CREATE TABLE `FileCenter_Stat_Item` (
     `id` INT NOT NULL AUTO_INCREMENT ,
@@ -81,14 +81,20 @@ CREATE TABLE `FileCenter_Stat_Item` (
     `name` VARCHAR( 255 ) NOT NULL ,
     `count` int(11) NOT NULL default '0',
     PRIMARY KEY ( `id` )
-) TYPE = MYISAM ;
+);
 
 
 """
 
-__version__ = "v0.6"
+__version__ = "v0.6.1"
 
 __history__ = """
+v0.6.1
+    - Neu: cfg.pre_title und cfg.post_title
+    - Bugfix: cfg.base_path kann nun auch das aktuelle Verzeichnis sein, also =""
+    - alle os.path in posixpath getausch
+    - SQL Fehler beim connect wird abgefangen
+    - Bugfix: dbconfig
 v0.6
     - dbconfig als Klasse zum überscheiben geändert
 v0.5.2
@@ -141,21 +147,10 @@ import cgitb; cgitb.enable()
 import time
 start_time = time.time()
 
-import os, sys, cgi, stat, locale, re, urllib
+import os, sys, cgi, stat, re, urllib
+import locale
+import posixpath
 import zipfile
-
-
-
-#______________________________________
-# Beispiel config.py:
-class dbconf:
-    """
-    Die konfiguration muß von außen überschieben werden!
-    """
-    dbHost          = 'localhost' # Evtl. muß hier die Domain rein
-    dbDatabaseName  = 'DatabaseName'
-    dbUserName      = 'UserName'
-    dbPassword      = 'Password'
 
 
 
@@ -338,7 +333,7 @@ class cfg:
     base_path           = "MeinDownloadVerzeichnis"
 
     # Verz. in der Liste auslassen:
-    dir_filter          = []
+    dir_filter          = ["PyFileCenter"]
 
     # Dateien die nicht angezeigt werden sollen
     file_filter         = [ "index.py", ".htaccess" ]
@@ -387,6 +382,10 @@ class cfg:
             "CSS"         : CSS_style,
         }
 
+    # Textteile vor und nach dem Title und der Überschrift
+    pre_title  = "",
+    post_title = "",
+
     ## Counter...
     # ...in einer Dateiliste
     dir_counter_txt = '<div id="dir_counter">(count %s)</div>'
@@ -404,6 +403,12 @@ class cfg:
     # Soll in der SQL-Datenbank ein counter Statistik geführt werden?
     use_sql_statistic = True
 
+    # SQL db-Config
+    dbHost          = 'localhost' # Evtl. muß hier die Domain rein
+    dbDatabaseName  = 'DatabaseName'
+    dbUserName      = 'UserName'
+    dbPassword      = 'Password'
+
     # Debug-Ausgaben
     debug = False
 
@@ -413,7 +418,7 @@ HTML_head = """<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>FileBrowser</title>
+<title>%(pre_title)sFileBrowser%(post_title)s</title>
 <meta name="robots"                    content="%(robots)s" />
 <meta name="keywords"                  content="%(keywords)s" />
 <meta name="description"               content="%(description)s" />
@@ -469,7 +474,7 @@ class zipmanager:
         self.filename = filename
 
         try:
-            self.zipobj = zipfile.ZipFile( os.path.join(workdir, self.filename), "r" )
+            self.zipobj = zipfile.ZipFile( posixpath.join(workdir, self.filename), "r" )
         except Exception,e:
             print "<p>Error: %s</p>" % e
             return
@@ -538,10 +543,10 @@ class mySQL_statistic:
         try:
             # SQL connection aufbauen
             return mySQL.mySQL(
-                    host    = config.dbconf["dbHost"],
-                    user    = config.dbconf["dbUserName"],
-                    passwd  = config.dbconf["dbPassword"],
-                    db      = config.dbconf["dbDatabaseName"],
+                    host    = cfg.dbHost,
+                    user    = cfg.dbUserName,
+                    passwd  = cfg.dbPassword,
+                    db      = cfg.dbDatabaseName,
                 )
         except Exception, e:
             print "Content-type: text/html\n"
@@ -614,8 +619,13 @@ class mySQL_statistic:
     def count( self, path, item_name ):
         """ Zähler eines Eintrages hochsetzten oder erstellen, wenn noch nicht existend. """
 
-        path_id = self.get_path_id( path )
+        try:
+            path_id = self.get_path_id( path )
+        except Exception, e:
+            print "<small>[db Error: %s]</small>" % e
+            return
         item_id, item_count = self.get_item( path_id, item_name )
+
         item_count += 1
 
         self.db.update(
@@ -638,7 +648,8 @@ class FileBrowser:
 
         self.thumbnails = {} # wird von read_dir gefüllt, wenn Thumbnails gefunden wurden
 
-        self.absolute_basepath = os.path.join( os.environ["DOCUMENT_ROOT"], cfg.base_path )
+        self.absolute_basepath = posixpath.join(os.environ["DOCUMENT_ROOT"], cfg.base_path)
+        self.absolute_basepath = posixpath.normpath(self.absolute_basepath)
 
         self.CGIdata = self.getCGIdata()
 
@@ -693,14 +704,14 @@ class FileBrowser:
 
     def get_current_path( self ):
         if self.CGIdata.has_key( "path" ):
-            relativ_path = os.path.normpath( self.CGIdata["path"] )
+            relativ_path = posixpath.normpath( self.CGIdata["path"] )
         else:
             relativ_path = "."
 
-        cfg.base_path = os.path.normpath( cfg.base_path )
+        cfg.base_path = posixpath.normpath( cfg.base_path )
 
-        absolute_path = os.path.join( self.absolute_basepath, relativ_path )
-        absolute_path = os.path.normpath( absolute_path )
+        absolute_path = posixpath.join( self.absolute_basepath, relativ_path )
+        absolute_path = posixpath.normpath( absolute_path )
 
         self.check_absolute_path( absolute_path )
 
@@ -724,11 +735,14 @@ class FileBrowser:
             # Hackerscheiß schon mal ausschließen
             self.error( "not allowed!" )
 
-        if absolute_path[:len(self.absolute_basepath)] != self.absolute_basepath:
+        if not absolute_path.startswith(self.absolute_basepath):
             # Fängt nicht wie Basis-Pfad an... Da stimmt was nicht
+            #~ print "Content-Type: text/html\n"
+            #~ print "X%sX" % absolute_path
+            #~ print "X%sX" % self.absolute_basepath
             self.error( "permission deny." )
 
-        if not os.path.isdir( absolute_path ):
+        if not posixpath.isdir( absolute_path ):
             # Den Pfad gibt es nicht
             self.error( "'%s' not exists" % absolute_path )
 
@@ -759,15 +773,15 @@ class FileBrowser:
         files = []
         dirs = []
         for item in os.listdir( self.absolute_path ):
-            abs_path = os.path.join( self.absolute_path, item )
-            if os.path.isfile( abs_path ):
+            abs_path = posixpath.join( self.absolute_path, item )
+            if posixpath.isfile( abs_path ):
                 # Dateien verarbeiten
 
                 if item in cfg.file_filter:
                     # Datei soll nicht angezeigt werden
                     continue
 
-                name, ext = os.path.splitext( item )
+                name, ext = posixpath.splitext( item )
 
                 # Thumbnails rausfiltern
                 if is_thumb( name, item ):
@@ -815,7 +829,7 @@ class FileBrowser:
     def process_file_command( self, filename ):
         """ Datei Information mit Linux 'file' Befehl zusammentragen """
 
-        command = "file %s" % os.path.join(self.absolute_path,filename)
+        command = "file %s" % posixpath.join(self.absolute_path,filename)
         fileinfo = os.popen( command ).readlines()[0]
 
         fileinfo = fileinfo.split(":",1)[1]
@@ -857,13 +871,18 @@ class FileBrowser:
 
         # Key für zusätzliche CSS Einträge ans Dict hinzufügen
         cfg.html_head.update(
-            { "additional_CSS": cfg.additional_CSS }
+            {
+                "additional_CSS"    : cfg.additional_CSS,
+                "pre_title"         : cfg.pre_title,
+                "post_title"        : cfg.post_title,
+            }
         )
         print HTML_head % cfg.html_head
 
-        current_path = os.path.join( cfg.base_path, self.relativ_path )
-        current_path = os.path.normpath( current_path )
-        print "<h1>%s - Downloads</h1>" % current_path
+        current_path = posixpath.join(cfg.base_path, self.relativ_path)
+        current_path = posixpath.normpath(current_path)
+        if current_path == ".": current_path = "/"
+        print "<h1>%s%s%s</h1>" % (cfg.pre_title, current_path, cfg.post_title)
 
         if self.relativ_path in cfg.dir_backlinks:
             print cfg.dir_backlinks_code % {
@@ -883,7 +902,7 @@ class FileBrowser:
             after   = ""
 
         print '<li><a href="?path=%(url)s">%(before)s%(txt)s%(after)s</a></li>' % {
-                "url"       : urllib.quote( os.path.normpath( os.path.join( self.relativ_path, dir ) ) ),
+                "url"       : urllib.quote( posixpath.normpath( posixpath.join( self.relativ_path, dir ) ) ),
                 "before"    : before,
                 "txt"       : dir,
                 "after"     : after
@@ -921,7 +940,7 @@ class FileBrowser:
 
         if pic_base_name in self.thumbnails:
             # Es gibt ein Thumbnail
-            img_path = os.path.join( self.relativ_path, self.thumbnails[pic_base_name] )
+            img_path = posixpath.join( self.relativ_path, self.thumbnails[pic_base_name] )
             print '<img src="%s" />' % img_path
         else:
             # Kein passendes Thumb. gefunden -> Original Bild wird als Thumb. verwendet
@@ -957,9 +976,9 @@ class FileBrowser:
     def print_file( self, filename ):
         """ Dateiinfromationen ermitteln und auflisten """
 
-        absolute_filepath   = os.path.join(self.absolute_path,filename)
-        base, ext           = os.path.splitext( filename )
-        file_url            = os.path.join( self.relativ_path, filename )
+        absolute_filepath   = posixpath.join(self.absolute_path,filename)
+        base, ext           = posixpath.splitext( filename )
+        file_url            = posixpath.join( self.relativ_path, filename )
 
         clean_base_name = self._is_gallery_img( base, ext )
         if clean_base_name != False:
@@ -1029,10 +1048,10 @@ class FileBrowser:
     ## Zusätzliche Funktionen
 
     def download_proxy( self, filename ):
-        abs_filepath = os.path.join( os.environ["DOCUMENT_ROOT"], cfg.base_path, filename )
-        abs_filepath = os.path.normpath( abs_filepath )
+        abs_filepath = posixpath.join( os.environ["DOCUMENT_ROOT"], cfg.base_path, filename )
+        abs_filepath = posixpath.normpath( abs_filepath )
 
-        abs_path, filename = os.path.split( abs_filepath )
+        abs_path, filename = posixpath.split( abs_filepath )
 
         self.check_absolute_path( abs_path )
 
@@ -1045,7 +1064,7 @@ class FileBrowser:
 
         #~ print 'Cache-Control: no-cache, must-revalidate'
         #~ print 'Pragma: no-cache'
-        print 'Content-Length: %s' % os.path.getsize( abs_filepath )
+        print 'Content-Length: %s' % posixpath.getsize( abs_filepath )
         print 'Content-Disposition: attachment; filename=%s' % filename
         print 'Content-Transfer-Encoding: binary'
         if charset != []:
@@ -1078,7 +1097,7 @@ class FileBrowser:
         print '<a href="?path=%s&next_img=%s" title="next &gt;" id="img_view">' % (
             urllib.quote(self.relativ_path), urllib.quote(img_name)
         )
-        print '<img src="%s"/><br/>' % os.path.join( self.relativ_path, img_name )
+        print '<img src="%s"/><br/>' % posixpath.join( self.relativ_path, img_name )
         print '%s<br/>' % img_name
         print "<small>Counter: %s</small>" % count
         print '</a>'
@@ -1102,7 +1121,7 @@ class FileBrowser:
             self.print_body( files, dirs )
             return
 
-        base, ext = os.path.splitext( next_img )
+        base, ext = posixpath.splitext( next_img )
         if self._is_gallery_img( base, ext ) == False:
             # Aktuelle Datei ist kein Gallery-Bild -> Normale Seite aufbauen
             self.print_body( files, dirs )
