@@ -11,11 +11,13 @@ __author__  = "Jens Diemer (www.jensdiemer.de)"
 __license__ = "GNU General Public License v2 or above - http://www.opensource.org/licenses/gpl-license.php"
 __url__     = "http://pylucid.python-hosting.com/browser/CodeSnippets/"
 
-__version__ = "v0.1"
+__version__ = "v0.1.1"
 
 __info__ = """<a href="%s">PyDown %s</a>""" % (__url__, __version__)
 
 __history__ = """
+v0.1.1
+    - Bugfixes for running under Windows
 v0.1
     - erste Version
 """
@@ -29,6 +31,9 @@ cfg = {
     "ext_whitelist": (".mp3",),
 
     # Basis-Pfad, der "Rekursiv-Freigegeben" werden soll.
+    # unter Windows:
+    #       -normalen slash "/" verwenden!
+    #       -ganze Laufwerke mit abschließendem slash!
     "base_path": "/tmp",
 
     # Nur HTTPs Verbindungen erlauben?
@@ -46,7 +51,7 @@ cfg = {
 
 
 # Standart Python Module
-import os, zipfile, cStringIO, urllib, cgi
+import sys, os, zipfile, cStringIO, urllib, cgi
 import posixpath, subprocess, stat, time, locale
 
 
@@ -161,7 +166,7 @@ class base(object):
         files = []
         dirs = []
         for item in os.listdir(self.request_path):
-            abs_path = os.path.join(self.request_path, item)
+            abs_path = posixpath.join(self.request_path, item)
             if os.path.isfile(abs_path):
                 ext = os.path.splitext(abs_path)[1]
                 if not ext in cfg["ext_whitelist"]:
@@ -169,6 +174,7 @@ class base(object):
                 files.append((item, abs_path))
 
             elif os.path.isdir(abs_path):
+                #~ self.request.echo("#%s#%s#<br>" % (item, abs_path))
                 dirs.append((item, abs_path))
 
         def spezial_cmp(a,b):
@@ -240,6 +246,11 @@ class base(object):
 
         result.update(self._get_stat(filename))
 
+        if sys.platform == "win32":
+            # Unter Windows gibt es keinen File-Befehl
+            result["info"] = ""
+            return result
+
         try:
             proc = subprocess.Popen(
                 args        = ["file", filename],
@@ -302,44 +313,44 @@ class base(object):
     def _get_url(self, path):
         path = self._get_relative_path(path)
         path = posixpath.join(self.request.environ["SCRIPT_ROOT"], path)
+        #~ self.request.echo("2#%s#%s#<br>" % (self.request.environ["SCRIPT_ROOT"], path))
         return urllib.quote(path)
 
     def _get_relative_path(self, path):
         if not path.startswith(cfg["base_path"]):
             return path
-        return path[len(cfg["base_path"])+1:]
+        relative_path = path.lstrip(cfg["base_path"])
+        #~ self.request.echo(
+            #~ "#%s#%s#%s#<br>" % (path, cfg["base_path"], relative_path)
+        #~ )
+        return relative_path
 
     def _setup_path(self):
         self.raw_path_info = self.request.environ.get('PATH_INFO', '')
         self.request_path = "%s%s" % (cfg["base_path"], self.raw_path_info)
-        self.request_path = posixpath.normpath(self.request_path)
 
+        self._check_absolute_path(self.request_path)
+
+        self.request_path = posixpath.normpath(self.request_path)
         self.context["request_path"] = self.request_path
 
-        #~ self.request.write("<p>self.raw_path_info: %s</p>" % self.raw_path_info)
-        #~ self.request.write("<p>self.request_path: %s</p>" % self.request_path)
-        #~ self.request.write('<p>cfg["base_path"]: %s</p>' % cfg["base_path"])
-
-        #~ try:
-        self._check_absolute_path(self.request_path)
-        #~ except AccessDenied, e:
-            #~ self.request("AccessDenied:
-
-        #~ self.request.write("self.request_path: %s" % self.request_path)
 
     def _check_absolute_path(self, absolute_path):
         """
         Überprüft einen absoluten Pfad
         """
-        if (absolute_path.find("..") != -1) or (absolute_path.find("//") != -1):
+        if (absolute_path.find("..") != -1):
             # Hackerscheiß schon mal ausschließen
             raise AccessDenied("not allowed!")
 
         if not absolute_path.startswith(cfg["base_path"]):
             # Fängt nicht wie Basis-Pfad an... Da stimmt was nicht
+            raise AccessDenied("permission deny #%s#%s#" % (
+                absolute_path, cfg["base_path"])
+            )
             raise AccessDenied("permission deny.")
 
-        if not posixpath.isdir(absolute_path):
+        if not os.path.exists(absolute_path):
             # Den Pfad gibt es nicht
             raise AccessDenied("'%s' not exists" % absolute_path)
 
@@ -359,7 +370,7 @@ class index(base):
         files, dirs = self._read_dir()
         self._put_dir_info_to_context(files, dirs)
 
-        template_path = posixpath.join(self.request.environ["DOCUMENT_ROOT"], "PyDown")
+        template_path = os.path.join(self.request.environ["DOCUMENT_ROOT"], "PyDown")
         t = Template('Browser', FileSystemLoader(template_path))
         c = Context(self.context)
         self.request.write(t.render(c))
