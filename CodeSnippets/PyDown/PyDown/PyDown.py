@@ -470,8 +470,8 @@ class PyDown(ObjectApplication):
                 raise AccessDenied("Only identified users allow!")
 
     def process_request(self):
-        super(PyDown, self).process_request()
         self.check_rights() # Als erstes die Rechte checken!
+        super(PyDown, self).process_request()
 
     def on_access_denied(self, args):
         self.request.write("<h1>403 Forbidden</h1>")
