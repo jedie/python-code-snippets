@@ -15,6 +15,11 @@ sys.path.insert( 0, os.environ["DOCUMENT_ROOT"] + "cgi-bin/PyFileCenter/" )
 
 import FileBrowser
 
+# db-config Überschreiben mit den richtigen Daten
+FileBrowser.dbconfig.dbHost         = 'localhost'
+FileBrowser.dbconfig.dbDatabaseName = 'DatabaseName'
+FileBrowser.dbconfig.dbUserName     = 'UserName'
+FileBrowser.dbconfig.dbPassword     = 'Password'
 
 # Nur Endungen anzeigen, die in der Liste vorkommen
 FileBrowser.cfg.ext_whitelist   = [ ".7z", ".zip", ".py" ]
@@ -81,9 +86,11 @@ CREATE TABLE `FileCenter_Stat_Item` (
 
 """
 
-__version__ = "v0.5.2"
+__version__ = "v0.6"
 
 __history__ = """
+v0.6
+    - dbconfig als Klasse zum überscheiben geändert
 v0.5.2
     - Bugfix: print_back_link() nutzt nun urllib.quote_plus() damit auch Sonderzeichen in
         den Verzeichnisnamen erlaubt sind
@@ -141,13 +148,16 @@ import zipfile
 
 #______________________________________
 # Beispiel config.py:
-## dbconf = {
-##     "dbHost"            : 'localhost', # Evtl. muß hier die Domain rein
-##     "dbDatabaseName"    : 'DatabaseName',
-##     "dbUserName"        : 'UserName',
-##     "dbPassword"        : 'Password',
-## }
-import config # Import der SQL-Konfiguration (dbconf-Dict)
+class dbconf:
+    """
+    Die konfiguration muß von außen überschieben werden!
+    """
+    dbHost          = 'localhost' # Evtl. muß hier die Domain rein
+    dbDatabaseName  = 'DatabaseName'
+    dbUserName      = 'UserName'
+    dbPassword      = 'Password'
+
+
 
 
 
