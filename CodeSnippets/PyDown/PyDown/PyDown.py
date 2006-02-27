@@ -3,6 +3,8 @@
 
 """
 PyDown - A small Python Download Center...
+
+Info zur Installation/Benutzung: PyDown_readme.txt
 """
 
 # copyleft: jensdiemer.de (GPL v2 or above)
@@ -37,10 +39,10 @@ cfg = {
     "base_path": "/tmp",
 
     # Nur HTTPs Verbindungen erlauben?
-    "only_https": False,
+    "only_https": True,
 
     # Zugriff nur eingeloggte User, durch Apache's .htaccess-Auth erlauben?
-    "only_auth_users": False,
+    "only_auth_users": True,
 
     # Debugausgaben einblenden?
     #~ "debug": True,
@@ -51,7 +53,7 @@ cfg = {
 
 
 # Standart Python Module
-import sys, os, zipfile, cStringIO, urllib, cgi
+import os, sys, zipfile, StringIO, urllib, cgi
 import posixpath, subprocess, stat, time, locale
 
 
@@ -63,6 +65,7 @@ except:
     pass
 
 
+filesystemencoding = sys.getfilesystemencoding()
 
 
 # Colubrid import's werden das erste mal im Request-Handler vorgenommen und
@@ -147,7 +150,16 @@ class ObjectApplication(ObjectApplication):
 
 
 
-
+def spezial_cmp(a,b):
+    """ Sortiert alle mit "_" beginnenen items nach oben """
+    x = a[0][0] == "_" # x ist True wenn erste Buchstabe ein "_" ist
+    y = b[0][0] == "_"
+    if x and y: return 0
+    if x: return -1
+    if y: return 1
+    # strcoll -> Damit auch äöü richtig einsortiert werden
+    return locale.strcoll(a[0],b[0])
+    #~ return cmp(a,b)
 
 
 
@@ -159,6 +171,7 @@ class base(object):
         self.context = {
             "cfg": cfg,
             "__info__": __info__,
+            "filesystemencoding": filesystemencoding,
         }
 
     def _read_dir(self):
@@ -176,17 +189,6 @@ class base(object):
             elif os.path.isdir(abs_path):
                 #~ self.request.echo("#%s#%s#<br>" % (item, abs_path))
                 dirs.append((item, abs_path))
-
-        def spezial_cmp(a,b):
-            """ Sortiert alle mit "_" beginnenen items nach oben """
-            x = a[0][0] == "_" # x ist True wenn erste Buchstabe ein "_" ist
-            y = b[0][0] == "_"
-            if x and y: return 0
-            if x: return -1
-            if y: return 1
-            # strcoll -> Damit auch äöü richtig einsortiert werden
-            return locale.strcoll(a[0],b[0])
-            #~ return cmp(a,b)
 
         files.sort()
         dirs.sort(spezial_cmp)
@@ -214,13 +216,43 @@ class base(object):
             }
 
         # Verzeichnis-Informationen in context einfügen
-        self.context["dirlist"] = []
+        #~ self.context["dirlist"] = {}
+        #~ for item, abs_path in dirs:
+            #~ url = self._get_url(abs_path)
+            #~ relativ_path = self._get_relative_path(abs_path)
+
+            #~ first_letter = item[0]
+            #~ if not self.context["dirlist"].has_key(first_letter):
+                #~ self.context["dirlist"][first_letter] = []
+
+            #~ self.context["dirlist"][first_letter] .append({
+                #~ "url": url,
+                #~ "name": item,
+            #~ })
+
+        dirlist = {}
         for item, abs_path in dirs:
             url = self._get_url(abs_path)
             relativ_path = self._get_relative_path(abs_path)
-            self.context["dirlist"].append({
+
+            first_letter = item[0]
+            if not dirlist.has_key(first_letter):
+                dirlist[first_letter] = []
+
+            dirlist[first_letter] .append({
                 "url": url,
                 "name": item,
+            })
+
+        self.context["dirlist"] = []
+        for letter, items in dirlist.iteritems():
+            temp = []
+            for item in items:
+                temp.append(item)
+
+            self.context["dirlist"].append({
+                "letter": letter,
+                "items": temp,
             })
 
     def _get_stat(self, abs_path):
@@ -326,6 +358,9 @@ class base(object):
         return relative_path
 
     def _setup_path(self):
+        self.log_path = posixpath.join(self.request.environ["DOCUMENT_ROOT"], "log")
+        self.context["username"] = self.request.environ["REMOTE_USER"]
+
         self.raw_path_info = self.request.environ.get('PATH_INFO', '')
         self.request_path = "%s%s" % (cfg["base_path"], self.raw_path_info)
 
@@ -370,8 +405,8 @@ class index(base):
         files, dirs = self._read_dir()
         self._put_dir_info_to_context(files, dirs)
 
-        template_path = os.path.join(self.request.environ["DOCUMENT_ROOT"], "PyDown")
-        t = Template('Browser', FileSystemLoader(template_path))
+        # Basis Template importiert selber das User-Template
+        t = Template('PyDown/Browser_base', FileSystemLoader("."))
         c = Context(self.context)
         self.request.write(t.render(c))
 
@@ -394,10 +429,14 @@ class index(base):
 
         files, _ = self._read_dir()
 
-        buffer = cStringIO.StringIO()
+        buffer = StringIO.StringIO()
         z = zipfile.ZipFile(buffer, "w")
 
         if simulation:
+            #~ z.debug = 3
+            #~ oldstdout = sys.stdout
+            #~ sys.stdout = self.request
+            #~ print "TEST"
             self.request.write("-"*80)
             self.request.write("\n")
 
@@ -414,6 +453,7 @@ class index(base):
         z.close()
 
         if simulation:
+            #~ sys.stdout = oldstdout
             self.request.write("-"*80)
             self.request.write("\n")
 
@@ -440,7 +480,7 @@ class index(base):
         self.request.headers['Content-Disposition'] = 'attachment; filename="%s.zip"' % filename
         self.request.headers['Content-Length'] = '%s' % buffer_len
         self.request.headers['Content-Transfer-Encoding'] = 'binary'
-        self.request.headers['Content-Type'] = 'application/octet-stream; charset=utf-8'
+        self.request.headers['Content-Type'] = 'application/octet-stream;'# charset=utf-8'
 
         def send_data(buffer):
             while 1:
@@ -451,7 +491,6 @@ class index(base):
                 time.sleep(0.1)
 
         self.request.send_response(send_data(buffer))
-
 
 
 
