@@ -1,20 +1,7 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head>
-<title>{{ title }}</title>
-<meta http-equiv="expires" content="900" />
-<link rel="stylesheet" type="text/css" href="/PyDown/Browser.css" />
-</head>
-<body>
 
-<fieldset><legend>current path</legend>
-<h4>{{ path }}</h4>
-</fieldset>
+{% extends "Browser_template" %}
 
-<form name="download" method="post" action="{{ download.url }}?action=download">
-<fieldset><legend>download</legend>
-
+{% block "file_list" %}
     {% if not filelist %}
         <small>[ no files ]</small>
     {% else %}
@@ -33,6 +20,7 @@
                 <td>{{ file.size }}</td>
                 <td>{{ file.info|escapexml }}</td>
             </tr>
+
             {% endfor %}
         </table>
 
@@ -45,30 +33,40 @@
         <input type="submit" value="download" name="download" />
         <input type="checkbox" name="simulation" value="simulation" /> simulation
     {% endif %}
+{% endblock %}
 
 </fieldset>
 </form>
 
 
-<fieldset><legend>dir list</legend>
-<ul id="dirlist">
+{% block "dir_list" %}
+    <ul id="dirlist">
     {% for dir in dirlist %}
-    <li><a href="{{ dir.url }}">{{ dir.name|escapexml }}</a></li>
+    <h3>{{ dir.letter }}</h3>
+        {% for item in dir.items %}
+            <li><a href="{{ item.url }}">{{ item.name|escapexml }}</a></li>
+        {% endfor %}
     {% endfor %}
     {% if not dirlist %}<li><small>[ no dirs ]</small></li>{% endif %}
 </ul>
-</fieldset>
+{% endblock %}
 
-{% if cfg.debug %}
-<h4>Jinja-Debug:</h4>
-<pre>{% debug %}</pre>
-{% endif %}
 
-<div id="footer">
+{% block "debug" %}
+    {% if cfg.debug %}
+    <hr>
+    <h4>Jinja-Debug:</h4>
+    <pre>{% debug %}</pre>
+    {% endif %}
+{% endblock %}
+
+
+{% block "footer" %}
     <p>[only_https: {{ cfg.only_https }},
     only_auth_users: {{ cfg.only_auth_users }},
     ext_whitelist: {{ cfg.ext_whitelist }}]<br />
+    You are: {{ username }}<br />
+    filesystemencoding: {{ filesystemencoding }}<br />
     <script_duration /><br />
     {{ __info__ }}</p>
-</div>
-</body></html>
+{% endblock %}
