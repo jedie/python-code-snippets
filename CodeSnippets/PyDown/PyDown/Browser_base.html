@@ -5,6 +5,8 @@ automatisch eingefügt werden.
 
 {% extends "Browser_template" %}
 
+{% block "info_link" %}<a href="?action=info">info</a>{% endblock %}
+
 {% block "file_list" %}
     {% if not filelist %}
         <small>[ no files ]</small>

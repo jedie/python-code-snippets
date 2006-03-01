@@ -8,21 +8,14 @@
 </head>
 <body>
 
-<small>{% marker "info_link" %}</small>
+{% marker "back_link" %}
 
-<fieldset><legend>current path</legend>
-<h4>{{ path }}</h4>
+<fieldset><legend>current downloads</legend>
+    {% marker "current_downloads" %}
 </fieldset>
 
-<form name="download" method="post" action="{{ download.url }}?action=download">
-<fieldset><legend>download</legend>
-    {% marker "file_list" %}
-</fieldset>
-</form>
-
-
-<fieldset><legend>dir list</legend>
-    {% marker "dir_list" %}
+<fieldset><legend>raw db info</legend>
+    {% marker "raw_db_info" %}
 </fieldset>
 
 <div id="footer">

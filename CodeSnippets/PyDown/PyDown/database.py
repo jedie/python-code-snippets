@@ -509,7 +509,9 @@ class SQL_wrapper(Database):
         where_string, values = self._make_where(where)
 
         SQLcommand += where_string
-        SQLcommand += self._make_limit(limit)
+        if not self.dbtyp == "sqlite":
+            # sqlite hat kein LIMIT bei DELETE, sondern nur bei SELECT
+            SQLcommand += self._make_limit(limit)
         SQLcommand += ";"
 
         result = self.process_statement(SQLcommand, values)
@@ -543,7 +545,7 @@ class SQL_wrapper(Database):
         """
         Baut den LIMIT Teil zusammen.
         """
-        if (not limit) or (self.dbtyp == "sqlite"): return ""
+        if not limit: return ""
 
         if isinstance(limit,(str,int)):
             return " LIMIT %s" % limit
