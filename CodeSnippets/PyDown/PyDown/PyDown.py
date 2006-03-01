@@ -57,6 +57,12 @@ import os, sys, zipfile, StringIO, urllib, cgi
 import posixpath, subprocess, stat, time, locale
 
 
+# Eigene Module
+from database import SQL_wrapper
+
+
+
+
 # Für den tausender-Punkt bei Bytes-Angaben (nur Linux!)
 try:
     locale.setlocale(locale.LC_ALL, "de_DE.UTF-8")
@@ -500,9 +506,14 @@ class PyDown(ObjectApplication):
 
     def __init__(self, *args):
         super(PyDown, self).__init__(*args)
-        self.request.cfg = cfg
-        self.request.exposed.append("cfg")
         self.request.headers['Content-Type'] = 'text/html'
+
+        if not hasattr(self.request, "cfg"):
+            self.request.cfg = cfg
+            self.request.exposed.append("cfg")
+
+        #~ db = SQL_wrapper(dbtyp="sqlite", databasename="PyDownSQLite")
+        #~ self.request.db = db
 
     def check_rights(self):
         """
