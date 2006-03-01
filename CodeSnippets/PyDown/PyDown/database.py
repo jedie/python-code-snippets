@@ -27,9 +27,13 @@ ToDo
     * Es wird immer das paramstyle 'format' benutzt. Also mit %s escaped
 """
 
-__version__="0.6"
+__version__="0.6.1"
 
 __history__="""
+v0.6.1
+    - encode_sql_results für unicode angepasst.
+    - databasename global gemacht
+    - bugfixes
 v0.6
     - Einige Anpassungen für SQLite
     - Weil's portabler ist, database.py und SQL_wrapper.py zusammen gelegt.
@@ -107,14 +111,15 @@ class Database(object):
         self.last_statement = None
 
         self.dbtyp = dbtyp
+        self.databasename = databasename
         self.tableprefix = tableprefix
 
         #~ try:
-        self._make_connection(host, username, password, databasename)
+        self._make_connection(host, username, password)
         #~ except Exception, e:
             #~ error( "Can't connect to database!", e )
 
-    def _make_connection(self, host, username, password, databasename):
+    def _make_connection(self, host, username, password):
         """
         Baut connection zur DB auf.
         Stellt self.conn und self.cursor zur verfügung
@@ -138,7 +143,7 @@ class Database(object):
                         host    = host,
                         user    = username,
                         passwd  = password,
-                        db      = databasename,
+                        db      = self.databasename,
                     ),
                     placeholder = self.placeholder,
                     prefix = self.tableprefix
@@ -166,7 +171,7 @@ class Database(object):
 
             try:
                 self.conn = WrappedConnection(
-                    dbapi.connect(databasename),
+                    dbapi.connect(self.databasename),
                     placeholder = self.placeholder,
                     prefix = self.tableprefix
                 )
@@ -174,7 +179,7 @@ class Database(object):
                 import os
                 msg = "Can't connect to SQLite-DB (%s)\n - " % e
                 msg += "check the write rights on '%s'\n - " % os.getcwd()
-                msg += "Databasename: '%s'" % databasename
+                msg += "Databasename: '%s'" % self.databasename
                 raise ConnectionError(msg)
 
             self.cursor = self.conn.cursor()
@@ -324,8 +329,8 @@ class IterableDictCursor(object):
         try:
             self._cursor.execute(*tuple(args))
         except Exception, e:
-            msg = "cursor.execute error: %s\n --- " % e
-            msg += "args: %s" % args
+            msg = "cursor.execute error: %s --- " % e
+            msg += "\nargs: %s" % args
             raise Exception(msg)
 
     def execute_unescaped(self, sql):
@@ -415,10 +420,11 @@ class SQL_wrapper(Database):
         entsprechen muss dabei werden Keys, die nicht
         in der Tabelle als Spalte vorkommt vorher rausgefiltert
         """
+        #~ raise "test: %s" % self.databasename
         items  = data.keys()
         values = tuple(data.values())
 
-        SQLcommand = "INSERT INTO $$%(table)s(%(items)s) VALUES (%(values)s);" % {
+        SQLcommand = "INSERT INTO $$%(table)s (%(items)s) VALUES (%(values)s);" % {
                 "table"         : table,
                 "items"         : ",".join(items),
                 "values"        : ",".join([self.placeholder]*len(values))
@@ -640,30 +646,33 @@ class SQL_wrapper(Database):
                 return True
         return False
 
-    def decode_sql_results(self, sql_results, codec="UTF-8"):
+    def encode_sql_results(self, sql_results, codec="UTF-8"):
         """
-        Alle Ergebnisse eines SQL-Aufrufs encoden
+        encodiert unicode Ergebnisse eines SQL-select-Aufrufs
         """
         post_error = False
         for line in sql_results:
             for k,v in line.iteritems():
-                if type(v)!=str:
+                if type(v)!=unicode:
                     continue
                 try:
-                    line[k] = v.decode(codec)
+                    line[k] = v.encode(codec)
                 except Exception, e:
                     if not post_error:
                         # Fehler nur einmal anzeigen
-                        self.page_msg("decode_sql_results() error: %s" % e)
+                        self.request.write(
+                            "decode_sql_results() error in line %s: %s\n" % (
+                                line, e
+                            )
+                        )
                         post_error = True
-                        self.page_msg("line:", line)
         return sql_results
 
     #_________________________________________________________________________
 
     def dump_table(self, tablename):
-        result = db.select(select_items= "*", from_table= tablename)
-        db.dump_select_result(result, info="dump table '%s'" % tablename)
+        result = self.select(select_items= "*", from_table= tablename)
+        self.dump_select_result(result, info="dump table '%s'" % tablename)
 
     def dump_select_result(self, result, info="dumb select result"):
         self.request.write("*** %s ***\n" % info)
@@ -705,7 +714,7 @@ if __name__ == "__main__":
     db = SQL_wrapper(sys.stdout, dbtyp, databasename)
 
     print "dbtyp.......:", dbtyp
-    print "databasename:", databasename
+    print "databasename:", db.databasename
     print "paramstyle..:", db.paramstyle
     print "placeholder.:", db.placeholder
 
