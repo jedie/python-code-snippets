@@ -1,0 +1,86 @@
+{*
+Hier werden nur Blöcke definiert, die in das eigentliche User-Template
+automatisch eingefügt werden.
+*}
+
+{% extends "Infopage_template" %}
+
+{% block "back_link" %}<a href="?">back</a>{% endblock %}
+
+{% block "current_downloads" %}
+<table id="current_downloads">
+    <tr>
+        <th>id</th>
+        <th>user</th>
+        <th>item</th>
+        <th>start time</th>
+        <th>current time</th>
+        <th>total bytes</th>
+        <th>current bytes</th>
+    </tr>
+    {% for line in current_downloads %}
+        {% cycle rowclass through "odd", "even" %}
+        <tr class="{{ rowclass }}">
+            <td>{{ line.id }}</td>
+            <td>{{ line.username|escapexml }}</td>
+            <td>{{ line.item|escapexml }}</td>
+            <td>{{ line.start_time }}</td>
+            <td>{{ line.current_time }}</td>
+            <td>{{ line.total_bytes }}</td>
+            <td>{{ line.current_bytes }}</td>
+        </tr>
+    {% endfor %}
+</table>
+{% endblock %}
+
+{% block "last_log" %}
+<!--
+<form name="last_log" method="get" action="">
+<fieldset><legend>filter</legend>
+    <input type="radio" name="filter" value="download"> download
+    <input type="radio" name="filter" value="browse"> browse
+    <input type="radio" name="filter" value="simulation"> simulation
+    <input type="radio" name="filter" value="infopage"> infopage
+    <input type="submit" name="action" value="info" />
+</fieldset>
+</form>
+-->
+<table id="last_log">
+    <tr>
+        <th>no</th>
+        <th>user</th>
+        <th>time</th>
+        <th>type</th>
+        <th>item</th>
+    </tr>
+    {% for line in last_log %}
+        {% cycle rowclass through "odd", "even" %}
+        <tr class="{{ rowclass }}">
+            <td>{{ loop.counter }}</td>
+            <td>{{ line.username|escapexml }}</td>
+            <td>{{ line.timestamp|escapexml }}</td>
+            <td>{{ line.type|escapexml }}</td>
+            <td>{{ line.item|escapexml }}</td>
+        </tr>
+    {% endfor %}
+</table>
+{% endblock %}
+
+{% block "debug" %}
+    {% if cfg.debug %}
+    <hr>
+    <h4>Jinja-Debug:</h4>
+    <pre>{% debug %}</pre>
+    {% endif %}
+{% endblock %}
+
+
+{% block "footer" %}
+    <p>[only_https: {{ cfg.only_https }},
+    only_auth_users: {{ cfg.only_auth_users }},
+    ext_whitelist: {{ cfg.ext_whitelist }}]<br />
+    You are: {{ username }}<br />
+    filesystemencoding: {{ filesystemencoding }}<br />
+    <script_duration /><br />
+    {{ __info__ }}</p>
+{% endblock %}

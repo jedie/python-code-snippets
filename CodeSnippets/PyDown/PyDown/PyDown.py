@@ -170,6 +170,71 @@ def spezial_cmp(a,b):
 
 
 
+class PyDownDB(SQL_wrapper):
+    """
+    Bringt durch erben spezielle Methoden zum db-Zugriff in
+    den SQL-Wrapper ein
+    """
+
+    def log(self, type, item):
+        """
+        Eintrag in die Log-Tabelle machen
+        """
+        self.insert(
+            table = "log",
+            data = {
+                "timestamp": time.time(),
+                "username": self.request.environ["REMOTE_USER"],
+                "type": type,
+                "item": item,
+            }
+        )
+        self.commit()
+
+    def insert_download(self, item, total_bytes, current_bytes):
+        """
+        Einen neuen Download eintragen
+        """
+        self.insert(
+            table = "activity",
+            data = {
+                "username": self.request.environ["REMOTE_USER"],
+                "item": item,
+                "start_time": time.time(),
+                "total_bytes": total_bytes,
+                "current_time": time.time(),
+                "current_bytes": current_bytes,
+            }
+        )
+        self.commit()
+        return self.cursor.lastrowid
+
+    def update_download(self, id, current_bytes):
+        """
+        Updated einen download Eintrag
+        """
+        self.update(
+            table   = "activity",
+            data    = {
+                "current_bytes": current_bytes,
+                "current_time": time.time(),
+            },
+            where   = ("id",id),
+        )
+        self.commit()
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 class base(object):
     """ Basisklasse von der jede ObjApp-Klasse ableitet """
@@ -179,6 +244,9 @@ class base(object):
             "__info__": __info__,
             "filesystemencoding": filesystemencoding,
         }
+
+    #~ def init2(self):
+        #~ self.db = self.request.db
 
     def _read_dir(self):
         "Einlesen des Verzeichnisses"
@@ -411,13 +479,54 @@ class index(base):
         files, dirs = self._read_dir()
         self._put_dir_info_to_context(files, dirs)
 
+        self.db.log(type="browse", item=self.context['request_path'])
+
         # Basis Template importiert selber das User-Template
         t = Template('PyDown/Browser_base', FileSystemLoader("."))
         c = Context(self.context)
         self.request.write(t.render(c))
 
-        if cfg["debug"]:
-            self.request.debug_info()
+        if cfg["debug"]: self.request.debug_info()
+
+    def info(self):
+        """
+        Informations-Seite anzeigen
+        """
+
+        #~ filter = self.request.GET.get("filter", "download")
+        #~ self.request.write(filter)
+
+        self.db.log(type="view", item="infopage")
+
+        result = self.request.db.select(
+            from_table      = "activity",
+            select_items    = (
+                "id", "username", "item", "start_time", "current_time",
+                "total_bytes", "current_bytes"
+            ),
+            #~ where           = ("type", filter),
+            order           = ("start_time","DESC"),
+            #~ limit           = (1,10),
+            #~ debug = True
+        )
+        self.context["current_downloads"] = self.request.db.encode_sql_results(result, codec="UTF-8")
+
+        result = self.request.db.select(
+            select_items    = ("timestamp", "username", "type", "item"),
+            from_table      = "log",
+            #~ where           = ("type", filter),
+            order           = ("timestamp","DESC"),
+            limit           = (1,20),
+            #~ debug = True
+        )
+        self.context["last_log"] = self.request.db.encode_sql_results(result, codec="UTF-8")
+
+        # Basis Template importiert selber das User-Template
+        t = Template('PyDown/Infopage_base', FileSystemLoader("."))
+        c = Context(self.context)
+        self.request.write(t.render(c))
+
+        if cfg["debug"]: self.request.debug_info()
 
     def download(self):
         """
@@ -429,6 +538,11 @@ class index(base):
         if simulation:
             self.request.echo("<h1>Download Simulation!</h1><pre>")
             self.request.echo("request path: %s\n" % self.request_path)
+            log_typ = "download simulation start"
+        else:
+            log_typ = "download start"
+
+        self.db.log(log_typ, self.context['request_path'])
 
         artist = self.request.POST.get("artist", "")
         album = self.request.POST.get("album", "")
@@ -481,22 +595,36 @@ class index(base):
             self.request.write("<hr />%s...<hr />" % cgi.escape(buffer))
 
             self.request.echo("Duration: <script_duration />")
+            self.log(type="simulation_end", item=self.context['request_path'])
             return
+
+        id = self.db.insert_download(self.context['request_path'], buffer_len, 0)
 
         self.request.headers['Content-Disposition'] = 'attachment; filename="%s.zip"' % filename
         self.request.headers['Content-Length'] = '%s' % buffer_len
         self.request.headers['Content-Transfer-Encoding'] = 'binary'
         self.request.headers['Content-Type'] = 'application/octet-stream;'# charset=utf-8'
 
-        def send_data(buffer):
+        def send_data(id, buffer):
+            current_bytes = 0
+            last_time = time.time()
             while 1:
                 data = buffer.read(2048)
                 if not data:
                     return
                 yield data
+                current_bytes += len(data)
+
+                current_time = time.time()
+                if current_time-last_time>5.0:
+                    last_time = current_time
+                    self.db.update_download(id, current_bytes)
+
                 time.sleep(0.1)
 
-        self.request.send_response(send_data(buffer))
+        self.request.send_response(send_data(id, buffer))
+
+        self.db.log(type="download_end", item=self.context['request_path'])
 
 
 
@@ -508,12 +636,23 @@ class PyDown(ObjectApplication):
         super(PyDown, self).__init__(*args)
         self.request.headers['Content-Type'] = 'text/html'
 
-        if not hasattr(self.request, "cfg"):
-            self.request.cfg = cfg
-            self.request.exposed.append("cfg")
+        self.request.cfg = cfg
+        self.request.expose_var("cfg")
+        #~ if not "cfg" in self.request.exposed:
+            #~ self.request.exposed.append("cfg")
 
-        #~ db = SQL_wrapper(dbtyp="sqlite", databasename="PyDownSQLite")
-        #~ self.request.db = db
+        try:
+            self.request.db = PyDownDB(
+                self.request,
+                dbtyp="sqlite",
+                databasename="SQLiteDB/PyDownSQLite.db"
+            )
+        except Exception, e:
+            raise Exception("%s\n --- Have you run install_DB.py first?" % e)
+
+        # db-Object in Basis-App-Klasse übertragen,
+        # sodas dort self.db verfügbar ist
+        base.db = self.request.db
 
     def check_rights(self):
         """
