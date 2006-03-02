@@ -19,13 +19,17 @@ from PyDown.PyDown import cfg, app
 #_____________________________________________________________________________
 # Hier drunter mußt du deine Einstellungen vornehmen:
 
+# Nur dieser User erhalten zugriff
+cfg["allowes_user"]     =  ("user1", "user2")
+
+# Dier User erhält Admin Rechte
+cfg["admin_username"]   = "user1"
 
 # Datei-Endungsfilter, nur diese Dateien werden beachtet
 cfg["ext_whitelist"] = (".mp3",)
 
 # Basis-Pfad, der "Rekursiv-Freigegeben" werden soll.
 cfg["base_path"] = "/tmp"
-cfg["max_bandwith"] = 40 # in KB/sec !
 
 # Nur HTTPs Verbindungen erlauben?
 cfg["only_https"] = True
