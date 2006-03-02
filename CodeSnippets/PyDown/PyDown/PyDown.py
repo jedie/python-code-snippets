@@ -57,9 +57,18 @@ import os, sys, zipfile, StringIO, urllib, cgi
 import posixpath, subprocess, stat, time, locale
 
 
-# Eigene Module
+#_____________________________________________________________________________
+## Eigene Module
+
+# SQL-Wrapper mit einfachen Statement-Generator
 from database import SQL_wrapper
 
+# Für das rendern von Templates per decorator
+from TemplateDecoratorHandler import render
+
+# ObjectApplication basierend auf cgi-GET-Parameter
+from cgi_GET_ObjectApplication import ObjectApplication
+#_____________________________________________________________________________
 
 
 
@@ -76,78 +85,8 @@ filesystemencoding = sys.getfilesystemencoding()
 
 # Colubrid import's werden das erste mal im Request-Handler vorgenommen und
 # sind dort mit einem except und Info-Text versehen
-from colubrid import ObjectApplication
 from colubrid.exceptions import *
 
-
-
-
-# Jinja-Template-Engine
-try:
-    from jinja import Template, Context, FileSystemLoader
-except ImportError, e:
-    print "Content-type: text/plain; charset=utf-8\r\n"
-    print "<h1>Jinja-Template-Engine, Import Error: %s</h1>" % s
-    print "Download at: http://wsgiarea.pocoo.org/jinja/"
-    import sys
-    sys.exit()
-
-
-
-
-
-
-# Import für ObjectApplication
-import inspect
-from colubrid.utils import ERROR_PAGE_TEMPLATE, splitpath, fix_slash
-class ObjectApplication(ObjectApplication):
-    """
-        Tauschen von
-        path_info = self.request.environ.get('PATH_INFO', '/')
-        mit
-        path_info = self.request.GET.get('action', '/')
-    """
-
-    def process_request(self):
-        if not hasattr(self, 'root'):
-            raise AttributeError, 'ObjectApplication requires a root object.'
-
-        #~ path_info = self.request.environ.get('PATH_INFO', '/')
-        path_info = self.request.GET.get('action', '/')
-        self._process_request(path_info)
-
-    def _process_request(self, path_info):
-        path = splitpath(path_info)
-        handler, handler_args = self._find_object(path)
-        if not handler is None:
-            args, vargs, kwargs, defaults = None, None, None, None
-            try:
-                args, varargs, kwargs, defaults = inspect.getargspec(handler)
-                args = args[1:]
-            except:
-                pass
-            if defaults is None:
-                defaults = ()
-            min_len = len(args) - len(defaults)
-            max_len = len(args)
-            handler_len = len(handler_args)
-
-            if not hasattr(handler, 'container'):
-                if not handler_args and max_len != 0:
-                    handler.__dict__['container'] = True
-                else:
-                    handler.__dict__['container'] = False
-            # now we call the redirect method
-            # if it forces an redirect the __iter__ method skips the next
-            # part. call it magic if you like -.-
-            fix_slash(self.request, handler.container)
-
-            if min_len <= handler_len <= max_len:
-                parent = handler.im_class()
-                parent.request = self.request
-                return handler(parent, *handler_args)
-
-        raise PageNotFound
 
 
 
@@ -157,7 +96,10 @@ class ObjectApplication(ObjectApplication):
 
 
 def spezial_cmp(a,b):
-    """ Sortiert alle mit "_" beginnenen items nach oben """
+    """
+    Abgewandelte Form für sort()
+    Sortiert alle mit "_" beginnenen items nach oben
+    """
     x = a[0][0] == "_" # x ist True wenn erste Buchstabe ein "_" ist
     y = b[0][0] == "_"
     if x and y: return 0
@@ -244,9 +186,6 @@ class base(object):
             "__info__": __info__,
             "filesystemencoding": filesystemencoding,
         }
-
-    #~ def init2(self):
-        #~ self.db = self.request.db
 
     def _read_dir(self):
         "Einlesen des Verzeichnisses"
@@ -470,6 +409,12 @@ class base(object):
 
 
 class index(base):
+    """
+    Die eigentlichen Programmteile, die automatisch von der ObjectApplication
+    Aufgerufen werden.
+    """
+
+    @render('Browser_base') # return wird durch TemplateEngine gerendert
     def index(self):
         """
         Anzeigen des Browsers
@@ -479,15 +424,16 @@ class index(base):
         files, dirs = self._read_dir()
         self._put_dir_info_to_context(files, dirs)
 
-        self.db.log(type="browse", item=self.context['request_path'])
-
-        # Basis Template importiert selber das User-Template
-        t = Template('PyDown/Browser_base', FileSystemLoader("."))
-        c = Context(self.context)
-        self.request.write(t.render(c))
+        if self.context['filelist'] != []:
+            # Nur in log schreiben, wenn überhaupt Dateien vorhanden sind
+            self.db.log(type="browse", item=self.context['request_path'])
 
         if cfg["debug"]: self.request.debug_info()
 
+        return self.context
+
+
+    @render('Infopage_base') # return wird durch TemplateEngine gerendert
     def info(self):
         """
         Informations-Seite anzeigen
@@ -521,12 +467,10 @@ class index(base):
         )
         self.context["last_log"] = self.request.db.encode_sql_results(result, codec="UTF-8")
 
-        # Basis Template importiert selber das User-Template
-        t = Template('PyDown/Infopage_base', FileSystemLoader("."))
-        c = Context(self.context)
-        self.request.write(t.render(c))
-
         if cfg["debug"]: self.request.debug_info()
+
+        return self.context
+
 
     def download(self):
         """
@@ -629,6 +573,9 @@ class index(base):
 
 
 class PyDown(ObjectApplication):
+    """
+    Klasse die die Programmlogik zusammenstellt
+    """
 
     root = index
 
@@ -636,11 +583,11 @@ class PyDown(ObjectApplication):
         super(PyDown, self).__init__(*args)
         self.request.headers['Content-Type'] = 'text/html'
 
+        # Config-Dict an Request-Objekt und der Debugausgabe anhängen
         self.request.cfg = cfg
         self.request.expose_var("cfg")
-        #~ if not "cfg" in self.request.exposed:
-            #~ self.request.exposed.append("cfg")
 
+        # Datenbankverbindung herstellen und dem request-Objekt anhängen
         try:
             self.request.db = PyDownDB(
                 self.request,
@@ -670,10 +617,18 @@ class PyDown(ObjectApplication):
                 raise AccessDenied("Only identified users allow!")
 
     def process_request(self):
+        """
+        Abarbeiten des eigentlichen Request. Die ObjectApplication ruft
+        automatisch die eigentlichen Programmteile auf
+        """
         self.check_rights() # Als erstes die Rechte checken!
         super(PyDown, self).process_request()
 
     def on_access_denied(self, args):
+        """
+        Überschreibt die original Ausgabe und ergänzt diese mit
+        einem Hinweis, warum der Access Denied ist ;)
+        """
         self.request.write("<h1>403 Forbidden</h1>")
         self.request.write("<h3>%s</h3>" % " ".join(args))
 
