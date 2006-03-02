@@ -13,11 +13,14 @@ __author__  = "Jens Diemer (www.jensdiemer.de)"
 __license__ = "GNU General Public License v2 or above - http://www.opensource.org/licenses/gpl-license.php"
 __url__     = "http://www.jensdiemer.de/Programmieren/Python/PyDown"
 
-__version__ = "v0.1.1"
+__version__ = "v0.2"
 
 __info__ = """<a href="%s">PyDown %s</a>""" % (__url__, __version__)
 
 __history__ = """
+v0.2
+    - NEU: einen Info Bereich
+    - Kräftig aufgeräumt
 v0.1.1
     - Bugfixes for running under Windows
 v0.1
@@ -60,8 +63,8 @@ import posixpath, subprocess, stat, time, locale
 #_____________________________________________________________________________
 ## Eigene Module
 
-# SQL-Wrapper mit einfachen Statement-Generator
-from database import SQL_wrapper
+# SQL-Wrapper mit speziellen PyDown-DB-Zugriffsmethoden
+from PyDownDB import PyDownDB
 
 # Für das rendern von Templates per decorator
 from TemplateDecoratorHandler import render
@@ -112,58 +115,7 @@ def spezial_cmp(a,b):
 
 
 
-class PyDownDB(SQL_wrapper):
-    """
-    Bringt durch erben spezielle Methoden zum db-Zugriff in
-    den SQL-Wrapper ein
-    """
 
-    def log(self, type, item):
-        """
-        Eintrag in die Log-Tabelle machen
-        """
-        self.insert(
-            table = "log",
-            data = {
-                "timestamp": time.time(),
-                "username": self.request.environ["REMOTE_USER"],
-                "type": type,
-                "item": item,
-            }
-        )
-        self.commit()
-
-    def insert_download(self, item, total_bytes, current_bytes):
-        """
-        Einen neuen Download eintragen
-        """
-        self.insert(
-            table = "activity",
-            data = {
-                "username": self.request.environ["REMOTE_USER"],
-                "item": item,
-                "start_time": time.time(),
-                "total_bytes": total_bytes,
-                "current_time": time.time(),
-                "current_bytes": current_bytes,
-            }
-        )
-        self.commit()
-        return self.cursor.lastrowid
-
-    def update_download(self, id, current_bytes):
-        """
-        Updated einen download Eintrag
-        """
-        self.update(
-            table   = "activity",
-            data    = {
-                "current_bytes": current_bytes,
-                "current_time": time.time(),
-            },
-            where   = ("id",id),
-        )
-        self.commit()
 
 
 
@@ -186,6 +138,14 @@ class base(object):
             "__info__": __info__,
             "filesystemencoding": filesystemencoding,
         }
+
+    def init2(self):
+        """
+        Das request-Object ist bei __init__ noch nicht verfügbar, deswegen
+        muß von jeder App-Methode diese init2() ausgeführt werden.
+        """
+        self.context["username"] = self.request.environ["REMOTE_USER"]
+        self.db = self.request.db
 
     def _read_dir(self):
         "Einlesen des Verzeichnisses"
@@ -371,9 +331,6 @@ class base(object):
         return relative_path
 
     def _setup_path(self):
-        self.log_path = posixpath.join(self.request.environ["DOCUMENT_ROOT"], "log")
-        self.context["username"] = self.request.environ["REMOTE_USER"]
-
         self.raw_path_info = self.request.environ.get('PATH_INFO', '')
         self.request_path = "%s%s" % (cfg["base_path"], self.raw_path_info)
 
@@ -419,6 +376,7 @@ class index(base):
         """
         Anzeigen des Browsers
         """
+        self.init2() # Basisklasse einrichten
         self._setup_path()
 
         files, dirs = self._read_dir()
@@ -438,34 +396,13 @@ class index(base):
         """
         Informations-Seite anzeigen
         """
-
-        #~ filter = self.request.GET.get("filter", "download")
-        #~ self.request.write(filter)
+        self.init2() # Basisklasse einrichten
 
         self.db.log(type="view", item="infopage")
 
-        result = self.request.db.select(
-            from_table      = "activity",
-            select_items    = (
-                "id", "username", "item", "start_time", "current_time",
-                "total_bytes", "current_bytes"
-            ),
-            #~ where           = ("type", filter),
-            order           = ("start_time","DESC"),
-            #~ limit           = (1,10),
-            #~ debug = True
-        )
-        self.context["current_downloads"] = self.request.db.encode_sql_results(result, codec="UTF-8")
-
-        result = self.request.db.select(
-            select_items    = ("timestamp", "username", "type", "item"),
-            from_table      = "log",
-            #~ where           = ("type", filter),
-            order           = ("timestamp","DESC"),
-            limit           = (1,20),
-            #~ debug = True
-        )
-        self.context["last_log"] = self.request.db.encode_sql_results(result, codec="UTF-8")
+        # Information aus der DB sammeln
+        self.context["current_downloads"] = self.db.current_downloads()
+        self.context["last_log"] = self.db.last_log(20)
 
         if cfg["debug"]: self.request.debug_info()
 
@@ -596,10 +533,6 @@ class PyDown(ObjectApplication):
             )
         except Exception, e:
             raise Exception("%s\n --- Have you run install_DB.py first?" % e)
-
-        # db-Object in Basis-App-Klasse übertragen,
-        # sodas dort self.db verfügbar ist
-        base.db = self.request.db
 
     def check_rights(self):
         """
