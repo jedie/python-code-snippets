@@ -519,7 +519,7 @@ class index(base):
             self.request.write("<hr />%s...<hr />" % cgi.escape(temp))
 
             self.request.echo("Duration: <script_duration />")
-            self.log(type="simulation_end", item=self.context['request_path'])
+            self.db.log(type="simulation_end", item=self.context['request_path'])
             return
 
         id = self.db.insert_download(self.context['request_path'], temp_len, 0)
