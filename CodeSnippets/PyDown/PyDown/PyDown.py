@@ -475,10 +475,6 @@ class index(base):
         tar = TarFile(mode="w", fileobj=temp)
 
         if simulation:
-            #~ z.debug = 3
-            #~ oldstdout = sys.stdout
-            #~ sys.stdout = self.request
-            #~ print "TEST"
             self.request.write("-"*80)
             self.request.write("\n")
 
@@ -495,7 +491,6 @@ class index(base):
         tar.close()
 
         if simulation:
-            #~ sys.stdout = oldstdout
             self.request.write("-"*80)
             self.request.write("\n")
 
@@ -544,11 +539,11 @@ class index(base):
                     self.db.update_download(id, current_bytes)
                 time.sleep(0.05)
 
+            temp.close()
+
             self.db.update_download(id, current_bytes)
 
         self.request.send_response(send_data(id, temp))
-
-        temp.close()
 
         self.db.log(type="download_end", item=self.context['request_path'])
 
