@@ -359,6 +359,9 @@ class IterableDictCursor(object):
             result.append(tmp)
         return result
 
+    def raw_fetchall(self):
+        return self._cursor.fetchall()
+
     def __iter__(self):
         while True:
             row = self.fetchone()
@@ -477,7 +480,11 @@ class SQL_wrapper(Database):
         maxrows - Anzahl der zurí¤«gegebenen Datensåµºe, =0 alle Datensåµºe
         how     - Form der zurí¤«gegebenen Daten. =1 -> als Dict, =0 als Tuple
         """
-        SQLcommand = "SELECT " + ",".join(select_items)
+        SQLcommand = "SELECT "
+        if isinstance(select_items, str):
+            SQLcommand += select_items
+        else:
+            SQLcommand += ",".join(select_items)
         SQLcommand += " FROM $$%s" % from_table
 
         values = []
@@ -528,7 +535,7 @@ class SQL_wrapper(Database):
         if isinstance(where[0], str):
             # es ist nur eine where-Regel vorhanden.
             # Damit die folgenden Anweisungen auch gehen
-            where = [ where ]
+            where = [where]
 
         where_string            = []
         SQL_parameters_values   = []

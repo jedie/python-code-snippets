@@ -32,6 +32,12 @@ v0.1
 # Basis Config Einstellung
 # Diese _nicht_ hier ändern, sondern in der ../PyDown_config.py!!!
 cfg = {
+    # Nur diese Usernamen haben zugriff, wenn only_auth_users==True
+    "allowes_user": (),
+
+    # Username mit dem sich der Admin einloggt
+    "admin_username": "",
+
     # Datei-Endungsfilter, nur diese Dateien werden beachtet
     "ext_whitelist": (".mp3",),
 
@@ -56,8 +62,10 @@ cfg = {
 
 
 # Standart Python Module
-import os, sys, zipfile, StringIO, urllib, cgi
+import os, sys, urllib, cgi
 import posixpath, subprocess, stat, time, locale
+from tempfile import NamedTemporaryFile
+from tarfile import TarFile
 
 
 #_____________________________________________________________________________
@@ -132,19 +140,21 @@ def spezial_cmp(a,b):
 
 class base(object):
     """ Basisklasse von der jede ObjApp-Klasse ableitet """
-    def __init__(self):
-        self.context = {
-            "cfg": cfg,
-            "__info__": __info__,
-            "filesystemencoding": filesystemencoding,
-        }
+    #~ def __init__(self):
+
 
     def init2(self):
         """
         Das request-Object ist bei __init__ noch nicht verfügbar, deswegen
         muß von jeder App-Methode diese init2() ausgeführt werden.
         """
-        self.context["username"] = self.request.environ["REMOTE_USER"]
+        self.context = {
+            "cfg": self.request.cfg,
+            "__info__": __info__,
+            "filesystemencoding": filesystemencoding,
+            "username": self.request.environ["REMOTE_USER"],
+            "is_admin": self.request.environ["REMOTE_USER"] in self.request.cfg["admin_username"],
+        }
         self.db = self.request.db
 
     def _read_dir(self):
@@ -401,8 +411,34 @@ class index(base):
         self.db.log(type="view", item="infopage")
 
         # Information aus der DB sammeln
-        self.context["current_downloads"] = self.db.current_downloads()
-        self.context["last_log"] = self.db.last_log(20)
+        self.context["current_downloads"] = self.db.human_readable_downloads()
+        self.context["last_log"] = self.db.human_readable_last_log(20)
+
+        self.context["bandwith"] = self.db.get_bandwith()
+
+        if cfg["debug"]: self.request.debug_info()
+
+        return self.context
+
+
+    @render('Infopage_base') # return wird durch TemplateEngine gerendert
+    def admin(self):
+        """
+        Admin-Formular ausweten und Preferences eintragen
+        """
+        self.init2() # Basisklasse einrichten
+
+        if self.request.POST.has_key("bandwith"):
+            bandwith = self.request.POST["bandwith"]
+            self.db.set_bandwith(bandwith)
+
+            self.db.log(type="admin", item="change bandwith to %s" % bandwith)
+
+        # Information aus der DB sammeln
+        self.context["current_downloads"] = self.db.human_readable_downloads()
+        self.context["last_log"] = self.db.human_readable_last_log(20)
+
+        self.context["bandwith"] = self.db.get_bandwith()
 
         if cfg["debug"]: self.request.debug_info()
 
@@ -413,6 +449,8 @@ class index(base):
         """
         Ein Download wird ausgeführt
         """
+        self.init2() # Basisklasse einrichten
+
         simulation = self.request.POST.get("simulation", False)
 
         self._setup_path()
@@ -430,8 +468,8 @@ class index(base):
 
         files, _ = self._read_dir()
 
-        buffer = StringIO.StringIO()
-        z = zipfile.ZipFile(buffer, "w")
+        temp = NamedTemporaryFile(prefix="PyDown_%s_" % self.request.environ["REMOTE_USER"])
+        tar = TarFile(mode="w", fileobj=temp)
 
         if simulation:
             #~ z.debug = 3
@@ -450,47 +488,47 @@ class index(base):
                 #~ self.request.write("absolute path..: %s\n" % abs_path)
                 self.request.write("<strong>%s</strong>\n" % arcname)
 
-            z.write(abs_path, arcname)
-        z.close()
+            tar.add(abs_path, arcname)
+        tar.close()
 
         if simulation:
             #~ sys.stdout = oldstdout
             self.request.write("-"*80)
             self.request.write("\n")
 
-        buffer.seek(0,2) # Am Ende der Daten springen
-        buffer_len = buffer.tell() # Aktuelle Position
-        buffer.seek(0) # An den Anfang springen
+        temp.seek(0,2) # Am Ende der Daten springen
+        temp_len = temp.tell() # Aktuelle Position
+        temp.seek(0) # An den Anfang springen
 
         filename = posixpath.split(self.request_path)[-1]
 
         if simulation:
             self.request.echo('Filename........: "%s.zip"\n' % filename)
-            self.request.echo("Content-Length..: %sBytes\n" % buffer_len)
+            self.request.echo("Content-Length..: %sBytes\n" % temp_len)
             self.request.echo("\n")
 
             l = 120
             self.request.echo("First %s Bytes:\n" % l)
-            buffer = buffer.read(l)
+            temp = temp.read(l)
             #~ buffer = buffer.encode("String_Escape")
-            self.request.write("<hr />%s...<hr />" % cgi.escape(buffer))
+            self.request.write("<hr />%s...<hr />" % cgi.escape(temp))
 
             self.request.echo("Duration: <script_duration />")
             self.log(type="simulation_end", item=self.context['request_path'])
             return
 
-        id = self.db.insert_download(self.context['request_path'], buffer_len, 0)
+        id = self.db.insert_download(self.context['request_path'], temp_len, 0)
 
-        self.request.headers['Content-Disposition'] = 'attachment; filename="%s.zip"' % filename
-        self.request.headers['Content-Length'] = '%s' % buffer_len
+        self.request.headers['Content-Disposition'] = 'attachment; filename="%s.tar"' % filename
+        self.request.headers['Content-Length'] = '%s' % temp_len
         self.request.headers['Content-Transfer-Encoding'] = 'binary'
         self.request.headers['Content-Type'] = 'application/octet-stream;'# charset=utf-8'
 
-        def send_data(id, buffer):
+        def send_data(id, temp):
             current_bytes = 0
             last_time = time.time()
             while 1:
-                data = buffer.read(2048)
+                data = temp.read(2048)
                 if not data:
                     return
                 yield data
@@ -500,12 +538,17 @@ class index(base):
                 if current_time-last_time>5.0:
                     last_time = current_time
                     self.db.update_download(id, current_bytes)
+                #~ time.sleep(0.1)
 
-                time.sleep(0.1)
+            self.db.update_download(id, current_bytes)
 
-        self.request.send_response(send_data(id, buffer))
+        self.request.send_response(send_data(id, temp))
+
+        temp.close()
 
         self.db.log(type="download_end", item=self.context['request_path'])
+
+#1-100
 
 
 
@@ -548,6 +591,8 @@ class PyDown(ObjectApplication):
             if not (self.request.environ.has_key("AUTH_TYPE") and \
             self.request.environ.has_key("REMOTE_USER")):
                 raise AccessDenied("Only identified users allow!")
+            if not self.request.environ["REMOTE_USER"] in self.request.cfg["allowes_user"]:
+                raise AccessDenied("Permission denied!")
 
     def process_request(self):
         """
