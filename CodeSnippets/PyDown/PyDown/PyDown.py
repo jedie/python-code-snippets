@@ -412,7 +412,6 @@ class index(base):
 
         self.db.log(type="view", item="infopage")
 
-        self.request.write("TEST")
         self.request.echo("bandwith:", self.db.get_bandwith())
         self.request.echo("blocksize:", self.db.get_download_blocksize(0.1))
 
