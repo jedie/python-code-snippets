@@ -13,6 +13,16 @@ import sys
 from PyDown.database import SQL_wrapper
 
 
+
+default_preferences = {
+    "bandwith": "5", # KB/s
+}
+
+
+
+
+
+
 db = SQL_wrapper(sys.stdout, dbtyp="sqlite", databasename="SQLiteDB/PyDownSQLite.db")
 
 
@@ -29,18 +39,22 @@ table_data = {
         id INTEGER PRIMARY KEY,
         username VARCHAR(50) NOT NULL,
         item VARCHAR(254) NOT NULL,
-        start_time INTEGER(11) NOT NULL,
+        start_time TIMESTAMP NOT NULL,
         total_bytes INTEGER(11) NOT NULL,
-        current_time INTEGER(11) NOT NULL,
-        current_bytes INTEGER(11) NOT NULL
+        currently_time TIMESTAMP NOT NULL,
+        currently_bytes INTEGER(11) NOT NULL
+    );""",
+    "preferences": """CREATE TABLE $$preferences (
+        type VARCHAR(50) PRIMARY KEY,
+        value VARCHAR(254) NOT NULL
     );""",
     "log": """CREATE TABLE $$log (
         id INTEGER PRIMARY KEY,
-        timestamp INTEGER(11) NOT NULL,
+        timestamp TIMESTAMP NOT NULL,
         username VARCHAR(50) NOT NULL,
         type VARCHAR(50) NOT NULL,
         item VARCHAR(254) NOT NULL
-    );"""
+    );""",
 }
 
 
@@ -49,6 +63,7 @@ class setup_sql(object):
     def __init__(self, db, table_data):
         self.delete_tables(table_data)
         self.create_tables(table_data)
+        self.setup_preferences()
 
     def delete_tables(self, table_data):
         table_list = db.get_tables()
@@ -63,6 +78,17 @@ class setup_sql(object):
             print "Create table '%s'..." % tablename,
             db.cursor.execute(statement)
             print "OK"
+
+    def setup_preferences(self):
+        print
+        print "setup default preferences:"
+        for key, value in default_preferences.iteritems():
+            print "set '%s' to '%s'" % (key, value)
+            db.insert(
+                table = "preferences",
+                data = {"type": key, "value": value}
+            )
+
 
 
 

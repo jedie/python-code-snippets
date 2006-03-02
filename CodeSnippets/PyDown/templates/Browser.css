@@ -23,7 +23,7 @@ fieldset {
 	margin: 0px;
 	padding: 5px;
 }
-#filelist tr.odd {
+tr.odd {
 	background-color: #fdd;
 }
 a {
