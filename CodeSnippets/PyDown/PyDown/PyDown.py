@@ -11,7 +11,7 @@ Info zur Installation/Benutzung: PyDown_readme.txt
 
 __author__  = "Jens Diemer (www.jensdiemer.de)"
 __license__ = "GNU General Public License v2 or above - http://www.opensource.org/licenses/gpl-license.php"
-__url__     = "http://pylucid.python-hosting.com/browser/CodeSnippets/"
+__url__     = "http://www.jensdiemer.de/Programmieren/Python/PyDown"
 
 __version__ = "v0.1.1"
 
