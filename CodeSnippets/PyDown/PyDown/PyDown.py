@@ -389,6 +389,8 @@ class index(base):
         self.init2() # Basisklasse einrichten
         self._setup_path()
 
+        self.request.echo("Download: %s" % self.db.download_count())
+
         files, dirs = self._read_dir()
         self._put_dir_info_to_context(files, dirs)
 
@@ -409,6 +411,10 @@ class index(base):
         self.init2() # Basisklasse einrichten
 
         self.db.log(type="view", item="infopage")
+
+        self.request.write("TEST")
+        self.request.echo("bandwith:", self.db.get_bandwith())
+        self.request.echo("blocksize:", self.db.get_download_blocksize(0.1))
 
         # Information aus der DB sammeln
         self.context["current_downloads"] = self.db.human_readable_downloads()
@@ -524,10 +530,15 @@ class index(base):
         self.request.headers['Content-Type'] = 'application/octet-stream;'# charset=utf-8'
 
         def send_data(id, temp):
+            """
+
+            """
+            sleep_sec = 0.1
             current_bytes = 0
             last_time = time.time()
+            blocksize = self.db.get_download_blocksize(sleep_sec)
             while 1:
-                data = temp.read(2048)
+                data = temp.read(blocksize)
                 if not data:
                     return
                 yield data
@@ -537,7 +548,8 @@ class index(base):
                 if current_time-last_time>5.0:
                     last_time = current_time
                     self.db.update_download(id, current_bytes)
-                time.sleep(0.05)
+                    blocksize = self.db.get_download_blocksize(sleep_sec)
+                time.sleep(sleep_sec)
 
             temp.close()
 
