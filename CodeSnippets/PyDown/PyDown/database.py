@@ -162,10 +162,10 @@ class Database(object):
             try:
                 from pysqlite2 import dbapi2 as dbapi
             except ImportError, e:
-                msg  = "pysqlite import error! Modul "
-                msg += '<a href="http://pysqlite.org">pysqlite-mysqldb</a>'
+                msg  = "pysqlite import error: %s" % e
+                msg += 'Modul <a href="http://pysqlite.org">pysqlite-mysqldb</a>'
                 msg += " not installed???"""
-                error(msg, e)
+                raise ImportError(msg)
 
             self._setup_paramstyle(dbapi.paramstyle)
 
