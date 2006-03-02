@@ -477,13 +477,13 @@ class SQL_wrapper(Database):
         maxrows - Anzahl der zurí¤«gegebenen Datensåµºe, =0 alle Datensåµºe
         how     - Form der zurí¤«gegebenen Daten. =1 -> als Dict, =0 als Tuple
         """
-        SQLcommand = "SELECT " + ",".join( select_items )
+        SQLcommand = "SELECT " + ",".join(select_items)
         SQLcommand += " FROM $$%s" % from_table
 
         values = []
 
         if where:
-            where_string, values = self._make_where( where )
+            where_string, values = self._make_where(where)
             SQLcommand += where_string
 
         if order:
