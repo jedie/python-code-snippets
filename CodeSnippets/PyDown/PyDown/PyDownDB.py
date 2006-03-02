@@ -45,6 +45,25 @@ class PyDownDB(SQL_wrapper):
         )
         return self.request.db.encode_sql_results(result, codec="UTF-8")
 
+    def download_count(self):
+        result = self.select(
+            from_table      = "activity",
+            select_items    = "id",
+        )
+        return len(result)
+
+    def get_download_blocksize(self, sleep_sec):
+        """
+            2048 0.1 -> 20KB/s
+            20KB/s / Anzahl * (1024/0.1) = 2000
+
+        """
+        bandwith = self.get_bandwith()
+        download_count = self.download_count()
+        blocksize = float(bandwith) / download_count
+        blocksize = blocksize * (1024.0 / sleep_sec)
+        return blocksize
+
     def get_preference(self, type):
         result = self.select(
             from_table      = "preferences",
