@@ -20,7 +20,7 @@ from PyDown.PyDown import cfg, app
 # Hier drunter mußt du deine Einstellungen vornehmen:
 
 # Nur dieser User erhalten zugriff
-cfg["allowes_user"]     =  ("user1", "user2")
+cfg["allows_user"]     =  ("user1", "user2")
 
 # Dier User erhält Admin Rechte
 cfg["admin_username"]   = "user1"

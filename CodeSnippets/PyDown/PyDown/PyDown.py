@@ -591,7 +591,7 @@ class PyDown(ObjectApplication):
             if not (self.request.environ.has_key("AUTH_TYPE") and \
             self.request.environ.has_key("REMOTE_USER")):
                 raise AccessDenied("Only identified users allow!")
-            if not self.request.environ["REMOTE_USER"] in self.request.cfg["allowes_user"]:
+            if not self.request.environ["REMOTE_USER"] in self.request.cfg["allows_user"]:
                 raise AccessDenied("Permission denied!")
 
     def process_request(self):
