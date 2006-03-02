@@ -58,7 +58,7 @@ table_data = {
 }
 
 
-#~ install_statements = []
+
 class setup_sql(object):
     def __init__(self, db, table_data):
         self.delete_tables(table_data)
