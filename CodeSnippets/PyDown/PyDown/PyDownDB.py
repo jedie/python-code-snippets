@@ -59,7 +59,12 @@ class PyDownDB(SQL_wrapper):
         """
         bandwith = self.get_bandwith()
         download_count = self.download_count()
-        blocksize = float(bandwith) / download_count
+
+        if download_count == 0:
+            blocksize = bandwith
+        else:
+            blocksize = float(bandwith) / download_count
+
         blocksize = blocksize * 1024.0 * sleep_sec
         return blocksize
 
