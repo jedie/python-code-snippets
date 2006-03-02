@@ -428,6 +428,9 @@ class index(base):
         """
         self.init2() # Basisklasse einrichten
 
+        if self.context["is_admin"] != True:
+            raise AccessDenied("Only Admin can cange preferences!")
+
         if self.request.POST.has_key("bandwith"):
             bandwith = self.request.POST["bandwith"]
             self.db.set_bandwith(bandwith)
@@ -521,7 +524,8 @@ class index(base):
 
         self.request.headers['Content-Disposition'] = 'attachment; filename="%s.tar"' % filename
         self.request.headers['Content-Length'] = '%s' % temp_len
-        self.request.headers['Content-Transfer-Encoding'] = 'binary'
+        #~ self.request.headers['Content-Transfer-Encoding'] = 'binary'
+        self.request.headers['Content-Transfer-Encoding'] = '8bit'
         self.request.headers['Content-Type'] = 'application/octet-stream;'# charset=utf-8'
 
         def send_data(id, temp):
@@ -538,7 +542,7 @@ class index(base):
                 if current_time-last_time>5.0:
                     last_time = current_time
                     self.db.update_download(id, current_bytes)
-                #~ time.sleep(0.1)
+                time.sleep(0.05)
 
             self.db.update_download(id, current_bytes)
 
