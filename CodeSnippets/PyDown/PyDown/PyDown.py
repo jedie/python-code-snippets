@@ -532,8 +532,9 @@ class index(base):
 
         def send_data(id, temp):
             """
-
+            Sendet das erzeugte Archiv zum Client
             """
+            self.db.clean_up_downloads() # Alte Downloads in DB löschen
             sleep_sec = 0.1
             current_bytes = 0
             last_time = time.time()
