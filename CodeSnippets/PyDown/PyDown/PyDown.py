@@ -494,7 +494,19 @@ class index(base):
                 #~ self.request.write("absolute path..: %s\n" % abs_path)
                 self.request.write("<strong>%s</strong>\n" % arcname)
 
-            tar.add(abs_path, arcname)
+            try:
+                tar.add(abs_path, arcname)
+            except IOError, e:
+                self.request.write("<h1>Error</h1><h2>Can't create archive: %s</h2>" % e)
+                try:
+                    tar.close()
+                except:
+                    pass
+                try:
+                    temp.close()
+                except:
+                    pass
+                return
         tar.close()
 
         if simulation:
