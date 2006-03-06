@@ -231,10 +231,15 @@ class PyDownDB(SQL_wrapper):
         return downloads
 
     def human_readable_last_log(self, limit=20):
-        data = self.last_log(limit)
-        for line in data:
-            line["timestamp"] = time.strftime("%x %X", time.localtime(line["timestamp"]))
-        return data
+        try:
+            data = self.last_log(limit)
+            for line in data:
+                line["timestamp"] = time.strftime("%x %X", time.localtime(line["timestamp"]))
+            return data
+        except Exception, e:
+            msg = "Can't create log-Data: %s" % e
+            self.request.write(msg)
+            return ""
 
 
 
