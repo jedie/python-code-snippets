@@ -41,7 +41,10 @@ cfg["only_auth_users"] = True
 cfg["debug"] = False
 
 # Ab welcher Anzahl von Verzeichnissen sollen Buchstaben eingeblendet werden?
-cfg["min_letters"] =  12
+cfg["min_letters"] =  3
+
+# Wenn als Temp-Verz. nicht das default-System-Temp-Verz. genommen werden soll
+cfg["temp"] = None
 
 
 
