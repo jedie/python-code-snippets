@@ -11,7 +11,7 @@ try:
     from jinja import Template, Context, FileSystemLoader
 except ImportError, e:
     print "Content-type: text/plain; charset=utf-8\r\n"
-    print "<h1>Jinja-Template-Engine, Import Error: %s</h1>" % s
+    print "<h1>Jinja-Template-Engine, Import Error: %s</h1>" % e
     print "Download at: http://wsgiarea.pocoo.org/jinja/"
     import sys
     sys.exit()
