@@ -60,6 +60,9 @@ cfg = {
     # Debugausgaben einblenden?
     #~ "debug": True,
     "debug": False,
+
+    # Ab welcher Anzahl von Verzeichnissen sollen Buchstaben eingeblendet werden?
+    "min_letters" : 12,
 }
 
 
@@ -241,6 +244,8 @@ class base(object):
                 "letter": letter,
                 "items": temp,
             })
+
+        self.context["show_letters"] = len(dirlist)>self.request.cfg["min_letters"]
 
     def _get_stat(self, abs_path):
         result = {}
