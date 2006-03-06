@@ -13,11 +13,13 @@ __author__  = "Jens Diemer (www.jensdiemer.de)"
 __license__ = "GNU General Public License v2 or above - http://www.opensource.org/licenses/gpl-license.php"
 __url__     = "http://www.jensdiemer.de/Programmieren/Python/PyDown"
 
-__version__ = "v0.3"
+__version__ = "v0.3.1"
 
 __info__ = """<a href="%s">PyDown %s</a>""" % (__url__, __version__)
 
 __history__ = """
+v0.3.1
+    - Patch für Windows Downloads: Setzt stdout auf binary vor dem Download
 v0.3
     - Dynamische Bandbreitenanpassung möglich
 v0.2
@@ -568,6 +570,12 @@ class index(base):
             temp.close()
 
             self.db.update_download(id, current_bytes)
+
+        # force input/output to binary
+        if sys.platform == "win32":
+            import msvcrt
+            msvcrt.setmode(sys.stdin.fileno(), os.O_BINARY)
+            msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
 
         self.request.send_response(send_data(id, temp))
 
