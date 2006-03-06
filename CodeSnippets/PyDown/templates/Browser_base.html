@@ -50,7 +50,7 @@ automatisch eingefügt werden.
     <ul id="dirlist">
     {% for dir in dirlist %}
         {% if show_letters %}
-        <h3>{{ dir.letter }}</h3>
+        <h3>{{ dir.letter|escapexml }}</h3>
         {% endif %}
         {% for item in dir.items %}
             <li><a href="{{ item.url }}">{{ item.name|escapexml }}</a></li>

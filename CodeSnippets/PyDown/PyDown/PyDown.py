@@ -90,7 +90,9 @@ from cgi_GET_ObjectApplication import ObjectApplication
 
 
 
-# Für den tausender-Punkt bei Bytes-Angaben (nur Linux!)
+# local explizit auf deutsch stellen (nur Linux!), für:
+#  - den tausender-Punkt bei Bytes-Angaben
+#  - die richtige sortierung mit locale.strcoll()
 try:
     locale.setlocale(locale.LC_ALL, "de_DE.UTF-8")
     #~ locale.setlocale(locale.LC_COLLATE, "german")
@@ -109,27 +111,25 @@ from colubrid.exceptions import *
 
 
 
-
-
-
-
 def spezial_cmp(a,b):
     """
     Abgewandelte Form für sort()
     Sortiert alle mit "_" beginnenen items nach oben
     """
-    x = a[0][0] == "_" # x ist True wenn erste Buchstabe ein "_" ist
-    y = b[0][0] == "_"
-    if x and y: return 0
-    if x: return -1
-    if y: return 1
-    # strcoll -> Damit auch äöü richtig einsortiert werden
-    return locale.strcoll(a[0],b[0])
-    #~ return cmp(a,b)
+    def get_first_letter(l):
+        """
+        Einfache Art den ersten Buchstaben in einer verschachtelten
+        Liste zu finden. Funktioniert aber nur dann, wenn es nur Listen
+        sind und immer [0] irgendwann zu einem String wird!
+        """
+        if isinstance(l, list):
+            get_first_letter(l[0])
+        return l[0]
 
+    a = get_first_letter(a)
+    b = get_first_letter(b)
 
-
-
+    return locale.strcoll(a,b)
 
 
 
@@ -180,7 +180,7 @@ class base(object):
                 #~ self.request.echo("#%s#%s#<br>" % (item, abs_path))
                 dirs.append((item, abs_path))
 
-        files.sort()
+        files.sort(spezial_cmp)
         dirs.sort(spezial_cmp)
         return files, dirs
 
@@ -205,39 +205,29 @@ class base(object):
                 "album": path_info[-1],
             }
 
-        # Verzeichnis-Informationen in context einfügen
-        #~ self.context["dirlist"] = {}
-        #~ for item, abs_path in dirs:
-            #~ url = self._get_url(abs_path)
-            #~ relativ_path = self._get_relative_path(abs_path)
-
-            #~ first_letter = item[0]
-            #~ if not self.context["dirlist"].has_key(first_letter):
-                #~ self.context["dirlist"][first_letter] = []
-
-            #~ self.context["dirlist"][first_letter] .append({
-                #~ "url": url,
-                #~ "name": item,
-            #~ })
-
+        # Verzeichnis-Informationen in ein dict packen, welches
+        # als Key, den ersten Buchstaben hat
         dirlist = {}
         for item, abs_path in dirs:
             url = self._get_url(abs_path)
             relativ_path = self._get_relative_path(abs_path)
 
-            first_letter = item[0]
+            first_letter = item[0].upper()
             if not dirlist.has_key(first_letter):
                 dirlist[first_letter] = []
 
-            dirlist[first_letter] .append({
+            dirlist[first_letter].append({
                 "url": url,
                 "name": item,
             })
 
+        # Verzeichnis-Informationen in context einfügen
         self.context["dirlist"] = []
-        for letter, items in dirlist.iteritems():
+        keys = dirlist.keys()
+        keys.sort(spezial_cmp)
+        for letter in keys:
             temp = []
-            for item in items:
+            for item in dirlist[letter]:
                 temp.append(item)
 
             self.context["dirlist"].append({
