@@ -40,6 +40,9 @@ cfg["only_auth_users"] = True
 # Debugausgaben anzeigen?
 cfg["debug"] = False
 
+# Ab welcher Anzahl von Verzeichnissen sollen Buchstaben eingeblendet werden?
+cfg["min_letters"] =  12
+
 
 
 
