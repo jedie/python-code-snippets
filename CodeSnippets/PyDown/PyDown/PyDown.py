@@ -63,6 +63,8 @@ cfg = {
 
     # Ab welcher Anzahl von Verzeichnissen sollen Buchstaben eingeblendet werden?
     "min_letters" : 12,
+
+    "temp": None,
 }
 
 
@@ -475,7 +477,11 @@ class index(base):
 
         files, _ = self._read_dir()
 
-        temp = NamedTemporaryFile(prefix="PyDown_%s_" % self.request.environ["REMOTE_USER"])
+        args = {"prefix": "PyDown_%s_" % self.request.environ["REMOTE_USER"]}
+        if self.request.cfg["temp"]:
+            args["dir"] = self.request.cfg["temp"]
+        temp = NamedTemporaryFile(**args)
+
         tar = TarFile(mode="w", fileobj=temp)
 
         if simulation:
