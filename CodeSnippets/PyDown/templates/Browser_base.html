@@ -49,7 +49,7 @@ automatisch eingefügt werden.
 {% block "dir_list" %}
     <ul id="dirlist">
     {% for dir in dirlist %}
-    <h3>{{ dir.letter }}</h3>
+        <h3>{{ dir.letter }}</h3>
         {% for item in dir.items %}
             <li><a href="{{ item.url }}">{{ item.name|escapexml }}</a></li>
         {% endfor %}
