@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>{{ title }}</title>
+<meta http-equiv="expires" content="900" />
+<link rel="stylesheet" type="text/css" href="/templates/Browser.css" />
+</head>
+<body>
+
+<small>{% marker "info_link" %}</small>
+
+<fieldset><legend>current path</legend>
+<h4>{{ path }}</h4>
+</fieldset>
+
+<form name="download" method="post" action="{{ download.url }}?action=download">
+<fieldset><legend>download</legend>
+    {% marker "file_list" %}
+</fieldset>
+</form>
+
+
+<fieldset><legend>dir list</legend>
+    {% marker "dir_list" %}
+</fieldset>
+
+<div id="footer">
+    {% marker "footer" %}
+</div>
+
+{% marker "debug" %}
+</body></html>
