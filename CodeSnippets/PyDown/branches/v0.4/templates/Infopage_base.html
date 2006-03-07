@@ -1,0 +1,99 @@
+{*
+Hier werden nur Blöcke definiert, die in das eigentliche User-Template
+automatisch eingefügt werden.
+*}
+
+{% extends "Infopage_template" %}
+
+{% block "back_link" %}<a href="?">back</a>{% endblock %}
+
+{% block "current_downloads" %}
+{% if not current_downloads %}
+    <small>[no download activity]</small>
+{% else %}
+    <table id="current_downloads">
+        <tr>
+            <th>id</th>
+            <th>user</th>
+            <th>item</th>
+            <th>start time</th>
+            <th>current time</th>
+            <th>total bytes</th>
+            <th>current bytes</th>
+            <th>percent</th>
+            <th>throughput</th>
+            <th>elapsed</th>
+            <th>estimated</th>
+            <th>total</th>
+        </tr>
+        {% for line in current_downloads %}
+            {% cycle rowclass through "odd", "even" %}
+            <tr class="{{ rowclass }}">
+                <td>{{ line.id }}</td>
+                <td>{{ line.username|escapexml }}</td>
+                <td>{{ line.item|escapexml }}</td>
+                <td>{{ line.start_time }}</td>
+                <td>{{ line.currently_time }}</td>
+                <td>{{ line.total_bytes }}</td>
+                <td>{{ line.currently_bytes }}</td>
+                <td>{{ line.percent }}</td>
+                <td>{{ line.throughput }}</td>
+                <td>{{ line.elapsed }}</td>
+                <td>{{ line.estimated }}</td>
+                <td>{{ line.total }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+{% endif %}
+{% endblock %}
+
+{% block "admin" %}
+<form name="admin" method="post" action="?action=admin">
+    <label class="left" for="bandwith">bandwith:</label>
+    <input class="right" id="bandwith" name="bandwith" type="text" value="{{ bandwith }}" size="4" maxlength="3" />KBytes/s
+    {% if is_admin %}
+        <input type="submit" value="change" name="change" />
+    {% else %}
+        <small>[You are not Admin!]</small>
+    {% endif %}
+</form>
+{% endblock %}
+
+{% block "last_log" %}
+<table id="last_log">
+    <tr>
+        <th>time</th>
+        <th>user</th>
+        <th>type</th>
+        <th>item</th>
+    </tr>
+    {% for line in last_log %}
+        {% cycle rowclass through "odd", "even" %}
+        <tr class="{{ rowclass }}">
+            <td>{{ line.timestamp }}</td>
+            <td>{{ line.username|escapexml }}</td>
+            <td>{{ line.type|escapexml }}</td>
+            <td>{{ line.item|escapexml }}</td>
+        </tr>
+    {% endfor %}
+</table>
+{% endblock %}
+
+{% block "debug" %}
+    {% if cfg.debug %}
+    <hr>
+    <h4>Jinja-Debug:</h4>
+    <pre>{% debug %}</pre>
+    {% endif %}
+{% endblock %}
+
+
+{% block "footer" %}
+    <p>[only_https: {{ cfg.only_https }},
+    only_auth_users: {{ cfg.only_auth_users }},
+    ext_whitelist: {{ cfg.ext_whitelist }}]<br />
+    You are: {{ username }} - {% if is_admin %}admin{% else %}normal user{% endif %}<br />
+    filesystemencoding: {{ filesystemencoding }}<br />
+    <script_duration /><br />
+    {{ __info__ }}</p>
+{% endblock %}
