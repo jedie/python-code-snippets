@@ -628,6 +628,9 @@ class PyDown(ObjectApplication):
             if not self.request.environ["REMOTE_USER"] in self.request.cfg["allows_user"]:
                 raise AccessDenied("Permission denied!")
 
+        if not self.request.environ.has_key("REMOTE_USER"):
+            self.request.environ["REMOTE_USER"] = "anonymous"
+
     def process_request(self):
         """
         Abarbeiten des eigentlichen Request. Die ObjectApplication ruft
