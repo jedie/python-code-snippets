@@ -20,8 +20,8 @@ except ImportError, e:
 # set here the path to your templates
 # you can also use a CachedFileSystemLoader
 # but this decorator keeps the templates in the memory
-#~ loader = jinja.FileSystemLoader('templates/')
-loader = jinja.CachedFileSystemLoader('templates/')
+loader = jinja.FileSystemLoader('templates/')
+#~ loader = jinja.CachedFileSystemLoader('templates/')
 
 def render(name):
     # move this definition into the
