@@ -1,0 +1,540 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+	<head>
+		<title>PyXO 1.4.4</title>
+		<link rel="stylesheet" href="mycss.php" type="text/css">
+	</head>
+	<body>
+		<h1>PyXO 1.4.4</h1>
+			<p>
+
+				Pythonobjekte in eine XML-Datei speichern und daraus wieder einlesen.
+			</p>
+	  <table class="bodyline" width="100%">
+			<tr>
+			  <td class="cattitle">
+					<a href="./py_view.php?python_file=PyXO.py" target="code_view">PyXO.py</a>
+					 <span class="gensmall">(&ouml;ffnet neues Fenster -
+						letzter Upload:
+						15 Jan 2005 14:57:32)</span></td>
+				<td><a href="download.php?python_file=PyXO.py">download</a></td>
+
+			</tr>
+		</table>
+		<h1>Beschreibung von PyXO</h1>
+			<p><b>PyXO</b> <span class="gen">ist ein Modul das es
+			erm&ouml;glicht Pythonobjekte einfach in eine XML-Datei zu speichern
+			und diese dann auch wieder, aus den Daten der XML-Datei,
+			zur&uuml;ckzuladen. Es werden auch Klassen bereit gestellt, um Klassen
+			mit besonderen Eigenschaften f&uuml;r die Speicherung in XML, zu
+			erstellen.<br/>
+			Version 1.2 bringt h&ouml;here Geschwindigkeit beim Speichern und ein
+			noch flexibleres Interface. Da jetzt die Objekte direkt in ein
+			Dateiobjekt (das Dateiobjekt braucht nur eine write(string) Methode
+			zu haben)	geschrieben werden, k&ouml;nnen auch Streams bedient werden.
+			<br/>Neu in Version 1.3:
+			Werden Instanzen einer von PyXO.Object abgeleiteten Klasse mehrfach
+			gespeichert, so wird das Objekt in der XML-Datei nur beim erstenmal
+			gespeichert, f&uuml;r jedes weitere mal wird ein PyXO_Ref-Tag in der
+			Datei erzeugt. Dies kann f&uuml;r bestimmte Objekte verhindert werden
+			indem dem Objekt ein Attribut "no_PyXO_Ref" zugewiesen wird.<br/>
+
+			Neu in Version 1.4:
+			PyXO kann jetzt auch xrange-Objekte speichern und laden.<br/>
+			Neu in Version 1.4.2:
+			Um Mehrfachvererbung zu erm&ouml;glichen habe ich auf __slots__ in
+			den Klassendefinitonen verzichtet.<br/>
+			Neu in Version 1.4.4:
+			Wenn in der XML-Datei bei einem Element unbekannte Attribute auftauchen,
+			wird eine Warnung ausgegeben. Diese kann mit dem Modul "warnings" auch
+			in eine Exception umgewandelt oder die ausgabe der Warung unterdr&uuml;ckt
+			werden. Kleine Codeoptimierungen und die Lizenz ist jetzt "Python license"
+			<br/>
+			<b>Ben&ouml;tigt Python 2.3</b><br/>
+			Lizenz: <a href="http://www.python.org/psf/license.html" target="_blank"
+			>Python license</a>
+
+			</span></p>
+		<dl class="bodyline"><dt class="header">Klassen</dt>
+			<dd>
+			<dl><dt>Klasse PyXO.Object(object)</dt>
+				<dd><p>ist die Basisklasse, von welcher weitere Klassen abgeleiet werden
+					k&ouml;nnen, deren Instanzen dann einfach in XML-Tags &uuml;bersetzt
+					und so in eine Datei gespeichert und daraus auch wieder geladen
+					werden	k&ouml;nnen.</p>
+					<dl><dt class="header">Methoden</dt><dd>
+
+						<dl><dt>__init__(*args, **kw)</dt>
+						<dd>ist in der Klasse zwar nicht definiert, hier ist aber trotzdem
+						eine Beschreibung, wie sie in abgeleiteten Klassen verwendet werden
+						sollte.<br/>
+						Abgeleitete Klassen sollten so aufgebaut sein, da&szlig; sie als
+						erstes Argument (args[0]) ein Tuple, eine Liste oder ein anderes
+						iterables Objekt, das sich in eine Liste wandeln l&auml;sst erwartet,
+						Darin enthalten sind dann die zu diesem Objekt geh&ouml;renden
+						Kind-Elemente. Sind keine Kindelemente Vorhanden, ist args
+						leer!<br/>
+						<b>kw</b> ist ein dictionary mit den aus der XML-Datei gelesenen
+						Attributen. Jede abgeleitete Klasse sollte aus diesem Dictionary
+						die f&uuml;r sie bestimmten Attribute auslesen und aus dem Dictionary
+						entfernen. Es sollte auch ber&uuml;cksichtigt werden, da&szlig;
+
+						m&ouml;glicherweise manche Attribute beim Aufruf von __init__(...)
+						nicht mit&uuml;bergeben wurden oder von anderen abgeleiteten Klassen
+						bereits gesetzt wurden.
+						Beispiel:
+						<pre class="python"><span class="hi_statement">class</span> <span class="hi_function">MyClass</span>(PyXO&#x2e;Object):
+
+    __slots__ = {<span class="hi_string">"attr1"</span>: <span class="hi_function">str</span>, <span class="hi_string">"attr2"</span> : <span class="hi_function">int</span>}
+
+    <span class="hi_statement">def</span> <span class="hi_function">__init__</span>(self, *args, **kw):
+        <span class="hi_function">super</span>(MyClass)&#x2e;__init__(*args, **kw) <span class="hi_comment"># erstmal Basis initialisieren</span>
+
+        <span class="hi_statement">if</span> args:
+            self&#x2e;kinder = args[<span class="hi_number">0</span>] <span class="hi_comment"># nur wenn wir selber Unterobjekte verwalten</span>
+            args = args[<span class="hi_number">1</span>:]       <span class="hi_comment"># ansonst überlassen wir das der Basisklasse</span>
+        <span class="hi_statement">if</span> kw&#x2e;has_attr(<span class="hi_string">"attr1"</span>):
+            self&#x2e;attr1 = kw&#x2e;pop(<span class="hi_string">"attr1"</span>) <span class="hi_comment"># zuweisen und aus dict löschen</span>
+
+        <span class="hi_statement">if</span> kw&#x2e;has_attr(<span class="hi_string">"attr2"</span>):
+            self&#x2e;attr2 = kw&#x2e;pop(<span class="hi_string">"attr2"</span>) <span class="hi_comment"># siehe attr1</span>
+                &#x2e;&#x2e;&#x2e; <span class="hi_comment"># weitere Attribute barbeiten und restliche Initialisierung</span></pre>
+
+						</dd>
+						<dt>attrs_to_xml()</dt>
+						<dd>Gibt die Attribute der Instanz als String zur&uuml;ck. Das
+						Format ist <b>attribut1="value"&nbsp;attribut2="value"&nbsp;...</b>
+						</dd>
+						<dt>to_xml(indent=None, indstr=PyXO.indstr, stream=None)</dt>
+
+						<dd>schreibt das Objekt und alle seine Unterobjekte als XML-String
+						in das Dateiobjekt <b>stream</b>. Ist <b>stream</b> nicht angegeben
+						wird ein String zur&uuml;ckgegeben.<br/>
+						<b>indent</b> gibt die Einr&uuml;ckungstiefe an.
+						<b>indstr</b> ist die Zeichenkette die f&uuml;r die Einr&uuml;ckung
+						verwendet wird.
+						</dd>
+
+						<dt>xml_get_children()</dt>
+						<dd>Optionale Mehode, wenn diese, in abgeleiteten Klassen vorhanden
+						ist, sollte sie ein	Iterable (Liste, Tuple) zur&uuml;ckgeben,
+						welches die Unterobjekte der Instanz liefert. Ist diese Methode
+						nicht vorhanden, wird	versucht die Unterobjekte direkt aus der
+						Instanz zu holen, geht auch das nicht, wird angenommen, da&szlig;
+						die Instanz keine	Unterobjekte enth&auml;lt.
+						</dd></dl>
+						<br/>
+					</dd></dl>
+					<dl><dt class="header">Klassenmethoden</dt><dd>
+
+						<dl><dt>register_other(name, constructor, attributes, to_xml)</dt>
+						<dd>Mit dieser Methode k&ouml;nnen zus&auml;tzliche Klassen/Typen
+						registriert werden.	<b>name</b> ist der Name f&uuml;r das XML-Tag,
+						<b>constructor</b> Erzeugt das Objekt, <b>attributes</b> ist ein
+						Dictionary mit den Attributen und deren Typen, wie __slots__ bei
+						von PyXO.Object abgeleiteten Klassen und <b>to_xml</b> eine Funktion
+						oder der Name einer Methode, die aus einer Instanz das XML-Tag
+						erstellt.
+						<dt>to_xml(obj, indent=None, indstr=PyXO.indstr, stream=None)</dt>
+
+						<dd>schreibt das Objekt <b>obj</b> und alle seine Unterobjekte
+						als XML-String in das Dateiobjekt <b>stream</b>.<br/>
+						<b>indent</b> gibt die Einr&uuml;ckungstiefe an.<br>
+						Ist <b>stream</b> nicht angegeben	wird ein String
+						zur&uuml;ckgegeben. Es k&ouml;nnen auch Instanzen von Builtintypen
+						mit dieser Klassenmethode in einen XML-Stream geschrieben werden.
+						</dd>
+
+						<dt>from_xml(xml)</dt>
+						<dd>Erzeugt Objekt aus den XML-Daten in <b>xml</b>.
+						Die Objekte die in der XML-Datei <b>xml</b> stehen m&uuml;ssen
+						der Applikation nicht bekannt sein, k&ouml;nnen also auch aus
+						einem Plugin stammen. Sie sollten, um alle M&ouml;glichkeiten von
+						XML-Objects nutzen zu k&ouml;nnen, von PyXO.Object abgeleitet sein.
+						Auch Instanzen von	Buitin-Typen k&ouml;nnen in der XML-Datei
+						stehen.
+						</dd>
+						<dt>load(xml)</dt>
+
+						<dd>l&auml;dt die XML-Datei <b>xml</b> und erstellt die darin
+						enthaltenen	Objekte. <b>xml</b> kann eine Datei oder der Name einer
+						Datei sein.
+						</dd>
+						<dt>save(xml, obj)</dt>
+						<dd>speichert in die Datei <b>xml</b> das Objekt <b>obj</b>.
+						<b>xml</b> kann eine Datei oder der Name einer Datei sein.
+						Ist <b>obj</b> nicht eine Instanz von PyXO.Root oder einer von
+						PyXO.Root abgeleiteten Klasse, so wird das <b>obj</b> in ein
+						PyXO.Root-Objekt eingeschlossen.<br/></dd>
+
+						<dd>Ich empfehle zum Laden und Speichern der Objekte immer die
+						load- und save-Methode von PyXO.Object zu verwenden, da nur dann
+						sicher gestellt ist, da&szlig; eine wohlgeformte und wieder
+						ladbare Datei erstellt wird. Soll eine Instanz von PyXO.Root oder
+						einer	davon abgeleiteten Klasse gespeichert werden, kann
+						nat&uuml;rlich deren save-Methode verwendet werden.
+						</dd></dl>
+						<br/>
+					</dd></dl>
+					<dl><dt class="header">Statische Methoden</dt><dd>
+						<dl>
+						<dt>xml_c_data_handler(data)</dt>
+
+						<dd>Hiermit werden "cdata" Abschnitte die aus der XML-Datei gelesen
+						werden aufbereitet. Standartm&auml;ssig werden Zeilenumbr&uuml;che
+						und Tabulatoren in ein Leerzeichen umgewandelt und mehrere
+						aufeinanderfolgende Leerzeichen in ein einzelnes.
+						</dd>
+						<dt>xml_import_error_handler(module, name, children, attrs)</dt>
+						<dd>Diese Methode sollte &Uuml;berschrieben werden, wenn die
+						Applikation es erlaubt, da&szlig; der Anwender ein Modul, das
+						nicht installiert ist nachzuinstallieren.
+						</dd>
+						</dl>
+						<br/>
+
+					</dd></dl>
+					<dl><dt class="header">Daten und andere Attribute</dt><dd>
+						<dl><dt>__Metaclass__ = 'PyXO.Type'</dt>
+						<dd>PyXO.Type - Hier steckt die Intelligenz der Klasse.
+						</dd>
+						<dt>xml_attrs</dt>
+						<dd>optionales Dictionary mit den Attributen und deren Typen.
+						ist Dieses nicht definiert, wird <b>__slots__</b> verwendet,
+						Sofern es sich um ein Dictionary handelt. In <b>xml_attrs</b>
+
+						brauchen nicht die Attribute der Basisklasse(n) eingetragen
+						werden.
+						<dd>
+						<dt>__slots__ = {}</dt>
+						<dd>Dictionary mit den Attributen als Schl&uuml;ssel und den Typen
+						dieser als Daten. Mit Hilfe dieser Daten k&ouml;nnen die Attribute
+						aus der XML-Datei wieder mit den richtigen Typen versorgt werden.
+						Bekommt ein Attribut als Typ 'None' so wird dieses Attribut nicht
+						in XML eingetragen!<br/>
+						In <b>__slots__</b> brauchen <b>nicht</b> die Attribute der
+						Basisklasse sondern nur die der Klasse selbst eingetragen zu
+						werden. Es k&ouml;nnen aber damit, indem der entsprechende Eintrag
+						auf None gesetzt wird, bestimmte Attribute aus der Basisklasse von
+						dem	Eintrag in eine XML-Datei ausgeschlossen werden. Stelle dann
+						sicher, da&szlig; in Deiner __init__-Methode dieses Attribut auf
+						einen entsprechenden Wert gesetzt wird!
+						</dd>
+
+						<dt>xml_write_python_module</dt>
+						<dd>ist dieses Klassenattribut auf True gesetzt, wird in den
+						PyXO.Tags von geschriebenen Objekten, mit Ausnahme von
+						builtin-Objekten, der Name des Moduls aus dem das Objekt stammt
+						im Attribut python_module eingetragen. Dies kann durch redefinieren
+						dises Attributs in einer Abgeleiteten Klasse, mit dem Wert False,
+						unterbunden werden.
+						<dd>
+						<dt>xml_tag_name = &lt;string&gt;</dt>
+						<dd>wenn dieses Klassenattribut in einer abgeleiteten Klasse
+						definiert ist, wird der hier angegebene Name als Bezechner f&uuml;r
+						XML-Tags von Instanzen dieser Klasse, in der XML-Datei verwendet.
+						Ansonst wird der Name der	Klasse verwendet.
+					</dd></dl>
+				</dd></dl>
+			</dd></dl>
+
+			<dl><dt>Klasse PyXO.Container(PyXO.Object)</dt>
+				<dd><p>Einfaches Containerobjekt zur Aufnahme von Unterobjekten.</p>
+					<dl><dt class="header">Methoden</dt><dd>
+						<dl><dt>__len__()</dt><dd>
+						Gibt die Anzahl der Unterobjekte zur&uuml;ck.
+						</dd>
+						<dt>append(obj)</dt><dd>
+
+						F&uuml;gt ein Unterobjekt hinzu.
+						</dd>
+						<dt>remove(obj)</dt><dd>
+						Entfernt ein Unterobjekt.
+						</dd>
+						<dt>xml_get_children()</dt><dd>
+						Gibt Iterator &uuml;ber die Unterobjekte zur&uuml;ck.
+						</dd></dl>
+
+						<br>
+					</dd></dl>
+					<dl><dt class="header">Daten und andere Attribute</dt><dd>
+						<dl><dt>name = "anonymus"</dt><dd>
+						Name des Containerobjekts.
+						</dd>
+						<dt>children = []</dt><dd>
+						Liste der Unterobjekte.
+						</dd></dl>
+
+						<br/>
+					</dd></dl>
+				</dd>
+			</dl>
+			<dl><dt>Klasse PyXO.Root(PyXO.Container)</dt>
+				<dd><p>Basiscontainter zur Aufnahme von Unterobjekten.</p>
+					<dl><dt class="header">Methoden</dt><dd>
+
+						<dl><dt>save(xml)</dt><dd>
+						Speichert das Rootobjekt und alle Unterobjekte als XML-Daten
+						nach xml, [b]xml[/b] kann eine Datei oder ein Dateiname sein.
+						</dd></dl>
+						<br/>
+					</dd></dl>
+					<dl><dt class="header">Daten und andere Attribute</dt><dd>
+						<dl><dt>xml_tag_name = "PyXO"</dt><dd>
+						Name des Root-Tag in XML-Datei.
+						</dd>
+
+						<dt>del_root = False</dt><dd>
+						Wenn <b>del_root</b> True ist, wird bei Verwendung der
+						Klassenmethode <b>PyXO.Object.load(...)</b> das Unterobjekt im
+						Basiscontainer zur&uuml;ckgegeben und der Basiscontainer
+						gel&ouml;scht.
+						</dd></dl>
+						<br/>
+					</dd></dl>
+
+				</dd>
+			</dl>
+			<dl><dt>Klasse PyXO.CData(PyXO.Object)</dt>
+				<dd><p>Klasse f&uuml;r XML-CDATA-Abschnitte, z.B. f&uuml;r Sourcecodes,
+				in der XML-Datei.
+				</p>
+					<dl><dt class="header">Methoden</dt><dd>
+						<dl><dt>to_xml(indent, stream)</dt><dd>
+
+						Schreibt die Daten die in dem Objekt gespeichert sind mit
+						umschlie&szlig;enden &lt;![CDATA[...]]&gt; in die XML-Datei.
+						</dd></dl>
+						<dl><dt>__str__()</dt><dd>
+						Gibt den Inhalt des CData-Objekts zur&uuml;ck.
+						</dd></dl>
+						<br/>
+					</dd></dl>
+
+				</dd>
+			</dl>
+		</dd>
+		<dt class="header">Globale Funktionen</dt><dd><dl>
+			<dt>gen_id(name, fmt="%s_%03d")</dt><dd>
+			  Erzeugt eine Einmalige ID aus dem Namen <b>name</b> und einer
+				fortlaufenden Nummer.
+			</dd>
+
+			<dt>escape(data, quote=True, all=True)</dt><dd>
+				Wandelt die Zeichen &amp;, &lt;, &gt; in die entsprechenden
+				Entities. Es werden auch, wenn <b>quote</b> nicht auf False gesetzt ist
+				Anf&uuml;hrungszeichen und Apostroph umgewandelt. Ist <b>all</b> nicht
+				auf False, werden alle Unicodezeichen &lt; 32 und &gt; 128 in numerische
+				Entities gewandelt.
+			</dd>
+
+			<dt>unicoded(data, encoding=sysencoding)</dt><dd>
+				Gibt <b>data</b> als Unicode zur&uuml;ck
+			</dd></dl><br/>
+		</dd>
+		<dt class="header">Globale Variablen</dt><dd><dl>
+			<dt>sysencoding = sys.getfilesystemencoding()</dt><dd>
+
+				Zeichencodierung des Systems.
+			</dd>
+			<dt>xml_prolog = codecs.BOM_UTF8 +
+			'&lt;xml version="1.0" encoding="utf-8"?&gt;\n'</dt><dd>
+				Erste Zeile(n) jeder erzeugten XML-Datei.
+			</dd>
+			<dt>indentstr = "&nbsp;&nbsp;"</dt><dd>
+				Zeichenkette f&uuml;r Einr&uuml;ckungen der XML-Tags (2xSpace)
+			</dd></dl><br/>
+
+		</dd></dl>
+		<span class="gensmall">wird fortgesetzt...</span>
+		<br/>
+		<hr/>
+		<table class="bodyline" width="100%">
+			<tr>
+			  <td class="cattitle">
+					<a href="PyXO_Base64.py">PyXO_Base64.py</a>
+
+				</td>
+			</tr>
+			<tr>
+				<td class="gen">
+					Beispiel f&uuml;r eine Klasse, die es erlaubt
+					Bin&auml;rstrings Base64-Codiert zu speichern.
+				</td>
+			</tr>
+		  <tr>
+
+			  <td>
+					<pre class="python"><span class="hi_comment">#!/usr/bin/env python</span>
+<span class="hi_comment"># -*- coding: UTF-8 -*-</span>
+<span class="hi_string">"""
+    Modul:          PyXO_Base64
+    Description:    Base64 codet strings to load and store as xml
+    Version:        1&#x2e;2
+    Copyright:      2004 by Fritz Cizmarov fritz&#x40;sol&#x2e;at
+    Created:        27&#x2e; Jul&#x2e; 2004
+    Last modified:  15&#x2e; Jän&#x2e; 2005
+    License:        Python license
+    Requirements:   Python2&#x2e;3 PyXO&#x2e;py
+    Exports:        Base64
+"""
+
+</span>
+<span class="hi_preproc">import</span> PyXO
+
+<span class="hi_statement">class</span> <span class="hi_function">Base64</span>(<span class="hi_function">str</span>):
+    <span class="hi_string">"""
+        Class for saving base64 encoded strings,
+        b64 = Base64(&lt;string&gt;) -&gt; return Base64-string
+        b64 = Base64(allready_encoded, encoded=True) -&gt; allready encoded
+            string convertet to Base64
+        b64&#x2e;base64 is the base64-encoded representation of the string
+    """
+
+</span>
+    xml_attrs = {<span class="hi_string">"encoded"</span> : <span class="hi_function">bool</span>}
+
+    <span class="hi_statement">def</span> <span class="hi_function">base64</span>(self):
+        <span class="hi_statement">return</span> self&#x2e;encode(<span class="hi_string">"base64"</span>)
+    base64 = <span class="hi_function">property</span>(base64, doc=<span class="hi_string">"base64-encoded representation"</span>)
+
+    <span class="hi_statement">def</span> <span class="hi_function">__new__</span>(cls, string, encoded=<span class="hi_function">False</span>):
+        <span class="hi_statement">if</span> encoded:
+            <span class="hi_statement">if</span> <span class="hi_statement">not</span> <span class="hi_function">isinstance</span>(string, <span class="hi_function">basestring</span>):
+                <span class="hi_statement">raise</span> <span class="hi_exception">TypeError</span>(<span class="hi_string">"Argument musst be string!"</span>)
+            <span class="hi_statement">return</span> <span class="hi_function">super</span>(Base64, cls)&#x2e;__new__(cls, <span class="hi_function">str</span>(string)&#x2e;decode(<span class="hi_string">"base64"</span>))
+        <span class="hi_statement">else</span>:
+            <span class="hi_statement">return</span> <span class="hi_function">super</span>(Base64, cls)&#x2e;__new__(cls, string)
+
+    <span class="hi_statement">def</span> <span class="hi_function">__repr__</span>(self):
+        cls_name = self&#x2e;__class__&#x2e;__name__
+        <span class="hi_statement">return</span> <span class="hi_string">"&#x25;s('&#x25;s', encoded=True)"</span> &#x25; (cls_name, self&#x2e;base64)
+
+    <span class="hi_statement">def</span> <span class="hi_function">to_xml</span>(self, indent=<span class="hi_number">0</span>, indstr=PyXO&#x2e;indstr, stream=<span class="hi_function">None</span>):
+        myind1 = indstr*indent
+        myind2 = myind1+indstr
+        fmt = <span class="hi_string">"&#x25;s&lt;Base64 encoded=\&#x22;true\&#x22; python_module=\&#x22;PyXO_Base64\&#x22;&gt;\n&#x25;s&#x25;s\n&#x25;s&lt;/Base64&gt;\n"</span>
+
+        b64 =  self&#x2e;base64&#x2e;replace(<span class="hi_string">"\n"</span>,<span class="hi_string">"\n"</span>+myind2)&#x2e;rstrip() <span class="hi_comment"># prepare for xml</span>
+        <span class="hi_statement">if</span> stream <span class="hi_statement">is</span> <span class="hi_statement">not</span> <span class="hi_function">None</span>:
+            stream&#x2e;write(fmt &#x25; (myind1, myind2, b64, myind1))
+        <span class="hi_statement">else</span>:
+            <span class="hi_statement">return</span> fmt &#x25; (myind1, myind2, b64, myind1)
+
+
+
+<span class="hi_statement">if</span> __name__ == <span class="hi_string">"__main__"</span>:
+    demostr = <span class="hi_string">""</span>&#x2e;join([<span class="hi_function">chr</span>(x) <span class="hi_statement">for</span> x <span class="hi_statement">in</span> <span class="hi_function">xrange</span>(<span class="hi_number">256</span>)]) <span class="hi_comment"># String with all Chars</span>
+
+    test = Base64(demostr) <span class="hi_comment"># Encode to base64</span>
+    PyXO&#x2e;Object&#x2e;save(<span class="hi_string">"base64test&#x2e;xml"</span>, test) <span class="hi_comment"># save to *&#x2e;xml</span>
+    neu = PyXO&#x2e;Object&#x2e;load(<span class="hi_string">"base64test&#x2e;xml"</span>) <span class="hi_comment"># load from *&#x2e;xml</span>
+
+    <span class="hi_statement">print</span> <span class="hi_function">repr</span>(<span class="hi_function">str</span>(test)) <span class="hi_comment"># saved string</span>
+    <span class="hi_statement">print</span> <span class="hi_function">repr</span>(<span class="hi_function">str</span>(neu))  <span class="hi_comment"># reloaded string</span>
+
+    <span class="hi_statement">print</span> <span class="hi_string">"Are generated data equal to loaded from XML?"</span>, test == neu</pre>
+				</td>
+			</tr>
+		</table>
+		<br/>
+		<p class="gen">Hier ist noch ein Beispielscript:</p>
+
+		<table class="bodyline" width="100%">
+			<tr>
+			  <td class="cattitle">
+					<a href="PyXO_Object_Test.py">PyXO_Object_Test.py</a>
+				</td>
+			</tr>
+		  <tr>
+			  <td>
+
+				  <pre class="python"><span class="hi_comment">#!/usr/bin/env python</span>
+<span class="hi_comment"># -*- coding: UTF-8 -*-</span>
+<span class="hi_string">"""
+    Modul:          PyXO_Object_Test
+    Description:    Beschreibung
+    Version:        1&#x2e;0&#x2e;1a
+    Copyright:      2004 by Fritz Cizmarov fritz&#x40;sol&#x2e;at
+    Created:        17&#x2e; Jul&#x2e; 2004
+    Last modified:  15&#x2e; Jän&#x2e; 2005
+    License:        Python license
+    Requirements:   Python2&#x2e;3
+    Exports:        Classes and Functions to export
+"""
+
+</span>
+<span class="hi_preproc">import</span> os, sys
+<span class="hi_preproc">import</span> re
+<span class="hi_preproc">import</span> PyXO
+
+
+<span class="hi_statement">class</span> <span class="hi_function">Vector</span>(PyXO&#x2e;Object):
+    __slots__ = <span class="hi_function">dict</span>&#x2e;fromkeys((<span class="hi_string">'x'</span>, <span class="hi_string">'y'</span>, <span class="hi_string">'z'</span>), <span class="hi_function">float</span>)
+
+    <span class="hi_statement">def</span> <span class="hi_function">__init__</span>(self, x = <span class="hi_number">0</span>&#x2e;<span class="hi_number">0</span>, y = <span class="hi_number">0</span>&#x2e;<span class="hi_number">0</span>, z = <span class="hi_number">0</span>&#x2e;<span class="hi_number">0</span>, **kw):
+        <span class="hi_function">super</span>(Vector, self)&#x2e;__init__(**kw)
+        self&#x2e;x = x
+        self&#x2e;y = y
+        self&#x2e;z = z
+
+
+filename = <span class="hi_string">"PyXO_Object_test&#x2e;xml"</span>
+
+<span class="hi_statement">if</span> os&#x2e;path&#x2e;exists(filename):
+    root = PyXO&#x2e;Object&#x2e;load(filename)
+    <span class="hi_statement">print</span> <span class="hi_string">"file '&#x25;s' read, parsed and objects created\n"</span> &#x25; filename
+    <span class="hi_statement">print</span> root&#x2e;to_xml()
+    <span class="hi_statement">print</span> root&#x2e;children
+
+<span class="hi_statement">else</span>:
+    nullV = Vector(<span class="hi_function">id</span>=<span class="hi_string">"NullVector"</span>)
+    root = PyXO&#x2e;Root(name = <span class="hi_string">"Willi"</span>)
+    root&#x2e;append(<span class="hi_string">"Hallo &lt; &gt; Willi"</span>)
+    root&#x2e;append(<span class="hi_function">True</span>)
+    root&#x2e;append(u<span class="hi_string">"ÄÖÜäöüß€"</span>)
+    root&#x2e;append(nullV)
+    root&#x2e;append([<span class="hi_number">1</span>,<span class="hi_number">2</span>,<span class="hi_number">3</span>])
+    root&#x2e;append((<span class="hi_string">"A"</span>,<span class="hi_string">"B"</span>,<span class="hi_string">"C"</span>))
+    root&#x2e;append({<span class="hi_string">"a"</span> : <span class="hi_number">1</span>, <span class="hi_string">"b"</span> : <span class="hi_number">2</span>})
+    root&#x2e;append(<span class="hi_number">1</span>&#x2e;<span class="hi_number">5</span>+<span class="hi_number">2</span>&#x2e;<span class="hi_number">5j</span>)
+    root&#x2e;append(nullV)
+    root&#x2e;append(Vector(<span class="hi_number">1</span>&#x2e;<span class="hi_number">0</span>,<span class="hi_number">2</span>&#x2e;<span class="hi_number">0</span>,<span class="hi_number">3</span>&#x2e;<span class="hi_number">0</span>))
+    root&#x2e;append(Vector(<span class="hi_number">0</span>&#x2e;<span class="hi_number">1</span>,<span class="hi_number">0</span>&#x2e;<span class="hi_number">2</span>,<span class="hi_number">0</span>&#x2e;<span class="hi_number">3</span>))
+    root&#x2e;append(nullV)
+    root&#x2e;save(filename)
+    <span class="hi_statement">print</span> <span class="hi_string">"&#x25;s written to file '&#x25;s'"</span> &#x25; (root&#x2e;name, filename)
+    <span class="hi_statement">print</span> <span class="hi_string">"please start script again to test reading of the file!"</span></pre>
+
+				</td>
+			</tr>
+		</table>
+		<br/>
+	  <table class="bodyline" width="100%">
+			<tr>
+			  <td class="cattitle">
+					<a href="./py_view.php?python_file=PyXO.py" target="code_view">PyXO.py</a>
+
+					 <span class="gensmall">(&ouml;ffnet neues Fenster -
+						letzter Upload:
+						15 Jan 2005 14:57:32)</span></td>
+				<td><a href="download.php?python_file=PyXO.py">download</a></td>
+			</tr>
+		</table>
+		<br/>
+		<table width="100%"><tr>
+		<td>
+
+      <a href="http://validator.w3.org/check?uri=referer"><img border="0"
+          src="http://www.w3.org/Icons/valid-html401"
+          alt="Valid HTML 4.01!" height="31" width="88"/></a>
+			<a href="http://jigsaw.w3.org/css-validator/validator?uri=http://www.boa3d.de/python/modules/mycss.php"><img
+					style="border:0;width:88px;height:31px"
+					src="http://jigsaw.w3.org/css-validator/images/vcss"
+					alt="Valid CSS!"/></a></td>
+					<td class="gensmall" align="right">
+						15 Jan 2005 14:56:35						-
+						599</td>
+    </tr></table>
+	</body>
+</html>
