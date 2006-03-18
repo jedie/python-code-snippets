@@ -2,7 +2,74 @@
 <html>
 	<head>
 		<title>PyXO 1.4.4</title>
-		<link rel="stylesheet" href="mycss.php" type="text/css">
+		<style type="text/css">
+            body { font-family: Verdana, Arial, Helvetica, sans-serif; margin: 20px}
+            a:link,a:active,a:visited { color : #006699; }
+            a:hover		{ text-decoration: underline; color : #DD6900; }
+            hr	{ height: 0px; border: solid #D1D7DC 0px; border-top-width: 1px;}
+            p {margin-top: 0px}
+            dl {font-weight: normal; font-size: 12px;}
+            dt {font-weight: bold; font-size: 12px; margin-top:10px; background-color:#ffffff}
+            dt.header {margin-top:0px; font-size: 14px; background-color:#ccddff}
+            dd {margin-left:15px}
+
+            /* This is the border line & background colour round the entire page */
+            .bodyline	{ background-color: #FFFFFF; border: 1px #98AAB1 solid; }
+
+            /* This is the outline round the main forum tables */
+            .forumline	{ background-color: #FFFFFF; border: 2px #006699 solid; }
+
+            /* The largest text used in the index page title and toptic title etc. */
+            .maintitle, h1	{
+                        font-weight: bold; font-size: 22px; font-family: "Trebuchet MS",Verdana, Arial, Helvetica, sans-serif;
+                        text-decoration: none; line-height : 120%; color : #000000;
+            }
+
+            .subtitle, h2	{
+                        font-weight: bold; font-size: 16px; font-family: "Trebuchet MS",Verdana, Arial, Helvetica, sans-serif;
+                        text-decoration: none; line-height : 120%; color : #000000;
+            }
+
+            .gen { font-size : 12px; }
+            .genmed { font-size : 11px; }
+            .gensmall { font-size : 10px; }
+            .gen,.genmed,.gensmall { color : #000000; font-weight: normal}
+            a.gen,a.genmed,a.gensmall { color: #006699; text-decoration: none; }
+            a.gen:hover,a.genmed:hover,a.gensmall:hover	{ color: #DD6900; text-decoration: underline; }
+
+            /* Forum category titles */
+            .cattitle		{ font-weight: bold; font-size: 12px ; letter-spacing: 1px; color : #006699}
+            a.cattitle		{ text-decoration: none; color : #006699; }
+            a.cattitle:hover { text-decoration: underline; }
+
+            /* titles for the topics: could specify viewed link colour too */
+            .topictitle			{ font-weight: bold; font-size: 11px; color : #000000; }
+            a.topictitle:link   { text-decoration: none; color : #006699; }
+            a.topictitle:visited { text-decoration: none; color : #5493B4; }
+            a.topictitle:hover	{ text-decoration: underline; color : #DD6900; }
+
+            /* Quote & Code blocks */
+            .code{background:#ffffff;border:1px solid #000000; color:#004400;
+            font-size:14px; font-family: "Courier","Courier New",monospace; padding:5px}
+
+            .helpline { background-color: #DEE3E7; border-style: none; }
+
+            table {padding: 0px; margin: 0px; border:0; border-spacing:0}
+
+            .python {background:#f2f2f2;border:1px solid #cccccc; color:#000000;
+            font-size:13px; font-family: "Courier","Courier New",monospace; padding:5px; overflow:auto}
+            .pythontab {background:#f2f2f2;border:0; color:#000000;
+            font-size:13px; font-family: "Courier","Courier New",monospace; padding:0px; margin:0px;}
+            .linenr {background:#f2f2f2;border-right:0 solid #cccccc; color:#777777;
+            font-size:13px; font-family: "Courier","Courier New",monospace; padding-right:4px; margin:0px}
+            .hi_statement { color: #0000ff; font-weight: bold; }
+            .hi_function { color: #000088; }
+            .hi_preproc { color: #880000; font-weight: bold; }
+            .hi_number { color: #880000; }
+            .hi_comment { color: #006600; font-style: italic; }
+            .hi_string { color: #006600; }
+            .hi_exception { color:#000000; }
+            </style>
 	</head>
 	<body>
 		<h1>PyXO 1.4.4</h1>
@@ -12,13 +79,13 @@
 			</p>
 	  <table class="bodyline" width="100%">
 			<tr>
-			  <td class="cattitle">
-					<a href="./py_view.php?python_file=PyXO.py" target="code_view">PyXO.py</a>
-					 <span class="gensmall">(&ouml;ffnet neues Fenster -
-						letzter Upload:
-						15 Jan 2005 14:57:32)</span></td>
-				<td><a href="download.php?python_file=PyXO.py">download</a></td>
-
+                <td class="cattitle">
+					<a href="http://pylucid.python-hosting.com/file/CodeSnippets/PyXO/trunk/PyXO.py" target="code_view">PyXO.py</a>
+                    <span class="gensmall">
+                        <a href="http://pylucid.python-hosting.com/log/CodeSnippets/PyXO/trunk/PyXO.py" target="code_view">Revision Log</a>
+                    </span>
+                </td>
+				<td><a href="http://pylucid.python-hosting.com/file/CodeSnippets/PyXO/trunk/PyXO.py?format=txt">download</a></td>
 			</tr>
 		</table>
 		<h1>Beschreibung von PyXO</h1>
@@ -512,29 +579,18 @@ filename = <span class="hi_string">"PyXO_Object_test&#x2e;xml"</span>
 		<br/>
 	  <table class="bodyline" width="100%">
 			<tr>
-			  <td class="cattitle">
-					<a href="./py_view.php?python_file=PyXO.py" target="code_view">PyXO.py</a>
-
-					 <span class="gensmall">(&ouml;ffnet neues Fenster -
-						letzter Upload:
-						15 Jan 2005 14:57:32)</span></td>
-				<td><a href="download.php?python_file=PyXO.py">download</a></td>
+                <td class="cattitle">
+					<a href="http://pylucid.python-hosting.com/file/CodeSnippets/PyXO/trunk/PyXO.py" target="code_view">PyXO.py</a>
+                    <span class="gensmall">
+                        <a href="http://pylucid.python-hosting.com/log/CodeSnippets/PyXO/trunk/PyXO.py" target="code_view">Revision Log</a>
+                    </span>
+                </td>
+				<td><a href="http://pylucid.python-hosting.com/file/CodeSnippets/PyXO/trunk/PyXO.py?format=txt">download</a></td>
 			</tr>
 		</table>
 		<br/>
 		<table width="100%"><tr>
 		<td>
-
-      <a href="http://validator.w3.org/check?uri=referer"><img border="0"
-          src="http://www.w3.org/Icons/valid-html401"
-          alt="Valid HTML 4.01!" height="31" width="88"/></a>
-			<a href="http://jigsaw.w3.org/css-validator/validator?uri=http://www.boa3d.de/python/modules/mycss.php"><img
-					style="border:0;width:88px;height:31px"
-					src="http://jigsaw.w3.org/css-validator/images/vcss"
-					alt="Valid CSS!"/></a></td>
-					<td class="gensmall" align="right">
-						15 Jan 2005 14:56:35						-
-						599</td>
     </tr></table>
 	</body>
 </html>
