@@ -4,13 +4,27 @@
     Modul:          PyXO (Python XML Objects)
     Description:    Baseclass for objects, to store and load from/to xml
     Version:        1.4.4
-    Copyright:      2004 by Fritz Cizmarov fritz@sol.at
+    Copyright:      2004 by Fritz Cizmarov alias Dookie († 22.02.2005)
     Created:        16. Jul. 2004
-    Last modified:  15. Jän. 2005
+    Last modified:  15. Jän. 2005 (by Fritz Cizmarov)
     License:        Python license
     Requirements:   Python2.3
     Exports:        Type, Object, Container, Root, CData
                     escape, unicoded, xml_prolog, indstr
+
+    modified by Jens Diemer, 2006
+
+    trac:
+    http://pylucid.python-hosting.com/file/CodeSnippets/PyXO/trunk/PyXO.py
+
+    Revision Log:
+    http://pylucid.python-hosting.com/log/CodeSnippets/PyXO/trunk/PyXO.py
+
+    readme:
+    http://pylucid.python-hosting.com/file/CodeSnippets/PyXO/trunk/PyXO_readme_v144.html?format=raw
+
+    Python-Forum thread:
+    http://www.python-forum.de/viewtopic.php?t=1833
 """
 
 import os
