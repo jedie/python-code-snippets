@@ -32,7 +32,7 @@ def gen_id(name, fmt="%s_%03d", _dict={}):
     _dict[name] = id
     return fmt % (name, id)
 
-    
+
 def escape(data, quote=False):
     """ encode special chars &, <, >, ", ' """
     data = data.replace("&", "&amp;")
@@ -56,50 +56,50 @@ class Type(type):
     """ Metaclass of Object """
 
     #--- Properties ---
-    
+
     __xml_classes = {}
-    def xml_classes(cls):
-        return cls.__xml_classes
+    def xml_classes(self):
+        return self.__xml_classes
     xml_classes = property(xml_classes, doc="Registered classes")
 
-    def xml_attributes(cls):
-        if not hasattr(cls, "__xml_attributes"):
+    def xml_attributes(self):
+        if not hasattr(self, "__xml_attributes"):
             attrs = {}
-            for base in cls.__bases__:
+            for base in self.__bases__:
                 if hasattr(base, "xml_attributes"):
                     attrs.update(base.xml_attributes)
                 if (hasattr(base, "__slots__") and
                     isinstance(base.__slots__, dict)):
                     attrs.update(base.__slots__)
-            if hasattr(cls, "xml_attrs"):
-                attrs.update(cls.xml_attrs)                
-            if hasattr(cls, "__slots__") and isinstance(cls.__slots__, dict):
-                attrs.update(cls.__slots__)
+            if hasattr(self, "xml_attrs"):
+                attrs.update(self.xml_attrs)
+            if hasattr(self, "__slots__") and isinstance(self.__slots__, dict):
+                attrs.update(self.__slots__)
             for key in attrs.keys():
                 if attrs[key] is None:
                     del attrs[key]
-            cls.__xml_attributes = attrs
-        return cls.__xml_attributes
+            self.__xml_attributes = attrs
+        return self.__xml_attributes
     xml_attributes = property(xml_attributes, doc="Attributes for XML")
 
     #--- Specialmethods ---
-    
-    def __init__(cls, name, bases, cdict):
+
+    def __init__(self, name, bases, cdict):
         tag_name = cdict.get("xml_tag_name", name)
-        setattr(cls,"xml_tag_name", tag_name)
-        if (tag_name in cls.__xml_classes and
-            cls.__xml_classes[tag_name] is not cls):
+        setattr(self,"xml_tag_name", tag_name)
+        if (tag_name in self.__xml_classes and
+            self.__xml_classes[tag_name] is not self):
             raise TypeError("%s already exists!" % name)
-        super(Type, cls).__init__(name, bases, cdict)
-        cls.__xml_classes[tag_name] = (cls, cls.xml_attributes, None)
-        if not hasattr(cls, "xml_stack"):
-            cls.xml_stack = []
-        if not hasattr(cls, "obj_ids"):
-            cls.obj_ids = {}
-    
+        super(Type, self).__init__(name, bases, cdict)
+        self.__xml_classes[tag_name] = (self, self.xml_attributes, None)
+        if not hasattr(self, "xml_stack"):
+            self.xml_stack = []
+        if not hasattr(self, "obj_ids"):
+            self.obj_ids = {}
+
     #--- Custommethods
-    
-    def obj_to_xml(cls, obj, indent=0, attrs="", indstr=indstr, stream=None):
+
+    def obj_to_xml(self, obj, indent=0, attrs="", indstr=indstr, stream=None):
         """ write xmlrepresentation of an object to stream """
         ind = indstr*indent
         if stream is None:
@@ -108,13 +108,13 @@ class Type(type):
         else:
             do_close = False
         if hasattr(obj, "id"):
-            if obj.id in cls.obj_ids and not hasattr(obj, "no_PyXO_Ref"):
+            if obj.id in self.obj_ids and not hasattr(obj, "no_PyXO_Ref"):
                 stream.write('%s<PyXO_Ref id="%s"/>\n' % (ind, obj.id))
                 return
             else:
-                if obj.id in cls.obj_ids:
+                if obj.id in self.obj_ids:
                     raise NameError("ID '%s' used twice!" % obj.id)
-                cls.obj_ids[obj.id] = obj
+                self.obj_ids[obj.id] = obj
         if hasattr(obj,"to_xml"):
             try:
                 obj.to_xml(indent, indstr=indstr, stream=stream)
@@ -125,12 +125,12 @@ class Type(type):
                     stream.write(obj.to_xml(indent))
         else:
             name = obj.__class__.__name__
-            if name in cls.xml_classes: # is registered?
-                if isinstance(cls.xml_classes[name][2], basestring):
-                    to_xml = getattr(obj,cls.xml_classes[name][2])
+            if name in self.xml_classes: # is registered?
+                if isinstance(self.xml_classes[name][2], basestring):
+                    to_xml = getattr(obj,self.xml_classes[name][2])
                     stream.write(to_xml(indent))
                 else:
-                    stream.write(cls.xml_classes[name][2](obj, indent))
+                    stream.write(self.xml_classes[name][2](obj, indent))
             elif name == "bool":
                 stream.write("%s<bool>%s</bool>\n" % (ind, str(obj).title()))
             elif name in ("str", "unicode"):
@@ -141,13 +141,13 @@ class Type(type):
                 if name == "xrange":
                     obj = [int(x) for x in re.findall(r'-?\d+', str(obj))]
                 for item in obj:
-                    cls.obj_to_xml(item, indent+1, stream=stream)
+                    self.obj_to_xml(item, indent+1, stream=stream)
                 stream.write("%s</%s>\n" % (ind, name))
             elif name == "dict":
                 stream.write(u"%s<%s>\n" % (ind, name))
                 for key, value in obj.iteritems():
-                    cls.obj_to_xml(key, indent+1, stream=stream)
-                    cls.obj_to_xml(value, indent+2, stream=stream)
+                    self.obj_to_xml(key, indent+1, stream=stream)
+                    self.obj_to_xml(value, indent+2, stream=stream)
                 stream.write(u"%s</%s>\n" % (ind, name))
             else:
                 module = obj.__class__.__module__
@@ -155,7 +155,7 @@ class Type(type):
                     module = os.path.basename(sys.argv[0])[:-3]
                 while True: # loop
                     if module != "__builtin__":
-                        if cls.xml_write_python_module:
+                        if self.xml_write_python_module:
                             attrs += u' python_module="%s"' % module
                         try:
                             iterator = iter(obj)
@@ -164,7 +164,7 @@ class Type(type):
                         else:
                             stream.write(u"%s<%s%s>\n" % (ind, name, attrs))
                             for i in iterator:
-                                cls.obj_to_xml(i, indent+1,
+                                self.obj_to_xml(i, indent+1,
                                                stream=stream)
                             stream.write(u"%s</%s>\n" % (ind, name))
                             break # exit loop
@@ -180,7 +180,7 @@ class Type(type):
             stream.close()
             return result
 
-    def register_other(cls, name, constructor, attributes={},
+    def register_other(self, name, constructor, attributes={},
                        to_xml=None):
         """
             Register Classes not derivated from Object.
@@ -192,22 +192,22 @@ class Type(type):
             and the attributetypes as values.
             Attributes given from the xml are convertet by using this
         """
-        if name in cls.xml_classes:
+        if name in self.xml_classes:
             raise KeyError("%s already registered!" % name)
-        cls.xml_classes[name] = (constructor, attributes, to_xml)
+        self.xml_classes[name] = (constructor, attributes, to_xml)
 
-    def from_data(cls, name, children, attrs):
+    def from_data(self, name, children, attrs):
         """ Create object of type name with children and attributes """
         module = attrs.pop("python_module","")
         attrs = dict([(str(key), value) for key, value in attrs.iteritems()])
         if name == "PyXO_Ref":
-            return cls.obj_ids[attrs["id"]]
+            return self.obj_ids[attrs["id"]]
         if isinstance(__builtins__, dict):  # __builtins__ may be
             builtins = __builtins__             # dictionary
         else:                               # or
             builtins = __builtins__.__dict__    # modul
-        if name in cls.xml_classes:
-            constructor, attrtypes = cls.xml_classes[name][:2]
+        if name in self.xml_classes:
+            constructor, attrtypes = self.xml_classes[name][:2]
             kw = {}
             for key, value in attrs.iteritems():
                 if not attrtypes.has_key(key):
@@ -219,7 +219,7 @@ class Type(type):
                         if len(attrtypes[key]) == 1:
                             value = type(at)([at[0](x) for x in value.split()])
                         else:
-                            value = type(at)([at[x](y) for x, y in 
+                            value = type(at)([at[x](y) for x, y in
                                               zip(attrtypes[key],
                                                   value.split())])
                     elif attrtypes[key] is bool:
@@ -242,7 +242,7 @@ class Type(type):
                     raise TypeError("unknown value for bool %s" % value)
                 instance = value in ("true", "1", "on")
             elif name == "dict":
-                instance = dict([(children[i], children[i+1]) 
+                instance = dict([(children[i], children[i+1])
                                  for i in xrange(0, len(children), 2)])
             elif name == "list":
                 instance = list(children)
@@ -270,9 +270,9 @@ class Type(type):
                 try:
                     __import__(module, globals(), locals(), [])
                     attrs["python_module"] = module;
-                    instance = cls.from_data(name, children, attrs)
+                    instance = self.from_data(name, children, attrs)
                 except ImportError:
-                    instance = cls.xml_import_error_handler(module, name,
+                    instance = self.xml_import_error_handler(module, name,
                                                             children, attrs)
                     if instance is None:
                         raise # reraise ImportError
@@ -285,55 +285,55 @@ class Type(type):
             else:
                 raise TypeError("Unknown Object '%s'!" % name)
         if hasattr(instance, "id"):
-            cls.obj_ids[instance.id] = instance
+            self.obj_ids[instance.id] = instance
         return instance
 
     #--- Handlermethods for xml.xml_parser ---#
-    
-    def xml_start_element(cls, name, attrs):
+
+    def xml_start_element(self, name, attrs):
         for key in attrs.keys():
             attrs[key] = attrs[key].replace("&lt;", "<"
                                   ).replace("&gt;", ">"
                                   ).replace("&amp;", "&"
                                   ).replace("&apos;", "'"
                                   ).replace("&quot;", '"')
-        cls.xml_stack.append((name, [], attrs))
-    
-    def xml_end_element(cls, name):
-        sname, children, attrs = cls.xml_stack.pop()
+        self.xml_stack.append((name, [], attrs))
+
+    def xml_end_element(self, name):
+        sname, children, attrs = self.xml_stack.pop()
         if sname != name:
             raise NameError("%s not equal to %s!" % (sname, name))
-        instance = cls.from_data(name, children, attrs)
-        if cls.xml_stack:
-            cls.xml_stack[-1][1].append(instance)
+        instance = self.from_data(name, children, attrs)
+        if self.xml_stack:
+            self.xml_stack[-1][1].append(instance)
         else:
-            cls.xml_stack = [instance]
+            self.xml_stack = [instance]
 
-    def xml_char_data(cls, data):
-        if hasattr(cls,"_CData"):
-            cls._CData += data
+    def xml_char_data(self, data):
+        if hasattr(self,"_CData"):
+            self._CData += data
         else:
-            data = cls.xml_c_data_handler(data)
+            data = self.xml_c_data_handler(data)
             if data.strip():
-                if (cls.xml_stack[-1][1] and
-                    isinstance(cls.xml_stack[-1][1][-1], basestring)):
-                    cls.xml_stack[-1][1][-1] += data
+                if (self.xml_stack[-1][1] and
+                    isinstance(self.xml_stack[-1][1][-1], basestring)):
+                    self.xml_stack[-1][1][-1] += data
                 else:
-                    cls.xml_stack[-1][1].append(data)
-    
-    def xml_start_cdata(cls):
-        cls._CData = ""
+                    self.xml_stack[-1][1].append(data)
 
-    def xml_end_cdata(cls):
-        cls.xml_stack[-1][1].append(CData(cls._CData))
-        del(cls._CData)
+    def xml_start_cdata(self):
+        self._CData = ""
+
+    def xml_end_cdata(self):
+        self.xml_stack[-1][1].append(CData(self._CData))
+        del(self._CData)
 
     #--- Generator to load objects from xml ---
 
-    def from_xml(cls, xml):
+    def from_xml(self, xml):
         """ Create object from xml """
-        assert cls.xml_stack == [], "don't call from_xml recursive!"
-        cls.obj_ids = {}
+        assert self.xml_stack == [], "don't call from_xml recursive!"
+        self.obj_ids = {}
         is_file = hasattr(xml, "read") # changed on suggestion from
         do_close = False               # Walter Dörwald
         if not is_file:
@@ -343,33 +343,33 @@ class Type(type):
                 do_close = True
             except IOError:
                 pass
-        cls.xml_parser = ParserCreate()
-        cls.xml_parser.StartElementHandler = cls.xml_start_element
-        cls.xml_parser.EndElementHandler = cls.xml_end_element
-        cls.xml_parser.CharacterDataHandler = cls.xml_char_data
-        cls.xml_parser.StartCdataSectionHandler = cls.xml_start_cdata
-        cls.xml_parser.EndCdataSectionHandler = cls.xml_end_cdata
-        cls.xml_parser.buffer_text = True
-        cls.xml_parser.returns_unicode = True
+        self.xml_parser = ParserCreate()
+        self.xml_parser.StartElementHandler = self.xml_start_element
+        self.xml_parser.EndElementHandler = self.xml_end_element
+        self.xml_parser.CharacterDataHandler = self.xml_char_data
+        self.xml_parser.StartCdataSectionHandler = self.xml_start_cdata
+        self.xml_parser.EndCdataSectionHandler = self.xml_end_cdata
+        self.xml_parser.buffer_text = True
+        self.xml_parser.returns_unicode = True
         if is_file:
-            cls.xml_parser.ParseFile(xml)
+            self.xml_parser.ParseFile(xml)
         else:
-            cls.xml_parser.Parse(xml, True)
-        cls.xml_parser = None
+            self.xml_parser.Parse(xml, True)
+        self.xml_parser = None
         if do_close:
             xml.close()
-        return cls.xml_stack.pop()
-    
-    
+        return self.xml_stack.pop()
+
+
     # Methods to easy save and load objects to/from XLM
-    
-    def save(cls, xml, obj):
+
+    def save(self, xml, obj):
         """ Function to save Objects to an XML-file """
         do_close = False
         if isinstance(xml, basestring):
             xml = file(xml, 'w')
             do_close = True
-        cls.obj_ids.clear()
+        self.obj_ids.clear()
         if isinstance(obj, Root):
             obj.to_xml(stream=xml)
         else:
@@ -378,21 +378,21 @@ class Type(type):
             Root([obj], name=name, del_root = True).to_xml(stream=xml)
         if do_close:
             xml.close()
-        cls.obj_ids.clear()
+        self.obj_ids.clear()
 
-    def load(cls, xml):
+    def load(self, xml):
         """ Function to restore Objects from an XML-File """
-        cls.obj_ids.clear()
-        result = cls.from_xml(xml)
-        
+        self.obj_ids.clear()
+        result = self.from_xml(xml)
+
         if isinstance(result, Root) and result.del_root:
             result = result.children[0]
-        cls.obj_ids.clear()
+        self.obj_ids.clear()
         return result
 
 
 class Object(object):
-    """ 
+    """
         Baseclass for objects to be stored/loaded to/from xml
         xml_attrs is a Dictionary with the names of all Attributes and as
         values the type of any Attribut
@@ -401,13 +401,13 @@ class Object(object):
     """
     __metaclass__ = Type
     xml_attrs = {"id" : str}
-    
+
     xml_write_python_module = True
-    
+
     def __init__(self, *args, **kw):
         super(Object, self).__init__(*args, **kw)
         self.id = kw.pop("id", gen_id(self.__class__.__name__))
-    
+
     def xml_c_data_handler(data):
         """ return processed cdata from xml """
         return re.sub(u" +", u" ", data.replace(u"\t", u" "
@@ -422,7 +422,7 @@ class Object(object):
         """
         return None
     xml_import_error_handler = staticmethod(xml_import_error_handler)
-    
+
     def attrs_to_xml(self):
         """ Return string with key/value-pairs seperated by a "=" """
         attributes = self.__class__.xml_attributes.keys()
@@ -486,11 +486,11 @@ class Object(object):
 class Container(Object):
     """ Baseclass for collections of Objects and other objects """
     xml_attrs = {"name" : str}
-    
+
     def children(self):
         return self.__children
     children = property(children, doc="list of childobjects of container")
-    
+
     def __init__(self, *args, **kw):
         super(Container, self).__init__(*args, **kw)
         if args:
@@ -505,33 +505,33 @@ class Container(Object):
 
     def __len__(self):
         return len(self.__children)
-        
+
     def append(self, child):
         self.__children.append(child)
 
     def remove(self, child):
         self.__children.remove(child)
-    
+
     xml_get_children = __iter__
-    
+
 
 class Root(Container):
     """ Use Root or an subclass to cover your objects """
     xml_attrs = {"del_root" : bool}
 
     xml_tag_name = "PyXO"
-    
+
     def __init__(self, *args, **kw):
         super(Root, self).__init__(*args, **kw)
         self.del_root = kw.pop("del_root", False)
-        
+
     def save(self, xml):
         Object.save(xml, self)
 
 
 class CData(Object):
     """ Class for XML-CDATA-Section """
-    
+
     def __init__(self, cdata, **kw):
         self.__cdata = cdata
 
@@ -550,10 +550,10 @@ class CData(Object):
 
 """
 class PyXO_Ref(object):
-    
+
     __slots__ = ["id"]
     xml_attrs = {"id", str}
-    
+
     def __init__(self, id=None):
         self.id = id
 """
@@ -601,4 +601,4 @@ if __name__ == "__main__": # Test
         print my_objects # print Objects
         print my_objects[0]
         Object.save(sys.stdout, my_objects) # test saving to xml
-        
+
