@@ -57,6 +57,9 @@ cfg = {
     # Zugriff nur eingeloggte User, durch Apache's .htaccess-Auth erlauben?
     "only_auth_users": True,
 
+    # Zugriffe nur von bestimmten IP's zulassen
+    "IP_range": ["127.0.0.1","192.168.*.*"],
+
     # Debugausgaben einblenden?
     #~ "debug": True,
     "debug": False,
@@ -86,8 +89,9 @@ from PyDownDB import PyDownDB
 # Für das rendern von Templates per decorator
 from TemplateDecoratorHandler import render
 
-# ObjectApplication basierend auf cgi-GET-Parameter
-from cgi_GET_ObjectApplication import ObjectApplication
+# Path-Klasse für das request-Objekt
+from path import path
+
 #_____________________________________________________________________________
 
 
@@ -108,30 +112,13 @@ filesystemencoding = sys.getfilesystemencoding()
 # Colubrid import's werden das erste mal im Request-Handler vorgenommen und
 # sind dort mit einem except und Info-Text versehen
 from colubrid.exceptions import *
+from colubrid import RegexApplication
+
+import jinja
 
 
 
 
-
-def spezial_cmp(a,b):
-    """
-    Abgewandelte Form für sort()
-    Sortiert alle mit "_" beginnenen items nach oben
-    """
-    def get_first_letter(l):
-        """
-        Einfache Art den ersten Buchstaben in einer verschachtelten
-        Liste zu finden. Funktioniert aber nur dann, wenn es nur Listen
-        sind und immer [0] irgendwann zu einem String wird!
-        """
-        if isinstance(l, list):
-            get_first_letter(l[0])
-        return l[0]
-
-    a = get_first_letter(a)
-    b = get_first_letter(b)
-
-    return locale.strcoll(a,b)
 
 
 
@@ -149,246 +136,28 @@ def spezial_cmp(a,b):
 
 class base(object):
     """ Basisklasse von der jede ObjApp-Klasse ableitet """
-    #~ def __init__(self):
-
-
     def init2(self):
         """
         Das request-Object ist bei __init__ noch nicht verfügbar, deswegen
         muß von jeder App-Methode diese init2() ausgeführt werden.
         """
-        self.context = {
-            "cfg": self.request.cfg,
-            "__info__": __info__,
-            "filesystemencoding": filesystemencoding,
-            "username": self.request.environ["REMOTE_USER"],
-            "is_admin": self.request.environ["REMOTE_USER"] in self.request.cfg["admin_username"],
-        }
         self.db = self.request.db
 
-    def _read_dir(self):
-        "Einlesen des Verzeichnisses"
-        files = []
-        dirs = []
-        for item in os.listdir(self.request_path):
-            abs_path = posixpath.join(self.request_path, item)
-            if os.path.isfile(abs_path):
-                ext = os.path.splitext(abs_path)[1]
-                if not ext in cfg["ext_whitelist"]:
-                    continue
-                files.append((item, abs_path))
-
-            elif os.path.isdir(abs_path):
-                #~ self.request.echo("#%s#%s#<br>" % (item, abs_path))
-                dirs.append((item, abs_path))
-
-        files.sort(spezial_cmp)
-        dirs.sort(spezial_cmp)
-        return files, dirs
-
-    def _put_dir_info_to_context(self, files, dirs):
-
-        self._put_path_to_context(self.raw_path_info)
-
-        # File-Informationen in context einfügen
-        self.context["filelist"] = []
-        for filename, abs_path in files:
-            file_info = {"name": filename}
-            file_info.update(self._get_file_info(abs_path))
-            self.context["filelist"].append(file_info)
-
-        # Informationen für Download-Link
-        if len(files)>0:
-            url = self._get_url(self.request_path)
-            path_info = self.request_path.split("/")
-            self.context["download"] = {
-                "url": url,
-                "artist": path_info[-2],
-                "album": path_info[-1],
-            }
-
-        # Verzeichnis-Informationen in ein dict packen, welches
-        # als Key, den ersten Buchstaben hat
-        dirlist = {}
-        for item, abs_path in dirs:
-            url = self._get_url(abs_path)
-            relativ_path = self._get_relative_path(abs_path)
-
-            first_letter = item[0].upper()
-            if not dirlist.has_key(first_letter):
-                dirlist[first_letter] = []
-
-            dirlist[first_letter].append({
-                "url": url,
-                "name": item,
-            })
-
-        # Verzeichnis-Informationen in context einfügen
-        self.context["dirlist"] = []
-        keys = dirlist.keys()
-        keys.sort(spezial_cmp)
-        for letter in keys:
-            temp = []
-            for item in dirlist[letter]:
-                temp.append(item)
-
-            self.context["dirlist"].append({
-                "letter": letter,
-                "items": temp,
-            })
-
-        self.context["show_letters"] = len(dirlist)>self.request.cfg["min_letters"]
-
-    def _get_stat(self, abs_path):
-        result = {}
-        item_stat = os.stat(abs_path)
-        result["mtime"] = time.strftime(
-            '%d.%m.%Y %H:%M',
-            time.localtime(item_stat[stat.ST_MTIME])
-        )
-
-        if os.path.isfile(abs_path):
-            size = item_stat[stat.ST_SIZE]/1024.0
-            try:
-                result["size"] = "%s KB" % locale.format("%0.1f", size, True)
-            except:
-                result["size"] = "%0.1f KB" % size
-
-        return result
-
-    def _get_file_info(self, filename):
-        """ Datei Information mit Linux 'file' Befehl zusammentragen """
-        result = {}
-
-        result.update(self._get_stat(filename))
-
-        if sys.platform == "win32":
-            # Unter Windows gibt es keinen File-Befehl
-            result["info"] = ""
-            return result
-
-        try:
-            proc = subprocess.Popen(
-                args        = ["file", filename],
-                stdout      = subprocess.PIPE,
-                stderr      = subprocess.PIPE
-            )
-        except Exception, e:
-            result["info"] = "Can't make file subprocess: %s" % e
-            return result
-
-        try:
-            result["info"] = proc.stdout.read()
-        except Exception, e:
-            result["info"] = "Can't read stdout from subprocess: %s" % e
-            return result
-
-        proc.stdout.close()
-
-        try:
-            result["info"] = result["info"].split(":",1)[1].strip()
-        except Exception, e:
-            result["info"] = "Can't prepare String: '%s' Error: %s" % (file_info, e)
-            return result
-
-        return result
-
-    def _put_path_to_context(self, path):
-        self.context["path"] = ""
-
-        if path == "/":
-            # Wir sind im "root"-Verzeichnis
-            self.context["path"] = "/"
-            return
-
-        if path[:1] == "/": path = path[:-1] # / Am Ende wegschneiden
-        path = path[1:] # / Am Anfang wegschneiden
-
-        # zurück hinzufügen
-        self.context["path"] += '[<a href="%s">root</a>]' % \
-            self.request.environ["SCRIPT_ROOT"]
-
-        path = path.split("/")
-        lastitem = path[-1:][0]
-        path = path[:-1]
-
-        #~ self.request.echo(path)
-        url_part = ""
-        for item in path:
-            if url_part != "":
-                url_part += "/" + item
-            else:
-                url_part = item
-            url = posixpath.join(
-                self.request.environ["SCRIPT_ROOT"], url_part
-            )
-            self.context["path"] += '/<a href="%s">%s</a>' % (url, item)
-
-        self.context["path"] += "/%s" % lastitem
-
-    def _get_url(self, path):
-        path = self._get_relative_path(path)
-        path = posixpath.join(self.request.environ["SCRIPT_ROOT"], path)
-        #~ self.request.echo("2#%s#%s#<br>" % (self.request.environ["SCRIPT_ROOT"], path))
-        return urllib.quote(path)
-
-    def _get_relative_path(self, path):
-        if not path.startswith(cfg["base_path"]):
-            return path
-        relative_path = path.lstrip(cfg["base_path"])
-        #~ self.request.echo(
-            #~ "#%s#%s#%s#<br>" % (path, cfg["base_path"], relative_path)
-        #~ )
-        return relative_path
-
-    def _setup_path(self):
-        self.raw_path_info = self.request.environ.get('PATH_INFO', '')
-        self.request_path = "%s%s" % (cfg["base_path"], self.raw_path_info)
-
-        self._check_absolute_path(self.request_path)
-
-        self.request_path = posixpath.normpath(self.request_path)
-        self.context["request_path"] = self.request_path
-
-
-    def _check_absolute_path(self, absolute_path):
-        """
-        Überprüft einen absoluten Pfad
-        """
-        if (absolute_path.find("..") != -1):
-            # Hackerscheiß schon mal ausschließen
-            raise AccessDenied("not allowed!")
-
-        if not absolute_path.startswith(cfg["base_path"]):
-            # Fängt nicht wie Basis-Pfad an... Da stimmt was nicht
-            raise AccessDenied("permission deny #%s#%s#" % (
-                absolute_path, cfg["base_path"])
-            )
-            raise AccessDenied("permission deny.")
-
-        if not os.path.exists(absolute_path):
-            # Den Pfad gibt es nicht
-            raise AccessDenied("'%s' not exists" % absolute_path)
 
 
 
 
 
 
-
-class index(base):
-    """
-    Die eigentlichen Programmteile, die automatisch von der ObjectApplication
-    Aufgerufen werden.
-    """
-
-    @render('Browser_base') # return wird durch TemplateEngine gerendert
+class browse(base):
     def index(self):
         """
         Anzeigen des Browsers
         """
         self.init2() # Basisklasse einrichten
+        raise
         self._setup_path()
+
 
         self.request.echo("Download: %s" % self.db.download_count())
 
@@ -401,10 +170,38 @@ class index(base):
 
         if cfg["debug"]: self.request.debug_info()
 
-        return self.context
+        self.render("Browser_base")
 
 
-    @render('Infopage_base') # return wird durch TemplateEngine gerendert
+
+class index(base):
+    """
+    Die eigentlichen Programmteile, die automatisch von der ObjectApplication
+    Aufgerufen werden.
+    """
+
+    def index(self):
+        """
+        Anzeigen des Browsers
+        """
+        self.request.echo("JO")
+        #~ self.init2() # Basisklasse einrichten
+        #~ self._setup_path()
+
+        #~ self.request.echo("Download: %s" % self.db.download_count())
+
+        #~ files, dirs = self._read_dir()
+        #~ self._put_dir_info_to_context(files, dirs)
+
+        #~ if self.context['filelist'] != []:
+            #~ # Nur in log schreiben, wenn überhaupt Dateien vorhanden sind
+            #~ self.db.log(type="browse", item=self.context['request_path'])
+
+        #~ if cfg["debug"]: self.request.debug_info()
+
+        #~ self.render("Browser_base")
+
+
     def info(self):
         """
         Informations-Seite anzeigen
@@ -424,10 +221,9 @@ class index(base):
 
         if cfg["debug"]: self.request.debug_info()
 
-        return self.context
+        self.render("Infopage_base")
 
 
-    @render('Infopage_base') # return wird durch TemplateEngine gerendert
     def admin(self):
         """
         Admin-Formular ausweten und Preferences eintragen
@@ -451,7 +247,7 @@ class index(base):
 
         if cfg["debug"]: self.request.debug_info()
 
-        return self.context
+        self.render("Infopage_base")
 
 
     def download(self):
@@ -586,12 +382,21 @@ class index(base):
 
 
 
-class PyDown(ObjectApplication):
+
+class PyDown(RegexApplication):
     """
     Klasse die die Programmlogik zusammenstellt
     """
 
-    root = index
+    urls = [
+        (r'^$', 'index'),
+        (r'^browse/(.*?)$', "PyDown.browse.index"),
+        (r'^download/(.*?)$', "download.index"),
+        (r'^upload/(.*?)$', "upload.index"),
+        (r'^info/status$', "info.status"),
+        (r'^info/setup$', "info.setup"),
+    ]
+    slash_append = True
 
     def __init__(self, *args):
         super(PyDown, self).__init__(*args)
@@ -602,6 +407,16 @@ class PyDown(ObjectApplication):
         self.request.expose_var("cfg")
 
         # Datenbankverbindung herstellen und dem request-Objekt anhängen
+        self.setup_db()
+
+
+    def index(self):
+        raise HttpRedirect, ("browse/", 301)
+
+    def setup_db(self):
+        """
+        Datenbankverbindung herstellen und dem request-Objekt anhängen
+        """
         try:
             self.request.db = PyDownDB(
                 self.request,
@@ -615,6 +430,24 @@ class PyDown(ObjectApplication):
         """
         Überprüft only_https und only_auth_users
         """
+        def check_ip(mask, IP):
+            mask = mask.split(".")
+            IP = IP.split(".")
+            for mask_part, ip_part in zip(mask, IP):
+                if mask_part != ip_part and mask_part != '*':
+                    return False
+            return True
+
+        def check_ip_list(mask_list, IP):
+            for mask in mask_list:
+                if check_ip(mask, IP):
+                    return True
+            return False
+
+        if self.request.cfg["IP_range"]:
+            if not check_ip_list(self.request.cfg["IP_range"], self.request.environ["REMOTE_ADDR"]):
+                raise AccessDenied("Permission denied!")
+
         if self.request.cfg["only_https"]:
             # Nur https Verbindungen "erlauben"
             if self.request.environ.get("HTTPS", False) != "on":
@@ -628,13 +461,20 @@ class PyDown(ObjectApplication):
             if not self.request.environ["REMOTE_USER"] in self.request.cfg["allows_user"]:
                 raise AccessDenied("Permission denied!")
 
+        if not self.request.environ.has_key("REMOTE_USER"):
+            self.request.environ["REMOTE_USER"] = "anonymous"
+
+
+
     def process_request(self):
         """
         Abarbeiten des eigentlichen Request. Die ObjectApplication ruft
         automatisch die eigentlichen Programmteile auf
         """
         self.check_rights() # Als erstes die Rechte checken!
+        self.setup_request_objects()
         super(PyDown, self).process_request()
+
 
     def on_access_denied(self, args):
         """
@@ -644,8 +484,45 @@ class PyDown(ObjectApplication):
         self.request.write("<h1>403 Forbidden</h1>")
         self.request.write("<h3>%s</h3>" % " ".join(args))
 
-    #~ def on_regular_close(self):
-        #~ self.request.debug_info()
+    def on_regular_close(self):
+        self.request.debug_info()
+
+    #_________________________________________________________________________
+    # zusätzliche Request-Objekte
+
+    def setup_request_objects(self):
+        """
+        Hängt Objekte an das globale request-Objekt
+        """
+        # Jinja-Context anhängen
+        self.request.context = {
+            "cfg": self.request.cfg,
+            "__info__": __info__,
+            "filesystemencoding": filesystemencoding,
+            "username": self.request.environ["REMOTE_USER"],
+            "is_admin": self.request.environ["REMOTE_USER"] in \
+                self.request.cfg["admin_username"],
+        }
+        self.request.expose_var("context")
+
+        # jinja-Render-Methode anhängen
+        self.request.render = self.render
+
+        # Path-Klasse anhängen
+        self.request.path = path(self.request)
+
+    def render(self, templatename):
+        """
+        Template mit jinja rendern, dabei wird self.request.context verwendet
+        """
+        #~ loader = jinja.FileSystemLoader('templates')
+        loader = jinja.CachedFileSystemLoader('templates')
+
+        template = jinja.Template(templatename, loader)
+        context = jinja.Context(self.request.context)
+
+        self.request.write(template.render(context))
+
 
 
 
