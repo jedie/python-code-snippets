@@ -6,10 +6,12 @@ __url__         = "http://www.jensdiemer.de/Programmieren/Python/Codesnippets"
 __license__     = "GNU General Public License (GPL)"
 __description__ = "makes thumbs with the PIL"
 
-__version__ = "v0.0.2"
+__version__ = "v0.2"
 
 __history__ = """
-v0.0.2
+v0.2
+    - JPEG quality Setting in cfg, now
+v0.1
     - Patch für PIL's Fehler "Suspension not allowed here"
 """
 
@@ -33,17 +35,19 @@ except ImportError:
 
 class thumb_maker_cfg:
     # Standardwerte
-    path_to_convert   = os.getcwd()
-    make_thumbs       = True
-    thumb_size        = (160, 120)
-    thumb_suffix      = "_thumb"
+    path_to_convert = os.getcwd()
+    make_thumbs     = True
+    thumb_size      = (160, 120)
+    thumb_suffix    = "_thumb"
 
-    make_smaller      = False
-    smaller_size      = (640, 480)
-    suffix            = "_WEB"
-    image_text        = ""
+    make_smaller    = False
+    smaller_size    = (640, 480)
+    suffix          = "_WEB"
+    image_text      = ""
 
-    clean_filenames   = True
+    jpegQuality     = 85
+
+    clean_filenames = True
 
     rename_rules = [
         (" ", "_"),
@@ -158,10 +162,14 @@ class thumb_maker:
 
         print "save '%s'..." % out_name,
         try:
-            im_obj.save( out_abs_name, "JPEG", quality=85, optimize=1 )
-            print "OK"
+            im_obj.save(
+                out_abs_name, "JPEG", quality=self.cfg.jpegQuality,
+                optimize=True, progressive=False
+            )
         except Exception, e:
             print "ERROR:", e
+        else:
+            print "OK"
 
     def clean_filename( self, file_name ):
         """ Dateinamen für's Web säubern """
