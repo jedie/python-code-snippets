@@ -5,7 +5,52 @@ from utils import spezial_cmp
 
 import os, sys, cgi, posixpath, locale, time, stat, subprocess
 from tempfile import NamedTemporaryFile
-from tarfile import TarFile
+import zipfile
+
+
+
+
+
+class FileIter(object):
+
+    def __init__(self, request, id):
+        self._sleep_sec = 0.1
+
+        self.db = request.db # Shorthand
+
+        self._fileObj = request.downloadFileObj
+        self._id = id
+
+        self._current_bytes = 0
+        self._last_time = time.time()
+        self._blocksize = self.db.get_download_blocksize(self._sleep_sec)
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        data = self._fileObj.read(self._blocksize)
+        if not data:
+            raise StopIteration
+
+        self._current_bytes += len(data)
+
+        current_time = time.time()
+        if current_time-self._last_time>5.0:
+            self._last_time = current_time
+            self.db.update_download(self._id, self._current_bytes)
+            self._blocksize = self.db.get_download_blocksize(self._sleep_sec)
+
+        time.sleep(self._sleep_sec)
+
+        return data
+
+    def close(self):
+        if hasattr(self._fileObj, 'close'):
+            self._fileObj.close()
+
+
+
 
 class browser:
     def __init__(self, request, path):
@@ -19,14 +64,9 @@ class browser:
 
         self.setup_path(path)
 
-        try:
-            action = self.request.GET["action"]
-        except KeyError:
-            pass
-        else:
-            if action == "download":
-                self.download()
-                return
+        if self.pathFilename != None:
+            self.download()
+            return
 
         # "current path"-Links, oben in context einfügen
         self.request.context["path"] = self.path.path_links()
@@ -40,7 +80,8 @@ class browser:
         self.request.render("Browser_base")
 
     def setup_path(self, path):
-        self.relativ_path, self.absolute_path = self.path.prepare_path(path, "browse")
+        self.relativ_path, self.absolute_path, self.pathFilename = \
+            self.path.prepare_path(path, "browse")
 
     def get_link(self, path):
         """
@@ -74,23 +115,24 @@ class browser:
 
         # File-Informationen in context einfügen
         self.request.context["filelist"] = []
+        totalBytes = 0
         for filename, abs_path in files:
             relativ_path = self.path.relative_path(abs_path)
-            file_info = {
-                "name": filename,
-                "url": relativ_path,
-            }
-            file_info.update(self._get_file_info(abs_path))
+            file_info = self._get_file_info(abs_path)
+            file_info["name"] = filename
+            totalBytes += file_info["size"]
             self.request.context["filelist"].append(file_info)
 
-        # Informationen für Download-Link
+        # Informationen fÃ¼r Download-Link
         if len(files)>0:
             url = self.path.url(self.relativ_path)
-            path_info = self.relativ_path.split("/")
-            self.request.context["download"] = {
-                "url": url,
-                "artist": path_info[-2],
-                "album": path_info[-1],
+            path_info = self.relativ_path.rstrip("/")
+            path_info = path_info.split("/")
+            downloadLink = "%s.zip" % path_info[-1]
+
+            self.request.context["downloadLink"] = {
+                "url": downloadLink,
+                "size": totalBytes,
             }
 
         # Verzeichnis-Informationen in ein dict packen, welches
@@ -180,51 +222,64 @@ class browser:
 
     def download(self):
         """
-        Ein Download wird ausgeführt
+        Ein Download wurde angefordert
         """
-        simulation = self.request.POST.get("simulation", False)
+        self.simulation = self.request.GET.get("simulation", False)
 
-        if simulation:
+        if self.simulation:
             self.request.echo("<h1>Download Simulation!</h1><pre>")
             self.request.echo("relativ_path: '%s'\n" % self.relativ_path)
             self.request.echo("absolute_path: '%s'\n" % self.absolute_path)
+            self.request.echo("pathFilename: '%s'\n" % self.pathFilename)
             log_typ = "download simulation start"
         else:
             log_typ = "download start"
 
         self.db.log(log_typ, self.relativ_path)
 
-        artist = self.request.POST.get("artist", "")
-        album = self.request.POST.get("album", "")
+        if self.pathFilename.endswith(".zip"):
+            # Alle Dateien im aktuellen Ordner als ZIP downloaden
+            self.download_full_dir()
+        else:
+            # Gezielt eine Datei Downloaden
+            self.download_file()
 
+
+    def download_full_dir(self):
+        """
+        Alle Dateien in einem Ordner downloaden
+        """
         files, _ = self.read_dir()
 
         args = {"prefix": "PyDown_%s_" % self.request.environ["REMOTE_USER"]}
         if self.request.cfg["temp"]:
             args["dir"] = self.request.cfg["temp"]
-        temp = NamedTemporaryFile(**args)
+        tempFile = NamedTemporaryFile(**args)
 
-        tar = TarFile(mode="w", fileobj=temp)
+        zipFile = zipfile.ZipFile(tempFile, "wb", zipfile.ZIP_STORED)
 
-        if simulation:
+        if self.simulation:
             self.request.write("-"*80)
             self.request.write("\n")
+
+        arcPath = self.relativ_path.split("/")
+        arcPath = "/".join(arcPath[-2:])
 
         for file_info in files:
             filename = file_info[0]
             abs_path = posixpath.join(self.absolute_path, filename)
-            arcname = posixpath.join(artist, album, filename)
+            arcname = posixpath.join(arcPath, filename)
 
-            if simulation:
+            if self.simulation:
                 #~ self.request.write("absolute path..: %s\n" % abs_path)
                 self.request.write("<strong>%s</strong>\n" % arcname)
 
             try:
-                tar.add(abs_path, arcname)
+                zipFile.write(abs_path, arcname)
             except IOError, e:
                 self.request.write("<h1>Error</h1><h2>Can't create archive: %s</h2>" % e)
                 try:
-                    tar.close()
+                    zipFile.close()
                 except:
                     pass
                 try:
@@ -232,79 +287,77 @@ class browser:
                 except:
                     pass
                 return
-        tar.close()
+        zipFile.close()
 
-        if simulation:
+        self.send_file(tempFile, self.pathFilename, self.relativ_path)
+
+
+    def download_file(self):
+        """
+        Download einer Datei
+        """
+        filePath = posixpath.join(self.absolute_path, self.pathFilename)
+
+        try:
+            f = file(filePath, "rb")
+        except Exception, e:
+            self.request.write("<h3>Can't open file: %s</h3>" % e)
+            return
+
+        self.send_file(f, self.pathFilename, filePath)
+
+
+    def send_file(self, fileObject, filename, dbItemTxt):
+        """
+        Sendet die Download-Daten zum Client
+        """
+        # DateigrÃ¶ÃŸe ermitteln
+        fileObject.seek(0,2) # Am Ende der Daten springen
+        fileObject_len = fileObject.tell() # Aktuelle Position
+        fileObject.seek(0) # An den Anfang springen
+
+        if self.simulation:
             self.request.write("-"*80)
             self.request.write("\n")
-
-        temp.seek(0,2) # Am Ende der Daten springen
-        temp_len = temp.tell() # Aktuelle Position
-        temp.seek(0) # An den Anfang springen
-
-        filename = posixpath.split(self.absolute_path)[-1]
-
-        if simulation:
-            self.request.echo('Filename........: "%s.zip"\n' % filename)
-            self.request.echo("Content-Length..: %sBytes\n" % temp_len)
+            self.request.echo('Filename........: "%s"\n' % filename)
+            self.request.echo("Content-Length..: %sBytes\n" % fileObject_len)
             self.request.echo("\n")
 
-            l = 120
-            self.request.echo("First %s Bytes:\n" % l)
-            temp = temp.read(l)
-            #~ buffer = buffer.encode("String_Escape")
-            self.request.write("<hr />%s...<hr />" % cgi.escape(temp))
+            readLen = 120
+            self.request.echo("First %s Bytes:\n" % readLen)
+            self.request.write(
+                "<hr />%s...<hr />" % cgi.escape(fileObject.read(readLen))
+            )
 
             self.request.echo("Duration: <script_duration />")
             self.db.log(type="simulation_end", item=self.relativ_path)
             self.request.write("</pre>")
             return
 
-        id = self.db.insert_download(self.relativ_path, temp_len, 0)
+        id = self.db.insert_download(dbItemTxt, fileObject_len, 0)
 
-        self.request.headers['Content-Disposition'] = 'attachment; filename="%s.tar"' % filename
-        self.request.headers['Content-Length'] = '%s' % temp_len
-        #~ self.request.headers['Content-Transfer-Encoding'] = 'binary'
-        self.request.headers['Content-Transfer-Encoding'] = '8bit'
-        self.request.headers['Content-Type'] = 'application/octet-stream;'# charset=utf-8'
-
-        def send_data(id, temp):
-            """
-            Sendet das erzeugte Archiv zum Client
-            """
-            self.db.clean_up_downloads() # Alte Downloads in DB löschen
-            sleep_sec = 0.1
-            current_bytes = 0
-            last_time = time.time()
-            blocksize = self.db.get_download_blocksize(sleep_sec)
-            while 1:
-                data = temp.read(blocksize)
-                if not data:
-                    return
-                yield data
-                current_bytes += len(data)
-
-                current_time = time.time()
-                if current_time-last_time>5.0:
-                    last_time = current_time
-                    self.db.update_download(id, current_bytes)
-                    blocksize = self.db.get_download_blocksize(sleep_sec)
-                time.sleep(sleep_sec)
-
-            temp.close()
-
-            self.db.update_download(id, current_bytes)
-
-        # force input/output to binary
+        # force Windows input/output to binary
         if sys.platform == "win32":
             import msvcrt
             msvcrt.setmode(sys.stdin.fileno(), os.O_BINARY)
             msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
 
-        self.request.send_response(send_data(id, temp))
+        self.request.headers['Content-Disposition'] = \
+            'attachment; filename="%s"' % filename
+        self.request.headers['Content-Length'] = '%s' % fileObject_len
+        self.request.headers['Content-Transfer-Encoding'] = '8bit' #'binary'
+        self.request.headers['Content-Type'] = \
+            'application/octet-stream;'# charset=utf-8'
 
-        self.db.log(type="download_end", item=self.relativ_path)
+        self.db.clean_up_downloads() # Alte Downloads in DB lÃ¶schen
 
+        self.request.downloadFileObj = fileObject
+
+        self.request.send_response(
+            FileIter(self.request, id)
+        )
+
+        self.db.log(type="download_end", item=dbItemTxt)
 
 
 

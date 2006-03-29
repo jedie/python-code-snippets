@@ -10,6 +10,7 @@ class path:
         self.cfg = self.request.cfg
         self.environ = self.request.environ
 
+        self.pathFilename = None
         self.relativ_path = None
         self.absolute_path = None
 
@@ -25,13 +26,23 @@ class path:
         elif self.relativ_path[0]!="/":
             self.relativ_path = "/%s" % self.relativ_path
 
+        try:
+            has_filename = self.relativ_path[-5] == "."
+        except IndexError:
+            has_filename = False
+
+        if has_filename:
+            # Als letztes kommt wohl ein Dateiname
+            self.relativ_path = self.relativ_path.rstrip("/")
+            self.relativ_path, self.pathFilename = posixpath.split(self.relativ_path)
+
         self.absolute_path = "%s%s" % (self.cfg["base_path"], self.relativ_path)
 
         self.check_absolute_path()
 
         self.absolute_path = posixpath.normpath(self.absolute_path)
 
-        return self.relativ_path, self.absolute_path
+        return self.relativ_path, self.absolute_path, self.pathFilename
 
     def url(self, path):
         path = self.relative_path(path)
