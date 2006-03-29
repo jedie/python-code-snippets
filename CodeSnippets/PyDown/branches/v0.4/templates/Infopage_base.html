@@ -5,7 +5,17 @@ Hier werden nur Blöcke definiert, die in das eigentliche User-Template
 automatisch eingefügt werden.
 *}
 
-{% block "back_link" %}<a href="?">back</a>{% endblock %}
+{% block "serverInfo" %}
+    <p>bandwith: {{ serverInfo.bandwith }} - downloads: {{ serverInfo.downloadCount }} - active Users: {{ serverInfo.user }}</p>
+{% endblock %}
+
+{% block "TABs" %}
+    &nbsp;|&nbsp;{% for link in naviTABs %}<a href="{{ link.url }}">{{ link.title }}</a>&nbsp;|&nbsp;{% endfor %}
+{% endblock %}
+
+{% block "navi" %}
+    {% for link in path %}<a href="{{ link.url }}">{{ link.title }}</a>&nbsp;/&nbsp;{% endfor %}
+{% endblock %}
 
 {% block "current_downloads" %}
 {% if not current_downloads %}

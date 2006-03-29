@@ -13,7 +13,7 @@ __author__  = "Jens Diemer (www.jensdiemer.de)"
 __license__ = "GNU General Public License v2 or above - http://www.opensource.org/licenses/gpl-license.php"
 __url__     = "http://www.jensdiemer.de/Programmieren/Python/PyDown"
 
-__version__ = "v0.3.1"
+__version__ = "v0.4.0"
 
 __info__ = """<a href="%s">PyDown %s</a>""" % (__url__, __version__)
 
@@ -68,6 +68,11 @@ cfg = {
     "min_letters" : 12,
 
     "temp": None,
+
+    #__________________________________
+    # Upload
+    "upload_bufsize"    : 8192,
+    "upload_dir"        : "uploads",
 }
 
 
@@ -76,8 +81,6 @@ cfg = {
 # Standart Python Module
 import os, sys, urllib, cgi
 import posixpath, subprocess, stat, time, locale
-from tempfile import NamedTemporaryFile
-from tarfile import TarFile
 
 
 #_____________________________________________________________________________
@@ -147,60 +150,11 @@ class base(object):
 
 
 
-
-
-class browse(base):
-    def index(self):
-        """
-        Anzeigen des Browsers
-        """
-        self.init2() # Basisklasse einrichten
-        raise
-        self._setup_path()
-
-
-        self.request.echo("Download: %s" % self.db.download_count())
-
-        files, dirs = self._read_dir()
-        self._put_dir_info_to_context(files, dirs)
-
-        if self.context['filelist'] != []:
-            # Nur in log schreiben, wenn überhaupt Dateien vorhanden sind
-            self.db.log(type="browse", item=self.context['request_path'])
-
-        if cfg["debug"]: self.request.debug_info()
-
-        self.render("Browser_base")
-
-
-
 class index(base):
     """
     Die eigentlichen Programmteile, die automatisch von der ObjectApplication
     Aufgerufen werden.
     """
-
-    def index(self):
-        """
-        Anzeigen des Browsers
-        """
-        self.request.echo("JO")
-        #~ self.init2() # Basisklasse einrichten
-        #~ self._setup_path()
-
-        #~ self.request.echo("Download: %s" % self.db.download_count())
-
-        #~ files, dirs = self._read_dir()
-        #~ self._put_dir_info_to_context(files, dirs)
-
-        #~ if self.context['filelist'] != []:
-            #~ # Nur in log schreiben, wenn überhaupt Dateien vorhanden sind
-            #~ self.db.log(type="browse", item=self.context['request_path'])
-
-        #~ if cfg["debug"]: self.request.debug_info()
-
-        #~ self.render("Browser_base")
-
 
     def info(self):
         """
@@ -250,133 +204,7 @@ class index(base):
         self.render("Infopage_base")
 
 
-    def download(self):
-        """
-        Ein Download wird ausgeführt
-        """
-        self.init2() # Basisklasse einrichten
 
-        simulation = self.request.POST.get("simulation", False)
-
-        self._setup_path()
-        if simulation:
-            self.request.echo("<h1>Download Simulation!</h1><pre>")
-            self.request.echo("request path: %s\n" % self.request_path)
-            log_typ = "download simulation start"
-        else:
-            log_typ = "download start"
-
-        self.db.log(log_typ, self.context['request_path'])
-
-        artist = self.request.POST.get("artist", "")
-        album = self.request.POST.get("album", "")
-
-        files, _ = self._read_dir()
-
-        args = {"prefix": "PyDown_%s_" % self.request.environ["REMOTE_USER"]}
-        if self.request.cfg["temp"]:
-            args["dir"] = self.request.cfg["temp"]
-        temp = NamedTemporaryFile(**args)
-
-        tar = TarFile(mode="w", fileobj=temp)
-
-        if simulation:
-            self.request.write("-"*80)
-            self.request.write("\n")
-
-        for file_info in files:
-            filename = file_info[0]
-            abs_path = posixpath.join(self.request_path, filename)
-            arcname = posixpath.join(artist, album, filename)
-
-            if simulation:
-                #~ self.request.write("absolute path..: %s\n" % abs_path)
-                self.request.write("<strong>%s</strong>\n" % arcname)
-
-            try:
-                tar.add(abs_path, arcname)
-            except IOError, e:
-                self.request.write("<h1>Error</h1><h2>Can't create archive: %s</h2>" % e)
-                try:
-                    tar.close()
-                except:
-                    pass
-                try:
-                    temp.close()
-                except:
-                    pass
-                return
-        tar.close()
-
-        if simulation:
-            self.request.write("-"*80)
-            self.request.write("\n")
-
-        temp.seek(0,2) # Am Ende der Daten springen
-        temp_len = temp.tell() # Aktuelle Position
-        temp.seek(0) # An den Anfang springen
-
-        filename = posixpath.split(self.request_path)[-1]
-
-        if simulation:
-            self.request.echo('Filename........: "%s.zip"\n' % filename)
-            self.request.echo("Content-Length..: %sBytes\n" % temp_len)
-            self.request.echo("\n")
-
-            l = 120
-            self.request.echo("First %s Bytes:\n" % l)
-            temp = temp.read(l)
-            #~ buffer = buffer.encode("String_Escape")
-            self.request.write("<hr />%s...<hr />" % cgi.escape(temp))
-
-            self.request.echo("Duration: <script_duration />")
-            self.db.log(type="simulation_end", item=self.context['request_path'])
-            return
-
-        id = self.db.insert_download(self.context['request_path'], temp_len, 0)
-
-        self.request.headers['Content-Disposition'] = 'attachment; filename="%s.tar"' % filename
-        self.request.headers['Content-Length'] = '%s' % temp_len
-        #~ self.request.headers['Content-Transfer-Encoding'] = 'binary'
-        self.request.headers['Content-Transfer-Encoding'] = '8bit'
-        self.request.headers['Content-Type'] = 'application/octet-stream;'# charset=utf-8'
-
-        def send_data(id, temp):
-            """
-            Sendet das erzeugte Archiv zum Client
-            """
-            self.db.clean_up_downloads() # Alte Downloads in DB löschen
-            sleep_sec = 0.1
-            current_bytes = 0
-            last_time = time.time()
-            blocksize = self.db.get_download_blocksize(sleep_sec)
-            while 1:
-                data = temp.read(blocksize)
-                if not data:
-                    return
-                yield data
-                current_bytes += len(data)
-
-                current_time = time.time()
-                if current_time-last_time>5.0:
-                    last_time = current_time
-                    self.db.update_download(id, current_bytes)
-                    blocksize = self.db.get_download_blocksize(sleep_sec)
-                time.sleep(sleep_sec)
-
-            temp.close()
-
-            self.db.update_download(id, current_bytes)
-
-        # force input/output to binary
-        if sys.platform == "win32":
-            import msvcrt
-            msvcrt.setmode(sys.stdin.fileno(), os.O_BINARY)
-            msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
-
-        self.request.send_response(send_data(id, temp))
-
-        self.db.log(type="download_end", item=self.context['request_path'])
 
 
 
@@ -390,13 +218,19 @@ class PyDown(RegexApplication):
 
     urls = [
         (r'^$', 'index'),
-        (r'^browse/(.*?)$', "PyDown.browse.index"),
-        (r'^download/(.*?)$', "download.index"),
-        (r'^upload/(.*?)$', "upload.index"),
-        (r'^info/status$', "info.status"),
-        (r'^info/setup$', "info.setup"),
+        (r'^browse/(.*?)$',     "PyDown.browse.index"),
+        (r'^download/(.*?)$',   "PyDown.download.index"),
+        (r'^upload/(.*?)$',     "PyDown.upload.index"),
+        (r'^info/status/$',     "PyDown.info.status"),
+        (r'^info/setup/$',      "PyDown.info.setup"),
     ]
     slash_append = True
+
+    naviTABs = [
+        { "url": "info/status",    "title": "info"},
+        { "url": "browse/",        "title": "download"},
+        { "url": "upload/",        "title": "upload"},
+    ]
 
     def __init__(self, *args):
         super(PyDown, self).__init__(*args)
@@ -408,7 +242,6 @@ class PyDown(RegexApplication):
 
         # Datenbankverbindung herstellen und dem request-Objekt anhängen
         self.setup_db()
-
 
     def index(self):
         raise HttpRedirect, ("browse/", 301)
@@ -472,7 +305,9 @@ class PyDown(RegexApplication):
         automatisch die eigentlichen Programmteile auf
         """
         self.check_rights() # Als erstes die Rechte checken!
+        self.setup_naviTABs()
         self.setup_request_objects()
+        self.setup_context()
         super(PyDown, self).process_request()
 
 
@@ -490,19 +325,21 @@ class PyDown(RegexApplication):
     #_________________________________________________________________________
     # zusätzliche Request-Objekte
 
+    def setup_naviTABs(self):
+        """
+        relative TAB-Links absolut machen
+        """
+        for link in self.naviTABs:
+            link["url"] = posixpath.join(
+                self.request.environ["SCRIPT_ROOT"], link["url"]
+            )
+
     def setup_request_objects(self):
         """
         Hängt Objekte an das globale request-Objekt
         """
         # Jinja-Context anhängen
-        self.request.context = {
-            "cfg": self.request.cfg,
-            "__info__": __info__,
-            "filesystemencoding": filesystemencoding,
-            "username": self.request.environ["REMOTE_USER"],
-            "is_admin": self.request.environ["REMOTE_USER"] in \
-                self.request.cfg["admin_username"],
-        }
+        self.request.context = {}
         self.request.expose_var("context")
 
         # jinja-Render-Methode anhängen
@@ -510,6 +347,27 @@ class PyDown(RegexApplication):
 
         # Path-Klasse anhängen
         self.request.path = path(self.request)
+
+    def setup_context(self):
+        # ein paar Angaben
+        self.request.context = {
+            "naviTABs"          : self.naviTABs,
+            "cfg"               : self.request.cfg,
+            "__info__"          : __info__,
+            "filesystemencoding": filesystemencoding,
+            "username"          : self.request.environ["REMOTE_USER"],
+            "is_admin"          : self.request.environ["REMOTE_USER"] in \
+                self.request.cfg["admin_username"],
+        }
+
+        usernames = self.request.db.last_users()
+        usernames = ",".join(usernames)
+        self.request.context["serverInfo"] = {
+            "bandwith"      : self.request.db.get_bandwith(),
+            "downloadCount" : self.request.db.download_count(),
+            "user"          : usernames,
+        }
+
 
     def render(self, templatename):
         """

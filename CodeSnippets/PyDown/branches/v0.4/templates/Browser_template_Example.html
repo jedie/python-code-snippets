@@ -11,7 +11,7 @@
 <small>{% marker "info_link" %}</small>
 
 <fieldset><legend>current path</legend>
-<h4>{{ path }}</h4>
+{% marker "navi" %}
 </fieldset>
 
 <form name="download" method="post" action="{{ download.url }}?action=download">
