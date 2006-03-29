@@ -309,7 +309,12 @@ class PyDown(RegexApplication):
         self.setup_request_objects()
         self.setup_context()
         super(PyDown, self).process_request()
+        #~ self.request.debug_info()
 
+    #~ def on_regular_close(self):
+    def close(self):
+        if hasattr(self.request, 'downloadFileObj'):
+            self.request.downloadFileObj.close()
 
     def on_access_denied(self, args):
         """
@@ -318,9 +323,6 @@ class PyDown(RegexApplication):
         """
         self.request.write("<h1>403 Forbidden</h1>")
         self.request.write("<h3>%s</h3>" % " ".join(args))
-
-    def on_regular_close(self):
-        self.request.debug_info()
 
     #_________________________________________________________________________
     # zusätzliche Request-Objekte
@@ -363,9 +365,10 @@ class PyDown(RegexApplication):
         usernames = self.request.db.last_users()
         usernames = ",".join(usernames)
         self.request.context["serverInfo"] = {
-            "bandwith"      : self.request.db.get_bandwith(),
-            "downloadCount" : self.request.db.download_count(),
-            "user"          : usernames,
+            "totalBandwith"     : int(round(self.request.db.get_bandwith())),
+            "availableBandwith" : int(round(self.request.db.available_bandwith())),
+            "downloadCount"     : self.request.db.download_count(),
+            "user"              : usernames,
         }
 
 

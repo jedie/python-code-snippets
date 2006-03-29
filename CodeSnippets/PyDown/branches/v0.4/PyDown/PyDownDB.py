@@ -58,16 +58,19 @@ class PyDownDB(SQL_wrapper):
             2048 0.1 -> 20KB/s
             20KB/s / Anzahl * (1024*0.1) = 2000
         """
+        bandwith = self.available_bandwith()
+
+        blocksize = bandwith * 1024.0 * sleep_sec
+        return blocksize
+
+    def available_bandwith(self):
         bandwith = self.get_bandwith()
         download_count = self.download_count()
 
         if download_count == 0:
-            blocksize = bandwith
+            return bandwith
         else:
-            blocksize = float(bandwith) / download_count
-
-        blocksize = blocksize * 1024.0 * sleep_sec
-        return blocksize
+            return float(bandwith) / download_count
 
     def get_preference(self, type):
         result = self.select(
@@ -222,7 +225,10 @@ class PyDownDB(SQL_wrapper):
             i["elapsed"] = i["currently_time"] - i["start_time"]
 
             # Geschätzte gesammt Zeit in Sekunden
-            i["total"] = i["elapsed"] / i["currently_bytes"] * i["total_bytes"]
+            try:
+                i["total"] = i["elapsed"] / i["currently_bytes"] * i["total_bytes"]
+            except ZeroDivisionError:
+                i["total"] = 9999
 
             # Geschätzte Rest Zeit in Sekunden
             i["estimated"] = i["total"] - i["elapsed"]

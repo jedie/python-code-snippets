@@ -6,7 +6,11 @@ automatisch eingefügt werden.
 *}
 
 {% block "serverInfo" %}
-    <p>bandwith: {{ serverInfo.bandwith }} - downloads: {{ serverInfo.downloadCount }} - active Users: {{ serverInfo.user }}</p>
+    <p>
+        bandwith: {{ serverInfo.availableBandwith }}/{{ serverInfo.totalBandwith }}KB/s
+        - downloads: {{ serverInfo.downloadCount }}
+        - active Users: {{ serverInfo.user }}
+    </p>
 {% endblock %}
 
 {% block "TABs" %}
