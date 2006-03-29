@@ -43,9 +43,10 @@ class PyDownDB(SQL_wrapper):
             ),
             order           = ("start_time","DESC"),
         )
-        return self.request.db.encode_sql_results(result, codec="UTF-8")
+        return self.encode_sql_results(result, codec="UTF-8")
 
     def download_count(self):
+        """ Anzahl der aktuellen Downloads """
         result = self.select(
             from_table      = "activity",
             select_items    = "id",
@@ -82,7 +83,30 @@ class PyDownDB(SQL_wrapper):
             )
 
     def get_bandwith(self):
+        """ Aktuelle Bandbreite in KB/s """
         return int(self.get_preference("bandwith"))
+
+    def last_users(self, spaceOfTime=30*60):
+        result = set()
+
+        # User die gerade Download machen
+        usernames = self.select(
+            from_table      = "activity",
+            select_items    = ("username",),
+        )
+        usernames = self.encode_sql_results(usernames, codec="UTF-8")
+        for user in usernames:
+            result.add(user["username"])
+
+        # Usernamen aus der LOG-Tabelle
+        SQLcommand = "SELECT username FROM $$log WHERE (timestamp>?);"
+        spaceOfTime = time.time()-spaceOfTime
+        usernames = self.process_statement(SQLcommand, (spaceOfTime,))
+        usernames = self.encode_sql_results(usernames, codec="UTF-8")
+        for user in usernames:
+            result.add(user["username"])
+
+        return list(result)
 
     #_________________________________________________________________________
     # schreibenden zugriff auf die DB

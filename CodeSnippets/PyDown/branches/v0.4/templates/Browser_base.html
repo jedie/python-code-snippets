@@ -5,7 +5,17 @@ Hier werden nur Blöcke definiert, die in das eigentliche User-Template
 automatisch eingefügt werden.
 *}
 
-{% block "info_link" %}<a href="?action=info">info</a>{% endblock %}
+{% block "serverInfo" %}
+    <p>bandwith: {{ serverInfo.bandwith }} - downloads: {{ serverInfo.downloadCount }} - active Users: {{ serverInfo.user }}</p>
+{% endblock %}
+
+{% block "TABs" %}
+    &nbsp;|&nbsp;{% for link in naviTABs %}<a href="{{ link.url }}">{{ link.title }}</a>&nbsp;|&nbsp;{% endfor %}
+{% endblock %}
+
+{% block "navi" %}
+    {% for link in path %}<a href="{{ link.url }}">{{ link.title }}</a>&nbsp;/&nbsp;{% endfor %}
+{% endblock %}
 
 {% block "file_list" %}
     {% if not filelist %}
@@ -21,15 +31,15 @@ automatisch eingefügt werden.
             {% for file in filelist %}
             {% cycle rowclass through "odd", "even" %}
             <tr class="{{ rowclass }}">
-                <td>{{ file.name|escapexml }}</td>
+                <td><a href="{{ file.url }}">{{ file.name|escapexml }}</a></td>
                 <td>{{ file.mtime }}</td>
-                <td>{{ file.size }}</td>
+                <td>{{ file.size|filesizeformat }}</td>
                 <td>{{ file.info|escapexml }}</td>
             </tr>
 
             {% endfor %}
         </table>
-        <form name="download" method="post" action="{{ download.url }}?action=download">
+        <form name="download" method="post" action="?action=download">
             <label class="left" for="artist">Artist:</label>
             <input class="right" id="artist" name="artist" type="text" value="{{ download.artist }}" size="50" maxlength="50" />
             <br />
