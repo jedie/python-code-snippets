@@ -95,6 +95,19 @@ class browser:
         files = []
         dirs = []
         for item in os.listdir(self.absolute_path):
+            try:
+                codec = self.request.context["filesystemencoding"]
+                item = item.decode(codec)
+                item = item.encode("utf-8")
+            except UnicodeError, e:
+                #~ self.request.write(
+                    #~ "<small>(Unicode-Error: %s)</small><br />" % e
+                #~ )
+                pass
+            #~ self.request.write(
+                #~ "<small>%s</small><br />" % item.encode("String_Escape")
+            #~ )
+
             abs_path = posixpath.join(self.absolute_path, item)
             if os.path.isfile(abs_path):
                 ext = os.path.splitext(abs_path)[1]
@@ -141,11 +154,6 @@ class browser:
         for item, abs_path in dirs:
             url = self.path.url(abs_path)
             relativ_path = self.path.relative_path(abs_path)
-
-            #~ try:
-            #~ codec = self.request.context["filesystemencoding"]
-            #~ item = item.decode(codec)
-            #~ letter = letter.encode("UTF-8")
 
             first_letter = item[0].upper()
             try:
