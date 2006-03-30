@@ -88,9 +88,6 @@ import posixpath, subprocess, stat, time, locale
 # SQL-Wrapper mit speziellen PyDown-DB-Zugriffsmethoden
 from PyDownDB import PyDownDB
 
-# Für das rendern von Templates per decorator
-from TemplateDecoratorHandler import render
-
 # Path-Klasse für das request-Objekt
 from path import path
 
@@ -108,7 +105,6 @@ except:
     pass
 
 
-filesystemencoding = sys.getfilesystemencoding()
 
 
 # Colubrid import's werden das erste mal im Request-Handler vorgenommen und
@@ -116,94 +112,9 @@ filesystemencoding = sys.getfilesystemencoding()
 from colubrid.exceptions import *
 from colubrid import RegexApplication
 
+
+# Jinja Template engine
 import jinja
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class base(object):
-    """ Basisklasse von der jede ObjApp-Klasse ableitet """
-    def init2(self):
-        """
-        Das request-Object ist bei __init__ noch nicht verfügbar, deswegen
-        muß von jeder App-Methode diese init2() ausgeführt werden.
-        """
-        self.db = self.request.db
-
-
-
-
-
-class index(base):
-    """
-    Die eigentlichen Programmteile, die automatisch von der ObjectApplication
-    Aufgerufen werden.
-    """
-
-    def info(self):
-        """
-        Informations-Seite anzeigen
-        """
-        self.init2() # Basisklasse einrichten
-
-        self.db.log(type="view", item="infopage")
-
-        self.request.echo("bandwith:", self.db.get_bandwith())
-        self.request.echo("blocksize:", self.db.get_download_blocksize(0.1))
-
-        # Information aus der DB sammeln
-        self.context["current_downloads"] = self.db.human_readable_downloads()
-        self.context["last_log"] = self.db.human_readable_last_log(20)
-
-        self.context["bandwith"] = self.db.get_bandwith()
-
-        if cfg["debug"]: self.request.debug_info()
-
-        self.render("Infopage_base")
-
-
-    def admin(self):
-        """
-        Admin-Formular ausweten und Preferences eintragen
-        """
-        self.init2() # Basisklasse einrichten
-
-        if self.context["is_admin"] != True:
-            raise AccessDenied("Only Admin can cange preferences!")
-
-        if self.request.POST.has_key("bandwith"):
-            bandwith = self.request.POST["bandwith"]
-            self.db.set_bandwith(bandwith)
-
-            self.db.log(type="admin", item="change bandwith to %s" % bandwith)
-
-        # Information aus der DB sammeln
-        self.context["current_downloads"] = self.db.human_readable_downloads()
-        self.context["last_log"] = self.db.human_readable_last_log(20)
-
-        self.context["bandwith"] = self.db.get_bandwith()
-
-        if cfg["debug"]: self.request.debug_info()
-
-        self.render("Infopage_base")
-
-
-
 
 
 
@@ -221,7 +132,7 @@ class PyDown(RegexApplication):
         (r'^download/(.*?)$',   "PyDown.download.index"),
         (r'^upload/(.*?)$',     "PyDown.upload.index"),
         (r'^info/status/$',     "PyDown.info.status"),
-        (r'^info/setup/$',      "PyDown.info.setup"),
+        #~ (r'^info/setup/$',      "PyDown.info.setup"),
     ]
     slash_append = True
 
@@ -354,7 +265,7 @@ class PyDown(RegexApplication):
             "naviTABs"          : self.naviTABs,
             "cfg"               : self.request.cfg,
             "__info__"          : __info__,
-            "filesystemencoding": filesystemencoding,
+            "filesystemencoding": sys.getfilesystemencoding(),
             "username"          : self.request.environ["REMOTE_USER"],
             "is_admin"          : self.request.environ["REMOTE_USER"] in \
                 self.request.cfg["admin_username"],
