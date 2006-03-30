@@ -142,7 +142,21 @@ class browser:
             url = self.path.url(abs_path)
             relativ_path = self.path.relative_path(abs_path)
 
+            #~ try:
+            #~ codec = self.request.context["filesystemencoding"]
+            #~ item = item.decode(codec)
+            #~ letter = letter.encode("UTF-8")
+
             first_letter = item[0].upper()
+            try:
+                # Quick Hack, für UTF-Sonderzeichen, die eigentlich aus
+                # zwei Zeichen bestehen
+                if item.encode("String_Escape").startswith(r"\x"):
+                    first_letter = item[:2].upper()
+            except:
+                pass
+
+
             if not dirlist.has_key(first_letter):
                 dirlist[first_letter] = []
 
