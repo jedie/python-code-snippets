@@ -11,6 +11,8 @@ class info:
         self.context    = self.request.context
         self.db         = self.request.db
 
+        if self.request.POST.has_key("bandwith"):
+            self.change_bandwith(self.request.POST["bandwith"])
 
     def status(self):
         """
@@ -27,6 +29,27 @@ class info:
         #~ if self.cfg["debug"]: self.request.debug_info()
 
         self.request.render("Infopage_base")
+
+    def change_bandwith(self, bandwith):
+        """
+        Bandbreite soll geändert werden
+        """
+        if self.context["is_admin"] != True:
+            raise AccessDenied("Only Admin can cange preferences!")
+
+        try:
+            bandwith = int(bandwith)
+            if bandwith<1 or bandwith>999: raise ValueError
+        except ValueError:
+            self.request.write("Can't cahnge bandwith: value error!")
+            return
+
+        self.request.write("change bandwith to: %s" % bandwith)
+
+        self.db.set_bandwith(bandwith)
+
+        self.db.log(type="admin", item="change bandwith to %s" % bandwith)
+
 
 
 def status(request):
