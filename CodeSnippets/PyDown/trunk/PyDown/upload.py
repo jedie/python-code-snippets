@@ -69,7 +69,7 @@ class Uploader:
             self.request.write("<h3>saved with %.2fKByes/sec.</h3>" % performance)
         except Exception, e:
             self.request.write("<h3>Can't save file: %s</h3>" % e)
-            return
+            return "", 0
 
         self.db.log(type="upload_end", item="file: %s, size: %s" % (filename, bytesreaded))
         return filename, bytesreaded
