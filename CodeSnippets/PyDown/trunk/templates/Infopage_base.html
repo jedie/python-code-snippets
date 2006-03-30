@@ -62,7 +62,7 @@ automatisch eingefügt werden.
 {% endblock %}
 
 {% block "admin" %}
-<form name="admin" method="post" action="?action=admin">
+<form name="admin" method="post" action="">
     <label class="left" for="bandwith">bandwith:</label>
     <input class="right" id="bandwith" name="bandwith" type="text" value="{{ bandwith }}" size="4" maxlength="3" />KBytes/s
     {% if is_admin %}
