@@ -5,7 +5,21 @@ Hier werden nur Blöcke definiert, die in das eigentliche User-Template
 automatisch eingefügt werden.
 *}
 
-{% block "info_link" %}<a href="?action=info">info</a>{% endblock %}
+{% block "serverInfo" %}
+    <p>
+        bandwith: {{ serverInfo.availableBandwith }}/{{ serverInfo.totalBandwith }}KB/s
+        - downloads: {{ serverInfo.downloadCount }}
+        - active Users: {{ serverInfo.user }}
+    </p>
+{% endblock %}
+
+{% block "TABs" %}
+    &nbsp;|&nbsp;{% for link in naviTABs %}<a href="{{ link.url }}">{{ link.title }}</a>&nbsp;|&nbsp;{% endfor %}
+{% endblock %}
+
+{% block "navi" %}
+    {% for link in path %}<a href="{{ link.url }}">{{ link.title }}</a>&nbsp;/&nbsp;{% endfor %}
+{% endblock %}
 
 {% block "file_list" %}
     {% if not filelist %}
@@ -21,24 +35,20 @@ automatisch eingefügt werden.
             {% for file in filelist %}
             {% cycle rowclass through "odd", "even" %}
             <tr class="{{ rowclass }}">
-                <td>{{ file.name|escapexml }}</td>
+                <td><a href="{{ file.name }}">{{ file.name|escapexml }}</a></td>
                 <td>{{ file.mtime }}</td>
-                <td>{{ file.size }}</td>
+                <td>{{ file.size|filesizeformat }}</td>
                 <td>{{ file.info|escapexml }}</td>
             </tr>
 
             {% endfor %}
         </table>
-        <form name="download" method="post" action="{{ download.url }}?action=download">
-            <label class="left" for="artist">Artist:</label>
-            <input class="right" id="artist" name="artist" type="text" value="{{ download.artist }}" size="50" maxlength="50" />
-            <br />
-            <label class="left" for="album">Album:</label>
-            <input class="right" id="album" name="album" type="text" value="{{ download.album }}" size="50" maxlength="50" />
-            <br />
-            <input type="submit" value="download" name="download" />
-            <input type="checkbox" name="simulation" value="simulation" /> simulation
-        </form>
+        <p>
+            Download all files:
+            <a href="{{ downloadLink.url }}">{{ downloadLink.url|escapexml }}</a>
+            {{ downloadLink.size|filesizeformat }}
+            <small>(<a href="{{ downloadLink.url }}?simulation=on">simulation</a>)</small>
+        </p>
     {% endif %}
 {% endblock %}
 

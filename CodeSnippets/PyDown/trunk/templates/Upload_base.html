@@ -1,8 +1,8 @@
 {% extends "Upload_template" %}
 
 {*
-Hier werden nur Bl?cke definiert, die in das eigentliche User-Template
-automatisch eingef?gt werden.
+Hier werden nur Blöcke definiert, die in das eigentliche User-Template
+automatisch eingefügt werden.
 *}
 
 {% block "serverInfo" %}
@@ -37,25 +37,29 @@ automatisch eingef?gt werden.
 {% endblock %}
 
 {% block "file_list" %}
-<table id="last_log">
-    <tr>
-        <th>filename</th>
-        <th>file size</th>
-        <th>upload time</th>
-        <th>file info</th>
-        <th>client info</th>
-    </tr>
-    {% for file in filelist %}
-        {% cycle rowclass through "odd", "even" %}
-        <tr class="{{ rowclass }}">
-            <td>{{ file.filename|escapexml }}</td>
-            <td>{{ file.size|filesizeformat }}</td>
-            <td>{{ file.uploadTime }}</td>
-            <td>{{ file.fileInfo|escapexml }}</td>
-            <td>{{ file.clientInfo|escapexml }}</td>
-        </tr>
-    {% endfor %}
-</table>
+    {% if not file_list %}
+        <small>[ no files ]</small>
+    {% else %}
+        <table id="last_log">
+            <tr>
+                <th>filename</th>
+                <th>file size</th>
+                <th>upload time</th>
+                <th>file info</th>
+                <th>client info</th>
+            </tr>
+            {% for file in filelist %}
+                {% cycle rowclass through "odd", "even" %}
+                <tr class="{{ rowclass }}">
+                    <td>{{ file.filename|escapexml }}</td>
+                    <td>{{ file.size|filesizeformat }}</td>
+                    <td>{{ file.uploadTime }}</td>
+                    <td>{{ file.fileInfo|escapexml }}</td>
+                    <td>{{ file.clientInfo|escapexml }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% endif %}
 {% endblock %}
 
 {% block "debug" %}
