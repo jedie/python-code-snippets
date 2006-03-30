@@ -285,10 +285,14 @@ class PyDown(RegexApplication):
         """
         Template mit jinja rendern, dabei wird self.request.context verwendet
         """
-        #~ loader = jinja.FileSystemLoader('templates')
-        loader = jinja.CachedFileSystemLoader('templates')
+        try:
+            loader = jinja.CachedFileSystemLoader('templates')
+            template = jinja.Template(templatename, loader)
+        except:# EOFError, ImportError:
+            self.request.write("<small>(jinja FileSystemLoader fallback)</small>")
+            loader = jinja.FileSystemLoader('templates')
+            template = jinja.Template(templatename, loader)
 
-        template = jinja.Template(templatename, loader)
         context = jinja.Context(self.request.context)
 
         self.request.write(template.render(context))
