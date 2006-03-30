@@ -18,6 +18,10 @@ __version__ = "v0.4.0"
 __info__ = """<a href="%s">PyDown %s</a>""" % (__url__, __version__)
 
 __history__ = """
+v0.4.0
+    - NEU: upload
+    - NEU: Download von einzelnen Dateien möglich
+    - NEU: filesystemencoding
 v0.3.1
     - Patch für Windows Downloads: Setzt stdout auf binary vor dem Download
 v0.3
@@ -84,6 +88,9 @@ import posixpath, subprocess, stat, time, locale
 
 #_____________________________________________________________________________
 ## Eigene Module
+
+# Eigene Ausnahmen
+from exceptions import *
 
 # SQL-Wrapper mit speziellen PyDown-DB-Zugriffsmethoden
 from PyDownDB import PyDownDB
@@ -202,7 +209,13 @@ class PyDown(RegexApplication):
             self.request.environ.has_key("REMOTE_USER")):
                 raise AccessDenied("Only identified users allow!")
             if not self.request.environ["REMOTE_USER"] in self.request.cfg["allows_user"]:
-                raise AccessDenied("Permission denied!")
+                #~ raise AccessDenied("Permission denied!")
+                raise AccessDenied(
+                    "Permission denied: %s - %s " % (
+                        self.request.environ["REMOTE_USER"],
+                        self.request.cfg["allows_user"]
+                    )
+                )
 
         if not self.request.environ.has_key("REMOTE_USER"):
             self.request.environ["REMOTE_USER"] = "anonymous"
@@ -218,7 +231,12 @@ class PyDown(RegexApplication):
         self.setup_naviTABs()
         self.setup_request_objects()
         self.setup_context()
-        super(PyDown, self).process_request()
+        try:
+            super(PyDown, self).process_request()
+        except AccessDenied, e:
+        #~ except Exception, e:
+            self.request.write("<h1>Error</h1>")
+            self.request.write("<h3>%s</h3>" % e)
 
     #~ def on_regular_close(self):
     def close(self):
@@ -285,6 +303,25 @@ class PyDown(RegexApplication):
         """
         Template mit jinja rendern, dabei wird self.request.context verwendet
         """
+        #~ def encode_context(context, codec):
+            #~ if isinstance(context, list):
+                #~ for item in context:
+                    #~ item = encode_context(item, codec)
+            #~ elif isinstance(context, dict):
+                #~ for key in context:
+                    #~ context[key] = encode_context(context[key], codec)
+            #~ elif isinstance(context, unicode):
+                #~ try:
+                    #~ context = context.encode(codec)
+                #~ except UnicodeError, e:
+                    #~ self.request.write(
+                        #~ "<small>(Unicode-Error: %s)</small><br />" % e
+                    #~ )
+                    #~ pass
+
+            #~ return context
+
+
         try:
             loader = jinja.CachedFileSystemLoader('templates')
             template = jinja.Template(templatename, loader)
@@ -293,7 +330,9 @@ class PyDown(RegexApplication):
             loader = jinja.FileSystemLoader('templates')
             template = jinja.Template(templatename, loader)
 
-        context = jinja.Context(self.request.context)
+        #~ context = encode_context(self.request.context, "utf-8")
+        context = self.request.context
+        context = jinja.Context(context)
 
         self.request.write(template.render(context))
 

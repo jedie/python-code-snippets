@@ -182,6 +182,8 @@ class Database(object):
                 msg += "Databasename: '%s'" % self.databasename
                 raise ConnectionError(msg)
 
+            self.conn.text_factory = str
+
             self.cursor = self.conn.cursor()
         #_____________________________________________________________________
         #~ elif self.dbtyp == "odbc":

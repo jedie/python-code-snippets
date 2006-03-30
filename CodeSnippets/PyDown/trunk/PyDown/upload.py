@@ -1,6 +1,9 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 
+# Eigene Ausnahmen
+from exceptions import *
+
 import os, sys, time, ConfigParser, subprocess, socket
 
 class Uploader:
@@ -214,18 +217,7 @@ class Uploader:
             return file_cmd_out.strip()
 
 
-class CanNotSaveFile(Exception):
-    """
-    Datei könnte nicht auf Platte geschrieben werden
-    """
-    pass
 
-
-class NoUpload(Exception):
-    """
-    Es wird keine Datei hochgeladen
-    """
-    pass
 
 
 
