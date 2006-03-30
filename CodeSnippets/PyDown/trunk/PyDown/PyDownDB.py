@@ -43,9 +43,10 @@ class PyDownDB(SQL_wrapper):
             ),
             order           = ("start_time","DESC"),
         )
-        return self.request.db.encode_sql_results(result, codec="UTF-8")
+        return self.encode_sql_results(result, codec="UTF-8")
 
     def download_count(self):
+        """ Anzahl der aktuellen Downloads """
         result = self.select(
             from_table      = "activity",
             select_items    = "id",
@@ -57,16 +58,19 @@ class PyDownDB(SQL_wrapper):
             2048 0.1 -> 20KB/s
             20KB/s / Anzahl * (1024*0.1) = 2000
         """
+        bandwith = self.available_bandwith()
+
+        blocksize = bandwith * 1024.0 * sleep_sec
+        return blocksize
+
+    def available_bandwith(self):
         bandwith = self.get_bandwith()
         download_count = self.download_count()
 
         if download_count == 0:
-            blocksize = bandwith
+            return bandwith
         else:
-            blocksize = float(bandwith) / download_count
-
-        blocksize = blocksize * 1024.0 * sleep_sec
-        return blocksize
+            return float(bandwith) / download_count
 
     def get_preference(self, type):
         result = self.select(
@@ -82,7 +86,30 @@ class PyDownDB(SQL_wrapper):
             )
 
     def get_bandwith(self):
+        """ Aktuelle Bandbreite in KB/s """
         return int(self.get_preference("bandwith"))
+
+    def last_users(self, spaceOfTime=30*60):
+        result = set()
+
+        # User die gerade Download machen
+        usernames = self.select(
+            from_table      = "activity",
+            select_items    = ("username",),
+        )
+        usernames = self.encode_sql_results(usernames, codec="UTF-8")
+        for user in usernames:
+            result.add(user["username"])
+
+        # Usernamen aus der LOG-Tabelle
+        SQLcommand = "SELECT username FROM $$log WHERE (timestamp>?);"
+        spaceOfTime = time.time()-spaceOfTime
+        usernames = self.process_statement(SQLcommand, (spaceOfTime,))
+        usernames = self.encode_sql_results(usernames, codec="UTF-8")
+        for user in usernames:
+            result.add(user["username"])
+
+        return list(result)
 
     #_________________________________________________________________________
     # schreibenden zugriff auf die DB
@@ -198,7 +225,10 @@ class PyDownDB(SQL_wrapper):
             i["elapsed"] = i["currently_time"] - i["start_time"]
 
             # Geschätzte gesammt Zeit in Sekunden
-            i["total"] = i["elapsed"] / i["currently_bytes"] * i["total_bytes"]
+            try:
+                i["total"] = i["elapsed"] / i["currently_bytes"] * i["total_bytes"]
+            except ZeroDivisionError:
+                i["total"] = 9999
 
             # Geschätzte Rest Zeit in Sekunden
             i["estimated"] = i["total"] - i["elapsed"]
