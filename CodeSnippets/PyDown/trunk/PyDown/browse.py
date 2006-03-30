@@ -124,10 +124,11 @@ class browser:
             try:
                 filename = filename.decode(codec).encode("utf-8")
             except UnicodeError, e:
-                self.request.write(
-                    "<small>(Unicode-Error 1: %s)</small><br />" % e
-                )
-                pass
+                if self.cfg["debug"]:
+                    self.request.write(
+                        "<small>(Unicode-Error 1: %s)</small><br />" % e
+                    )
+
             file_info["name"] = filename
             totalBytes += file_info["size"]
             self.request.context["filelist"].append(file_info)
@@ -162,10 +163,10 @@ class browser:
             try:
                 item = item.decode(codec).encode("utf-8")
             except UnicodeError, e:
-                self.request.write(
-                    "<small>(Unicode-Error 2: %s)</small><br />" % e
-                )
-                pass
+                if self.cfg["debug"]:
+                    self.request.write(
+                        "<small>(Unicode-Error 2: %s)</small><br />" % e
+                    )
 
             if not dirlist.has_key(first_letter):
                 dirlist[first_letter] = []
