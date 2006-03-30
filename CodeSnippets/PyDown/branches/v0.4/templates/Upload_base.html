@@ -1,0 +1,78 @@
+{% extends "Upload_template" %}
+
+{*
+Hier werden nur Blöcke definiert, die in das eigentliche User-Template
+automatisch eingefügt werden.
+*}
+
+{% block "serverInfo" %}
+    <p>
+        bandwith: {{ serverInfo.availableBandwith }}/{{ serverInfo.totalBandwith }}KB/s
+        - downloads: {{ serverInfo.downloadCount }}
+        - active Users: {{ serverInfo.user }}
+    </p>
+{% endblock %}
+
+{% block "TABs" %}
+    <p>&nbsp;|&nbsp;{% for link in naviTABs %}<a href="{{ link.url }}">{{ link.title }}</a>&nbsp;|&nbsp;{% endfor %}</p>
+{% endblock %}
+
+{% block "form" %}
+    <form action="" method="post" enctype="multipart/form-data">
+        <p><input type="file" name="upload" size="40" />
+        <input type="submit" value="upload" /></p>
+    </form>
+{% endblock %}
+
+{% block "admin" %}
+<form name="admin" method="post" action="?action=admin">
+    <label class="left" for="bandwith">bandwith:</label>
+    <input class="right" id="bandwith" name="bandwith" type="text" value="{{ bandwith }}" size="4" maxlength="3" />KBytes/s
+    {% if is_admin %}
+        <input type="submit" value="change" name="change" />
+    {% else %}
+        <small>[You are not Admin!]</small>
+    {% endif %}
+</form>
+{% endblock %}
+
+{% block "file_list" %}
+<table id="last_log">
+    <tr>
+        <th>filename</th>
+        <th>file size</th>
+        <th>upload time</th>
+        <th>file info</th>
+        <th>client info</th>
+    </tr>
+    {% for file in filelist %}
+        {% cycle rowclass through "odd", "even" %}
+        <tr class="{{ rowclass }}">
+            <td>{{ file.filename|escapexml }}</td>
+            <td>{{ file.size|filesizeformat }}</td>
+            <td>{{ file.uploadTime }}</td>
+            <td>{{ file.fileInfo|escapexml }}</td>
+            <td>{{ file.clientInfo|escapexml }}</td>
+        </tr>
+    {% endfor %}
+</table>
+{% endblock %}
+
+{% block "debug" %}
+    {% if cfg.debug %}
+    <hr>
+    <h4>Jinja-Debug:</h4>
+    <pre>{% debug %}</pre>
+    {% endif %}
+{% endblock %}
+
+
+{% block "footer" %}
+    <p>[only_https: {{ cfg.only_https }},
+    only_auth_users: {{ cfg.only_auth_users }},
+    ext_whitelist: {{ cfg.ext_whitelist }}]<br />
+    You are: {{ username }} - {% if is_admin %}admin{% else %}normal user{% endif %}<br />
+    filesystemencoding: {{ filesystemencoding }}<br />
+    <script_duration /><br />
+    {{ __info__ }}</p>
+{% endblock %}
