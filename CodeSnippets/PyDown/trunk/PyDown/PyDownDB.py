@@ -137,8 +137,8 @@ class PyDownDB(SQL_wrapper):
                 #~ self.request.echo(result)
                 if (result["username"] == current_user) and \
                     (result["type"] == type) and \
-                    (result["item"] == item) and \
-                    (current_time-result["timestamp"]<30):
+                    (result["item"] == item):# and \
+                    #~ (current_time-result["timestamp"]<30):
                     return
 
         self.insert(
