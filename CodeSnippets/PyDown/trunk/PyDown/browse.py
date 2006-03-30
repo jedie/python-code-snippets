@@ -125,7 +125,7 @@ class browser:
                 filename = filename.decode(codec).encode("utf-8")
             except UnicodeError, e:
                 self.request.write(
-                    "<small>(Unicode-Error: %s)</small><br />" % e
+                    "<small>(Unicode-Error 1: %s)</small><br />" % e
                 )
                 pass
             file_info["name"] = filename
@@ -163,7 +163,7 @@ class browser:
                 item = item.decode(codec).encode("utf-8")
             except UnicodeError, e:
                 self.request.write(
-                    "<small>(Unicode-Error: %s)</small><br />" % e
+                    "<small>(Unicode-Error 2: %s)</small><br />" % e
                 )
                 pass
 
