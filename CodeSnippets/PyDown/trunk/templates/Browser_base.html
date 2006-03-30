@@ -35,7 +35,7 @@ automatisch eingefügt werden.
             {% for file in filelist %}
             {% cycle rowclass through "odd", "even" %}
             <tr class="{{ rowclass }}">
-                <td><a href="{{ file.name }}">{{ file.name|escapexml }}</a></td>
+                <td><a href="{{ file.url }}">{{ file.name|escapexml }}</a></td>
                 <td>{{ file.mtime }}</td>
                 <td>{{ file.size|filesizeformat }}</td>
                 <td>{{ file.info|escapexml }}</td>

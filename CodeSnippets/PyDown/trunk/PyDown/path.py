@@ -1,4 +1,8 @@
+#!/usr/bin/python
+# -*- coding: UTF-8 -*-
 
+# Eigene Ausnahmen
+from exceptions import *
 
 import os, posixpath, urllib, copy
 
@@ -78,7 +82,7 @@ class path:
 
         if not os.path.exists(self.absolute_path):
             # Den Pfad gibt es nicht
-            raise AccessDenied("'%s' not exists" % self.absolute_path)
+            raise AccessDenied, "'%s' not exists" % self.absolute_path
 
 
     def path_links(self):
@@ -111,6 +115,15 @@ class path:
             currentURL = lastURL + "/" + item
             lastURL = currentURL
 
+            codec = self.request.context["filesystemencoding"]
+            try:
+                item = item.decode(codec).encode("utf-8")
+            except UnicodeError, e:
+                self.request.write(
+                    "<small>(Unicode-Error: %s)</small><br />" % e
+                )
+                pass
+
             links.append({
                 "url": currentURL,
                 "title": item,
@@ -120,7 +133,6 @@ class path:
 
 
 
-class AccessDenied(Exception):
-    pass
+
 
 

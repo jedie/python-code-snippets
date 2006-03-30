@@ -95,19 +95,6 @@ class browser:
         files = []
         dirs = []
         for item in os.listdir(self.absolute_path):
-            try:
-                codec = self.request.context["filesystemencoding"]
-                item = item.decode(codec)
-                item = item.encode("utf-8")
-            except UnicodeError, e:
-                #~ self.request.write(
-                    #~ "<small>(Unicode-Error: %s)</small><br />" % e
-                #~ )
-                pass
-            #~ self.request.write(
-                #~ "<small>%s</small><br />" % item.encode("String_Escape")
-            #~ )
-
             abs_path = posixpath.join(self.absolute_path, item)
             if os.path.isfile(abs_path):
                 ext = os.path.splitext(abs_path)[1]
@@ -132,6 +119,15 @@ class browser:
         for filename, abs_path in files:
             relativ_path = self.path.relative_path(abs_path)
             file_info = self._get_file_info(abs_path)
+            file_info["url"] = filename
+            codec = self.request.context["filesystemencoding"]
+            try:
+                filename = filename.decode(codec).encode("utf-8")
+            except UnicodeError, e:
+                self.request.write(
+                    "<small>(Unicode-Error: %s)</small><br />" % e
+                )
+                pass
             file_info["name"] = filename
             totalBytes += file_info["size"]
             self.request.context["filelist"].append(file_info)
@@ -155,15 +151,21 @@ class browser:
             url = self.path.url(abs_path)
             relativ_path = self.path.relative_path(abs_path)
 
+            codec = self.request.context["filesystemencoding"]
+            #~ try:
+                #~ item = item.decode(codec)
+                #~ first_letter = item[0].upper()
+                #~ first_letter = first_letter.encode("utf-8")
+            #~ except UnicodeError, e:
             first_letter = item[0].upper()
-            try:
-                # Quick Hack, für UTF-Sonderzeichen, die eigentlich aus
-                # zwei Zeichen bestehen
-                if item.encode("String_Escape").startswith(r"\x"):
-                    first_letter = item[:2].upper()
-            except:
-                pass
 
+            try:
+                item = item.decode(codec).encode("utf-8")
+            except UnicodeError, e:
+                self.request.write(
+                    "<small>(Unicode-Error: %s)</small><br />" % e
+                )
+                pass
 
             if not dirlist.has_key(first_letter):
                 dirlist[first_letter] = []
