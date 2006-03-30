@@ -303,38 +303,22 @@ class PyDown(RegexApplication):
         """
         Template mit jinja rendern, dabei wird self.request.context verwendet
         """
-        #~ def encode_context(context, codec):
-            #~ if isinstance(context, list):
-                #~ for item in context:
-                    #~ item = encode_context(item, codec)
-            #~ elif isinstance(context, dict):
-                #~ for key in context:
-                    #~ context[key] = encode_context(context[key], codec)
-            #~ elif isinstance(context, unicode):
-                #~ try:
-                    #~ context = context.encode(codec)
-                #~ except UnicodeError, e:
-                    #~ self.request.write(
-                        #~ "<small>(Unicode-Error: %s)</small><br />" % e
-                    #~ )
-                    #~ pass
+        #~ try:
+        #~ loader = jinja.CachedFileSystemLoader('templates', charset='utf-8')
+        #~ template = jinja.Template(templatename, loader)
+        #~ except:# EOFError, ImportError:
+            #~ self.request.write("<small>(jinja FileSystemLoader fallback)</small>")
+        loader = jinja.FileSystemLoader('templates', charset='utf-8')
+        template = jinja.Template(templatename, loader)
 
-            #~ return context
+        context = jinja.Context(self.request.context, charset='utf-8')
 
-
-        try:
-            loader = jinja.CachedFileSystemLoader('templates')
-            template = jinja.Template(templatename, loader)
-        except:# EOFError, ImportError:
-            self.request.write("<small>(jinja FileSystemLoader fallback)</small>")
-            loader = jinja.FileSystemLoader('templates')
-            template = jinja.Template(templatename, loader)
-
-        #~ context = encode_context(self.request.context, "utf-8")
-        context = self.request.context
-        context = jinja.Context(context)
-
-        self.request.write(template.render(context))
+        content = template.render(context)
+        if isinstance(content, unicode):
+            content = content.encode("utf-8")
+        else:
+            self.request.write("<small>(Content not unicode)</small><br />")
+        self.request.write(content)
 
         if cfg["debug"]: self.request.debug_info()
 
