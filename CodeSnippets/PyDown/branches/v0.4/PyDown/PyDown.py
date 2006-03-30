@@ -61,7 +61,6 @@ cfg = {
     "IP_range": ["127.0.0.1","192.168.*.*"],
 
     # Debugausgaben einblenden?
-    #~ "debug": True,
     "debug": False,
 
     # Ab welcher Anzahl von Verzeichnissen sollen Buchstaben eingeblendet werden?
@@ -309,7 +308,6 @@ class PyDown(RegexApplication):
         self.setup_request_objects()
         self.setup_context()
         super(PyDown, self).process_request()
-        #~ self.request.debug_info()
 
     #~ def on_regular_close(self):
     def close(self):
@@ -383,6 +381,8 @@ class PyDown(RegexApplication):
         context = jinja.Context(self.request.context)
 
         self.request.write(template.render(context))
+
+        if cfg["debug"]: self.request.debug_info()
 
 
 
