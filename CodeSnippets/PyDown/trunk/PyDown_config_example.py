@@ -37,6 +37,9 @@ cfg["only_https"] = True
 # Zugriff nur eingeloggte User, durch Apache's .htaccess-Auth erlauben?
 cfg["only_auth_users"] = True
 
+# Zugriffe nur von bestimmten IP's zulassen
+cfg["IP_range"] = ["*.*.*.*"]
+
 # Debugausgaben anzeigen?
 cfg["debug"] = False
 
