@@ -119,10 +119,10 @@ class path:
             try:
                 item = item.decode(codec).encode("utf-8")
             except UnicodeError, e:
-                self.request.write(
-                    "<small>(Unicode-Error path_links(): %s)</small><br />" % e
-                )
-                pass
+                if self.cfg["debug"]:
+                    self.request.write(
+                        "<small>(Unicode-Error path_links(): %s)</small><br />" % e
+                    )
 
             links.append({
                 "url": currentURL,
