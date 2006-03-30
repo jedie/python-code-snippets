@@ -120,7 +120,7 @@ class path:
                 item = item.decode(codec).encode("utf-8")
             except UnicodeError, e:
                 self.request.write(
-                    "<small>(Unicode-Error: %s)</small><br />" % e
+                    "<small>(Unicode-Error path_links(): %s)</small><br />" % e
                 )
                 pass
 
