@@ -4,6 +4,7 @@
 from utils import spezial_cmp
 
 import os, sys, cgi, posixpath, locale, time, stat, subprocess
+import dircache
 from tempfile import NamedTemporaryFile
 import zipfile
 
@@ -94,8 +95,26 @@ class browser:
         "Einlesen des Verzeichnisses"
         files = []
         dirs = []
-        for item in os.listdir(self.absolute_path):
+        listPath = os.path.normpath(self.absolute_path)
+        listPath = os.path.abspath(listPath)
+        for item in dircache.listdir(listPath):
             abs_path = posixpath.join(self.absolute_path, item)
+
+            #~ if self.cfg["debug"]:
+                #~ self.request.write("<small>(test:")
+                #~ self.request.echo(self.absolute_path, item, "-", abs_path)
+                #~ self.request.write(")</small><br />")
+
+            codec = self.request.context["filesystemencoding"]
+            if codec == "mbcs": # für Windows
+                try:
+                    item = item.decode(codec).encode("utf-8")
+                except UnicodeError, e:
+                    if self.cfg["debug"]:
+                        self.request.write(
+                            "<small>(Unicode-Error: %s)</small><br />" % e
+                        )
+
             if os.path.isfile(abs_path):
                 ext = os.path.splitext(abs_path)[1]
                 if not ext in self.cfg["ext_whitelist"]:
@@ -106,6 +125,11 @@ class browser:
             elif os.path.isdir(abs_path):
                 #~ self.request.echo("dir: '%s' '%s'<br>" % (item, abs_path))
                 dirs.append((item, abs_path))
+
+            elif self.cfg["debug"]:
+                self.request.write(
+                    "<small>(Unknown dir item: '%s')</small><br />" % item
+                )
 
         files.sort(spezial_cmp)
         dirs.sort(spezial_cmp)
@@ -120,15 +144,6 @@ class browser:
             relativ_path = self.path.relative_path(abs_path)
             file_info = self._get_file_info(abs_path)
             file_info["url"] = filename
-            codec = self.request.context["filesystemencoding"]
-            try:
-                filename = filename.decode(codec).encode("utf-8")
-            except UnicodeError, e:
-                if self.cfg["debug"]:
-                    self.request.write(
-                        "<small>(Unicode-Error 1: %s)</small><br />" % e
-                    )
-
             file_info["name"] = filename
             totalBytes += file_info["size"]
             self.request.context["filelist"].append(file_info)
@@ -152,21 +167,16 @@ class browser:
             url = self.path.url(abs_path)
             relativ_path = self.path.relative_path(abs_path)
 
-            codec = self.request.context["filesystemencoding"]
-            #~ try:
-                #~ item = item.decode(codec)
-                #~ first_letter = item[0].upper()
-                #~ first_letter = first_letter.encode("utf-8")
-            #~ except UnicodeError, e:
-            first_letter = item[0].upper()
-
             try:
-                item = item.decode(codec).encode("utf-8")
+                first_letter = item.decode("utf-8") # nach unicode wandeln
+                first_letter = first_letter[0].upper()
+                first_letter = first_letter.encode("utf-8") # zurück konvertieren
             except UnicodeError, e:
                 if self.cfg["debug"]:
                     self.request.write(
-                        "<small>(Unicode-Error 2: %s)</small><br />" % e
+                        "<small>(Unicode-Error 'first_letter': %s)</small><br />" % e
                     )
+                first_letter = "#"
 
             if not dirlist.has_key(first_letter):
                 dirlist[first_letter] = []

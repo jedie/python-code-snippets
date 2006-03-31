@@ -24,6 +24,8 @@ class path:
         """
         self.url_prefix = prefix
 
+        path = urllib.unquote(path)
+
         self.relativ_path = path
         if self.relativ_path == "":
             self.relativ_path = "/"
@@ -67,14 +69,14 @@ class path:
 
     def check_absolute_path(self):
         """
-        ‹berpr¸ft einen absoluten Pfad
+        √úberpr√ºft einen absoluten Pfad
         """
         if (self.absolute_path.find("..") != -1):
-            # Hackerscheiﬂ schon mal ausschlieﬂen
+            # Hackerschei√ü schon mal ausschlie√üen
             raise AccessDenied("not allowed!")
 
         if not self.absolute_path.startswith(self.cfg["base_path"]):
-            # F‰ngt nicht wie Basis-Pfad an... Da stimmt was nicht
+            # F√§ngt nicht wie Basis-Pfad an... Da stimmt was nicht
             raise AccessDenied("permission deny #%s#%s#" % (
                 self.absolute_path, self.cfg["base_path"])
             )
@@ -97,7 +99,7 @@ class path:
         if path[:1] == "/": path = path[:-1] # / Am Ende wegschneiden
         path = path[1:] # / Am Anfang wegschneiden
 
-        # Link zu 'root' hinzuf¸gen
+        # Link zu 'root' hinzuf√ºgen
         rootPath = posixpath.join(
             self.request.environ["SCRIPT_ROOT"], self.url_prefix
         )
@@ -115,14 +117,14 @@ class path:
             currentURL = lastURL + "/" + item
             lastURL = currentURL
 
-            codec = self.request.context["filesystemencoding"]
-            try:
-                item = item.decode(codec).encode("utf-8")
-            except UnicodeError, e:
-                if self.cfg["debug"]:
-                    self.request.write(
-                        "<small>(Unicode-Error path_links(): %s)</small><br />" % e
-                    )
+            #~ codec = self.request.context["filesystemencoding"]
+            #~ try:
+                #~ item = item.decode(codec).encode("utf-8")
+            #~ except UnicodeError, e:
+                #~ if self.cfg["debug"]:
+                    #~ self.request.write(
+                        #~ "<small>(Unicode-Error path_links(): %s)</small><br />" % e
+                    #~ )
 
             links.append({
                 "url": currentURL,

@@ -110,7 +110,7 @@ try:
     #~ locale.setlocale(locale.LC_COLLATE, "german")
 except:
     pass
-
+#~ sys.setdefaultencoding("utf-8")
 
 
 
@@ -303,11 +303,15 @@ class PyDown(RegexApplication):
         """
         Template mit jinja rendern, dabei wird self.request.context verwendet
         """
+        if cfg["debug"]:
+            self.request.write("<small>Debug: ON</small><br />")
+
         #~ try:
         #~ loader = jinja.CachedFileSystemLoader('templates', charset='utf-8')
         #~ template = jinja.Template(templatename, loader)
         #~ except:# EOFError, ImportError:
             #~ self.request.write("<small>(jinja FileSystemLoader fallback)</small>")
+
         loader = jinja.FileSystemLoader('templates', charset='utf-8')
         template = jinja.Template(templatename, loader)
 
