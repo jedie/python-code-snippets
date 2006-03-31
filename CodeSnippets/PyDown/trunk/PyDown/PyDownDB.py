@@ -36,7 +36,7 @@ class PyDownDB(SQL_wrapper):
     def raw_current_downloads(self):
         self.clean_up_downloads()
         result = self.select(
-            from_table      = "activity",
+            from_table      = "downloads",
             select_items    = (
                 "id", "username", "item", "start_time", "currently_time",
                 "total_bytes", "currently_bytes"
@@ -48,7 +48,7 @@ class PyDownDB(SQL_wrapper):
     def download_count(self):
         """ Anzahl der aktuellen Downloads """
         result = self.select(
-            from_table      = "activity",
+            from_table      = "downloads",
             select_items    = "id",
         )
         return len(result)
@@ -94,7 +94,7 @@ class PyDownDB(SQL_wrapper):
 
         # User die gerade Download machen
         usernames = self.select(
-            from_table      = "activity",
+            from_table      = "downloads",
             select_items    = ("username",),
         )
         usernames = self.encode_sql_results(usernames, codec="UTF-8")
@@ -152,12 +152,30 @@ class PyDownDB(SQL_wrapper):
         )
         self.commit()
 
+    #_________________________________________________________________________
+
     def insert_download(self, item, total_bytes, current_bytes):
         """
         Einen neuen Download eintragen
         """
+        return self.insert_activity(
+            "downloads", item, total_bytes, current_bytes
+        )
+
+    def insert_upload(self, item, total_bytes, current_bytes):
+        """
+        Einen neuen Upload eintragen
+        """
+        return self.insert_activity(
+            "uploads", item, total_bytes, current_bytes
+        )
+
+    def insert_activity(self, tableName, item, total_bytes, current_bytes):
+        """
+        Trägt ein Download oder Upload ein und liefert die ID zurück
+        """
         self.insert(
-            table = "activity",
+            table = tableName,
             data = {
                 "username": self.request.environ["REMOTE_USER"],
                 "item": item,
@@ -170,12 +188,23 @@ class PyDownDB(SQL_wrapper):
         self.commit()
         return self.cursor.lastrowid
 
+    #_________________________________________________________________________
+
     def update_download(self, id, current_bytes):
         """
         Updated einen download Eintrag
         """
+        self.update_activity("downloads", id, current_bytes)
+
+    def update_upload(self, id, current_bytes):
+        """
+        Updated einen download Eintrag
+        """
+        self.update_activity("uploads", id, current_bytes)
+
+    def update_activity(self, tableName, id, current_bytes):
         self.update(
-            table   = "activity",
+            table   = tableName,
             data    = {
                 "currently_bytes": current_bytes,
                 "currently_time": time.time(),
@@ -184,14 +213,27 @@ class PyDownDB(SQL_wrapper):
         )
         self.commit()
 
+    #_________________________________________________________________________
+
     def clean_up_downloads(self):
         """
         Löscht alte Downloads
         """
-        SQLcommand = "DELETE FROM $$activity WHERE (currently_time<?);"
+        self.clean_up_activity("downloads")
+
+    def clean_up_uploads(self):
+        """
+        Löscht alte Uploads
+        """
+        self.clean_up_activity("uploads")
+
+    def clean_up_activity(self, tabelName):
+        SQLcommand = "DELETE FROM $$%s WHERE (currently_time<?);" % tabelName
         timeout = time.time()-10
         self.cursor.execute(SQLcommand, (timeout,))
         self.commit()
+
+    #_________________________________________________________________________
 
     def set_preference(self, type, value):
         self.update(
