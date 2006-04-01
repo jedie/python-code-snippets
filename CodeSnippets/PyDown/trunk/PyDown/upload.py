@@ -7,8 +7,9 @@ from exceptions import *
 import os, sys, time, ConfigParser, subprocess, socket
 
 class Uploader:
-    def __init__(self, request, path):
+    def __init__(self, request, response):#, path):
         self.request = request
+        self.response = response
 
         # Shorthands
         self.cfg        = self.request.cfg
@@ -16,7 +17,7 @@ class Uploader:
         self.context    = self.request.context
         self.db         = self.request.db
 
-        self.request.echo("Buffsize:",self.cfg["upload_bufsize"])
+        #~ self.request.echo("Buffsize:",self.cfg["upload_bufsize"])
 
         self.db.clean_up_uploads() # Alte Uploads in DB löschen
 
@@ -37,7 +38,7 @@ class Uploader:
     def handle_upload(self):
         """ Speichert eine gerade hochgeldadene Datei ab """
         try:
-            fileObject = self.request.FILES['upload']
+            fileObject = self.request.files['upload']
         except KeyError:
             # Es gibt kein Upload
             raise NoUpload
@@ -53,36 +54,42 @@ class Uploader:
 
         filename = os.path.join(self.cfg["upload_dir"], filename)
 
-        bufsize = self.cfg["upload_bufsize"]
-        bytesreaded = 0
-        try:
-            f = file(filename, 'wb')
-            time_threshold = start_time = int(time.time())
-            while 1:
-                data = fileObject.read(bufsize)
-                if not data:
-                    break
-                bytesreaded += len(data)
-                f.write(data)
+        f = file(filename, 'wb')
+        data = fileObject.read()
+        bytesreaded = len(data)
+        f.write(data)
+        f.close()
 
-                current_time = int(time.time())
-                if current_time > time_threshold:
-                    self.db.update_upload(id, bytesreaded)
-                    self.request.write("<p>read: %sBytes (%s)</p>" % (
-                            bytesreaded, time.strftime("%H:%M:%S", time.localtime())
-                        )
-                    )
-                    time_threshold = current_time
+        #~ bufsize = self.cfg["upload_bufsize"]
+        #~ bytesreaded = 0
+        #~ try:
+            #~ f = file(filename, 'wb')
+            #~ time_threshold = start_time = int(time.time())
+            #~ while 1:
+                #~ data = fileObject.read(bufsize)
+                #~ if not data:
+                    #~ break
+                #~ bytesreaded += len(data)
+                #~ f.write(data)
 
-            self.db.update_upload(id, bytesreaded)
-            end_time = time.time()
-            f.close()
+                #~ current_time = int(time.time())
+                #~ if current_time > time_threshold:
+                    #~ self.db.update_upload(id, bytesreaded)
+                    #~ self.request.write("<p>read: %sBytes (%s)</p>" % (
+                            #~ bytesreaded, time.strftime("%H:%M:%S", time.localtime())
+                        #~ )
+                    #~ )
+                    #~ time_threshold = current_time
 
-            performance = bytesreaded / (end_time-start_time) / 1024
-            self.request.write("<h3>saved with %.2fKByes/sec.</h3>" % performance)
-        except Exception, e:
-            self.request.write("<h3>Can't save file: %s</h3>" % e)
-            return "", 0
+            #~ self.db.update_upload(id, bytesreaded)
+            #~ end_time = time.time()
+            #~ f.close()
+
+            #~ performance = bytesreaded / (end_time-start_time) / 1024
+            #~ self.request.write("<h3>saved with %.2fKByes/sec.</h3>" % performance)
+        #~ except Exception, e:
+            #~ self.request.write("<h3>Can't save file: %s</h3>" % e)
+            #~ return "", 0
 
         self.db.log(type="upload_end", item="file: %s, size: %s" % (filename, bytesreaded))
         return filename, bytesreaded
@@ -276,6 +283,3 @@ class email:
 
 
 
-
-def index(request, path):
-    Uploader(request, path)

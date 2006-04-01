@@ -13,11 +13,13 @@ __author__  = "Jens Diemer (www.jensdiemer.de)"
 __license__ = "GNU General Public License v2 or above - http://www.opensource.org/licenses/gpl-license.php"
 __url__     = "http://www.jensdiemer.de/Programmieren/Python/PyDown"
 
-__version__ = "v0.4.0"
+__version__ = "v0.4.1"
 
 __info__ = """<a href="%s">PyDown %s</a>""" % (__url__, __version__)
 
 __history__ = """
+v0.4.1
+    - Anpassungen an colubrid 1.0
 v0.4.0
     - NEU: upload
     - NEU: Download von einzelnen Dateien möglich
@@ -117,21 +119,32 @@ except:
 # Colubrid import's werden das erste mal im Request-Handler vorgenommen und
 # sind dort mit einem except und Info-Text versehen
 from colubrid.exceptions import *
-from colubrid import RegexApplication
+from colubrid import BaseApplication
+from colubrid import HttpResponse
 
 
 # Jinja Template engine
 import jinja
 
+"""
+##~ request.GET -> request.args
+##~ request.REQUEST -> request.values
+##~ request.POST -> request.form
+##~ request.FILES -> request.files
+##~ request.COOKIES -> request.cookies
+
+http://trac.pocoo.org/browser/colubrid/webpage/documentation/applications/regex.txt
+http://trac.pocoo.org/browser/colubrid/webpage/documentation/request.txt
+http://trac.pocoo.org/browser/colubrid/webpage/documentation/response.txt
+"""
 
 
 
-
-
-class PyDown(RegexApplication):
+class PyDown(BaseApplication):
     """
     Klasse die die Programmlogik zusammenstellt
     """
+    charset = 'utf-8'
 
     urls = [
         (r'^$', 'index'),
@@ -151,17 +164,13 @@ class PyDown(RegexApplication):
 
     def __init__(self, *args):
         super(PyDown, self).__init__(*args)
-        self.request.headers['Content-Type'] = 'text/html'
+        self.response = HttpResponse()
 
         # Config-Dict an Request-Objekt und der Debugausgabe anhängen
         self.request.cfg = cfg
-        self.request.expose_var("cfg")
 
         # Datenbankverbindung herstellen und dem request-Objekt anhängen
         self.setup_db()
-
-    def index(self):
-        raise HttpRedirect, ("browse/", 301)
 
     def setup_db(self):
         """
@@ -221,7 +230,6 @@ class PyDown(RegexApplication):
             self.request.environ["REMOTE_USER"] = "anonymous"
 
 
-
     def process_request(self):
         """
         Abarbeiten des eigentlichen Request. Die ObjectApplication ruft
@@ -231,12 +239,31 @@ class PyDown(RegexApplication):
         self.setup_naviTABs()
         self.setup_request_objects()
         self.setup_context()
-        try:
-            super(PyDown, self).process_request()
-        except AccessDenied, e:
-        #~ except Exception, e:
-            self.request.write("<h1>Error</h1>")
-            self.request.write("<h3>%s</h3>" % e)
+
+        pathInfo = self.request.environ.get('PATH_INFO', '/')
+        if pathInfo == "":
+            # Weiterleitung zum browser
+            url = self.request.environ['APPLICATION_REQUEST']
+            url += "/browse"
+            raise HttpMoved(url)
+        elif pathInfo.startswith("/info"):
+            # Informations-Seite
+            import info
+            info.info(self.request, self.response)
+        elif pathInfo.startswith("/browse"):
+            # Browser/Download
+            path = pathInfo.lstrip("/browse")
+            import browse
+            FileIter = browse.browser(self.request, self.response, path).get()
+            if FileIter != None:
+                return FileIter
+        elif pathInfo.startswith("/upload"):
+            import upload
+            upload.Uploader(self.request, self.response)
+        else:
+            self.response.write("<h1>PathInfo: '%s'</h1>" % pathInfo)
+
+        return self.response
 
     #~ def on_regular_close(self):
     def close(self):
@@ -248,8 +275,8 @@ class PyDown(RegexApplication):
         Überschreibt die original Ausgabe und ergänzt diese mit
         einem Hinweis, warum der Access Denied ist ;)
         """
-        self.request.write("<h1>403 Forbidden</h1>")
-        self.request.write("<h3>%s</h3>" % " ".join(args))
+        self.response.write("<h1>403 Forbidden</h1>")
+        self.response.write("<h3>%s</h3>" % " ".join(args))
 
     #_________________________________________________________________________
     # zusätzliche Request-Objekte
@@ -269,13 +296,12 @@ class PyDown(RegexApplication):
         """
         # Jinja-Context anhängen
         self.request.context = {}
-        self.request.expose_var("context")
 
         # jinja-Render-Methode anhängen
         self.request.render = self.render
 
         # Path-Klasse anhängen
-        self.request.path = path(self.request)
+        self.request.path = path(self.request, self.response)
 
     def setup_context(self):
         # ein paar Angaben
@@ -304,13 +330,13 @@ class PyDown(RegexApplication):
         Template mit jinja rendern, dabei wird self.request.context verwendet
         """
         if cfg["debug"]:
-            self.request.write("<small>Debug: ON</small><br />")
+            self.response.write("<small>Debug: ON</small><br />")
 
         #~ try:
         #~ loader = jinja.CachedFileSystemLoader('templates', charset='utf-8')
         #~ template = jinja.Template(templatename, loader)
         #~ except:# EOFError, ImportError:
-            #~ self.request.write("<small>(jinja FileSystemLoader fallback)</small>")
+            #~ self.response.write("<small>(jinja FileSystemLoader fallback)</small>")
 
         loader = jinja.FileSystemLoader('templates', charset='utf-8')
         template = jinja.Template(templatename, loader)
@@ -321,16 +347,22 @@ class PyDown(RegexApplication):
         if isinstance(content, unicode):
             content = content.encode("utf-8")
         else:
-            self.request.write("<small>(Content not unicode)</small><br />")
-        self.request.write(content)
+            self.response.write("<small>(Content not unicode)</small><br />")
 
-        if cfg["debug"]: self.request.debug_info()
+        self.response.write(content)
 
 
+#~ def upload_callback(request, pos, totalBytes):
+    #~ raise request
+    #~ self.request.echo("pos:", pos, "total:", totalBytes)
+    #~ pass
 
 
 
 # Middleware, die den Tag <script_duration /> ersetzt
 from ReplacerMiddleware import replacer
-app = replacer(PyDown)
+#~ from uploadMiddleware import ProgressMiddleware
+app = PyDown
+#~ app = ProgressMiddleware(app, upload_callback, threshold = 2048)
+app = replacer(app)
 

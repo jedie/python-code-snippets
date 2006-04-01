@@ -2,8 +2,9 @@
 # -*- coding: UTF-8 -*-
 
 class info:
-    def __init__(self, request):
+    def __init__(self, request, response):
         self.request = request
+        self.response = response
 
         # Shorthands
         self.cfg        = self.request.cfg
@@ -11,8 +12,10 @@ class info:
         self.context    = self.request.context
         self.db         = self.request.db
 
-        if self.request.POST.has_key("bandwith"):
-            self.change_bandwith(self.request.POST["bandwith"])
+        if self.request.form.has_key("bandwith"):
+            self.change_bandwith(self.request.form["bandwith"])
+
+        self.status()
 
     def status(self):
         """
@@ -44,7 +47,7 @@ class info:
             self.request.write("Can't cahnge bandwith: value error!")
             return
 
-        self.request.write("change bandwith to: %s" % bandwith)
+        self.response.write("change bandwith to: %s" % bandwith)
 
         self.db.set_bandwith(bandwith)
 

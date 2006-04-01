@@ -7,8 +7,9 @@ from exceptions import *
 import os, posixpath, urllib, copy
 
 class path:
-    def __init__(self, request):
+    def __init__(self, request, response):
         self.request = request
+        self.response = response
 
         # Shorthands
         self.cfg = self.request.cfg
@@ -32,17 +33,23 @@ class path:
         elif self.relativ_path[0]!="/":
             self.relativ_path = "/%s" % self.relativ_path
 
-        try:
-            has_filename = self.relativ_path[-5] == "."
-        except IndexError:
-            has_filename = False
+        if not self.relativ_path.endswith("/"):
+            # Verzeichnisse enden immer mit einem slash, Dateien nie
+            possibleExt = list(self.cfg["ext_whitelist"])
+            possibleExt.append(".zip")
 
-        if has_filename:
-            # Als letztes kommt wohl ein Dateiname
-            self.relativ_path = self.relativ_path.rstrip("/")
-            self.relativ_path, self.pathFilename = posixpath.split(self.relativ_path)
+            base, filename = posixpath.split(self.relativ_path)
+            _, ext = posixpath.splitext(filename)
+            #~ raise "base:'%s' filename:'%s' ext:'%s'" % (base, filename, ext)
+
+            if ext != "" and ext in possibleExt:
+                self.relativ_path = base
+                self.pathFilename = filename
 
         self.absolute_path = "%s%s" % (self.cfg["base_path"], self.relativ_path)
+        #~ raise "relativ_path:'%s' pathFilename:'%s' absolute_path:'%s'" % (
+            #~ self.relativ_path, self.pathFilename, self.absolute_path
+        #~ )
 
         self.check_absolute_path()
 
@@ -93,11 +100,11 @@ class path:
         """
         links = []
 
-        #~ self.request.write(self.relativ_path)
+        #~ self.response.write(self.relativ_path)
         path = copy.copy(self.relativ_path)
 
-        if path[:1] == "/": path = path[:-1] # / Am Ende wegschneiden
-        path = path[1:] # / Am Anfang wegschneiden
+        path = path.rstrip("/") # / Am Ende wegschneiden
+        path = path.lstrip("/") # / Am Anfang wegschneiden
 
         # Link zu 'root' hinzufügen
         rootPath = posixpath.join(
@@ -114,17 +121,8 @@ class path:
 
         lastURL = rootPath
         for item in path.split("/"):
-            currentURL = lastURL + "/" + item
+            currentURL = lastURL + item + "/"
             lastURL = currentURL
-
-            #~ codec = self.request.context["filesystemencoding"]
-            #~ try:
-                #~ item = item.decode(codec).encode("utf-8")
-            #~ except UnicodeError, e:
-                #~ if self.cfg["debug"]:
-                    #~ self.request.write(
-                        #~ "<small>(Unicode-Error path_links(): %s)</small><br />" % e
-                    #~ )
 
             links.append({
                 "url": currentURL,
