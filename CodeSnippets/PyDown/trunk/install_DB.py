@@ -35,7 +35,16 @@ print "placeholder.:", db.placeholder
 print
 
 table_data = {
-    "activity": """CREATE TABLE $$activity (
+    "downloads": """CREATE TABLE $$downloads (
+        id INTEGER PRIMARY KEY,
+        username VARCHAR(50) NOT NULL,
+        item VARCHAR(254) NOT NULL,
+        start_time TIMESTAMP NOT NULL,
+        total_bytes INTEGER(11) NOT NULL,
+        currently_time TIMESTAMP NOT NULL,
+        currently_bytes INTEGER(11) NOT NULL
+    );""",
+    "uploads": """CREATE TABLE $$uploads (
         id INTEGER PRIMARY KEY,
         username VARCHAR(50) NOT NULL,
         item VARCHAR(254) NOT NULL,

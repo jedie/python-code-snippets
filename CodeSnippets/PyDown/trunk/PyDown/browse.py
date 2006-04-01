@@ -8,18 +8,19 @@ import dircache
 from tempfile import NamedTemporaryFile
 import zipfile
 
+from colubrid import HttpResponse
 
 
 
 
 class FileIter(object):
 
-    def __init__(self, request, id):
+    def __init__(self, request, fileObj, id):
         self._sleep_sec = 0.1
 
         self.db = request.db # Shorthand
 
-        self._fileObj = request.downloadFileObj
+        self._fileObj = fileObj
         self._id = id
 
         self._current_bytes = 0
@@ -32,6 +33,8 @@ class FileIter(object):
     def next(self):
         data = self._fileObj.read(self._blocksize)
         if not data:
+            self.db.clean_up_downloads() # Alte Downloads in DB l√∂schen
+            self.db.log(type="download_end", item=dbItemTxt)
             raise StopIteration
 
         self._current_bytes += len(data)
@@ -54,8 +57,9 @@ class FileIter(object):
 
 
 class browser:
-    def __init__(self, request, path):
+    def __init__(self, request, response, path):
         self.request = request
+        self.response = response
 
         # Shorthands
         self.cfg        = self.request.cfg
@@ -65,11 +69,11 @@ class browser:
 
         self.setup_path(path)
 
+    def get(self):
         if self.pathFilename != None:
-            self.download()
-            return
+            return self.download()
 
-        # "current path"-Links, oben in context einf¸gen
+        # "current path"-Links, oben in context einfÌ®•n
         self.request.context["path"] = self.path.path_links()
 
         # Verzeichnis-Daten lesen
@@ -101,9 +105,9 @@ class browser:
             abs_path = posixpath.join(self.absolute_path, item)
 
             #~ if self.cfg["debug"]:
-                #~ self.request.write("<small>(test:")
+                #~ self.response.write("<small>(test:")
                 #~ self.request.echo(self.absolute_path, item, "-", abs_path)
-                #~ self.request.write(")</small><br />")
+                #~ self.response.write(")</small><br />")
 
             codec = self.request.context["filesystemencoding"]
             if codec == "mbcs": # f√ºr Windows
@@ -111,7 +115,7 @@ class browser:
                     item = item.decode(codec).encode("utf-8")
                 except UnicodeError, e:
                     if self.cfg["debug"]:
-                        self.request.write(
+                        self.response.write(
                             "<small>(Unicode-Error: %s)</small><br />" % e
                         )
 
@@ -124,10 +128,10 @@ class browser:
 
             elif os.path.isdir(abs_path):
                 #~ self.request.echo("dir: '%s' '%s'<br>" % (item, abs_path))
-                dirs.append((item, abs_path))
+                dirs.append((item, abs_path+"/"))
 
             elif self.cfg["debug"]:
-                self.request.write(
+                self.response.write(
                     "<small>(Unknown dir item: '%s')</small><br />" % item
                 )
 
@@ -173,7 +177,7 @@ class browser:
                 first_letter = first_letter.encode("utf-8") # zur√ºck konvertieren
             except UnicodeError, e:
                 if self.cfg["debug"]:
-                    self.request.write(
+                    self.response.write(
                         "<small>(Unicode-Error 'first_letter': %s)</small><br />" % e
                     )
                 first_letter = "#"
@@ -260,7 +264,7 @@ class browser:
         """
         Ein Download wurde angefordert
         """
-        self.simulation = self.request.GET.get("simulation", False)
+        self.simulation = self.request.args.get("simulation", False)
 
         if self.simulation:
             self.request.echo("<h1>Download Simulation!</h1><pre>")
@@ -275,10 +279,10 @@ class browser:
 
         if self.pathFilename.endswith(".zip"):
             # Alle Dateien im aktuellen Ordner als ZIP downloaden
-            self.download_full_dir()
+            return self.download_full_dir()
         else:
             # Gezielt eine Datei Downloaden
-            self.download_file()
+            return self.download_file()
 
 
     def download_full_dir(self):
@@ -295,8 +299,8 @@ class browser:
         zipFile = zipfile.ZipFile(tempFile, "wb", zipfile.ZIP_STORED)
 
         if self.simulation:
-            self.request.write("-"*80)
-            self.request.write("\n")
+            self.response.write("-"*80)
+            self.response.write("\n")
 
         arcPath = self.relativ_path.split("/")
         arcPath = "/".join(arcPath[-2:])
@@ -307,13 +311,13 @@ class browser:
             arcname = posixpath.join(arcPath, filename)
 
             if self.simulation:
-                #~ self.request.write("absolute path..: %s\n" % abs_path)
-                self.request.write("<strong>%s</strong>\n" % arcname)
+                #~ self.response.write("absolute path..: %s\n" % abs_path)
+                self.response.write("<strong>%s</strong>\n" % arcname)
 
             try:
                 zipFile.write(abs_path, arcname)
             except IOError, e:
-                self.request.write("<h1>Error</h1><h2>Can't create archive: %s</h2>" % e)
+                self.response.write("<h1>Error</h1><h2>Can't create archive: %s</h2>" % e)
                 try:
                     zipFile.close()
                 except:
@@ -325,7 +329,7 @@ class browser:
                 return
         zipFile.close()
 
-        self.send_file(tempFile, self.pathFilename, self.relativ_path)
+        return self.send_file(tempFile, self.pathFilename, self.relativ_path)
 
 
     def download_file(self):
@@ -337,10 +341,10 @@ class browser:
         try:
             f = file(filePath, "rb")
         except Exception, e:
-            self.request.write("<h3>Can't open file: %s</h3>" % e)
+            self.response.write("<h3>Can't open file: %s</h3>" % e)
             return
 
-        self.send_file(f, self.pathFilename, filePath)
+        return self.send_file(f, self.pathFilename, filePath)
 
 
     def send_file(self, fileObject, filename, dbItemTxt):
@@ -353,21 +357,21 @@ class browser:
         fileObject.seek(0) # An den Anfang springen
 
         if self.simulation:
-            self.request.write("-"*80)
-            self.request.write("\n")
+            self.response.write("-"*80)
+            self.response.write("\n")
             self.request.echo('Filename........: "%s"\n' % filename)
             self.request.echo("Content-Length..: %sBytes\n" % fileObject_len)
             self.request.echo("\n")
 
             readLen = 120
             self.request.echo("First %s Bytes:\n" % readLen)
-            self.request.write(
+            self.response.write(
                 "<hr />%s...<hr />" % cgi.escape(fileObject.read(readLen))
             )
 
             self.request.echo("Duration: <script_duration />")
             self.db.log(type="simulation_end", item=self.relativ_path)
-            self.request.write("</pre>")
+            self.response.write("</pre>")
             return
 
         id = self.db.insert_download(dbItemTxt, fileObject_len, 0)
@@ -378,26 +382,16 @@ class browser:
             msvcrt.setmode(sys.stdin.fileno(), os.O_BINARY)
             msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
 
-        self.request.headers['Content-Disposition'] = \
-            'attachment; filename="%s"' % filename
-        self.request.headers['Content-Length'] = '%s' % fileObject_len
-        self.request.headers['Content-Transfer-Encoding'] = '8bit' #'binary'
-        self.request.headers['Content-Type'] = \
-            'application/octet-stream;'# charset=utf-8'
-
         self.db.clean_up_downloads() # Alte Downloads in DB l√∂schen
 
-        self.request.downloadFileObj = fileObject
+        response = HttpResponse(FileIter(self.request, fileObject, id))
 
-        self.request.send_response(
-            FileIter(self.request, id)
-        )
+        response.headers['Content-Disposition'] = \
+            'attachment; filename="%s"' % filename
+        response.headers['Content-Length'] = '%s' % fileObject_len
+        response.headers['Content-Transfer-Encoding'] = '8bit' #'binary'
+        response.headers['Content-Type'] = \
+            'application/octet-stream;'# charset=utf-8'
 
-        self.db.log(type="download_end", item=dbItemTxt)
+        return response
 
-
-
-
-def index(request, path):
-    #~ request.write("JO")
-    browser(request, path)
