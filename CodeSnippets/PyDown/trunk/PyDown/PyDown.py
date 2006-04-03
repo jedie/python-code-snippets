@@ -13,11 +13,13 @@ __author__  = "Jens Diemer (www.jensdiemer.de)"
 __license__ = "GNU General Public License v2 or above - http://www.opensource.org/licenses/gpl-license.php"
 __url__     = "http://www.jensdiemer.de/Programmieren/Python/PyDown"
 
-__version__ = "v0.4.1"
+__version__ = "v0.4.2"
 
 __info__ = """<a href="%s">PyDown %s</a>""" % (__url__, __version__)
 
 __history__ = """
+v0.4.2
+    - Temp-Verz. wird aufgeräumt
 v0.4.1
     - Anpassungen an colubrid 1.0
 v0.4.0
@@ -73,6 +75,9 @@ cfg = {
     "min_letters" : 12,
 
     "temp": None,
+    "temp_prefix": "PyDown_",
+    # Max. alter einer Temp-Datei in Sec. bevor sie automatisch gelöscht wird
+    "temp_max_old": 60,
 
     #__________________________________
     # Upload
@@ -347,11 +352,10 @@ class PyDown(BaseApplication):
             self.response.write("<small>Debug: ON</small><br />")
 
         #~ try:
-        #~ loader = jinja.CachedFileSystemLoader('templates', charset='utf-8')
-        #~ template = jinja.Template(templatename, loader)
+            #~ loader = jinja.CachedFileSystemLoader('templates', charset='utf-8')
+            #~ template = jinja.Template(templatename, loader)
         #~ except:# EOFError, ImportError:
             #~ self.response.write("<small>(jinja FileSystemLoader fallback)</small>")
-
         loader = jinja.FileSystemLoader('templates', charset='utf-8')
         template = jinja.Template(templatename, loader)
 

@@ -4,9 +4,7 @@
 from utils import spezial_cmp
 
 import os, sys, cgi, posixpath, locale, time, stat, subprocess
-import dircache
-from tempfile import NamedTemporaryFile
-import zipfile
+import dircache, tempfile, zipfile, glob
 
 from colubrid import HttpResponse
 
@@ -68,6 +66,8 @@ class browser:
         self.db         = self.request.db
 
         self.setup_path(path)
+
+        self.clean_temp()
 
     def get(self):
         if self.pathFilename != None:
@@ -289,12 +289,16 @@ class browser:
         """
         Alle Dateien in einem Ordner downloaden
         """
+        self.clean_temp()
+
         files, _ = self.read_dir()
 
-        args = {"prefix": "PyDown_%s_" % self.request.environ["REMOTE_USER"]}
-        if self.request.cfg["temp"]:
-            args["dir"] = self.request.cfg["temp"]
-        tempFile = NamedTemporaryFile(**args)
+        tempFile = tempfile.NamedTemporaryFile(
+            prefix = "%s%s_" % (
+                    self.request.cfg["temp_prefix"], self.request.environ["REMOTE_USER"]
+            ),
+            dir = self.get_temp_dir(),
+        )
 
         zipFile = zipfile.ZipFile(tempFile, "wb", zipfile.ZIP_STORED)
 
@@ -394,4 +398,47 @@ class browser:
             'application/octet-stream;'# charset=utf-8'
 
         return response
+
+    #_________________________________________________________________________
+
+    def get_temp_dir(self):
+        """
+        Liefert das TEMP-Verz. entweder das in der Config angegebene
+        oder das System-Temp-Verz.
+        """
+        if self.request.cfg["temp"]:
+            return self.request.cfg["temp"]
+        else:
+            return tempfile.gettempdir()
+
+    def clean_temp(self):
+        """
+        Löscht alte TEMP-Dateien
+        """
+        tempDir = self.get_temp_dir()
+        globDir = os.path.join(tempDir, "%s*" % self.request.cfg["temp_prefix"])
+        for filename in glob.glob(globDir):
+            pathStat = os.stat(filename)
+            lastAccess          = pathStat.st_atime
+            if (time.time() - lastAccess) > self.request.cfg["temp_max_old"]:
+                try:
+                    os.remove(filename)
+                except Exception, e:
+                    self.db.log(
+                        type="temp_autoclean",
+                        item="Error: '%s'" % e
+                    )
+                else:
+                    self.db.log(
+                        type="temp_autoclean",
+                        item="OK '%s' deleted" % filename
+                    )
+
+
+
+
+
+
+
+
 

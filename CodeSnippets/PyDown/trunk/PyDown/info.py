@@ -25,6 +25,7 @@ class info:
 
         # Information aus der DB sammeln
         self.context["current_downloads"] = self.db.human_readable_downloads()
+        self.context["current_uploads"] = self.db.human_readable_uploads()
         self.context["last_log"] = self.db.human_readable_last_log(20)
 
         self.context["bandwith"] = self.db.get_bandwith()

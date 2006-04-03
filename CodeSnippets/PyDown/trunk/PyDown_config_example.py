@@ -37,7 +37,7 @@ cfg["only_https"] = True
 # Zugriff nur eingeloggte User, durch Apache's .htaccess-Auth erlauben?
 cfg["only_auth_users"] = True
 
-# Zugriffe nur von bestimmten IP's zulassen
+# Zugriffe nur von bestimmten IP's zulassen, z.B.: ["127.0.0.1","192.168.*.*"]
 cfg["IP_range"] = ["*.*.*.*"]
 
 # Debugausgaben anzeigen?
@@ -49,7 +49,8 @@ cfg["min_letters"] =  3
 # Wenn als Temp-Verz. nicht das default-System-Temp-Verz. genommen werden soll
 cfg["temp"] = None
 
-
+# Max. alter einer Temp-Datei in Sec. bevor sie automatisch gelöscht wird
+cfg["temp_max_old"] 60
 
 
 #_____________________________________________________________________________
@@ -59,5 +60,5 @@ cfg["temp"] = None
 if __name__ == '__main__':
     # Colubrid's name-hook
     from colubrid import execute
-    execute()
+    execute(app, reload=True)
 
