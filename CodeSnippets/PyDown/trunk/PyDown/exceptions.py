@@ -1,12 +1,17 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 
+from colubrid.exceptions import *
 
-class AccessDenied(Exception):
+class PermissionDenied(AccessDenied):
     """
-    Zugriff verweigert, u.a. bei path.check_absolute_path()
+    Zugriff verweigert
     """
-    pass
+    code = 403
+    title = 'permission denied'
+    msg = 'Access was denied to this resource.'
+    def __init__(self, msg):
+        self.msg = msg
 
 class CanNotSaveFile(Exception):
     """
