@@ -16,14 +16,16 @@ class UploadMonitor(object):
         #~ print "-"*79
         #~ for k,v in environ.iteritems(): print k,"\t",v
         #~ print "-"*79
+        contentLength = int(self._environ['CONTENT_LENGTH'])
+        #~ print "contentLength:", contentLength
+
+        if not self._environ.get('CONTENT_TYPE', '').startswith('multipart'):
+            return self._stream.read()
 
         request = self._environ[self._requestObjectKey]
 
         # Wird per JS beim abschicken des Formulars als GET Parameter eingefügt!
         filename = request.args.get("filename","undefined")
-
-        contentLength = int(self._environ['CONTENT_LENGTH'])
-        #~ print "contentLength:", contentLength
 
         callback = self._callback(request, self._environ, filename)
         callback.start(contentLength)

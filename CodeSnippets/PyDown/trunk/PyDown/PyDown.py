@@ -74,6 +74,10 @@ cfg = {
     # Ab welcher Anzahl von Verzeichnissen sollen Buchstaben eingeblendet werden?
     "min_letters" : 12,
 
+    # Anzahl der Log-Einträge die angezeigt werden sollen
+    "last_log_count": 50,
+
+    # Temp-Verz., bei None, wird das System-Temp-Verz. genommen
     "temp": None,
     "temp_prefix": "PyDown_",
     # Max. alter einer Temp-Datei in Sec. bevor sie automatisch gelöscht wird
