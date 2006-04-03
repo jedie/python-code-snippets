@@ -61,7 +61,7 @@ class PyDownDB(SQL_wrapper):
         bandwith = self.available_bandwith()
 
         blocksize = bandwith * 1024.0 * sleep_sec
-        return blocksize
+        return int(blocksize)
 
     def available_bandwith(self):
         bandwith = self.get_bandwith()

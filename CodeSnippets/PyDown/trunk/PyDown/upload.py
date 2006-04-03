@@ -34,7 +34,6 @@ class Uploader:
         self.context["filelist"] = self.filelist()
         self.index()
 
-
     def handle_upload(self):
         """ Speichert eine gerade hochgeldadene Datei ab """
         try:
@@ -49,7 +48,7 @@ class Uploader:
 
         id = self.db.insert_upload(filename, totalBytes, current_bytes = 0)
 
-        self.request.write("<p>Upload File '%s'</p>" % filename)
+        self.response.write("<p>Upload File '%s'</p>" % filename)
         self.db.log(type="upload_start", item=filename)
 
         filename = os.path.join(self.cfg["upload_dir"], filename)
@@ -75,7 +74,7 @@ class Uploader:
                 #~ current_time = int(time.time())
                 #~ if current_time > time_threshold:
                     #~ self.db.update_upload(id, bytesreaded)
-                    #~ self.request.write("<p>read: %sBytes (%s)</p>" % (
+                    #~ self.response.write("<p>read: %sBytes (%s)</p>" % (
                             #~ bytesreaded, time.strftime("%H:%M:%S", time.localtime())
                         #~ )
                     #~ )
@@ -86,9 +85,9 @@ class Uploader:
             #~ f.close()
 
             #~ performance = bytesreaded / (end_time-start_time) / 1024
-            #~ self.request.write("<h3>saved with %.2fKByes/sec.</h3>" % performance)
+            #~ self.response.write("<h3>saved with %.2fKByes/sec.</h3>" % performance)
         #~ except Exception, e:
-            #~ self.request.write("<h3>Can't save file: %s</h3>" % e)
+            #~ self.response.write("<h3>Can't save file: %s</h3>" % e)
             #~ return "", 0
 
         self.db.log(type="upload_end", item="file: %s, size: %s" % (filename, bytesreaded))
@@ -128,7 +127,7 @@ class Uploader:
         try:
             dirlist = os.listdir(self.cfg["upload_dir"])
         except Exception, e:
-            self.request.write("Error: Can't read filelist: %s" % e)
+            self.response.write("Error: Can't read filelist: %s" % e)
             return
 
         filelist = []
@@ -151,7 +150,7 @@ class Uploader:
             info = self.read_info_file(filename)
             filelist.append(info)
             #~ except Exception, e:
-                #~ self.request.write('Error, get fileInfo: %s\n' % e)
+                #~ self.response.write('Error, get fileInfo: %s\n' % e)
 
         return filelist
 

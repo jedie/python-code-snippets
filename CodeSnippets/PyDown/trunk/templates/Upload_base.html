@@ -1,8 +1,8 @@
 {% extends "Upload_template" %}
 
 {*
-Hier werden nur Blöcke definiert, die in das eigentliche User-Template
-automatisch eingefügt werden.
+Hier werden nur Bloecke definiert, die in das eigentliche User-Template
+automatisch eingefuegt werden.
 *}
 
 {% block "serverInfo" %}
@@ -18,9 +18,15 @@ automatisch eingefügt werden.
 {% endblock %}
 
 {% block "form" %}
-    <form action="" method="post" enctype="multipart/form-data">
-        <p><input type="file" name="upload" size="40" />
-        <input type="submit" value="upload" /></p>
+<script type="text/javascript">
+function change() {
+    document.Testform.action
+}
+</script>
+    <form action="?filename=undefined" method="post" enctype="multipart/form-data">
+        <p><input type="file" name="upload" size="40" onchange="change(this)" />
+        <input type="submit" value="upload" />
+        <input type="text" name="filename" size="40" /></p>
     </form>
 {% endblock %}
 

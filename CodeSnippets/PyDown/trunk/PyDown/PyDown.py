@@ -87,6 +87,8 @@ cfg = {
 import os, sys, urllib, cgi
 import posixpath, subprocess, stat, time, locale
 
+# Leitet alle print Ausgaben an stderr weiter
+sys.stdout = sys.stderr
 
 #_____________________________________________________________________________
 ## Eigene Module
@@ -118,9 +120,11 @@ except:
 
 # Colubrid import's werden das erste mal im Request-Handler vorgenommen und
 # sind dort mit einem except und Info-Text versehen
-from colubrid.exceptions import *
 from colubrid import BaseApplication
 from colubrid import HttpResponse
+
+# Der key im environ-Dict mit dem das request-Object eingefügt ist
+requestObjectKey = "colubrid.request"
 
 
 # Jinja Template engine
@@ -205,26 +209,26 @@ class PyDown(BaseApplication):
 
         if self.request.cfg["IP_range"]:
             if not check_ip_list(self.request.cfg["IP_range"], self.request.environ["REMOTE_ADDR"]):
-                raise AccessDenied("Permission denied!")
+                raise PermissionDenied("Permission denied!")
 
         if self.request.cfg["only_https"]:
             # Nur https Verbindungen "erlauben"
             if self.request.environ.get("HTTPS", False) != "on":
-                raise AccessDenied("Only HTTPs connections allow!")
+                raise PermissionDenied("Only HTTPs connections allow!")
 
         if self.request.cfg["only_auth_users"]:
             # Der User muß über Apache's basic auth eingeloggt sein
             if not (self.request.environ.has_key("AUTH_TYPE") and \
             self.request.environ.has_key("REMOTE_USER")):
-                raise AccessDenied("Only identified users allow!")
+                raise PermissionDenied("Only identified users allow!")
             if not self.request.environ["REMOTE_USER"] in self.request.cfg["allows_user"]:
-                #~ raise AccessDenied("Permission denied!")
-                raise AccessDenied(
-                    "Permission denied: %s - %s " % (
-                        self.request.environ["REMOTE_USER"],
-                        self.request.cfg["allows_user"]
-                    )
-                )
+                raise PermissionDenied("Permission denied!")
+                #~ raise PermissionDenied(
+                    #~ "Permission denied: %s - %s " % (
+                        #~ self.request.environ["REMOTE_USER"],
+                        #~ self.request.cfg["allows_user"]
+                    #~ )
+                #~ )
 
         if not self.request.environ.has_key("REMOTE_USER"):
             self.request.environ["REMOTE_USER"] = "anonymous"
@@ -241,10 +245,11 @@ class PyDown(BaseApplication):
         self.setup_context()
 
         pathInfo = self.request.environ.get('PATH_INFO', '/')
-        if pathInfo == "":
+        if pathInfo in ("", "/"):
             # Weiterleitung zum browser
-            url = self.request.environ['APPLICATION_REQUEST']
-            url += "/browse"
+            url = posixpath.join(self.request.environ['APPLICATION_REQUEST'], "browse")
+            self.response.write("<h1>PathInfo: '%s'</h1>" % pathInfo)
+            self.response.write("<h1>url: '%s'</h1>" % url)
             raise HttpMoved(url)
         elif pathInfo.startswith("/info"):
             # Informations-Seite
@@ -352,17 +357,27 @@ class PyDown(BaseApplication):
         self.response.write(content)
 
 
-#~ def upload_callback(request, pos, totalBytes):
+def upload_callback(request, pos, totalBytes):
+    #~ try:
+        #~ print request.files['upload'].filename
+    #~ except Exception, e:
+        #~ print "Fehler:", e
+    print "pos:", pos
+    print "totalBytes:", totalBytes
     #~ raise request
     #~ self.request.echo("pos:", pos, "total:", totalBytes)
     #~ pass
 
+app = PyDown
 
 
 # Middleware, die den Tag <script_duration /> ersetzt
 from ReplacerMiddleware import replacer
-#~ from uploadMiddleware import ProgressMiddleware
-app = PyDown
-#~ app = ProgressMiddleware(app, upload_callback, threshold = 2048)
 app = replacer(app)
+
+# callback Funktion für Uploads
+from uploadMiddleware import ProgressMiddleware
+app = ProgressMiddleware(
+    app, upload_callback, requestObjectKey, threshold=512*1024
+)
 
