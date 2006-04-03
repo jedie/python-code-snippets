@@ -267,10 +267,10 @@ class browser:
         self.simulation = self.request.args.get("simulation", False)
 
         if self.simulation:
-            self.request.echo("<h1>Download Simulation!</h1><pre>")
-            self.request.echo("relativ_path: '%s'\n" % self.relativ_path)
-            self.request.echo("absolute_path: '%s'\n" % self.absolute_path)
-            self.request.echo("pathFilename: '%s'\n" % self.pathFilename)
+            self.response.write("<h1>Download Simulation!</h1><pre>")
+            self.response.write("relativ_path: '%s'\n" % self.relativ_path)
+            self.response.write("absolute_path: '%s'\n" % self.absolute_path)
+            self.response.write("pathFilename: '%s'\n" % self.pathFilename)
             log_typ = "download simulation start"
         else:
             log_typ = "download start"
@@ -363,17 +363,17 @@ class browser:
         if self.simulation:
             self.response.write("-"*80)
             self.response.write("\n")
-            self.request.echo('Filename........: "%s"\n' % filename)
-            self.request.echo("Content-Length..: %sBytes\n" % fileObject_len)
-            self.request.echo("\n")
+            self.response.write('Filename........: "%s"\n' % filename)
+            self.response.write("Content-Length..: %sBytes\n" % fileObject_len)
+            self.response.write("\n")
 
             readLen = 120
-            self.request.echo("First %s Bytes:\n" % readLen)
+            self.response.write("First %s Bytes:\n" % readLen)
             self.response.write(
                 "<hr />%s...<hr />" % cgi.escape(fileObject.read(readLen))
             )
 
-            self.request.echo("Duration: <script_duration />")
+            self.response.write("Duration: <script_duration />")
             self.db.log(type="simulation_end", item=self.relativ_path)
             self.response.write("</pre>")
             return
