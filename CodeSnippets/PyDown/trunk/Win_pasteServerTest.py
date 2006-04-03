@@ -21,7 +21,7 @@ cfg["only_https"]       = False
 cfg["only_auth_users"]  = False
 
 # Zugriffe nur von bestimmten IP's zulassen
-cfg["IP_range"] = ["*.*.*.*"]
+cfg["IP_range"] = ["127.0.0.1"]
 
 cfg["debug"]            = True
 
