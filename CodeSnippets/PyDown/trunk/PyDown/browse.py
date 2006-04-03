@@ -33,7 +33,6 @@ class FileIter(object):
     def next(self):
         data = self._fileObj.read(self._blocksize)
         if not data:
-            self.db.clean_up_downloads() # Alte Downloads in DB löschen
             self.db.log(type="download_end", item=dbItemTxt)
             raise StopIteration
 
@@ -381,8 +380,6 @@ class browser:
             import msvcrt
             msvcrt.setmode(sys.stdin.fileno(), os.O_BINARY)
             msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
-
-        self.db.clean_up_downloads() # Alte Downloads in DB löschen
 
         response = HttpResponse(FileIter(self.request, fileObject, id))
 

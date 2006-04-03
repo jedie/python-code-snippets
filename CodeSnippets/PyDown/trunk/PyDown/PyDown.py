@@ -251,10 +251,12 @@ class PyDown(BaseApplication):
             self.response.write("<h1>PathInfo: '%s'</h1>" % pathInfo)
             self.response.write("<h1>url: '%s'</h1>" % url)
             raise HttpMoved(url)
+
         elif pathInfo.startswith("/info"):
             # Informations-Seite
             import info
             info.info(self.request, self.response)
+
         elif pathInfo.startswith("/browse"):
             # Browser/Download
             path = pathInfo.lstrip("/browse")
@@ -262,9 +264,15 @@ class PyDown(BaseApplication):
             FileIter = browse.browser(self.request, self.response, path).get()
             if FileIter != None:
                 return FileIter
+
+        elif pathInfo.startswith("/upload/status"):
+            from upload import UploadStatus
+            UploadStatus(self.request, self.response)
+
         elif pathInfo.startswith("/upload"):
             import upload
             upload.Uploader(self.request, self.response)
+
         else:
             self.response.write("<h1>PathInfo: '%s'</h1>" % pathInfo)
 
@@ -326,6 +334,7 @@ class PyDown(BaseApplication):
             "totalBandwith"     : int(round(self.request.db.get_bandwith())),
             "availableBandwith" : int(round(self.request.db.available_bandwith())),
             "downloadCount"     : self.request.db.download_count(),
+            "uploadCount"     : self.request.db.upload_count(),
             "user"              : usernames,
         }
 
@@ -357,16 +366,32 @@ class PyDown(BaseApplication):
         self.response.write(content)
 
 
-def upload_callback(request, pos, totalBytes):
-    #~ try:
-        #~ print request.files['upload'].filename
-    #~ except Exception, e:
-        #~ print "Fehler:", e
-    print "pos:", pos
-    print "totalBytes:", totalBytes
-    #~ raise request
-    #~ self.request.echo("pos:", pos, "total:", totalBytes)
-    #~ pass
+class UploadCallback:
+
+    def __init__(self, request, environ, filename):
+        self.request = request
+        self.environ = environ
+        self.filename = filename
+
+        self.db = request.db
+
+        #~ print "init", filename
+
+    def start(self, contentLength):
+        #~ print "Start", contentLength
+        self.id = self.db.insert_upload(
+            self.filename, contentLength, current_bytes=0
+        )
+
+    def update(self, pos):
+        self.db.update_upload(self.id, pos)
+        #~ print "pos:", pos
+
+    def finished(self):
+        #~ self.db.update_upload(self.id, pos)
+        #~ print "finished", self.filename
+        pass
+
 
 app = PyDown
 
@@ -378,6 +403,6 @@ app = replacer(app)
 # callback Funktion für Uploads
 from uploadMiddleware import ProgressMiddleware
 app = ProgressMiddleware(
-    app, upload_callback, requestObjectKey, threshold=512*1024
+    app, UploadCallback, requestObjectKey, threshold=512*1024
 )
 

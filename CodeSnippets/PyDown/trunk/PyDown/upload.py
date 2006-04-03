@@ -19,8 +19,6 @@ class Uploader:
 
         #~ self.request.echo("Buffsize:",self.cfg["upload_bufsize"])
 
-        self.db.clean_up_uploads() # Alte Uploads in DB löschen
-
         try:
             filename, bytes = self.handle_upload()
         except NoUpload:
@@ -249,11 +247,13 @@ class Uploader:
             return "Can't prepare String: '%s' Error: %s" % (file_cmd_out, e)
 
         if file_cmd_out.find("ERROR") != -1:
-            # Ersatz f�r >"ERROR" in fileInfo< ;)
+            # Ersatz für >"ERROR" in fileInfo< ;)
             return ""
         else:
             return file_cmd_out.strip()
 
+
+#_________________________________________________________________________
 
 class email:
     """
@@ -279,6 +279,29 @@ class email:
         s.connect()
         s.sendmail(msg['From'], [msg['To']], msg.as_string())
         s.close()
+
+
+#_________________________________________________________________________
+
+
+class UploadStatus:
+    def __init__(self, request, response):
+        self.request = request
+        self.response = response
+
+        # Shorthands
+        self.cfg        = self.request.cfg
+        self.path       = self.request.path
+        self.context    = self.request.context
+        self.db         = self.request.db
+
+        self.index()
+
+    def index(self):
+        self.context["current_uploads"] = self.db.human_readable_uploads()
+        self.request.render("UploadStatus_base")
+
+
 
 
 

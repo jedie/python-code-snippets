@@ -9,6 +9,7 @@ automatisch eingefügt werden.
     <p>
         bandwith: {{ serverInfo.availableBandwith }}/{{ serverInfo.totalBandwith }}KB/s
         - downloads: {{ serverInfo.downloadCount }}
+        - uploads: {{ serverInfo.uploadCount }}
         - active Users: {{ serverInfo.user }}
     </p>
 {% endblock %}
