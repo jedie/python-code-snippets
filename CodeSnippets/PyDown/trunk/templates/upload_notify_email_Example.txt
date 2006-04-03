@@ -1,0 +1,11 @@
+
+A person {{ clientInfo }} used the uploader.
+
+{{ filename }} - {{ bytes|filesizeformat }}
+
+File information:
+{{ fileInfo }}
+
+--
+This is a automaticly constructed notify message.
+created with {{ progInfo }}

@@ -13,13 +13,15 @@ __author__  = "Jens Diemer (www.jensdiemer.de)"
 __license__ = "GNU General Public License v2 or above - http://www.opensource.org/licenses/gpl-license.php"
 __url__     = "http://www.jensdiemer.de/Programmieren/Python/PyDown"
 
-__version__ = "v0.4.2"
+__version__ = "v0.4.3"
 
 __info__ = """<a href="%s">PyDown %s</a>""" % (__url__, __version__)
 
 __history__ = """
+v0.4.3
+    - NEU: eMail Benachrichtigung beim Upload
 v0.4.2
-    - Temp-Verz. wird aufgeräumt
+    - NEU: Temp-Verz. wird aufgeräumt
 v0.4.1
     - Anpassungen an colubrid 1.0
 v0.4.0
@@ -85,8 +87,15 @@ cfg = {
 
     #__________________________________
     # Upload
-    "upload_bufsize"    : 8192,
-    "upload_dir"        : "uploads",
+    "upload_bufsize"        : 8192,
+    "upload_dir"            : "uploads",
+    # Soll nach dem Upload eine eMail verschickt werden?
+    "upload_email_notify"   : False,
+    # Die Absender-Adresse
+    "email_from"           : "pydown@localhost",
+    # Die Ziel-Adresse
+    "upload_to"             : "administator@localhost",
+
 }
 
 
@@ -320,6 +329,7 @@ class PyDown(BaseApplication):
         self.request.context = {}
 
         # jinja-Render-Methode anhängen
+        self.request.jinja = self.jinja
         self.request.render = self.render
 
         # Path-Klasse anhängen
@@ -347,6 +357,26 @@ class PyDown(BaseApplication):
             "user"              : usernames,
         }
 
+    #_________________________________________________________________________
+
+    def jinja(self, templatename, context, suffix=".html"):
+        #~ try:
+            #~ loader = jinja.CachedFileSystemLoader('templates', suffix=suffix, charset='utf-8')
+            #~ template = jinja.Template(templatename, loader)
+        #~ except:# EOFError, ImportError:
+            #~ self.response.write("<small>(jinja FileSystemLoader fallback)</small>")
+        loader = jinja.FileSystemLoader('templates', suffix=suffix, charset='utf-8')
+        template = jinja.Template(templatename, loader)
+
+        context = jinja.Context(context, charset='utf-8')
+
+        content = template.render(context)
+        if isinstance(content, unicode):
+            content = content.encode("utf-8")
+        else:
+            self.response.write("<small>(Content not unicode)</small><br />")
+
+        return content
 
     def render(self, templatename):
         """
@@ -355,22 +385,7 @@ class PyDown(BaseApplication):
         if cfg["debug"]:
             self.response.write("<small>Debug: ON</small><br />")
 
-        #~ try:
-            #~ loader = jinja.CachedFileSystemLoader('templates', charset='utf-8')
-            #~ template = jinja.Template(templatename, loader)
-        #~ except:# EOFError, ImportError:
-            #~ self.response.write("<small>(jinja FileSystemLoader fallback)</small>")
-        loader = jinja.FileSystemLoader('templates', charset='utf-8')
-        template = jinja.Template(templatename, loader)
-
-        context = jinja.Context(self.request.context, charset='utf-8')
-
-        content = template.render(context)
-        if isinstance(content, unicode):
-            content = content.encode("utf-8")
-        else:
-            self.response.write("<small>(Content not unicode)</small><br />")
-
+        content = self.jinja(templatename, self.request.context)
         self.response.write(content)
 
 

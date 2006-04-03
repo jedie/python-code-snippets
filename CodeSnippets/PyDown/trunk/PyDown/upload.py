@@ -16,6 +16,7 @@ class Uploader:
         self.path       = self.request.path
         self.context    = self.request.context
         self.db         = self.request.db
+        self.jinja      = self.request.jinja
 
         #~ self.request.echo("Buffsize:",self.cfg["upload_bufsize"])
 
@@ -27,7 +28,7 @@ class Uploader:
             clientInfo = self.get_clientInfo()
             fileInfo = self.get_file_info(filename)
             self.write_info_file(clientInfo, fileInfo, filename, bytes)
-            #~ self.email_notify()
+            self.email_notify(clientInfo, fileInfo, filename, bytes)
 
         self.context["filelist"] = self.filelist()
         self.index()
@@ -57,62 +58,8 @@ class Uploader:
         f.write(data)
         f.close()
 
-        #~ bufsize = self.cfg["upload_bufsize"]
-        #~ bytesreaded = 0
-        #~ try:
-            #~ f = file(filename, 'wb')
-            #~ time_threshold = start_time = int(time.time())
-            #~ while 1:
-                #~ data = fileObject.read(bufsize)
-                #~ if not data:
-                    #~ break
-                #~ bytesreaded += len(data)
-                #~ f.write(data)
-
-                #~ current_time = int(time.time())
-                #~ if current_time > time_threshold:
-                    #~ self.db.update_upload(id, bytesreaded)
-                    #~ self.response.write("<p>read: %sBytes (%s)</p>" % (
-                            #~ bytesreaded, time.strftime("%H:%M:%S", time.localtime())
-                        #~ )
-                    #~ )
-                    #~ time_threshold = current_time
-
-            #~ self.db.update_upload(id, bytesreaded)
-            #~ end_time = time.time()
-            #~ f.close()
-
-            #~ performance = bytesreaded / (end_time-start_time) / 1024
-            #~ self.response.write("<h3>saved with %.2fKByes/sec.</h3>" % performance)
-        #~ except Exception, e:
-            #~ self.response.write("<h3>Can't save file: %s</h3>" % e)
-            #~ return "", 0
-
         self.db.log(type="upload_end", item="file: %s, size: %s" % (filename, bytesreaded))
         return filename, bytesreaded
-
-    def email_notify(self):
-        """
-        Sendet eine eMail, das eine neue Datei hochgeladen wurde
-        Nutzt die seperate email-Klasse
-        """
-        if not self.request.cfg.send_email_notify:
-            return
-
-        email().send(
-            from_adress = notifer_email_from_adress,
-            to_adress   = notifer_email_to_adress,
-            subject     = "uploaded: '%s' from '%s'" % (
-                filename, client_info
-            ),
-            text        = email_notify_text % {
-                "client_info"   : client_info,
-                "fileinfo"      : fileinfo,
-                "info"          : "%s (Python v%s)" % (
-                    __info__, sys.version
-                ),
-            }
-        )
 
     def index(self):
         """
@@ -252,6 +199,40 @@ class Uploader:
         else:
             return file_cmd_out.strip()
 
+    #_________________________________________________________________________
+
+    def email_notify(self, clientInfo, fileInfo, filename, bytes):
+        """
+        Sendet eine eMail, das eine neue Datei hochgeladen wurde
+        Nutzt die seperate email-Klasse
+        """
+        if not self.cfg["upload_email_notify"]:
+            return
+
+        email_notify_text = self.jinja(
+            "upload_notify_email",
+            context = {
+                "clientInfo": clientInfo,
+                "fileInfo": fileInfo,
+                "filename": filename,
+                "bytes": bytes,
+                "progInfo": self.request.context["__info__"],
+            },
+            suffix = ".txt",
+        )
+
+        try:
+            email().send(
+                from_adress = self.cfg["email_from"],
+                to_adress   = self.cfg["upload_to"] ,
+                subject     = "PyDown notify",
+                text        = email_notify_text
+            )
+        except Exception, e:
+            self.db.log(type="email_notify", item="Error: %s" % e)
+        else:
+            self.db.log(type="email_notify", item="send OK")
+
 
 #_________________________________________________________________________
 
@@ -273,7 +254,7 @@ class email:
         msg['Subject'] = subject
         # Datum nach RFC 2822 Internet email standard.
         msg['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime())
-        msg['User-Agent'] = "%s (Python v%s)" % (__info__, sys.version)
+        msg['User-Agent'] = "Python v%s" % sys.version
 
         s = smtplib.SMTP()
         s.connect()
