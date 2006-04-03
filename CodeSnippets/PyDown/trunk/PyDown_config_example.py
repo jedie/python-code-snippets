@@ -43,6 +43,9 @@ cfg["IP_range"] = ["*.*.*.*"]
 # Debugausgaben anzeigen?
 cfg["debug"] = False
 
+# Anzahl der Log-Einträge die angezeigt werden sollen
+cfg["last_log_count"] = 50
+
 # Ab welcher Anzahl von Verzeichnissen sollen Buchstaben eingeblendet werden?
 cfg["min_letters"] =  3
 
