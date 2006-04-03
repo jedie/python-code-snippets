@@ -33,10 +33,17 @@ class PyDownDB(SQL_wrapper):
         )
         return self.encode_sql_results(result, codec="UTF-8")
 
+    #_________________________________________________________________________
+
     def raw_current_downloads(self):
-        self.clean_up_downloads()
+        return self.raw_current_activity("downloads")
+
+    def raw_current_uploads(self):
+        return self.raw_current_activity("uploads")
+
+    def raw_current_activity(self, tableName):
         result = self.select(
-            from_table      = "downloads",
+            from_table      = tableName,
             select_items    = (
                 "id", "username", "item", "start_time", "currently_time",
                 "total_bytes", "currently_bytes"
@@ -45,13 +52,24 @@ class PyDownDB(SQL_wrapper):
         )
         return self.encode_sql_results(result, codec="UTF-8")
 
+    #_________________________________________________________________________
+
+    def upload_count(self):
+        return self.activity_count("uploads")
+
     def download_count(self):
-        """ Anzahl der aktuellen Downloads """
+        return self.activity_count("downloads")
+
+    def activity_count(self, tableName):
+        """ Anzahl der aktuellen Up-/Downloads """
+        self.clean_up_activity(tableName)
         result = self.select(
-            from_table      = "downloads",
+            from_table      = tableName,
             select_items    = "id",
         )
         return len(result)
+
+    #_________________________________________________________________________
 
     def get_download_blocksize(self, sleep_sec):
         """
@@ -215,17 +233,13 @@ class PyDownDB(SQL_wrapper):
 
     #_________________________________________________________________________
 
-    def clean_up_downloads(self):
-        """
-        Löscht alte Downloads
-        """
-        self.clean_up_activity("downloads")
+    def finished_upload(self, id):
+        db.delete(
+            table = "uploads",
+            where = ("id",id),
+        )
 
-    def clean_up_uploads(self):
-        """
-        Löscht alte Uploads
-        """
-        self.clean_up_activity("uploads")
+    #_________________________________________________________________________
 
     def clean_up_activity(self, tabelName):
         SQLcommand = "DELETE FROM $$%s WHERE (currently_time<?);" % tabelName
@@ -254,13 +268,19 @@ class PyDownDB(SQL_wrapper):
     #_________________________________________________________________________
     # Methoden die die Daten aufbereiten
 
+    def current_uploads(self):
+        return self.current_activity("uploads")
+
     def current_downloads(self):
+        return self.current_activity("downloads")
+
+    def current_activity(self, tableName):
         """
-        Aktuelle Daten der Downlaods mit errechneten Zusatzinformationen
+        Aktuelle Daten der Up-/Downlaods mit errechneten Zusatzinformationen
         jedoch ohne Umrechnung in andere Größenordnungen!
         """
-        downloads = self.raw_current_downloads()
-        for i in downloads:
+        items = self.raw_current_activity(tableName)
+        for i in items:
             i["percent"] = (float(i["currently_bytes"]) / i["total_bytes"]) * 100
 
             # Vergangene Zeit in Sekunden
@@ -276,17 +296,25 @@ class PyDownDB(SQL_wrapper):
             i["estimated"] = i["total"] - i["elapsed"]
 
             # Durchsatz Bytes/Sec
-            i["throughput"] = (i["currently_bytes"] / i["elapsed"])
+            try:
+                i["throughput"] = (i["currently_bytes"] / i["elapsed"])
+            except ZeroDivisionError:
+                i["throughput"] = 0
 
-        return downloads
+        return items
 
+
+    def human_readable_uploads(self):
+        return self.human_readable_activity(self.current_uploads())
 
     def human_readable_downloads(self):
+        return self.human_readable_activity(self.current_downloads())
+
+    def human_readable_activity(self, items):
         """
-        Downloads in Menschen lesbarer Form
+        Up-/Downloads in Menschen lesbarer Form
         """
-        downloads = self.current_downloads()
-        for i in downloads:
+        for i in items:
             i["percent"] = "%.1f%%" % i["percent"]
             i["throughput"] = "%s KBytes/s" % round(i["throughput"]/1024.0)
 
@@ -294,13 +322,10 @@ class PyDownDB(SQL_wrapper):
             i["total"] = "%.1fMin" % float(i["total"]/60)
             i["estimated"] = "%.1fMin" % float(i["estimated"]/60)
 
-            i["total_bytes"] = "%.1fMB" % float(i["total_bytes"]/1024.0/1024)
-            i["currently_bytes"] = "%.1fMB" % float(i["currently_bytes"]/1024.0/1024)
-
             i["currently_time"] = time.strftime("%X", time.localtime(i["currently_time"]))
             i["start_time"] = time.strftime("%X", time.localtime(i["start_time"]))
 
-        return downloads
+        return items
 
     def human_readable_last_log(self, limit=20):
         try:

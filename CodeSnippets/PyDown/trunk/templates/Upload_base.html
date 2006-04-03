@@ -9,6 +9,7 @@ automatisch eingefuegt werden.
     <p>
         bandwith: {{ serverInfo.availableBandwith }}/{{ serverInfo.totalBandwith }}KB/s
         - downloads: {{ serverInfo.downloadCount }}
+        - uploads: {{ serverInfo.uploadCount }}
         - active Users: {{ serverInfo.user }}
     </p>
 {% endblock %}
@@ -19,14 +20,28 @@ automatisch eingefuegt werden.
 
 {% block "form" %}
 <script type="text/javascript">
-function change() {
-    document.Testform.action
+function uploadJS() {
+    if (!document.getElementById) {
+        alert("Your browser is not supported!");
+        return false;
+    }
+    filename = document.getElementById("filename").value;
+    if (filename=="") {
+        alert("No file given!");
+        return false;
+    }
+    document.getElementById("uploadform").action = "?filename="+filename;
+
+    window.open("status", "KleinesFenster", "dependent=yes,resizable=yes,width=700,height=400");
+
+    return true;
 }
 </script>
-    <form action="?filename=undefined" method="post" enctype="multipart/form-data">
-        <p><input type="file" name="upload" size="40" onchange="change(this)" />
-        <input type="submit" value="upload" />
-        <input type="text" name="filename" size="40" /></p>
+    <form action="?filename=undefined" id="uploadform" method="post" enctype="multipart/form-data" onsubmit="return uploadJS();">
+        <p>
+            <input type="file" name="upload" size="40" id="filename" />
+            <input type="submit" value="upload" />
+        </p>
     </form>
 {% endblock %}
 

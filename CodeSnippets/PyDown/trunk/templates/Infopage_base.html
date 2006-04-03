@@ -9,6 +9,7 @@ automatisch eingefügt werden.
     <p>
         bandwith: {{ serverInfo.availableBandwith }}/{{ serverInfo.totalBandwith }}KB/s
         - downloads: {{ serverInfo.downloadCount }}
+        - uploads: {{ serverInfo.uploadCount }}
         - active Users: {{ serverInfo.user }}
     </p>
 {% endblock %}
@@ -48,8 +49,8 @@ automatisch eingefügt werden.
                 <td>{{ line.item|escapexml }}</td>
                 <td>{{ line.start_time }}</td>
                 <td>{{ line.currently_time }}</td>
-                <td>{{ line.total_bytes }}</td>
-                <td>{{ line.currently_bytes }}</td>
+                <td>{{ line.total_bytes|filesizeformat }}</td>
+                <td>{{ line.currently_bytes|filesizeformat }}</td>
                 <td>{{ line.percent }}</td>
                 <td>{{ line.throughput }}</td>
                 <td>{{ line.elapsed }}</td>

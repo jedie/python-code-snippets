@@ -55,5 +55,6 @@ class info:
 
 
 
-def status(request):
-    info(request).status()
+
+
+
