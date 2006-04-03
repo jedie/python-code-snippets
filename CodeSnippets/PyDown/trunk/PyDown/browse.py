@@ -15,13 +15,14 @@ from colubrid import HttpResponse
 
 class FileIter(object):
 
-    def __init__(self, request, fileObj, id):
+    def __init__(self, request, fileObj, id, dbItemTxt):
         self._sleep_sec = 0.1
 
         self.db = request.db # Shorthand
 
         self._fileObj = fileObj
         self._id = id
+        self._dbItemTxt = dbItemTxt
 
         self._current_bytes = 0
         self._last_time = time.time()
@@ -33,7 +34,7 @@ class FileIter(object):
     def next(self):
         data = self._fileObj.read(self._blocksize)
         if not data:
-            self.db.log(type="download_end", item=dbItemTxt)
+            self.db.log(type="download_end", item=self._dbItemTxt)
             raise StopIteration
 
         self._current_bytes += len(data)
@@ -381,7 +382,9 @@ class browser:
             msvcrt.setmode(sys.stdin.fileno(), os.O_BINARY)
             msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
 
-        response = HttpResponse(FileIter(self.request, fileObject, id))
+        response = HttpResponse(
+            FileIter(self.request, fileObject, id, self.relativ_path)
+        )
 
         response.headers['Content-Disposition'] = \
             'attachment; filename="%s"' % filename
