@@ -28,7 +28,7 @@ class path:
 
         self.relativ_path = path
         if self.relativ_path == "":
-            self.relativ_path = "/"
+            self.relativ_path = u"/"
         elif self.relativ_path[0]!="/":
             self.relativ_path = "/%s" % self.relativ_path
 
@@ -98,6 +98,7 @@ class path:
             )
             raise AccessDenied("permission deny.")
 
+        #~ print "JAU", self.absolute_path
         if not os.path.exists(self.absolute_path):
             # Den Pfad gibt es nicht
             raise AccessDenied, "'%s' not exists" % self.absolute_path
