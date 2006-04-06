@@ -31,6 +31,7 @@ class PyDownDB(SQL_wrapper):
             limit           = limit,
             #~ debug = True
         )
+        return result
         return self.encode_sql_results(result, codec="UTF-8")
 
     #_________________________________________________________________________

@@ -6,6 +6,7 @@ from exceptions import *
 
 import os, posixpath, urllib, copy
 
+
 class path:
     def __init__(self, request, response):
         self.request = request
@@ -24,8 +25,6 @@ class path:
         jau
         """
         self.url_prefix = prefix
-
-        path = urllib.unquote(path)
 
         self.relativ_path = path
         if self.relativ_path == "":
@@ -63,7 +62,17 @@ class path:
             self.request.environ["SCRIPT_ROOT"], self.url_prefix, path
         )
         #~ path = posixpath.join(self.url_prefix, path)
-        return urllib.quote(path)
+        try:
+            return urllib.quote(path.encode("UTF-8"))
+        except UnicodeError, e:
+            if self.cfg["debug"]:
+                self.response.write(
+                    "<small>(Unicode-Error path.url: %s)</small><br />" % e
+                )
+            try:
+                return urllib.quote(path)
+            except:
+                return path
 
     def relative_path(self, path):
         #~ self.request.echo("<p>",path,"<br>")
@@ -119,7 +128,7 @@ class path:
             # Wir sind im "root"-Verzeichnis
             return links
 
-        lastURL = rootPath
+        lastURL = rootPath + "/"
         for item in path.split("/"):
             currentURL = lastURL + item + "/"
             lastURL = currentURL

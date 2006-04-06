@@ -190,6 +190,7 @@ class PyDown(BaseApplication):
 
         # Config-Dict an Request-Objekt und der Debugausgabe anhängen
         self.request.cfg = cfg
+        self.cfg = cfg
 
         # Datenbankverbindung herstellen und dem request-Objekt anhängen
         self.setup_db()
@@ -263,6 +264,8 @@ class PyDown(BaseApplication):
         self.setup_context()
 
         pathInfo = self.request.environ.get('PATH_INFO', '/')
+        pathInfo = urllib.unquote(pathInfo)
+
         if pathInfo in ("", "/"):
             # Weiterleitung zum browser
             url = posixpath.join(self.request.environ['APPLICATION_REQUEST'], "browse")
