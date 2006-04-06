@@ -8,9 +8,6 @@ import dircache, tempfile, zipfile, glob, urllib
 
 from colubrid import HttpResponse
 
-reload(sys)
-sys.setdefaultencoding("utf-8")
-
 stdout_encoding = sys.stdout.encoding or sys.getfilesystemencoding()
 
 
@@ -113,7 +110,7 @@ class browser:
 
         codec = self.request.context["filesystemencoding"]
 
-        self.cfg["debug"] = True
+        #~ self.cfg["debug"] = True
 
         if self.cfg["debug"]:
             def get_file_encoding(f):
@@ -131,14 +128,6 @@ class browser:
 
             self.response.write("stdout_encoding: %s<br/>" % stdout_encoding)
 
-            try:
-                listPath = unicode(listPath)
-            except Exception, e:
-                msg = "listPath Unicode-Error: %s" % e
-                print msg
-                self.response.write(
-                    "<small>(%s)</small><br />" % msg
-                )
             if not isinstance(listPath, unicode):
                 self.response.write(
                         "<small>(Note: listPath is not unicode)</small><br />"
@@ -147,54 +136,40 @@ class browser:
             self.response.write("listPath:")
             self.response.write(cgi.escape(str(type(listPath))))
             try:
-                self.response.write("listPath: %s" % listPath.encode(stdout_encoding))
+                self.response.write("listPath: %s" % listPath)
             except:
-                pass
+                try:
+                    self.response.write("listPath: %s" % listPath.encode(stdout_encoding))
+                except:
+                    pass
             self.response.write("<br>")
 
-        dirList = os.listdir(listPath)
-        for item in dirList:
+        for item in os.listdir(listPath):
+
             if not isinstance(item, unicode):
-                try:
-                    if codec == "mbcs": # für Windows
-                        item = unicode(item, codec)
-                except UnicodeError, e:
-                    if self.cfg["debug"]:
-                        self.response.write(
-                            "<small>(Unicode-Error1: %s)</small><br />" % e
-                        )
-                    continue
-
-            if self.cfg["debug"]:
-                if not isinstance(item, unicode):
-                    self.response.write("skip %s (not unicode)<br>" % item)
-                    continue
-
-            try:
-                abs_path = posixpath.join(self.absolute_path, item)
-
-                if os.path.isfile(abs_path):
-                    ext = os.path.splitext(abs_path)[1]
-                    if not ext in self.cfg["ext_whitelist"]:
-                        continue
-                    #~ self.request.echo("file: '%s' '%s'<br>" % (item, abs_path))
-                    files.append((item, abs_path))
-
-                elif os.path.isdir(abs_path):
-                    #~ self.request.echo("dir: '%s' '%s'<br>" % (item, abs_path))
-                    dirs.append((item, abs_path+"/"))
-
-                elif self.cfg["debug"]:
-                    self.response.write(
-                        "<small>(Unknown dir item: '%s' %s)</small><br />" % (
-                            abs_path, cgi.escape(str(type(abs_path)))
-                        )
-                    )
-            except UnicodeError, e:
                 if self.cfg["debug"]:
-                    self.response.write(
-                        "<small>(Unicode-Error 2: %s)</small><br />" % e
+                    self.response.write("skip %s (not unicode)<br>" % item)
+                continue
+
+            abs_path = posixpath.join(self.absolute_path, item)
+
+            if os.path.isfile(abs_path):
+                ext = os.path.splitext(abs_path)[1]
+                if not ext in self.cfg["ext_whitelist"]:
+                    continue
+                #~ self.request.echo("file: '%s' '%s'<br>" % (item, abs_path))
+                files.append((item, abs_path))
+
+            elif os.path.isdir(abs_path):
+                #~ self.request.echo("dir: '%s' '%s'<br>" % (item, abs_path))
+                dirs.append((item, abs_path+"/"))
+
+            elif self.cfg["debug"]:
+                self.response.write(
+                    "<small>(Unknown dir item: '%s' %s)</small><br />" % (
+                        abs_path, cgi.escape(str(type(abs_path)))
                     )
+                )
 
         files.sort(spezial_cmp)
         dirs.sort(spezial_cmp)
@@ -232,18 +207,7 @@ class browser:
             url = self.path.url(abs_path)
             relativ_path = self.path.relative_path(abs_path)
 
-            #~ print "item:", type(item)
             first_letter = item[0].upper()
-            #~ try:
-                #~ first_letter = item.decode("utf-8") # nach unicode wandeln
-                #~ first_letter = first_letter[0].upper()
-                #~ first_letter = first_letter.encode("utf-8") # zurück konvertieren
-            #~ except UnicodeError, e:
-                #~ if self.cfg["debug"]:
-                    #~ self.response.write(
-                        #~ "<small>(Unicode-Error 'first_letter': %s)</small><br />" % e
-                    #~ )
-                #~ first_letter = "#"
 
             if not dirlist.has_key(first_letter):
                 dirlist[first_letter] = []
@@ -290,7 +254,7 @@ class browser:
 
         if sys.platform == "win32":
             # Unter Windows gibt es keinen File-Befehl
-            result["info"] = ""
+            result["info"] = "(not available under Windows)"
             return result
 
         try:
@@ -377,6 +341,14 @@ class browser:
             abs_path = posixpath.join(self.absolute_path, filename)
             arcname = posixpath.join(arcPath, filename)
 
+            # Namen in ZIP-Dateien werden immer mit dem codepage 437 gespeichert
+            # siehe Kommentare im Python-Bug 878120:
+            #https://sourceforge.net/tracker/?func=detail&atid=105470&aid=878120&group_id=5470
+            try:
+                arcname = arcname.encode("cp437")
+            except UnicodeError:
+                continue
+
             if self.simulation:
                 #~ self.response.write("absolute path..: %s\n" % abs_path)
                 self.response.write("<strong>%s</strong>\n" % arcname)
@@ -422,6 +394,13 @@ class browser:
         fileObject.seek(0,2) # Am Ende der Daten springen
         fileObject_len = fileObject.tell() # Aktuelle Position
         fileObject.seek(0) # An den Anfang springen
+
+        try:
+            filename = filename.encode("UTF-8")
+        except UnicodeError, e:
+            if self.simulation:
+                self.response.write("filename encode Error: %s" % e)
+                self.response.write("-"*80)
 
         if self.simulation:
             self.response.write("-"*80)

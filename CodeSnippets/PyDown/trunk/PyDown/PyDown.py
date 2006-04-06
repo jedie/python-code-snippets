@@ -129,11 +129,16 @@ from path import path
 #  - die richtige sortierung mit locale.strcoll()
 try:
     locale.setlocale(locale.LC_ALL, "de_DE.UTF-8")
-    #~ locale.setlocale(locale.LC_COLLATE, "german")
 except:
     pass
-#~ sys.setdefaultencoding("utf-8")
 
+#~ if sys.getdefaultencoding()!="utf-8":
+    #~ # Hack, damit defaultencoding auf UTF-8 gesetzt wird.
+    #~ try:
+        #~ reload(sys)
+        #~ sys.setdefaultencoding("utf-8")
+    #~ except:
+        #~ pass
 
 
 # Colubrid import's werden das erste mal im Request-Handler vorgenommen und
@@ -264,7 +269,16 @@ class PyDown(BaseApplication):
         self.setup_context()
 
         pathInfo = self.request.environ.get('PATH_INFO', '/')
+        #~ print pathInfo
         pathInfo = urllib.unquote(pathInfo)
+        try:
+            pathInfo = unicode(pathInfo, "utf-8")
+        except:
+            pass
+        #~ print pathInfo
+        #~ pathInfo = unicode(pathInfo, "UTF-8")
+        #~ pathInfo = pathInfo.encode("UTF-8")
+        #~ print pathInfo
 
         if pathInfo in ("", "/"):
             # Weiterleitung zum browser
