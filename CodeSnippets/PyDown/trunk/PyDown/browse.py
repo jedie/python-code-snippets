@@ -4,11 +4,14 @@
 from utils import spezial_cmp
 
 import os, sys, cgi, posixpath, locale, time, stat, subprocess
-import dircache, tempfile, zipfile, glob
+import dircache, tempfile, zipfile, glob, urllib
 
 from colubrid import HttpResponse
 
+reload(sys)
+sys.setdefaultencoding("utf-8")
 
+stdout_encoding = sys.stdout.encoding or sys.getfilesystemencoding()
 
 
 class FileIter(object):
@@ -80,13 +83,19 @@ class browser:
         files, dirs = self.read_dir()
         #~ self.request.echo(files, dirs)
 
+        #~ try:
         self.put_dir_info_to_context(files, dirs)
+        #~ except Exception, e:
+            #~ if self.cfg["debug"]:
+                #~ self.response.write(
+                    #~ "<small>(Error 'put_dir_info_to_context': %s)</small><br />" % e
+                #~ )
 
         self.request.render("Browser_base")
 
     def setup_path(self, path):
         self.relativ_path, self.absolute_path, self.pathFilename = \
-            self.path.prepare_path(path, "browse")
+            self.path.prepare_path(path, u"browse")
 
     def get_link(self, path):
         """
@@ -101,39 +110,91 @@ class browser:
         dirs = []
         listPath = os.path.normpath(self.absolute_path)
         listPath = os.path.abspath(listPath)
-        for item in dircache.listdir(listPath):
-            abs_path = posixpath.join(self.absolute_path, item)
 
-            #~ if self.cfg["debug"]:
-                #~ self.response.write("<small>(test:")
-                #~ self.request.echo(self.absolute_path, item, "-", abs_path)
-                #~ self.response.write(")</small><br />")
+        codec = self.request.context["filesystemencoding"]
 
-            codec = self.request.context["filesystemencoding"]
-            if codec == "mbcs": # für Windows
+        self.cfg["debug"] = True
+
+        if self.cfg["debug"]:
+            def get_file_encoding(f):
+                if hasattr(f, "encoding"):
+                    return f.encoding
+                else:
+                    return "not set"
+
+            self.response.write("sys.stdin.encoding: %s<br/>" % get_file_encoding(sys.stdin))
+            self.response.write("sys.stdout.encoding: %s<br/>" % get_file_encoding(sys.stdout))
+            self.response.write("sys.stderr.encoding: %s<br/>" % get_file_encoding(sys.stderr))
+            self.response.write("sys.getdefaultencoding(): %s<br/>" % sys.getdefaultencoding())
+            self.response.write("sys.getfilesystemencoding(): %s<br/>" % sys.getfilesystemencoding())
+            self.response.write("locale.getpreferredencoding(): %s<br/>" % locale.getpreferredencoding())
+
+            self.response.write("stdout_encoding: %s<br/>" % stdout_encoding)
+
+            try:
+                listPath = unicode(listPath)
+            except Exception, e:
+                msg = "listPath Unicode-Error: %s" % e
+                print msg
+                self.response.write(
+                    "<small>(%s)</small><br />" % msg
+                )
+            if not isinstance(listPath, unicode):
+                self.response.write(
+                        "<small>(Note: listPath is not unicode)</small><br />"
+                    )
+
+            self.response.write("listPath:")
+            self.response.write(cgi.escape(str(type(listPath))))
+            try:
+                self.response.write("listPath: %s" % listPath.encode(stdout_encoding))
+            except:
+                pass
+            self.response.write("<br>")
+
+        dirList = os.listdir(listPath)
+        for item in dirList:
+            if not isinstance(item, unicode):
                 try:
-                    item = item.decode(codec).encode("utf-8")
+                    if codec == "mbcs": # für Windows
+                        item = unicode(item, codec)
                 except UnicodeError, e:
                     if self.cfg["debug"]:
                         self.response.write(
-                            "<small>(Unicode-Error: %s)</small><br />" % e
+                            "<small>(Unicode-Error1: %s)</small><br />" % e
                         )
-
-            if os.path.isfile(abs_path):
-                ext = os.path.splitext(abs_path)[1]
-                if not ext in self.cfg["ext_whitelist"]:
                     continue
-                #~ self.request.echo("file: '%s' '%s'<br>" % (item, abs_path))
-                files.append((item, abs_path))
 
-            elif os.path.isdir(abs_path):
-                #~ self.request.echo("dir: '%s' '%s'<br>" % (item, abs_path))
-                dirs.append((item, abs_path+"/"))
+            if self.cfg["debug"]:
+                if not isinstance(item, unicode):
+                    self.response.write("skip %s (not unicode)<br>" % item)
+                    continue
 
-            elif self.cfg["debug"]:
-                self.response.write(
-                    "<small>(Unknown dir item: '%s')</small><br />" % item
-                )
+            try:
+                abs_path = posixpath.join(self.absolute_path, item)
+
+                if os.path.isfile(abs_path):
+                    ext = os.path.splitext(abs_path)[1]
+                    if not ext in self.cfg["ext_whitelist"]:
+                        continue
+                    #~ self.request.echo("file: '%s' '%s'<br>" % (item, abs_path))
+                    files.append((item, abs_path))
+
+                elif os.path.isdir(abs_path):
+                    #~ self.request.echo("dir: '%s' '%s'<br>" % (item, abs_path))
+                    dirs.append((item, abs_path+"/"))
+
+                elif self.cfg["debug"]:
+                    self.response.write(
+                        "<small>(Unknown dir item: '%s' %s)</small><br />" % (
+                            abs_path, cgi.escape(str(type(abs_path)))
+                        )
+                    )
+            except UnicodeError, e:
+                if self.cfg["debug"]:
+                    self.response.write(
+                        "<small>(Unicode-Error 2: %s)</small><br />" % e
+                    )
 
         files.sort(spezial_cmp)
         dirs.sort(spezial_cmp)
@@ -171,16 +232,18 @@ class browser:
             url = self.path.url(abs_path)
             relativ_path = self.path.relative_path(abs_path)
 
-            try:
-                first_letter = item.decode("utf-8") # nach unicode wandeln
-                first_letter = first_letter[0].upper()
-                first_letter = first_letter.encode("utf-8") # zurück konvertieren
-            except UnicodeError, e:
-                if self.cfg["debug"]:
-                    self.response.write(
-                        "<small>(Unicode-Error 'first_letter': %s)</small><br />" % e
-                    )
-                first_letter = "#"
+            #~ print "item:", type(item)
+            first_letter = item[0].upper()
+            #~ try:
+                #~ first_letter = item.decode("utf-8") # nach unicode wandeln
+                #~ first_letter = first_letter[0].upper()
+                #~ first_letter = first_letter.encode("utf-8") # zurück konvertieren
+            #~ except UnicodeError, e:
+                #~ if self.cfg["debug"]:
+                    #~ self.response.write(
+                        #~ "<small>(Unicode-Error 'first_letter': %s)</small><br />" % e
+                    #~ )
+                #~ first_letter = "#"
 
             if not dirlist.has_key(first_letter):
                 dirlist[first_letter] = []

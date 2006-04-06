@@ -19,7 +19,7 @@ automatisch eingefügt werden.
 {% endblock %}
 
 {% block "navi" %}
-    {% for link in path %}<a href="{{ link.url }}">{{ link.title }}</a>&nbsp;/&nbsp;{% endfor %}
+    {% for link in path %}<a href="{{ link.url }}">{{ link.title|escapexml }}</a>&nbsp;/&nbsp;{% endfor %}
 {% endblock %}
 
 {% block "file_list" %}
