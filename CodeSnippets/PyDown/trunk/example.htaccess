@@ -15,4 +15,5 @@ AddHandler cgi-script .cgi
 AddHandler fastcgi-script fcg fcgi fpl
 
 # http://httpd.apache.org/docs/2.0/mod/mod_env.html#setenv
-SetEnv LANG de_DE.UTF-8
+#PassEnv LANG
+#SetEnv LANG de_DE.UTF-8
