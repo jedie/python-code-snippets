@@ -4,7 +4,9 @@
 # Eigene Ausnahmen
 from exceptions import *
 
-import os, posixpath, urllib, copy
+import os, sys, locale, posixpath, urllib, copy, cgi
+
+stdout_encoding = sys.stdout.encoding or sys.getfilesystemencoding()
 
 
 class path:
@@ -57,11 +59,17 @@ class path:
         return self.relativ_path, self.absolute_path, self.pathFilename
 
     def url(self, path):
+        #~ self.response.write("<p>path.url: %s<br>" % path)
+        #~ self.response.write("SCRIPT_ROOT:%s - url_prefix: %s<br>" % (
+                #~ self.request.environ["SCRIPT_ROOT"], self.url_prefix
+            #~ )
+        #~ )
         path = self.relative_path(path)
+        path = path.lstrip("/") # / Am Anfang wegschneiden
         path = posixpath.join(
             self.request.environ["SCRIPT_ROOT"], self.url_prefix, path
         )
-        #~ path = posixpath.join(self.url_prefix, path)
+        #~ self.response.write("%s</p>" % path)
         try:
             return urllib.quote(path.encode("UTF-8"))
         except UnicodeError, e:
@@ -75,12 +83,9 @@ class path:
                 return path
 
     def relative_path(self, path):
-        #~ self.request.echo("<p>",path,"<br>")
-        if not path.startswith(self.cfg["base_path"]):
-            return path
+        #~ self.response.write("<p>path.relative_path: %s<br>" % path)
         path = path.lstrip(self.cfg["base_path"])
-        #~ path = path.lstrip(self.absolute_path)
-
+        #~ self.response.write("%s</p>" % path)
         return path
 
     def check_absolute_path(self):
@@ -104,15 +109,16 @@ class path:
             raise AccessDenied, "'%s' not exists" % self.absolute_path
 
 
-    def path_links(self):
+    def path_links(self, relativ_path=None):
         """
         Baut die Path Links zusammen
         """
         links = []
 
-        #~ self.response.write(self.relativ_path)
-        path = copy.copy(self.relativ_path)
+        if not relativ_path:
+            relativ_path = copy.copy(self.relativ_path)
 
+        path = relativ_path
         path = path.rstrip("/") # / Am Ende wegschneiden
         path = path.lstrip("/") # / Am Anfang wegschneiden
 
@@ -125,7 +131,7 @@ class path:
             "title": "root",
         })
 
-        if self.relativ_path == "/":
+        if relativ_path == "/":
             # Wir sind im "root"-Verzeichnis
             return links
 
@@ -142,6 +148,46 @@ class path:
         return links
 
 
+    def get_absolute_fs_path(self):
+        """
+        Liefert den absoluten filesystem Pfad zurück (für os.listdir)
+        """
+        listPath = os.path.normpath(self.absolute_path)
+        listPath = os.path.abspath(listPath)
+
+        if self.cfg["debug"]:
+            def get_file_encoding(f):
+                if hasattr(f, "encoding"):
+                    return f.encoding
+                else:
+                    return "not set"
+
+            self.response.write("sys.stdin.encoding: %s<br/>" % get_file_encoding(sys.stdin))
+            self.response.write("sys.stdout.encoding: %s<br/>" % get_file_encoding(sys.stdout))
+            self.response.write("sys.stderr.encoding: %s<br/>" % get_file_encoding(sys.stderr))
+            self.response.write("sys.getdefaultencoding(): %s<br/>" % sys.getdefaultencoding())
+            self.response.write("sys.getfilesystemencoding(): %s<br/>" % sys.getfilesystemencoding())
+            self.response.write("locale.getpreferredencoding(): %s<br/>" % locale.getpreferredencoding())
+
+            self.response.write("stdout_encoding: %s<br/>" % stdout_encoding)
+
+            if not isinstance(listPath, unicode):
+                self.response.write(
+                        "<small>(Note: listPath is not unicode)</small><br />"
+                    )
+
+            self.response.write("listPath:")
+            self.response.write(cgi.escape(str(type(listPath))))
+            try:
+                self.response.write("listPath: %s" % listPath)
+            except:
+                try:
+                    self.response.write("listPath: %s" % listPath.encode(stdout_encoding))
+                except:
+                    pass
+            self.response.write("<br>")
+
+        return listPath
 
 
 

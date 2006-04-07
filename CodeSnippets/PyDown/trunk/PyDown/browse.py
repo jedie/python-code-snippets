@@ -105,44 +105,9 @@ class browser:
         "Einlesen des Verzeichnisses"
         files = []
         dirs = []
-        listPath = os.path.normpath(self.absolute_path)
-        listPath = os.path.abspath(listPath)
+        listPath = self.path.get_absolute_fs_path()
 
-        codec = self.request.context["filesystemencoding"]
-
-        #~ self.cfg["debug"] = True
-
-        if self.cfg["debug"]:
-            def get_file_encoding(f):
-                if hasattr(f, "encoding"):
-                    return f.encoding
-                else:
-                    return "not set"
-
-            self.response.write("sys.stdin.encoding: %s<br/>" % get_file_encoding(sys.stdin))
-            self.response.write("sys.stdout.encoding: %s<br/>" % get_file_encoding(sys.stdout))
-            self.response.write("sys.stderr.encoding: %s<br/>" % get_file_encoding(sys.stderr))
-            self.response.write("sys.getdefaultencoding(): %s<br/>" % sys.getdefaultencoding())
-            self.response.write("sys.getfilesystemencoding(): %s<br/>" % sys.getfilesystemencoding())
-            self.response.write("locale.getpreferredencoding(): %s<br/>" % locale.getpreferredencoding())
-
-            self.response.write("stdout_encoding: %s<br/>" % stdout_encoding)
-
-            if not isinstance(listPath, unicode):
-                self.response.write(
-                        "<small>(Note: listPath is not unicode)</small><br />"
-                    )
-
-            self.response.write("listPath:")
-            self.response.write(cgi.escape(str(type(listPath))))
-            try:
-                self.response.write("listPath: %s" % listPath)
-            except:
-                try:
-                    self.response.write("listPath: %s" % listPath.encode(stdout_encoding))
-                except:
-                    pass
-            self.response.write("<br>")
+        #~ codec = self.request.context["filesystemencoding"]
 
         for item in os.listdir(listPath):
 
