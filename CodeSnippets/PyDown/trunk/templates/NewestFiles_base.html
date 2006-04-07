@@ -24,6 +24,14 @@ automatisch eingefuegt werden.
 
 
 {% block "newest_files" %}
+    <p>
+        <small>read {{ stat.itemCount }} dir items in {{ stat.readTime }}Sec.</small>
+        <ul>
+            <li>{{ stat.fileCount }} files</li>
+            <li>{{ stat.dirCount }} dirs</li>
+            <li>total size: {{ stat.totalSize|filesizeformat }}</li>
+        </ul>
+    </p>
     <table id="current_downloads">
         <tr>
             <th>no</th>

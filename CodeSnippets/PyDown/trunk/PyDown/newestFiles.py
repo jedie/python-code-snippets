@@ -1,18 +1,6 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 
-import os, sys, stat, time
-
-#~ defaultencoding="latin-1"
-#~ if sys.getdefaultencoding()!=defaultencoding:
-    # Hack, damit defaultencoding auf UTF-8 gesetzt wird.
-    #~ try:
-        #~ reload(sys)
-        #~ sys.setdefaultencoding(defaultencoding)
-    #~ except:
-        #~ pass
-
-
 """
 Listet die neusten Verzeichnisse auf.
 
@@ -23,6 +11,8 @@ Das Ergebniss ist ein Dict bestehend aus:
     key....: neuste Änderungsdatum
     value..: vollständige Pfad
 """
+
+import os, sys, stat, time, locale
 
 
 class NewestFiles:
@@ -39,24 +29,38 @@ class NewestFiles:
         self.path.prepare_path("", u"browse")
         listPath = self.path.get_absolute_fs_path()
 
-        start_time = time.time()
-        self.response.write("<p>read dir...")
+        self.dirCount = 0
+        self.fileCount = 0
+        self.totalSize = 0
+
 
         # Verz.baum einlesen
+        start_time = time.time()
         newestDict = self.readdir(listPath)
-
-        statTxt = "(%s items, readed in %.3fSec)" % (
-            len(newestDict), (time.time() - start_time)
-        )
-        self.response.write("OK %s</p>" % statTxt)
-
-        # In Log vermerken
-        self.db.log(type="newest_files", item=statTxt)
+        readTime = "%.2f" % (time.time() - start_time)
 
         # in jinja context einfügen
         self.request.context["newest_files"] = self.getContext(
             newestDict, count = 30
         )
+
+        itemCount = locale.format("%i", (self.dirCount+self.fileCount), True)
+
+        # In Log vermerken
+        self.db.log(
+            type="newest_files",
+            item="(%s items, read in %sSec.)" % (
+                itemCount, readTime
+            )
+        )
+
+        self.request.context["stat"] = {
+            "itemCount" : itemCount,
+            "readTime"  : readTime,
+            "dirCount"  : locale.format("%i", self.dirCount, True),
+            "fileCount" : locale.format("%i", self.fileCount, True),
+            "totalSize" : self.totalSize
+        }
 
         # jinja Seite rendern
         self.request.render("NewestFiles_base")
@@ -86,9 +90,12 @@ class NewestFiles:
         statList = []
         for fileName in fileList:
             absFilePath = os.path.join(absPath, fileName)
+            fileStat = os.stat(absFilePath)
             statList.append(
-                os.stat(absFilePath)[stat.ST_MTIME]
+                fileStat[stat.ST_MTIME]
             )
+            self.fileCount += 1
+            self.totalSize += fileStat[stat.ST_SIZE]
         return max(statList)
 
 
@@ -107,6 +114,7 @@ class NewestFiles:
             if not files:
                 continue
 
+            self.dirCount += 1
             dirStat = os.stat(dir)[stat.ST_MTIME]
             filesStat = self.filesStat(dir, files)
 
