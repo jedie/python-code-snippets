@@ -1,0 +1,64 @@
+{% extends "NewestFiles_template" %}
+
+{*
+Hier werden nur Bloecke definiert, die in das eigentliche User-Template
+automatisch eingefuegt werden.
+*}
+
+{% block "serverInfo" %}
+    <p>
+        bandwith: {{ serverInfo.availableBandwith }}/{{ serverInfo.totalBandwith }}KB/s
+        - downloads: {{ serverInfo.downloadCount }}
+        - uploads: {{ serverInfo.uploadCount }}
+        - active Users: {{ serverInfo.user }}
+    </p>
+{% endblock %}
+
+{% block "TABs" %}
+    &nbsp;|&nbsp;{% for link in naviTABs %}<a href="{{ link.url }}">{{ link.title }}</a>&nbsp;|&nbsp;{% endfor %}
+{% endblock %}
+
+{% block "navi" %}
+    {% for link in path %}<a href="{{ link.url }}">{{ link.title }}</a>&nbsp;/&nbsp;{% endfor %}
+{% endblock %}
+
+
+{% block "newest_files" %}
+    <table id="current_downloads">
+        <tr>
+            <th>no</th>
+            <th>mtime</th>
+            <th>path</th>
+        </tr>
+        {% for line in newest_files %}
+            {% cycle rowclass through "odd", "even" %}
+            <tr class="{{ rowclass }}">
+                <td>{{ loop.counter }}</td>
+                <td>{{ line.mtime }}</td>
+                <td>
+                    <a href="{{ line.url }}">{{ line.path|escapexml }}</a>
+                </td>
+            </tr>
+        {% endfor %}
+    </table>
+{% endblock %}
+
+
+{% block "debug" %}
+    {% if cfg.debug %}
+    <hr>
+    <h4>Jinja-Debug:</h4>
+    <pre>{% debug %}</pre>
+    {% endif %}
+{% endblock %}
+
+
+{% block "footer" %}
+    <p>[only_https: {{ cfg.only_https }},
+    only_auth_users: {{ cfg.only_auth_users }},
+    ext_whitelist: {{ cfg.ext_whitelist }}]<br />
+    You are: {{ username }} - {% if is_admin %}admin{% else %}normal user{% endif %}<br />
+    filesystemencoding: {{ filesystemencoding }}<br />
+    <script_duration /><br />
+    {{ __info__ }}</p>
+{% endblock %}

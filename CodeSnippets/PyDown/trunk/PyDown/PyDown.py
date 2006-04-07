@@ -13,11 +13,13 @@ __author__  = "Jens Diemer (www.jensdiemer.de)"
 __license__ = "GNU General Public License v2 or above - http://www.opensource.org/licenses/gpl-license.php"
 __url__     = "http://www.jensdiemer.de/Programmieren/Python/PyDown"
 
-__version__ = "v0.4.3"
+__version__ = "v0.5"
 
 __info__ = """<a href="%s">PyDown %s</a>""" % (__url__, __version__)
 
 __history__ = """
+v0.5
+    - NEU: newestFile-List
 v0.4.3
     - NEU: eMail Benachrichtigung beim Upload
 v0.4.2
@@ -173,20 +175,21 @@ class PyDown(BaseApplication):
     """
     charset = 'utf-8'
 
-    urls = [
-        (r'^$', 'index'),
-        (r'^browse/(.*?)$',     "PyDown.browse.index"),
-        (r'^download/(.*?)$',   "PyDown.download.index"),
-        (r'^upload/(.*?)$',     "PyDown.upload.index"),
-        (r'^info/status/$',     "PyDown.info.status"),
+    #~ urls = [
+        #~ (r'^$', 'index'),
+        #~ (r'^browse/(.*?)$',     "PyDown.browse.index"),
+        #~ (r'^download/(.*?)$',   "PyDown.download.index"),
+        #~ (r'^upload/(.*?)$',     "PyDown.upload.index"),
+        #~ (r'^info/status/$',     "PyDown.info.status"),
         #~ (r'^info/setup/$',      "PyDown.info.setup"),
-    ]
+    #~ ]
     slash_append = True
 
     naviTABs = [
         { "url": "info/status",    "title": "info"},
         { "url": "browse/",        "title": "download"},
         { "url": "upload/",        "title": "upload"},
+        { "url": "newest/",        "title": "newest files"},
     ]
 
     def __init__(self, *args):
@@ -307,6 +310,10 @@ class PyDown(BaseApplication):
         elif pathInfo.startswith("/upload"):
             import upload
             upload.Uploader(self.request, self.response)
+
+        elif pathInfo.startswith("/newest"):
+            import newestFiles
+            newestFiles.NewestFiles(self.request, self.response)
 
         else:
             self.response.write("<h1>PathInfo: '%s'</h1>" % pathInfo)
