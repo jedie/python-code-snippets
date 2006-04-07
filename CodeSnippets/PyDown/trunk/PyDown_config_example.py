@@ -53,13 +53,13 @@ cfg["min_letters"] =  3
 cfg["temp"] = None
 
 # Max. alter einer Temp-Datei in Sec. bevor sie automatisch gelöscht wird
-cfg["temp_max_old"] 60
+cfg["temp_max_old"] = 60
 
 
 # Soll nach dem Upload eine eMail verschickt werden?
 cfg["upload_email_notify"]  = False
 # Die Absender-Adresse
-cfg["email_from"]          = "pydown@localhost"
+cfg["email_from"]           = "pydown@localhost"
 # Die Ziel-Adresse
 cfg["upload_to"]            = "administator@localhost"
 

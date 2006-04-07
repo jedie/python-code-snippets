@@ -69,7 +69,10 @@ class path:
         path = posixpath.join(
             self.request.environ["SCRIPT_ROOT"], self.url_prefix, path
         )
+        if path[-1]!="/": path+="/"
+
         #~ self.response.write("%s</p>" % path)
+
         try:
             return urllib.quote(path.encode("UTF-8"))
         except UnicodeError, e:
@@ -83,8 +86,11 @@ class path:
                 return path
 
     def relative_path(self, path):
-        #~ self.response.write("<p>path.relative_path: %s<br>" % path)
-        path = path.lstrip(self.cfg["base_path"])
+        #~ self.response.write(
+            #~ "<p>path.relative_path: '%s' - base_path: '%s'<br>" % (path, self.cfg["base_path"])
+        #~ )
+        if path.startswith(self.cfg["base_path"]):
+            path = path[len(self.cfg["base_path"]):]
         #~ self.response.write("%s</p>" % path)
         return path
 
