@@ -110,7 +110,9 @@ import os, sys, urllib, cgi
 import posixpath, subprocess, stat, time, locale
 
 # Leitet alle print Ausgaben an stderr weiter
-#~ sys.stdout = sys.stderr
+# Geht allerdings nicht unter Windows mit Apache!!!
+if sys.platform!="win32":
+    sys.stdout = sys.stderr
 
 #_____________________________________________________________________________
 ## Eigene Module
