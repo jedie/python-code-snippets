@@ -110,7 +110,7 @@ import os, sys, urllib, cgi
 import posixpath, subprocess, stat, time, locale
 
 # Leitet alle print Ausgaben an stderr weiter
-sys.stdout = sys.stderr
+#~ sys.stdout = sys.stderr
 
 #_____________________________________________________________________________
 ## Eigene Module
@@ -274,16 +274,11 @@ class PyDown(BaseApplication):
         self.setup_context()
 
         pathInfo = self.request.environ.get('PATH_INFO', '/')
-        #~ print pathInfo
         pathInfo = urllib.unquote(pathInfo)
         try:
             pathInfo = unicode(pathInfo, "utf-8")
         except:
             pass
-        #~ print pathInfo
-        #~ pathInfo = unicode(pathInfo, "UTF-8")
-        #~ pathInfo = pathInfo.encode("UTF-8")
-        #~ print pathInfo
 
         if pathInfo in ("", "/"):
             # Weiterleitung zum browser

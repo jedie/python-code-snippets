@@ -58,7 +58,6 @@ def run_with_cgi(application):
     result = application(environ, start_response)
     try:
         for data in result:
-            print "data:", data
             if data:    # don't send headers until body appears
                 write(data)
         if not headers_sent:
