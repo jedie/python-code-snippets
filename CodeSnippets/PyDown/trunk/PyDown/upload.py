@@ -170,7 +170,7 @@ class Uploader:
         """ Datei Information mit Linux 'file' Befehl zusammentragen """
         if sys.platform == "win32":
             # Unter Windows gibt es keinen File-Befehl
-            return "<small>(file info only available under Linux!)</small>"
+            return "(file info only available under Linux!)"
 
         try:
             proc = subprocess.Popen(

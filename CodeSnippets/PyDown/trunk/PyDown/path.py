@@ -89,6 +89,7 @@ class path:
         #~ self.response.write(
             #~ "<p>path.relative_path: '%s' - base_path: '%s'<br>" % (path, self.cfg["base_path"])
         #~ )
+        path = path.replace("\\","/") # Windows -> URL
         if path.startswith(self.cfg["base_path"]):
             path = path[len(self.cfg["base_path"]):]
         #~ self.response.write("%s</p>" % path)
