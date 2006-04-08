@@ -6,8 +6,8 @@ Diese Konfigurations-Datei ist die eigentliche WSGI-App die vom CGI-Handler
 benutzt wird.
 """
 
-print "Content-type: text/html; charset=utf-8\r\n"
-import cgitb;cgitb.enable()
+#~ print "Content-type: text/html; charset=utf-8\r\n"
+#~ import cgitb;cgitb.enable()
 
 from PyDown.PyDown import cfg, app
 
