@@ -417,14 +417,22 @@ class browser:
         if self.request.cfg["temp"]!=None:
             return self.request.cfg["temp"]
         else:
-            return tempfile.gettempdir()
+            tempDir = tempfile.gettempdir()
+            if sys.platform=="win32":
+                self.response.write(
+                    "<h2>Waring: You should set a temp dir in cfg!</h2>"
+                )
+                self.response.write(
+                    "<h3>Use: '%s' for tempfiles!</h3>" % tempDir
+                )
+            return  tempDir
 
     def clean_temp(self):
         """
         Löscht alte TEMP-Dateien
         """
         tempDir = self.get_temp_dir()
-        self.response.write("tempDir: %s" % tempDir)
+        #~ self.response.write("tempDir: %s<br />" % tempDir)
         globDir = os.path.join(tempDir, "%s*_temp*" % self.request.cfg["temp_prefix"])
         for filename in glob.glob(globDir):
             pathStat = os.stat(filename)
