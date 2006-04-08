@@ -46,6 +46,9 @@ cfg["debug"] = False
 # Anzahl der Log-Einträge die angezeigt werden sollen
 cfg["last_log_count"] = 50
 
+# Anzahl der Einträge die bei "newest Files" angezeigt werden
+cfg["newestfiles_count"] = 30
+
 # Ab welcher Anzahl von Verzeichnissen sollen Buchstaben eingeblendet werden?
 cfg["min_letters"] =  3
 

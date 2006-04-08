@@ -41,7 +41,7 @@ class NewestFiles:
 
         # in jinja context einfügen
         self.request.context["newest_files"] = self.getContext(
-            newestDict, count = 30
+            newestDict, count = self.cfg["newestfiles_count"]
         )
 
         itemCount = locale.format("%i", (self.dirCount+self.fileCount), True)

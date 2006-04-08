@@ -85,6 +85,9 @@ cfg = {
     # Anzahl der Log-Einträge die angezeigt werden sollen
     "last_log_count": 50,
 
+    # Anzahl der Einträge die bei "newest Files" angezeigt werden
+    "newestfiles_count": 30,
+
     # Temp-Verz., bei None, wird das System-Temp-Verz. genommen
     "temp": None,
     "temp_prefix": "PyDown_",
