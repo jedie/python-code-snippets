@@ -13,11 +13,13 @@ __author__  = "Jens Diemer (www.jensdiemer.de)"
 __license__ = "GNU General Public License v2 or above - http://www.opensource.org/licenses/gpl-license.php"
 __url__     = "http://www.jensdiemer.de/Programmieren/Python/PyDown"
 
-__version__ = "v0.5.1"
+__version__ = "v0.5.2"
 
 __info__ = """<a href="%s">PyDown %s</a>""" % (__url__, __version__)
 
 __history__ = """
+v0.5.2
+    - Windows bugfixes
 v0.5.1
     - Bugfix in path.py (wrong Links in newestFiles)
 v0.5
