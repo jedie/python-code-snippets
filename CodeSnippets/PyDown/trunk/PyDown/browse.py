@@ -286,6 +286,7 @@ class browser:
         files, _ = self.read_dir()
 
         tempFile = tempfile.NamedTemporaryFile(
+            suffix = "_temp",
             prefix = "%s%s_" % (
                     self.request.cfg["temp_prefix"], self.request.environ["REMOTE_USER"]
             ),
@@ -413,7 +414,7 @@ class browser:
         Liefert das TEMP-Verz. entweder das in der Config angegebene
         oder das System-Temp-Verz.
         """
-        if self.request.cfg["temp"]:
+        if self.request.cfg["temp"]!=None:
             return self.request.cfg["temp"]
         else:
             return tempfile.gettempdir()
@@ -423,7 +424,8 @@ class browser:
         Löscht alte TEMP-Dateien
         """
         tempDir = self.get_temp_dir()
-        globDir = os.path.join(tempDir, "%s*" % self.request.cfg["temp_prefix"])
+        self.response.write("tempDir: %s" % tempDir)
+        globDir = os.path.join(tempDir, "%s*_temp*" % self.request.cfg["temp_prefix"])
         for filename in glob.glob(globDir):
             pathStat = os.stat(filename)
             lastAccess          = pathStat.st_atime
