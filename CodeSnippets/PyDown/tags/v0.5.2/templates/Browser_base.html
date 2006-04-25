@@ -1,0 +1,92 @@
+{% extends "Browser_template" %}
+
+{*
+Hier werden nur Blöcke definiert, die in das eigentliche User-Template
+automatisch eingefügt werden.
+*}
+
+{% block "serverInfo" %}
+    <p>
+        bandwith: {{ serverInfo.availableBandwith }}/{{ serverInfo.totalBandwith }}KB/s
+        - downloads: {{ serverInfo.downloadCount }}
+        - uploads: {{ serverInfo.uploadCount }}
+        - active Users: {{ serverInfo.user }}
+    </p>
+{% endblock %}
+
+{% block "TABs" %}
+    &nbsp;|&nbsp;{% for link in naviTABs %}<a href="{{ link.url }}">{{ link.title }}</a>&nbsp;|&nbsp;{% endfor %}
+{% endblock %}
+
+{% block "navi" %}
+    {% for link in path %}<a href="{{ link.url }}">{{ link.title|escapexml }}</a>&nbsp;/&nbsp;{% endfor %}
+{% endblock %}
+
+{% block "file_list" %}
+    {% if not filelist %}
+        <small>[ no files ]</small>
+    {% else %}
+        <table id="filelist">
+            <tr>
+                <th>filename</th>
+                <th>modification time</th>
+                <th>size</th>
+                <th>file info</th>
+            </tr>
+            {% for file in filelist %}
+            {% cycle rowclass through "odd", "even" %}
+            <tr class="{{ rowclass }}">
+                <td><a href="{{ file.url }}">{{ file.name|escapexml }}</a></td>
+                <td>{{ file.mtime }}</td>
+                <td>{{ file.size|filesizeformat }}</td>
+                <td>{{ file.info|escapexml }}</td>
+            </tr>
+
+            {% endfor %}
+        </table>
+        <p>
+            Download all files:
+            <a href="{{ downloadLink.url }}">{{ downloadLink.url|escapexml }}</a>
+            {{ downloadLink.size|filesizeformat }}
+            <small>(<a href="{{ downloadLink.url }}?simulation=on">simulation</a>)</small>
+        </p>
+    {% endif %}
+{% endblock %}
+
+</fieldset>
+</form>
+
+
+{% block "dir_list" %}
+    <ul id="dirlist">
+    {% for dir in dirlist %}
+        {% if show_letters %}
+        <h3>{{ dir.letter|escapexml }}</h3>
+        {% endif %}
+        {% for item in dir.items %}
+            <li><a href="{{ item.url }}">{{ item.name|escapexml }}</a></li>
+        {% endfor %}
+    {% endfor %}
+    {% if not dirlist %}<li><small>[ no dirs ]</small></li>{% endif %}
+</ul>
+{% endblock %}
+
+
+{% block "debug" %}
+    {% if cfg.debug %}
+    <hr>
+    <h4>Jinja-Debug:</h4>
+    <pre>{% debug %}</pre>
+    {% endif %}
+{% endblock %}
+
+
+{% block "footer" %}
+    <p>[only_https: {{ cfg.only_https }},
+    only_auth_users: {{ cfg.only_auth_users }},
+    ext_whitelist: {{ cfg.ext_whitelist }}]<br />
+    You are: {{ username }} - {% if is_admin %}admin{% else %}normal user{% endif %}<br />
+    filesystemencoding: {{ filesystemencoding }}<br />
+    <script_duration /><br />
+    {{ __info__ }}</p>
+{% endblock %}

@@ -1,0 +1,27 @@
+AuthType Basic
+AuthName "PyDown"
+AuthUserFile /.../PyDown/.htusers
+Require valid-user
+
+# Damit man auch die index.py aus der URL verschwinden kann, muß
+# der DirectoryIndex die index.py ausführen
+# http://httpd.apache.org/docs/2.0/mod/mod_dir.html#directoryindex
+DirectoryIndex PyDown.cgi
+
+# Damit Python-Skripte auch außerhalb von /cgi-bin/ ausgeführt
+# werden.
+# http://httpd.apache.org/docs/2.0/mod/mod_mime.html#addhandler
+AddHandler cgi-script .cgi
+AddHandler fastcgi-script fcg fcgi fpl
+
+# UTF-8 kodierung unter Linux
+# muß bei fastCGI seperat in der apache.conf gemacht
+# werden mit:
+# ---------------------------------------------------
+# <IfModule mod_fastcgi.c>
+#  FastCgiConfig -initial-env LANG=de_DE.UTF-8
+# </IfModule>
+# ---------------------------------------------------
+# Für die normale CGI-Version:
+# http://httpd.apache.org/docs/2.0/mod/mod_env.html#setenv
+SetEnv LANG de_DE.UTF-8

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>{{ title }}</title>
+<meta http-equiv="expires" content="900" />
+<link rel="stylesheet" type="text/css" href="/templates/Browser.css" />
+</head>
+<body>
+
+<fieldset><legend>server info</legend>
+    {% marker "serverInfo" %}
+</fieldset>
+
+<fieldset><legend>menu</legend>
+{% marker "TABs" %}
+</fieldset>
+
+<fieldset><legend>current downloads</legend>
+    {% marker "current_downloads" %}
+</fieldset>
+
+<fieldset><legend>current uploads</legend>
+    {% marker "current_uploads" %}
+</fieldset>
+
+<fieldset><legend>administration</legend>
+    {% marker "admin" %}
+</fieldset>
+
+<fieldset><legend>last {{ last_log_count }} log</legend>
+    {% marker "last_log" %}
+</fieldset>
+
+<div id="footer">
+    {% marker "footer" %}
+</div>
+
+{% marker "debug" %}
+</body></html>
