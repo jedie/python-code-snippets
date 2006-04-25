@@ -1,0 +1,86 @@
+{% extends "UploadStatus_template" %}
+
+{*
+Hier werden nur Bloecke definiert, die in das eigentliche User-Template
+automatisch eingefuegt werden.
+*}
+
+{% block "serverInfo" %}
+    <p>
+        bandwith: {{ serverInfo.availableBandwith }}/{{ serverInfo.totalBandwith }}KB/s
+        - downloads: {{ serverInfo.downloadCount }}
+        - uploads: {{ serverInfo.uploadCount }}
+        - active Users: {{ serverInfo.user }}
+    </p>
+{% endblock %}
+
+{% block "admin" %}
+<form name="admin" method="post" action="?action=admin">
+    <label class="left" for="bandwith">bandwith:</label>
+    <input class="right" id="bandwith" name="bandwith" type="text" value="{{ bandwith }}" size="4" maxlength="3" />KBytes/s
+    {% if is_admin %}
+        <input type="submit" value="change" name="change" />
+    {% else %}
+        <small>[You are not Admin!]</small>
+    {% endif %}
+</form>
+{% endblock %}
+
+{% block "file_list" %}
+    {% if not current_uploads %}
+        <small>[ no files ]</small>
+    {% else %}
+        <table id="last_log">
+            <tr>
+                <th>id</th>
+                <th>user</th>
+                <th>item</th>
+                <th>start time</th>
+                <th>current time</th>
+                <th>total bytes</th>
+                <th>current bytes</th>
+                <th>percent</th>
+                <th>throughput</th>
+                <th>elapsed</th>
+                <th>estimated</th>
+                <th>total</th>
+            </tr>
+            {% for upload in current_uploads %}
+                {% cycle rowclass through "odd", "even" %}
+                <tr class="{{ rowclass }}">
+                    <td>{{ upload.id }}</td>
+                    <td>{{ upload.username|escapexml }}</td>
+                    <td>{{ upload.item|escapexml }}</td>
+                    <td>{{ upload.start_time }}</td>
+                    <td>{{ upload.currently_time }}</td>
+                    <td>{{ upload.total_bytes|filesizeformat }}</td>
+                    <td>{{ upload.currently_bytes|filesizeformat }}</td>
+                    <td>{{ upload.percent }}</td>
+                    <td>{{ upload.throughput }}</td>
+                    <td>{{ upload.elapsed }}</td>
+                    <td>{{ upload.estimated }}</td>
+                    <td>{{ upload.total }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% endif %}
+{% endblock %}
+
+{% block "debug" %}
+    {% if cfg.debug %}
+    <hr>
+    <h4>Jinja-Debug:</h4>
+    <pre>{% debug %}</pre>
+    {% endif %}
+{% endblock %}
+
+
+{% block "footer" %}
+    <p>[only_https: {{ cfg.only_https }},
+    only_auth_users: {{ cfg.only_auth_users }},
+    ext_whitelist: {{ cfg.ext_whitelist }}]<br />
+    You are: {{ username }} - {% if is_admin %}admin{% else %}normal user{% endif %}<br />
+    filesystemencoding: {{ filesystemencoding }}<br />
+    <script_duration /><br />
+    {{ __info__ }}</p>
+{% endblock %}
