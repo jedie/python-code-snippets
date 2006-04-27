@@ -62,6 +62,7 @@ Sicherheitslücke: Es sollte nur ein Admin angelegt werden können, wenn noch ke
 
 import cgi
 
+from PyLucid.system.exceptions import *
 from colubrid import ObjectApplication
 
 
@@ -249,7 +250,7 @@ from PyLucid.system import db
 class base(object):
     """ Basisklasse von der jede ObjApp-Klasse ableitet """
     def _get_module_admin(self):
-        #~ self.PyLucid["URLs"]["action"] = "?action=module_admin&sub_action="
+        self.request.URLs["action"] = "?action=module_admin&sub_action="
 
         from PyLucid.modules import module_admin
 
@@ -315,51 +316,70 @@ class admin(base):
     "2. low level Admin"
     def module_admin(self):
         "Module/Plugin Administration"
-        self._write_info()
+        #~ self._write_info()
+        self._write_backlink()
 
         module_admin = self._get_module_admin()
 
-        sub_action = self.CGIdata.get("sub_action", None)
+        sub_action = self.request.GET.get("sub_action", None)
 
         if sub_action == "install":
             try:
-                module_admin.install(self.CGIdata["package"], self.CGIdata["module_name"])
+                module_admin.install(self.request.GET["package"], self.request.GET["module_name"])
+            except IntegrityError, e:
+                self.request.write("DB Error: %s\n" % e)
+                self.request.db.rollback()
+                self.request.write("(execute DB rollback)")
             except KeyError, e:
                 self.request.write("KeyError: %s" % e)
+            else:
+                self.request.db.commit()
             return
         elif sub_action == "deinstall":
             try:
-                module_admin.deinstall(self.CGIdata["id"])
+                module_admin.deinstall(self.request.GET["id"])
+            except IntegrityError, e:
+                self.request.write("DB Error: %s\n" % e)
+                self.request.db.rollback()
+                self.request.write("(execute DB rollback)")
             except KeyError, e:
                 self.request.write("KeyError: %s" % e)
+            else:
+                self.request.db.commit()
             return
         elif sub_action == "reinit":
             try:
-                module_admin.reinit(self.CGIdata["id"])
+                module_admin.reinit(self.request.GET["id"])
+            except IntegrityError, e:
+                self.request.write("DB Error: %s\n" % e)
+                self.request.db.rollback()
+                self.request.write("(execute DB rollback)")
             except KeyError, e:
                 self.request.write("KeyError: %s" % e)
+            else:
+                self.request.db.commit()
             return
         elif sub_action == "activate":
             try:
-                module_admin.activate(self.CGIdata["id"])
+                module_admin.activate(self.request.GET["id"])
             except KeyError, e:
                 self.request.write("KeyError: %s" % e)
         elif sub_action == "deactivate":
             try:
-                module_admin.deactivate(self.CGIdata["id"])
+                module_admin.deactivate(self.request.GET["id"])
             except KeyError, e:
                 self.request.write("KeyError: %s" % e)
         elif sub_action == "module_admin_info":
             self.module_admin_info()
             return
         elif sub_action == "administation_menu":
-            self.print_backlink()
+            self._write_backlink()
         elif sub_action == "init_modules":
             self.print_backlink()
             if self.CGIdata.get("confirm","no") == "yes":
                 module_admin = self._get_module_admin()
                 module_admin.first_time_install_confirmed()
-            self.print_backlink()
+            self._write_backlink()
             return
 
         module_admin.administation_menu()

@@ -20,6 +20,7 @@ v0.1
 import urllib, pickle, sys, time
 
 from PyLucid.system.db.SQL_wrapper import SQL_wrapper
+from PyLucid.system.exceptions import *
 
 debug = False
 
@@ -793,5 +794,3 @@ class passive_statements(SQL_wrapper):
 
 
 
-class IntegrityError(Exception):
-    pass

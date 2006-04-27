@@ -4,15 +4,9 @@
 import cgitb;cgitb.enable()
 
 
-from PyLucid_app import app
-
-try:
-    from PyLucid_app import exports
-except ImportError:
-    exports = {}
-
-from colubrid.execute import CGIServer
-
+from colubrid.server import CGIServer
+from colubrid.debug import DebuggedApplication
 
 if __name__ == "__main__":
-    CGIServer(app, exports).run()
+    app = DebuggedApplication('PyLucid_app:app')
+    CGIServer(app).run()

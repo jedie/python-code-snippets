@@ -9,11 +9,11 @@ __url__                 = "http://www.PyLucid.org"
 __description__         = "The Module/Plugin Administration"
 __essential_buildin__   = True
 
-# Ausnahme: install_template wird in install_PyLucid.py benötigt!
-import os
-f = file(os.path.join("PyLucid_modules","module_admin_administation_menu.html"),"rU")
-install_template = f.read()
-f.close()
+#~ # Ausnahme: install_template wird in install_PyLucid.py benötigt!
+#~ import os
+#~ f = file(os.path.join("PyLucid/modules","module_admin_administation_menu.html"),"rU")
+#~ install_template = f.read()
+#~ f.close()
 
 #___________________________________________________________________________________________________
 # Module-Manager Daten

@@ -210,6 +210,11 @@ class Database(object):
         else:
             raise ImportError("Unknow DB-Modul '%s' (look at config.py!):" % db_module)
 
+    def commit(self):
+        self.conn.commit()
+    def rollback(self):
+        self.conn.rollback()
+
     def close(self):
         "Connection schließen"
         self.conn.close()

@@ -15,9 +15,12 @@ Sammlung von Methoden für grundlegenden SQL-Statements:
 Zusätzlich ein paar Allgemeine Information Methoden.
 """
 
-__version__="0.1"
+__version__="0.2"
 
 __history__="""
+v0.2
+    - neues Agument bei allen SQL-Methoden: execute_only -> für DB Transaktionen
+    - self.fetchall umbenannt in process_statement
 v0.1
     - erste Release nach aufteilung
     - Allgemeine History nach __init__ verschoben
@@ -32,7 +35,7 @@ class SQL_wrapper(Database):
     def __init__(self, *args):
         super(SQL_wrapper, self).__init__(*args)
 
-    def fetchall(self, SQLcommand, SQL_values = ()):
+    def process_statement(self, SQLcommand, SQL_values = (), execute_only=False):
         """ kombiniert execute und fetchall """
         self.last_SQLcommand = SQLcommand
         self.last_SQL_values = SQL_values
@@ -44,6 +47,8 @@ class SQL_wrapper(Database):
                 e, SQLcommand, SQL_values
                 )
             )
+        if execute_only:
+            return
         try:
             result = self.cursor.fetchall()
         except Exception, e:
@@ -61,14 +66,14 @@ class SQL_wrapper(Database):
         Liefert alle Tabellennamen die das self.tableprefix haben
         """
         tables = []
-        for table in self.fetchall("SHOW TABLES"):
+        for table in self.process_statement("SHOW TABLES"):
             tablename = table.values()[0]
             if tablename.startswith(self.tableprefix):
                 tables.append(tablename)
         return tables
 
 
-    def insert(self, table, data, debug=False):
+    def insert(self, table, data, debug=False, execute_only=False):
         """
         Vereinfachter Insert, per dict
         data ist ein Dict, wobei die SQL-Felder den Key-Namen im Dict
@@ -96,10 +101,10 @@ class SQL_wrapper(Database):
 
         if debug: debug_command("insert", SQLcommand, values)
 
-        return self.fetchall(SQLcommand, values)
+        return self.process_statement(SQLcommand, values, execute_only)
 
 
-    def update(self, table, data, where, limit=False, debug=False):
+    def update(self, table, data, where, limit=False, debug=False, execute_only=False):
         """
         Vereinfachte SQL-update Funktion
         """
@@ -118,11 +123,11 @@ class SQL_wrapper(Database):
 
         if debug: debug_command("update", SQLcommand, values)
 
-        return self.fetchall(SQLcommand, values)
+        return self.process_statement(SQLcommand, values, execute_only)
 
 
     def select(self, select_items, from_table, where=None, order=None, limit=None,
-            maxrows=0, how=1, debug=False):
+            maxrows=0, how=1, debug=False, execute_only=False):
         """
         Allgemeine SQL-SELECT Anweisung
         where, order und limit sind optional
@@ -161,9 +166,9 @@ class SQL_wrapper(Database):
 
         if debug: debug_command("select", SQLcommand, values)
 
-        return self.fetchall(SQLcommand, values)
+        return self.process_statement(SQLcommand, values, execute_only)
 
-    def delete(self, table, where, limit=1, debug=False):
+    def delete(self, table, where, limit=1, debug=False, execute_only=False):
         """
         DELETE FROM table WHERE id=1 LIMIT 1
         """
@@ -176,7 +181,7 @@ class SQL_wrapper(Database):
 
         if debug: debug_command("delete", SQLcommand, values)
 
-        return self.fetchall(SQLcommand, values)
+        return self.process_statement(SQLcommand, values, execute_only)
 
     #_________________________________________________________________________
     # Hilfsmethoden
@@ -231,12 +236,12 @@ class SQL_wrapper(Database):
         else:
             SQLcommand = "SHOW FIELDS FROM $$%s;" % table_name
 
-        if self.debug or debug:
+        if debug:
             self.request.echo("-"*80)
             self.request.echo("get_table_field_information: %s" % SQLcommand)
 
-        result = self.fetchall(SQLcommand)
-        if self.debug or debug:
+        result = self.process_statement(SQLcommand)
+        if debug:
             self.request.echo("result: %s" % result)
         return result
 

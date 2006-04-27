@@ -38,8 +38,8 @@ from Cookie import SimpleCookie
 ## import random -> auth.make_login_page()
 
 
-# eigene Module
-from PyLucid_system import crypt
+# eigene Module -> DoTo -> crypt irgendwie anders hinterlegen!
+from PyLucid.system import crypt
 
 
 # =True: Login-Fehler sind aussagekräftiger: Sollte allerdings

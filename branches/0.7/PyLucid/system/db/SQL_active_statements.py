@@ -15,7 +15,10 @@ v0.1
     - erste Release
 """
 
+import pickle
+
 from PyLucid.system.db.SQL_passive_statements import passive_statements
+from PyLucid.system.exceptions import *
 
 debug = False
 
@@ -52,7 +55,7 @@ class active_statements(passive_statements):
             limit   = 1
         )
 
-    def new_style( self, style_data ):
+    def new_style(self, style_data, execute_only=False):
         self.insert(
             table   = "styles",
             data    = {
@@ -61,6 +64,7 @@ class active_statements(passive_statements):
                 "description"   : style_data.get("description", None),
                 "content"       : style_data["content"],
             },
+            execute_only = execute_only,
         )
 
     def delete_style(self, style):
@@ -87,9 +91,10 @@ class active_statements(passive_statements):
             where           = ("plugin_id",plugin_id),
         )
         self.delete(
-            table   = "styles",
-            where   = ("plugin_id",plugin_id),
-            limit   = 99,
+            table           = "styles",
+            where           = ("plugin_id",plugin_id),
+            limit           = 99,
+            execute_only    = True
         )
         style_names = [i["name"] for i in style_names]
         return style_names
@@ -244,7 +249,7 @@ class active_statements(passive_statements):
         context.globals.update(context_dict) # context.addGlobal()
 
         template = simpleTAL.compileHTMLTemplate(internal_page_content, inputEncoding="UTF-8")
-        template.expand(context, sys.stdout, outputEncoding="UTF-8")
+        template.expand(context, self.request, outputEncoding="UTF-8")
 
     def update_internal_page( self, internal_page_name, page_data ):
         self.update(
@@ -260,25 +265,36 @@ class active_statements(passive_statements):
         d.h. wenn es keine interne Seite mehr gibt, die in
         der Kategorie vorkommt, wird sie gelöscht
         """
-        used_categories = self.select(
-            select_items    = ["category_id"],
-            from_table      = "pages_internal",
-        )
-        used_categories = [i["category_id"] for i in used_categories]
+        try:
+            used_categories = self.select(
+                select_items    = ["category_id"],
+                from_table      = "pages_internal",
+            )
+            used_categories = [i["category_id"] for i in used_categories]
 
-        existing_categories = self.select(
-            select_items    = ["id","name"],
-            from_table      = "pages_internal_category",
-        )
+            existing_categories = self.select(
+                select_items    = ["id","name"],
+                from_table      = "pages_internal_category",
+            )
+        except Exception, e:
+            raise IntegrityError(
+                "Can't determine existing internal page categories: %s" % e
+            )
 
         deleted_categories = []
         for line in existing_categories:
             if not line["id"] in used_categories:
-                self.delete(
-                    table = "pages_internal_category",
-                    where = ("id", line["id"]),
-                    limit = 99,
-                )
+                try:
+                    self.delete(
+                        table           = "pages_internal_category",
+                        where           = ("id", line["id"]),
+                        limit           = 99,
+                        execute_only    = True
+                    )
+                except Exception, e:
+                    raise IntegrityError(
+                        "Can't delete internal page categorie with ID %s!" % line["id"]
+                    )
                 deleted_categories.append(line["name"])
         return deleted_categories
 
@@ -323,9 +339,10 @@ class active_statements(passive_statements):
         )
         #~ print "page_names:", page_names
         self.delete(
-            table = "pages_internal",
-            where = ("plugin_id", plugin_id),
-            limit = 99,
+            table           = "pages_internal",
+            where           = ("plugin_id", plugin_id),
+            limit           = 99,
+            execute_only    = True
         )
         page_names = [i["name"] for i in page_names]
         return page_names
@@ -407,7 +424,8 @@ class active_statements(passive_statements):
                 "active"                    : active,
                 "debug"                     : module_data["module_manager_debug"],
                 "SQL_deinstall_commands"    : module_data["SQL_deinstall_commands"],
-            }
+            },
+            execute_only=True
         )
         return self.cursor.lastrowid
 
@@ -443,20 +461,30 @@ class active_statements(passive_statements):
 
         self.insert(
             table = "plugindata",
-            data  = method_cfg
+            data  = method_cfg,
+            execute_only=True
         )
 
     def delete_plugin(self, id):
-        self.delete(
-            table = "plugins",
-            where = ("id", id),
-            limit = 999,
-        )
+        try:
+            self.delete(
+                table = "plugins",
+                where = ("id", id),
+                limit = 999,
+                execute_only=True
+            )
+        except Exception, e:
+            raise IntegrityError(
+                    "Can't delete plugin! ID: %s (%s: %s)" % (
+                    id, sys.exc_info()[0],":", e
+                )
+            )
 
     def delete_plugindata(self, plugin_id):
         self.delete(
             table = "plugindata",
             where = ("plugin_id", plugin_id),
             limit = 999,
+            execute_only=True
         )
 
