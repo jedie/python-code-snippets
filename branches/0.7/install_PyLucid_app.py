@@ -60,10 +60,13 @@ Sicherheitslücke: Es sollte nur ein Admin angelegt werden können, wenn noch ke
 """
 
 
-import cgi
+import cgi, urllib
 
 from PyLucid.system.exceptions import *
+
+# Colubrid
 from colubrid import ObjectApplication
+from colubrid import HttpResponse
 
 
 
@@ -124,120 +127,17 @@ HTML_bottom = "</body></html>"
 
 
 
-class ObjectApp_MenuGenerator(object):
+from PyLucid.install import menu
+from PyLucid.install.ObjectApp_Base import ObjectApp_Base
 
-    def __init__(self, request, root):
-        self.request = request
-        self.root = root
-
-    def root_link(self, path, info):
-        "Methode zum überscheiben"
-        self.request.write('<a href="%s">%s</a>' % (path, info))
-
-    def sub_link(self, path, info):
-        "Methode zum überscheiben"
-        self.request.write('<a href="%s">%s</a>' % (path, info))
-
-    def _get_objnamelist(self, obj, attr_type):
-        """
-        Baut eine Liste mit den nötigen Informationen für ein Menü zusammen
-        Hilfmethode für make_menu
-        """
-        result = []
-        for objname in dir(obj):
-            if objname.startswith("_"):
-                continue
-
-            obj_attr = getattr(obj, objname)
-            if attr_type == "methods": # Methoden einer Klasse
-                if getattr(obj_attr, "__call__", None) == None:
-                    continue
-            elif attr_type == "class": # Klassen des root-Objekts
-                if type(obj_attr) != type:
-                    continue
-            else:
-                raise TypeError("attr_type must be 'class' or 'methods'!")
-
-            if obj_attr.__doc__:
-                info = obj_attr.__doc__
-                info = info.strip().split("\n",1)[0]
-            else:
-                info = objname
-
-            info = cgi.escape(info)
-
-            result.append([info, objname, obj_attr])
-        result.sort()
-        return result
-
-    def get_menu_data(self):
-        """ Liefert eine verschachtelre Liste mit den Menüdaten zurück """
-        result = []
-        objnamelist = self._get_objnamelist(self.root, attr_type="class")
-        for info, path, obj_attr in objnamelist:
-            result.append((path, info))
-            temp = []
-            subobjnamelist = self._get_objnamelist(obj_attr, attr_type="methods")
-            for sub_info, sub_path, _ in subobjnamelist:
-                sub_path = "%s/%s" % (path, sub_path)
-                temp.append((sub_path, sub_info))
-            result.append(temp)
-        return result
-
-    # Zum überschreiben/Anpassen:
-    root_list_tags = ('\n<ul>\n', '</ul>\n', '\t<li>', '</li>\n')
-    sub_list_tags = ('\t<ul>\n', '\t</ul>\n', '\t\t<li>', '</li>\n')
-
-    def make_menu(self):
-        """
-        Generiert ein Menü für alle vorhandenen Objekte/Pfade und nutzt
-        dabei die erste Zeile des DocString von jeder Klasse/Methode.
-        Generell wird das Menü nach DocString sortiert, d.h. wenn man
-        gezielt eine sortierung haben will, kann man z.B. den DocString
-        mit 1., 2., 3. anfangen.
-        """
-        def write_menu(handler, item, tags):
-            """Ruft den passenden Handler, also self.sub_link oder
-            self.root_link mit den Menü-Daten auf"""
-            self.request.write(tags[2])
-            handler(*item)
-            self.request.write(tags[3])
-
-        self.request.write(self.root_list_tags[0])
-        for item in self.get_menu_data():
-            if isinstance(item, list):
-                # Untermenüpunkte
-                self.request.write(self.sub_list_tags[0])
-                for sub_item in item:
-                    write_menu(self.sub_link, sub_item, self.sub_list_tags)
-                self.request.write(self.sub_list_tags[1])
-            else:
-                # Hauptmenüpunkt
-                write_menu(
-                    self.root_link, item, self.root_list_tags
-                )
-
-        self.request.write(self.root_list_tags[1])
-
-
-class MyMenuGenerator(ObjectApp_MenuGenerator):
-    """
-    Anpassen des Menügenerators
-    """
-    # id="menu" in ul einbauen
-    root_list_tags = ('\n<ul id="menu">\n', '</ul>\n', '\t<li>', '</li>\n')
-
-    def root_link(self, path, info):
-        "Methode zum Überscheiben"
-        try: # Zahlen bei den Hauptmení±µnkten weg schneiden
-            info = info.split(" ",1)[1]
-        except:
-            pass
-        self.request.write('<h4>%s</h4>' % info)
+from PyLucid.install.App_tests import tests
+from PyLucid.install.App_Update import update
+from PyLucid.install.App_LowLevelAdmin import LowLevelAdmin
+from PyLucid.install.App_ScratchInstall import install
 
 
 
-import inspect
+#~ import inspect
 
 
 import config # PyLucid Konfiguration
@@ -245,205 +145,32 @@ from PyLucid.system import sessiondata
 from PyLucid.system import preferences
 from PyLucid.system import tools
 from PyLucid.system import db
-
-
-class base(object):
-    """ Basisklasse von der jede ObjApp-Klasse ableitet """
-    def _get_module_admin(self):
-        self.request.URLs["action"] = "?action=module_admin&sub_action="
-
-        from PyLucid.modules import module_admin
-
-        module_admin = module_admin.module_admin(self.request, call_from_install_PyLucid = True)
-
-        return module_admin
-
-    def _write_info(self):
-        #~ self.request.write("<pre>")
-        try:
-            stack_info = inspect.stack()[1]
-            attr_name = stack_info[3]
-            info = getattr(self, attr_name).__doc__
-        except:
-            pass
-        else:
-            self.request.write("<h3>%s</h3>" % info)
-
-        self._write_backlink()
-
-    def _write_backlink(self):
-        url_info = ()
-        self.request.write(
-            '<p><a href="%s">%s</a></p>' % (
-                self.request.environ["SCRIPT_ROOT"], "menu"
-            )
-        )
-
-
-
-class index(base):
-    def index(self):
-        "Main Menu"
-        #~ self._write_head(backlink=False)
-        self.request.write("Please select:")
-        #~ self.make_menu()
-        self.MenuGenerator.make_menu()
-
-    def name(self, arg1="Default", arg2="Default"):
-        """Beispiel für eine Parameter übergabe"""
-        self._info('index.name')
-        self.request.write(
-            'arg1="%s" - arg2="%s"' % (arg1, arg2)
-        )
-
-
-class install(base):
-    "1. install PyLucid from scratch"
-    def init_DB(self):
-        "1. init Database tables"
-        self._write_info()
-
-    def init_modules(self):
-        "2. init basic Modules"
-        self._write_info()
-
-    def add_admin(self):
-        "3. add a admin user"
-        self._write_info()
-
-
-class admin(base):
-    "2. low level Admin"
-    def module_admin(self):
-        "Module/Plugin Administration"
-        #~ self._write_info()
-        self._write_backlink()
-
-        module_admin = self._get_module_admin()
-
-        sub_action = self.request.GET.get("sub_action", None)
-
-        if sub_action == "install":
-            try:
-                module_admin.install(self.request.GET["package"], self.request.GET["module_name"])
-            except IntegrityError, e:
-                self.request.write("DB Error: %s\n" % e)
-                self.request.db.rollback()
-                self.request.write("(execute DB rollback)")
-            except KeyError, e:
-                self.request.write("KeyError: %s" % e)
-            else:
-                self.request.db.commit()
-            return
-        elif sub_action == "deinstall":
-            try:
-                module_admin.deinstall(self.request.GET["id"])
-            except IntegrityError, e:
-                self.request.write("DB Error: %s\n" % e)
-                self.request.db.rollback()
-                self.request.write("(execute DB rollback)")
-            except KeyError, e:
-                self.request.write("KeyError: %s" % e)
-            else:
-                self.request.db.commit()
-            return
-        elif sub_action == "reinit":
-            try:
-                module_admin.reinit(self.request.GET["id"])
-            except IntegrityError, e:
-                self.request.write("DB Error: %s\n" % e)
-                self.request.db.rollback()
-                self.request.write("(execute DB rollback)")
-            except KeyError, e:
-                self.request.write("KeyError: %s" % e)
-            else:
-                self.request.db.commit()
-            return
-        elif sub_action == "activate":
-            try:
-                module_admin.activate(self.request.GET["id"])
-            except KeyError, e:
-                self.request.write("KeyError: %s" % e)
-        elif sub_action == "deactivate":
-            try:
-                module_admin.deactivate(self.request.GET["id"])
-            except KeyError, e:
-                self.request.write("KeyError: %s" % e)
-        elif sub_action == "module_admin_info":
-            self.module_admin_info()
-            return
-        elif sub_action == "administation_menu":
-            self._write_backlink()
-        elif sub_action == "init_modules":
-            self.print_backlink()
-            if self.CGIdata.get("confirm","no") == "yes":
-                module_admin = self._get_module_admin()
-                module_admin.first_time_install_confirmed()
-            self._write_backlink()
-            return
-
-        module_admin.administation_menu()
-
-
-    def re_init(self):
-        "partially re-initialisation DB tables"
-        self._write_info()
-
-
-class update(base):
-    "3. update"
-    def update_db(self):
-        "update DB tables (PyLucid v0.x -> 0.6)"
-        self._write_info()
-
-    def convert_markups(self):
-        "Convert Markup Names to IDs (PyLucid v0.x -> 0.5)"
-        self._write_info()
-
-
-class tests(base):
-    "4. info / tests"
-    def db_info(self):
-        "DB connection Information"
-        self._write_info()
-
-        self.request.write("<pre>")
-        for k,v in self.request.preferences.iteritems():
-            if not k.startswith("db"):
-                continue
-            if k == "dbPassword":
-                v = "***"
-            self.request.write("%-20s: %s\n" % (k,v))
-        self.request.write("</pre>")
-
-    def module_admin_info(self):
-        "Information about installed modules"
-        self._write_info()
-
-        self.PyLucid["URLs"]["current_action"] = "?action=module_admin&sub_action=module_admin_info"
-        module_admin = self._get_module_admin()
-        module_admin.debug_installed_modules_info()
-
-    def path_info(self):
-        "Path/URL check"
-        self._write_info()
+from PyLucid.system import jinjaRenderer
 
 
 
 
+class PyLucidInstallApp(ObjectApplication):
+    """
+    Klasse die die Programmlogik zusammenstellt
+    """
+    charset = 'utf-8'
+    slash_append = True
 
-
-class LowLevelAdmin(ObjectApplication):
-
-    root = index
-    root.install    = install
-    root.update     = update
-    root.admin      = admin
-    root.tests      = tests
+    root = menu.menu
+    root.install        = install
+    root.update         = update
+    root.LowLevelAdmin  = LowLevelAdmin
+    root.tests          = tests
 
     def __init__(self, *args):
-        super(LowLevelAdmin, self).__init__(*args)
-        self.request.headers['Content-Type'] = 'text/html'
+        super(PyLucidInstallApp, self).__init__(*args)
+        self.response = HttpResponse()
+
+        # Jinja-Context anhängen
+        self.request.context = {}
+
+        #~ self.request.jinjaRenderer = jinjaRenderer.jinjaRenderer(self.request)
 
         self._write_head()
 
@@ -456,11 +183,9 @@ class LowLevelAdmin(ObjectApplication):
         # Verwaltung für Einstellungen aus der Datenbank
         self.preferences            = preferences.preferences(self.request, config.config)
         self.request.preferences    = self.preferences
-        self.request.exposed.append("preferences") # An Debug-Info dranpacken
 
         # Passt die verwendeten Pfade an.
         self.request.URLs = preferences.URLs(self.request)
-        self.request.exposed.append("URLs") # An Debug-Info dranpacken
 
         tools.request           = self.request # Request Objekt an tools übergeben
         self.request.tools      = tools
@@ -470,26 +195,38 @@ class LowLevelAdmin(ObjectApplication):
         #~ self.request.db = SQL_wrapper.SQL_wrapper(self.request)
         self.db = self.request.db
 
-        # Menügenerator in die Basisklasse "einflanzen"
-        base.MenuGenerator = MyMenuGenerator(self.request, self.root)
+        # Menügenerator in die Basisklasse "einpflanzen"
+        ObjectApp_Base.MenuGenerator = menu.Install_MenuGenerator(
+            self.response, self.root,
+            blacklist = ("response",)
+        )
+
+        # Der Basisklasse das response Object einpflanzen, damit es auch ausgaben machen kann.
+        ObjectApp_Base.response = self.response
 
 
     def process_request(self):
-        super(LowLevelAdmin, self).process_request()
-        self.on_close()
+        super(PyLucidInstallApp, self).process_request()
 
-    def on_close(self):
-        self.request.echo(self.page_msg.get())
-        self.request.write(HTML_bottom)
+        pathInfo = self.request.environ.get('PATH_INFO', '/')
+        pathInfo = urllib.unquote(pathInfo)
+        try:
+            pathInfo = unicode(pathInfo, "utf-8")
+        except:
+            pass
+
+        #~ make_menu
+
+        self.response.write(self.page_msg.get())
+        self.response.write(HTML_bottom)
         #~ self.db.close()
+        return self.response
+
 
     def _write_head(self, backlink=True):
-        self.request.write(HTML_head)
+        self.response.write(HTML_head)
 
 
 
-app = LowLevelAdmin
+app = PyLucidInstallApp
 
-if __name__ == '__main__':
-    from colubrid import execute
-    execute()
