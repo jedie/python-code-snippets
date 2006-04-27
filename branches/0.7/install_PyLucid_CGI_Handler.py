@@ -6,16 +6,12 @@
 
 #~ from install_PyLucid_app import app
 
-#~ try:
-    #~ from install_PyLucid_app import exports
-#~ except ImportError:
-    #~ exports = {}
+from PyLucid import PEP333_WSGI_CGIServer as CGIServer
 
-from colubrid.server import CGIServer
 from colubrid.debug import DebuggedApplication
 
 if __name__ == "__main__":
     app = DebuggedApplication('install_PyLucid_app:app')
-    CGIServer(app).run()
+    CGIServer.run_with_cgi(app)
     #~ CGIServer(DebuggedApplication(app), exports).run()
     #~ CGIServer(DebuggedApplication(app)).run()
