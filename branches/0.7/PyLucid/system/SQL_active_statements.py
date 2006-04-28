@@ -131,7 +131,7 @@ class active_statements(passive_statements):
     #_____________________________________________________________________________
     ## InterneSeiten
 
-    def print_internal_page(self, internal_page_name, page_dict={}):
+    def get_rendered_internal_page(self, internal_page_name, page_dict={}):
         """
         Interne Seite aufgeüllt mit Daten ausgeben. Diese Methode sollte immer
         verwendet werden, weil sie eine gescheite Fehlermeldung anzeigt.
@@ -143,8 +143,10 @@ class active_statements(passive_statements):
             internal_page_data = self.get_internal_page_data(internal_page_name)
         except Exception, e:
             import inspect
-            print "[Can't print internal page '%s' (from '...%s' line %s): %s]" % (
-                internal_page_name, inspect.stack()[1][1][-20:], inspect.stack()[1][2], e
+            self.page_msg(
+                "[Can't print internal page '%s' (from '...%s' line %s): %s]" % (
+                    internal_page_name, inspect.stack()[1][1][-20:], inspect.stack()[1][2], e
+                )
             )
             if not self.config.system.ModuleManager_error_handling: raise
             return
@@ -165,7 +167,7 @@ class active_statements(passive_statements):
 
         content = internal_page_data["content"]
         try:
-            print content % page_dict
+            return content % page_dict
         except UnicodeError, e:
             self.page_msg("UnicodeError: Can't render internal page: %s" % e)
             self.page_msg("(Try to go around.)")

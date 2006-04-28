@@ -28,7 +28,10 @@ import socket, urllib2, re, time
 
 class IncludeRemote:
 
-    def __init__( self, PyLucid ):
+    def __init__( self, request, response):
+        #~ self.request = request
+        #~ self.response = response
+
         # Es werden keine PyLucid-Objekte benötigt...
         pass
 

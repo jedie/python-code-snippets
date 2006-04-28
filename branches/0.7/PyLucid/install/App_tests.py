@@ -28,23 +28,23 @@ class tests(ObjectApp_Base):
         self.response.write("dbapi.......: ")
         try:
             self.response.write(
-                "%s %s\n" % (self.db.dbapi.__name__, self.db.dbapi.__version__)
+                "%s %s\n" % (self._db.dbapi.__name__, self._db.dbapi.__version__)
             )
         except Exception, e:
             self.response.write("(Error: %s)" % e)
 
-        self.response.write("paramstyle..: %s\n" % self.db.paramstyle)
-        self.response.write("placeholder.: %s\n" % self.db.placeholder)
+        self.response.write("paramstyle..: %s\n" % self._db.paramstyle)
+        self.response.write("placeholder.: %s\n" % self._db.placeholder)
 
         self.response.write("</pre>")
         self.response.write("<h3>table list</h3>")
         self.response.write(
             "<small>(only tables with prefix '%s')</small>" % \
-                                                    self.db.tableprefix
+                                                    self._db.tableprefix
         )
         self.response.write("<ul>")
 
-        for tableName in self.db.get_tables():
+        for tableName in self._db.get_tables():
             self.response.write("<li>%s</li>" % tableName)
 
         self.response.write("</ul>")

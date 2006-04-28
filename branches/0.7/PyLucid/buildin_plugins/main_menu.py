@@ -10,9 +10,11 @@ Das Menü wird eingebunden mit dem lucid-Tag:
 <lucidTag:main_menu/>
 """
 
-__version__="0.0.13"
+__version__="0.1"
 
 __history__="""
+v0.1
+    - Anpassung an colubrid 1.0
 v0.0.13
     - Änderung am Aufbau des HTML
 v0.0.12
@@ -55,10 +57,11 @@ import re, os, sys, urllib, cgi
 
 class main_menu:
 
-    def __init__(self, request):
+    def __init__(self, request, response):
+        #~ self.request = request
+        self.response = response
 
         # shorthands
-        #~ self.request        = request
         self.db             = request.db
         #~ self.CGIdata        = PyLucid["CGIdata"]
         self.session        = request.session
@@ -68,7 +71,7 @@ class main_menu:
         self.page_msg       = request.page_msg
 
         self.menulink  = '<a%(style)s class="level%(level)s" href="'
-        self.menulink += self.URLs["link"]
+        self.menulink += self.URLs["link"].replace("%","%%") # StringOperator-Escape
         self.menulink += '%(link)s" title="%(title)s">%(name)s</a>'
 
         self.current_page_id  = request.session["page_id"]
@@ -94,7 +97,7 @@ class main_menu:
         self.menudata.reverse()
 
         # Generiert das Menü aus self.menudata
-        print self.make_menu()
+        self.make_menu()
 
     def where_filter( self, where_rules ):
         """
@@ -149,7 +152,7 @@ class main_menu:
             # Unterste Ebene noch nicht erreicht -> rekursiver Aufruf
             self.create_menudata( parent[0]["parent"] )
 
-    def make_menu( self, menulevel=0, parentname="" ):
+    def make_menu(self, menulevel=0, parentname=""):
         """
         Erstellt das Menü aus self.menudata in einer Rekursiven-Schleife
         """
@@ -171,7 +174,9 @@ class main_menu:
         spacer = " " * (menulevel * 2)
 
         # List Anfang, default: <ul>
-        result = spacer + self.preferences["mainMenu"]["begin"] + "\n"
+        self.response.write(
+            "%s%s\n" % (spacer, self.preferences["mainMenu"]["begin"])
+        )
 
         for menuitem in leveldata:
             name = menuitem["name"]
@@ -187,15 +192,19 @@ class main_menu:
 
             link = "%s/%s" % ( parentname, urllib.quote_plus( name ) )
 
-            result += spacer + self.preferences["mainMenu"]["before"] + "\n"
-            result += " " * ((menulevel+1) * 2) + self.menulink % {
-                    "style" : CSS_style_tag,
-                    "level" : menulevel,
-                    "link"  : link,
-                    "name"  : cgi.escape( name ),
-                    "title" : cgi.escape( title )
-                }
-            result += "\n"
+            self.response.write(
+                "%s%s\n" % (spacer, self.preferences["mainMenu"]["before"])
+            )
+
+            self.response.write(" " * ((menulevel+1) * 2))
+            htmlLink = self.menulink % {
+                "style" : CSS_style_tag,
+                "level" : menulevel,
+                "link"  : link,
+                "name"  : cgi.escape( name ),
+                "title" : cgi.escape( title )
+            }
+            self.response.write("%s\n" % htmlLink)
 
             if higher_level_parent != False:
                 # Generell gibt es noch eine höhere Ebene
@@ -203,44 +212,17 @@ class main_menu:
                 if menuitem["id"] == higher_level_parent:
                     # Es wurde der Menüpunkt erreicht, der das Untermenü "enthält",
                     # deswegen kommt ab hier erstmal das Untermenü rein
-                    result += self.make_menu( menulevel+1, link  )
+                    self.make_menu(menulevel+1, link)
 
-            result += spacer + self.preferences["mainMenu"]["after"]
-            result += "\n"
+            self.response.write(
+                "%s%s\n" % (spacer, self.preferences["mainMenu"]["after"])
+            )
 
         #~ mainMenu - {'begin': '<ul>', 'finish': '</ul>', 'after': '</li>', 'currentAfter': '', 'currentBefore': '', 'before': '<li>'}
         # List Ende, default: </ul>
-        result += spacer + self.preferences["mainMenu"]["finish"] + "\n"
-
-        return result
-
-
-
-#_______________________________________________________________________
-# Allgemeine Funktion, um die Aktion zu starten
-
-#~ def PyLucid_action( PyLucid_objects ):
-    #~ # Aktion starten
-    #~ return menugenerator( PyLucid_objects ).generate()
-
-
-
-if __name__ == "__main__":
-    # Aufruf per <lucidFunction:IncludeRemote> vom lucidCMS (also die PHP-Version)
-    sys.path.insert( 0, "../" )
-    from PyLucid_system import SQL, sessiondata
-    import config
-    config.system.poormans_url ="X"
-    print "Content-type: text/html\n"
-    db_handler = SQL.db()
-    config.readpreferences( db_handler )
-    CGIdata = sessiondata.CGIdata( db_handler )
-    MyMG = menugenerator( db_handler, CGIdata, config )
-    print MyMG.generate()
-    db_handler.close()
-
-
-
+        self.response.write(
+            "%s%s\n" % (spacer, self.preferences["mainMenu"]["finish"])
+        )
 
 
 

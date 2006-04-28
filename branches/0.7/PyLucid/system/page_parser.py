@@ -135,11 +135,11 @@ class render:
     """
     Parsed die Seite und wendes das Markup an.
     """
-    def __init__(self, request):
+    def __init__(self, request, response):
+        self.request        = request
+        self.response       = response
 
         # shorthands
-        self.request        = request
-        self.GET            = request.GET
         self.page_msg       = request.page_msg
         self.db             = request.db
         self.session        = request.session
@@ -152,7 +152,7 @@ class render:
     def render_page(self):
         """ Baut die Seite zusammen """
         template_data = self.db.side_template_by_id(self.session["page_id"])
-        self.parser.parse(template_data, self.request)
+        self.parser.parse(template_data, self.response)
 
     def render( self, side_data ):
 
@@ -169,7 +169,7 @@ class render:
         self.parser.tag_data["page_keywords"]       = side_data["keywords"]
         self.parser.tag_data["page_description"]    = side_data["description"]
 
-        if self.GET.has_key("command"):
+        if self.request.args.has_key("command"):
             # Ein Kommando soll ausgeführt werden -> Interne Seite
             self.parser.tag_data["robots"] = self.config.system.robots_tag["internal_pages"]
         else:

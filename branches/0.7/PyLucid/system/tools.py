@@ -47,9 +47,6 @@ request = None
 
 #________________________________________________________________________________________________
 class echo:
-    #~ def __init__(self):
-        #~ self.response = response
-
     def __call__(self, *msg):
         response.write(
             "%s <br />\n" % " ".join([cgi.escape(str(i)) for i in msg])
