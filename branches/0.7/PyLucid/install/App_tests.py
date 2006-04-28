@@ -20,11 +20,42 @@ class tests(ObjectApp_Base):
             if k == "dbPassword":
                 v = "***"
             self.response.write("%-20s: %s\n" % (k,v))
+
         self.response.write("</pre>")
+        self.response.write("<h3>db api info</h3>")
+        self.response.write("<pre>")
+
+        self.response.write("dbapi.......: ")
+        try:
+            self.response.write(
+                "%s %s\n" % (self.db.dbapi.__name__, self.db.dbapi.__version__)
+            )
+        except Exception, e:
+            self.response.write("(Error: %s)" % e)
+
+        self.response.write("paramstyle..: %s\n" % self.db.paramstyle)
+        self.response.write("placeholder.: %s\n" % self.db.placeholder)
+
+        self.response.write("</pre>")
+        self.response.write("<h3>table list</h3>")
+        self.response.write(
+            "<small>(only tables with prefix '%s')</small>" % \
+                                                    self.db.tableprefix
+        )
+        self.response.write("<ul>")
+
+        for tableName in self.db.get_tables():
+            self.response.write("<li>%s</li>" % tableName)
+
+        self.response.write("</ul>")
+
 
     def module_admin_info(self):
         "Information about installed modules"
         self._write_info()
+
+        self.response.write("Not ready, yet!")
+        return
 
         self.PyLucid["URLs"]["current_action"] = "?action=module_admin&sub_action=module_admin_info"
         module_admin = self._get_module_admin()

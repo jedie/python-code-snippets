@@ -39,7 +39,21 @@ from PyLucid.python_backports.utils import *
 #~ print "Content-type: text/html\n\n<pre>%s</pre>" % __file__
 #~ print "<pre>"
 
+# Die response und request Objekte werden von der App hier eingepflanzt und
+# können so von allen Tools benutzt werden
+response = None
+request = None
 
+
+#________________________________________________________________________________________________
+class echo:
+    #~ def __init__(self):
+        #~ self.response = response
+
+    def __call__(self, *msg):
+        response.write(
+            "%s <br />\n" % " ".join([cgi.escape(str(i)) for i in msg])
+        )
 #________________________________________________________________________________________________
 
 def convert_date_from_sql( RAWsqlDate, format="preferences" ):

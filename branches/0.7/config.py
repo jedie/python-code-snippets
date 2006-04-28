@@ -44,8 +44,9 @@ import os
 
 config = {
     ## Database connection settings
-    #~ "dbTyp"             : "sqlite",
-    "dbHost"            : 'localhost', # Evtl. muß hier die Domain rein
+    "dbTyp"             : "MySQLdb", # "sqlite"
+    #~ "dbHost"            : 'localhost', # Evtl. muß hier die Domain rein
+    "dbHost"            : '192.168.6.2', # Evtl. muß hier die Domain rein
     "dbDatabaseName"    : 'DatabaseName',
     "dbUserName"        : 'UserName',
     "dbPassword"        : 'Password',

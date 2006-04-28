@@ -5,6 +5,9 @@
 Menu Routinen für "install PyLucid"
 """
 
+import inspect, sys
+
+
 class ObjectApp_Base(object):
     """ Basisklasse von der jede ObjApp-Klasse ableitet """
     def _get_module_admin(self):
@@ -17,15 +20,16 @@ class ObjectApp_Base(object):
         return module_admin
 
     def _write_info(self):
-        #~ self.response.write("<pre>")
         try:
-            stack_info = inspect.stack()[1]
+            stack_info = inspect.stack()
+            #~ self.response.echo(stack_info)
+            stack_info = stack_info[1]
             attr_name = stack_info[3]
             info = getattr(self, attr_name).__doc__
         except:
-            pass
-        else:
-            self.response.write("<h3>%s</h3>" % info)
+            info = self.request.environ['PATH_INFO']
+
+        self.response.write("<h3>%s</h3>" % info)
 
         self._write_backlink()
 

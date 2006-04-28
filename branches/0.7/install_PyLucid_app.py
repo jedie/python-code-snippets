@@ -166,6 +166,14 @@ class PyLucidInstallApp(ObjectApplication):
     def __init__(self, *args):
         super(PyLucidInstallApp, self).__init__(*args)
         self.response = HttpResponse()
+        #~ self.request.response = self.response
+
+        # Tools
+        tools.request       = self.request  # Request Objekt an tools übergeben
+        tools.response      = self.response # Response Objekt an tools übergeben
+        self.request.tools  = tools         # Tools an Request Objekt anhängen
+
+        self.response.echo = tools.echo() # Echo Methode an response anhängen
 
         # Jinja-Context anhängen
         self.request.context = {}
@@ -175,34 +183,42 @@ class PyLucidInstallApp(ObjectApplication):
         self._write_head()
 
         # Speichert Nachrichten die in der Seite angezeigt werden sollen
-        self.page_msg           = sessiondata.page_msg(debug=True)
-        #~ self.page_msg           = sessiondata.page_msg(debug=False)
-        self.request.page_msg   = self.page_msg
-        #~ self.request.exposed.append("page_msg") # An Debug-Info dranpacken
+        self.request.page_msg = sessiondata.page_msg(debug=True)
+        #~ self.request.page_msg = sessiondata.page_msg(debug=False)
 
         # Verwaltung für Einstellungen aus der Datenbank
-        self.preferences            = preferences.preferences(self.request, config.config)
-        self.request.preferences    = self.preferences
+        self.request.preferences = preferences.preferences(self.request, config.config)
 
         # Passt die verwendeten Pfade an.
         self.request.URLs = preferences.URLs(self.request)
 
-        tools.request           = self.request # Request Objekt an tools übergeben
-        self.request.tools      = tools
-
         # Anbindung an die SQL-Datenbank, mit speziellen PyLucid Methoden
-        self.request.db = db.get_PyLucid_Database(self.request)
-        #~ self.request.db = SQL_wrapper.SQL_wrapper(self.request)
-        self.db = self.request.db
+        self.request.db = db.db(self.request, self.response)
 
-        # Menügenerator in die Basisklasse "einpflanzen"
+        # Shorthands
+        self.page_msg = self.request.page_msg
+        self.db = self.request.db
+        #~ self.preferences = self.request.preferences
+
+        # Die Basisklasse für die einzelnen Module vorbereiten
+        self.setup_ObjectApp_Base()
+
+    def setup_ObjectApp_Base(self):
+        """
+        Bereitet die Basisklasse vor (von dieser erben alle ObjApp-Module)
+        """
+        # Menügenerator "einpflanzen"
         ObjectApp_Base.MenuGenerator = menu.Install_MenuGenerator(
             self.response, self.root,
             blacklist = ("response",)
         )
 
-        # Der Basisklasse das response Object einpflanzen, damit es auch ausgaben machen kann.
+        # response und request einpflanzen
         ObjectApp_Base.response = self.response
+        ObjectApp_Base.request = self.request
+
+        # Shorthands übergeben
+        ObjectApp_Base.db = self.db
 
 
     def process_request(self):
@@ -230,3 +246,8 @@ class PyLucidInstallApp(ObjectApplication):
 
 app = PyLucidInstallApp
 
+if __name__ == '__main__':
+    from colubrid.debug import DebuggedApplication
+    from colubrid import execute
+    app = DebuggedApplication('install_PyLucid_app:app')
+    execute(app, reload=True)

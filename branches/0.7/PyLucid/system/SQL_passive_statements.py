@@ -19,7 +19,7 @@ v0.1
 
 import urllib, pickle, sys, time
 
-from PyLucid.system.db.SQL_wrapper import SQL_wrapper
+from PyLucid.system.DBwrapper.DBwrapper import SQL_wrapper
 from PyLucid.system.exceptions import *
 
 debug = False
@@ -29,32 +29,18 @@ class passive_statements(SQL_wrapper):
     Erweitert den allgemeinen SQL-Wrapper (mySQL.py) um
     spezielle PyLucid-Funktionen.
     """
-    def __init__(self, *args):
-        super(passive_statements, self).__init__(*args)
-
-        debug = False
-        # SQL connection aufbauen
-        #~ super(db, self).__init__(request, debug)
+    #~ def __init__(self, *args, **kwargs):
+        #~ super(passive_statements, self).__init__(*args, **kwargs)
 
 
-        # shorthands
-        self.page_msg       = self.request.page_msg
-        #~ self.CGIdata        = self.request.CGIdata
-        self.tools          = self.request.tools
-        self.preferences    = self.request.preferences
-
-        # Table-Prefix for all SQL-commands:
-        self.tableprefix = self.preferences["dbTablePrefix"]
-
-    def _error( self, type, txt ):
-        self.request.headers['Content-Type'] = 'text/html'
-        self.request.echo("<h1>SQL error</h1>")
-        self.request.echo("<h1>%s</h1>" % type)
-        self.request.echo("<p>%s</p>" % txt)
+    def _error(self, type, txt):
+        sys.stderr.write("<h1>SQL error</h1>")
+        sys.stderr.write("<h1>%s</h1>" % type)
+        sys.stderr.write("<p>%s</p>" % txt)
         import sys
         sys.exit()
 
-    def _type_error( self, itemname, item ):
+    def _type_error(self, itemname, item):
         import cgi
         self._error(
             "%s is not String!" % itemname,
@@ -75,7 +61,7 @@ class passive_statements(SQL_wrapper):
             limit           = 1
         )[0]["id"]
 
-    def get_side_data( self, page_id ):
+    def get_side_data(self, page_id):
         "Holt die nötigen Informationen über die aktuelle Seite"
 
         side_data = self.select(
@@ -98,7 +84,7 @@ class passive_statements(SQL_wrapper):
 
         return side_data
 
-    def side_template_by_id( self, page_id ):
+    def side_template_by_id(self, page_id):
         "Liefert den Inhalt des Template-ID und Templates für die Seite mit der >page_id< zurück"
         template_id = self.select(
                 select_items    = ["template"],
@@ -141,7 +127,7 @@ class passive_statements(SQL_wrapper):
 
         return page_template
 
-    #~ def get_preferences( self ):
+    #~ def get_preferences(self):
         #~ "Die Preferences aus der DB holen. Wird verwendet in config.readpreferences()"
         #~ value = self.select(
                 #~ select_items    = ["section", "varName", "value"],
@@ -150,7 +136,7 @@ class passive_statements(SQL_wrapper):
 
 
 
-    def side_id_by_name( self, page_name ):
+    def side_id_by_name(self, page_name):
         "Liefert die Side-ID anhand des >page_name< zurück"
         result = self.select(
                 select_items    = ["id"],
@@ -165,7 +151,7 @@ class passive_statements(SQL_wrapper):
         else:
             return False
 
-    def side_name_by_id( self, page_id ):
+    def side_name_by_id(self, page_id):
         "Liefert den Page-Name anhand der >page_id< zurück"
         return self.select(
                 select_items    = ["name"],
@@ -173,7 +159,7 @@ class passive_statements(SQL_wrapper):
                 where           = ("id",page_id)
             )[0]["name"]
 
-    def parentID_by_name( self, page_name ):
+    def parentID_by_name(self, page_name):
         """
         liefert die parend ID anhand des Namens zurück
         """
@@ -194,7 +180,7 @@ class passive_statements(SQL_wrapper):
                 where           = ("id",page_id)
             )[0]["parent"]
 
-    def side_title_by_id( self, page_id ):
+    def side_title_by_id(self, page_id):
         "Liefert den Page-Title anhand der >page_id< zurück"
         return self.select(
                 select_items    = ["title"],
@@ -232,7 +218,7 @@ class passive_statements(SQL_wrapper):
 
         return CSS_content
 
-    def get_page_data_by_id( self, page_id ):
+    def get_page_data_by_id(self, page_id):
         "Liefert die Daten zum Rendern der Seite zurück"
         data = self.select(
                 select_items    = ["content", "markup"],
@@ -244,7 +230,7 @@ class passive_statements(SQL_wrapper):
 
         return data
 
-    def page_items_by_id( self, item_list, page_id ):
+    def page_items_by_id(self, item_list, page_id):
         "Allgemein: Daten zu einer Seite"
         page_items = self.select(
                 select_items    = item_list,
@@ -256,7 +242,7 @@ class passive_statements(SQL_wrapper):
                 page_items[i]=""
         return page_items
 
-    def get_all_preferences( self ):
+    def get_all_preferences(self):
         """
         Liefert Daten aus der Preferences-Tabelle
         wird in PyLucid_system.preferences verwendet
@@ -266,7 +252,7 @@ class passive_statements(SQL_wrapper):
                 from_table      = "preferences",
             )
 
-    def get_page_link_by_id( self, page_id ):
+    def get_page_link_by_id(self, page_id):
         """ Generiert den absolut-Link zur Seite """
         data = []
         while page_id != 0:
@@ -285,7 +271,7 @@ class passive_statements(SQL_wrapper):
 
         return "/" + "/".join(data)
 
-    def get_sitemap_data( self ):
+    def get_sitemap_data(self):
         """ Alle Daten die für`s Sitemap benötigt werden """
         return self.select(
                 select_items    = ["id","name","title","parent"],
@@ -307,42 +293,42 @@ class passive_statements(SQL_wrapper):
     #_____________________________________________________________________________
     ## Funktionen für Styles, Templates usw.
 
-    def get_style_list( self ):
+    def get_style_list(self):
         return self.select(
                 select_items    = ["id","name","description"],
                 from_table      = "styles",
                 order           = ("name","ASC"),
             )
 
-    def get_style_data( self, style_id ):
+    def get_style_data(self, style_id):
         return self.select(
                 select_items    = ["name","description","content"],
                 from_table      = "styles",
                 where           = ("id", style_id)
             )[0]
 
-    def get_style_data_by_name( self, style_name ):
+    def get_style_data_by_name(self, style_name):
         return self.select(
                 select_items    = ["description","content"],
                 from_table      = "styles",
                 where           = ("name", style_name)
             )[0]
 
-    def get_template_list( self ):
+    def get_template_list(self):
         return self.select(
                 select_items    = ["id","name","description"],
                 from_table      = "templates",
                 order           = ("name","ASC"),
             )
 
-    def get_template_data( self, template_id ):
+    def get_template_data(self, template_id):
         return self.select(
                 select_items    = ["name","description","content"],
                 from_table      = "templates",
                 where           = ("id", template_id)
             )[0]
 
-    def get_template_data_by_name( self, template_name ):
+    def get_template_data_by_name(self, template_name):
         return self.select(
                 select_items    = ["description","content"],
                 from_table      = "templates",
@@ -352,7 +338,7 @@ class passive_statements(SQL_wrapper):
     #_____________________________________________________________________________
     ## InterneSeiten
 
-    def get_internal_page_list( self ):
+    def get_internal_page_list(self):
         return self.select(
                 select_items    = [
                     "name","plugin_id","description",
@@ -367,7 +353,7 @@ class passive_statements(SQL_wrapper):
             page_dict[page["name"]] = page
         return page_dict
 
-    def get_internal_category( self ):
+    def get_internal_category(self):
         return self.select(
                 select_items    = ["id","module_name"],
                 from_table      = "plugins",
@@ -453,7 +439,7 @@ class passive_statements(SQL_wrapper):
         return internal_page
 
 
-    #~ def get_internal_group_id( self ):
+    #~ def get_internal_group_id(self):
         #~ """
         #~ Liefert die ID der internen PyLucid Gruppe zurück
         #~ Wird verwendet für interne Seiten!
@@ -487,7 +473,7 @@ class passive_statements(SQL_wrapper):
     #_____________________________________________________________________________
     ## Userverwaltung
 
-    def normal_login_userdata( self, username ):
+    def normal_login_userdata(self, username):
         "Userdaten die bei einem normalen Login benötigt werden"
         return self.select(
                 select_items    = ["id", "password", "admin"],
@@ -495,14 +481,14 @@ class passive_statements(SQL_wrapper):
                 where           = ("name", username)
             )[0]
 
-    def userdata( self, username ):
+    def userdata(self, username):
         return self.select(
                 select_items    = ["id", "name","realname","email","admin"],
                 from_table      = "md5users",
                 where           = ("name", username)
             )[0]
 
-    def md5_login_userdata( self, username ):
+    def md5_login_userdata(self, username):
         "Userdaten die beim JS-md5 Login benötigt werden"
         return self.select(
                 select_items    = ["id", "pass1", "pass2", "admin"],
@@ -700,7 +686,7 @@ class passive_statements(SQL_wrapper):
     #_____________________________________________________________________________
     ## Rechteverwaltung
 
-    def get_permitViewPublic( self, page_id ):
+    def get_permitViewPublic(self, page_id):
         return self.select(
                 select_items    = [ "permitViewPublic" ],
                 from_table      = "pages",
