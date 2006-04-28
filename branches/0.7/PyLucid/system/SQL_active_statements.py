@@ -17,7 +17,7 @@ v0.1
 
 import pickle
 
-from PyLucid.system.db.SQL_passive_statements import passive_statements
+from PyLucid.system.SQL_passive_statements import passive_statements
 from PyLucid.system.exceptions import *
 
 debug = False
@@ -27,8 +27,8 @@ class active_statements(passive_statements):
     Erweitert den allgemeinen SQL-Wrapper (mySQL.py) um
     spezielle PyLucid-Funktionen.
     """
-    def __init__(self, *args):
-        super(active_statements, self).__init__(*args)
+    #~ def __init__(self, *args, **kwargs):
+        #~ super(active_statements, self).__init__(*args, **kwargs)
 
     #_____________________________________________________________________________
     ## Funktionen für das ändern der Seiten
@@ -47,7 +47,7 @@ class active_statements(passive_statements):
     #_____________________________________________________________________________
     ## Funktionen für das ändern des Looks (Styles, Templates usw.)
 
-    def update_style( self, style_id, style_data ):
+    def update_style(self, style_id, style_data):
         self.update(
             table   = "styles",
             data    = style_data,
@@ -99,7 +99,7 @@ class active_statements(passive_statements):
         style_names = [i["name"] for i in style_names]
         return style_names
 
-    def update_template( self, template_id, template_data ):
+    def update_template(self, template_id, template_data):
         self.update(
             table   = "templates",
             data    = template_data,
@@ -107,20 +107,20 @@ class active_statements(passive_statements):
             limit   = 1
         )
 
-    def new_template( self, template_data ):
+    def new_template(self, template_data):
         self.insert(
             table   = "templates",
             data    = template_data,
         )
 
-    def delete_template( self, template_id ):
+    def delete_template(self, template_id):
         self.delete(
             table   = "templates",
             where   = ("id",template_id),
             limit   = 1
         )
 
-    def change_page_position( self, page_id, position ):
+    def change_page_position(self, page_id, position):
         self.update(
             table   = "pages",
             data    = {"position":position},
@@ -251,7 +251,7 @@ class active_statements(passive_statements):
         template = simpleTAL.compileHTMLTemplate(internal_page_content, inputEncoding="UTF-8")
         template.expand(context, self.request, outputEncoding="UTF-8")
 
-    def update_internal_page( self, internal_page_name, page_data ):
+    def update_internal_page(self, internal_page_name, page_data):
         self.update(
             table   = "pages_internal",
             data    = page_data,
@@ -350,7 +350,7 @@ class active_statements(passive_statements):
     #_____________________________________________________________________________
     ## Userverwaltung
 
-    def add_md5_User( self, name, realname, email, pass1, pass2, admin ):
+    def add_md5_User(self, name, realname, email, pass1, pass2, admin):
         "Hinzufügen der Userdaten in die PyLucid's JD-md5-user-Tabelle"
         self.insert(
                 table = "md5users",
