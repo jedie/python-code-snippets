@@ -155,8 +155,6 @@ class Database(object):
                 msg += " [%s]" % e
                 raise ConnectionError(msg)
 
-            self.cursor = self.conn.cursor()
-
         #_____________________________________________________________________
         elif self.dbtyp == "sqlite":
             try:
@@ -184,7 +182,8 @@ class Database(object):
 
             self.conn.text_factory = str
 
-            self.cursor = self.conn.cursor()
+        self.dbapi = dbapi
+        self.cursor = self.conn.cursor()
         #_____________________________________________________________________
         #~ elif self.dbtyp == "odbc":
             #~ try:
@@ -586,22 +585,27 @@ class SQL_wrapper(Database):
         """
         Liste aller Tabellennamen
         """
-        if self.dbtyp == "mysql":
-            return self.process_statement("SHOW TABLES")
+        names = []
+        if self.dbtyp == "MySQLdb":
+            for line in self.process_statement("SHOW TABLES"):
+                names.append(line.values()[0])
         elif self.dbtyp == "sqlite":
-            names = []
             for line in self.process_statement(
             "SELECT tbl_name FROM sqlite_master;"):
                 if not line["tbl_name"] in names:
                     names.append(line["tbl_name"])
-            return names
+        else:
+            raise TypeError, "DBtyp %s unknown" % self.dbtyp
+
+        return names
 
     def get_tables(self):
         """
         Liefert alle Tabellennamen die das self.tableprefix haben
         """
+        allTables = self.get_all_tables()
         tables = []
-        for tablename in self.get_all_tables():
+        for tablename in allTables:
             if tablename.startswith(self.tableprefix):
                 tables.append(tablename)
         return tables
