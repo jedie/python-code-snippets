@@ -133,6 +133,10 @@ config = {
     # auch wirklich eingeschaltet. So sehen Suchmaschienen die Seiten und nicht
     # nur 404-Fehlerseiten ;)
     "mod_rewrite_user_agents" : ("Gecko","Mozilla","Opera"),
+
+
+    "installURLprefix" : "_install",
+    "commandURLprefix" : "_command",
 }
 
 

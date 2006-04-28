@@ -47,7 +47,9 @@ indexSide = "Start"
 
 
 class back_links:
-    def __init__(self, request):
+    def __init__(self, request, response):
+        #~ self.request = request
+        self.response = response
 
         # shorthands
         self.db             = request.db

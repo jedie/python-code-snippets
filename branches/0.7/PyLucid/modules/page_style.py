@@ -17,28 +17,38 @@ v0.1.0
 import sys
 
 class page_style:
-    def __init__(self, request):
-        # shorthands
+    def __init__(self, request, response):
         self.request    = request
-        self.db         = request.db
-        self.URLs       = request.URLs
+        self.response   = response
+
+        # shorthands
+        self.db             = request.db
+        self.URLs           = request.URLs
+        self.preferences    = request.preferences
+        self.session        = request.session
 
     def lucidTag(self):
-        #~ self.request.write(
-        print '<link rel="stylesheet" type="text/css" href="static_serve_handler.py" />'
-        #~ )
-        #~ self.request.write(
-            #~ '<link rel="stylesheet" type="text/css" href="%s%s" />' % (self.URLs["action"], "print_current_style")
-        #~ )
+        self.embed(self.session["page_id"])
+        #self.response.write(
+        #    '<link rel="stylesheet" type="text/css" \
+        #    href="%s/page_style/print_current_style" />' % (
+        #        self.preferences["commandURLprefix"]
+        #    )
+        #)
 
     def print_current_style(self):
         """
         Dies ist nur eine pseudo-Methode, denn die CSS anfrage wird direkt in der
         index.py mit check_CSS_request() beantwortet!
         """
-        self.page_msg("print_current_style() ERROR!!!")
+        #self.response.write("Style!")
+        self.embed(self.session["page_id"])
 
     def embed(self, page_id):
-        print '<style type="text/css">'
-        print self.db.side_style_by_id(page_id)
-        print '</style>'
+        self.response.write('<style type="text/css">')
+        self.response.write(self.db.side_style_by_id(page_id))
+        self.response.write('</style>')
+
+
+
+

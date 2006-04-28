@@ -575,16 +575,7 @@ class passive_statements(SQL_wrapper):
         )
         method_properties = unpickle(method_properties)[0]
 
-        # CGI_dependent_actions daten holen
-        CGI_dependent_data = self.select(
-            select_items    = ["method_name"] + data_items,
-            from_table      = "plugindata",
-            where           = ("parent_method_id", method_properties["id"]),
-        )
-        #~ self.page_msg(CGI_dependent_data, plugin_id, method_name)
-        CGI_dependent_data = unpickle(CGI_dependent_data)
-
-        return method_properties, CGI_dependent_data
+        return method_properties
 
     def get_method_id(self, plugin_id, method_name):
         """ Wird beim installieren eines Plugins benötigt """

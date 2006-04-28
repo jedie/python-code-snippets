@@ -5,7 +5,7 @@
 Menu Routinen für "install PyLucid"
 """
 
-import inspect, sys
+import inspect, sys, posixpath
 
 
 class ObjectApp_Base(object):
@@ -34,9 +34,7 @@ class ObjectApp_Base(object):
         self._write_backlink()
 
     def _write_backlink(self):
-        url_info = ()
-        self.response.write(
-            '<p><a href="%s">%s</a></p>' % (
-                self.request.environ["SCRIPT_ROOT"], "menu"
-            )
+        url = posixpath.join(
+            self._environ["SCRIPT_ROOT"], self._preferences["installURLprefix"]
         )
+        self.response.write('<p><a href="%s">menu</a></p>' % url)

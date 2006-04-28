@@ -13,15 +13,16 @@ v0.1
 """
 
 
-import cgi
+import cgi, posixpath
 
 
 
 class ObjectApp_MenuGenerator(object):
 
-    def __init__(self, response, root, blacklist):
+    def __init__(self, response, root, base_path = "", blacklist=[]):
         self.response = response
         self.root = root
+        self.base_path = base_path.lstrip("/")
         self.blacklist = blacklist
 
     def root_link(self, path, info):
@@ -30,6 +31,7 @@ class ObjectApp_MenuGenerator(object):
 
     def sub_link(self, path, info):
         "Methode zum überscheiben"
+
         self.response.write('<a href="%s">%s</a>' % (path, info))
 
     def _get_objnamelist(self, obj, attr_type):
@@ -39,6 +41,7 @@ class ObjectApp_MenuGenerator(object):
         """
         result = []
         for objname in dir(obj):
+            #~ self.response.echo(objname)
             if objname.startswith("_") or objname in self.blacklist:
                 continue
 
@@ -70,6 +73,7 @@ class ObjectApp_MenuGenerator(object):
         result = []
         objnamelist = self._get_objnamelist(self.root, attr_type="class")
         for info, path, obj_attr in objnamelist:
+            path = posixpath.join(self.base_path, path)
             result.append((path, info))
             temp = []
             subobjnamelist = self._get_objnamelist(obj_attr, attr_type="methods")

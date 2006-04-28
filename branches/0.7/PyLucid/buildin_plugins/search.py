@@ -9,9 +9,11 @@ __author__  = "Jens Diemer (www.jensdiemer.de)"
 __license__ = "GNU General Public License (GPL)"
 __url__     = "http://www.PyLucid.org"
 
-__version__="0.3"
+__version__="0.4"
 
 __history__="""
+v0.4
+    - Anpassung an colubrid 1.0
 v0.3
     - Updates für die neue SQL- und URL-Klasse
 v0.3
@@ -32,7 +34,9 @@ import cgi, time, urllib
 
 
 class search:
-    def __init__(self, request):
+    def __init__(self, request, response):
+        #~ self.request = request
+        self.response = response
 
         # shorthands
         #~ self.request        = request
@@ -50,7 +54,7 @@ class search:
 
         search_string = cgi.escape(search_string).replace('"',"'")
 
-        self.db.print_internal_page(
+        return self.db.get_rendered_internal_page(
             internal_page_name = "search_input_form",
             page_dict = {
                 "url"               : self.URLs["action"] + "do_search",
@@ -60,7 +64,9 @@ class search:
 
     def do_search(self, search_string=""):
         start_time = time.time()
-        print "<h2>search v%s</h2>" % __version__
+        self.response.write(
+            "<h2>search v%s</h2>" % __version__
+        )
 
         self.print_last_search_words()
 
@@ -72,7 +78,9 @@ class search:
         search_words = self.filter_search_string(search_string)
         if not search_words:
             # Alle Wörter waren doof
-            print "<p>Sorry, no search Strings remaining</p>"
+            self.response.write(
+                "<p>Sorry, no search Strings remaining</p>"
+            )
             # Suchmaske anzeigen
             self.lucidTag()
             return
@@ -81,7 +89,9 @@ class search:
         result_count = len(result)
 
         if result_count == 0:
-            print "<p>Sorry, nothing found. Try again:</p>"
+            self.response.write(
+                "<p>Sorry, nothing found. Try again:</p>"
+            )
             self.log(search_string, "search", "False")
             # Such-Eingabemaske wieder anzeigen
             self.lucidTag(search_string)
@@ -89,8 +99,10 @@ class search:
 
         self.log("[%s] Count: %s" % (search_string,result_count), "search", "OK")
 
-        print "<h3>%s results for '%s' (%0.2fsec.):</h3>" % (
-            result_count, cgi.escape(" ".join(search_words)), time.time() - start_time
+        self.response.write(
+            "<h3>%s results for '%s' (%0.2fsec.):</h3>" % (
+                result_count, cgi.escape(" ".join(search_words)), time.time() - start_time
+            )
         )
         self.display_results( result, search_words )
 
@@ -105,8 +117,8 @@ class search:
             order           = ("timestamp","DESC"),
             limit           = (0,5)
         )
-        print "<h4>Last 5 search words:</h4>"
-        print '<ol id="last_search_words">'
+        self.response.write("<h4>Last 5 search words:</h4>\n")
+        self.response.write('<ol id="last_search_words">\n')
         for line in result:
             message = line["message"]
 
@@ -118,10 +130,12 @@ class search:
                 self.URLs["action"], urllib.quote_plus(search_words)
             )
 
-            print '\t<li><a href="%s">%s</a>&nbsp;<small>(%s results, %s)</small></li>' % (
-                url, search_words, count, line["domain"]
+            self.response.write(
+                '\t<li><a href="%s">%s</a>&nbsp;<small>(%s results, %s)</small></li>\n' % (
+                    url, search_words, count, line["domain"]
+                )
             )
-        print "</ol>"
+        self.response.write("</ol>\n")
 
     def filter_search_string(self, RAW_search_string):
         """
@@ -139,8 +153,10 @@ class search:
             elif search_string.count(word) == 0: # Keine doppelten
                 search_string.append(word)
         if ignore != []:
-            print "<p>Ignore: '%s' (too small, min len %s)</p>" % (
-                ",".join([cgi.escape(i) for i in ignore]), min_len
+            self.response.write(
+                "<p>Ignore: '%s' (too small, min len %s)</p>\n" % (
+                    ",".join([cgi.escape(i) for i in ignore]), min_len
+                )
             )
         return search_string
 
@@ -208,18 +224,21 @@ class search:
         Ergebnisse der Suche anzeigen
         """
         text_cut = 50
-        print "<ol>"
+        self.response.write("<ol>\n")
         for hit in result:
-            print "<li>"
-            print '<p><a href="%s%s"><strong>%s</strong>' % (
-                self.URLs["link"], self.db.get_page_link_by_id(hit["id"]), cgi.escape(hit["name"])
+            self.response.write("<li>\n")
+            self.response.write('<p><a href="%s%s"><strong>%s</strong>\n' % (
+                    self.URLs["link"], self.db.get_page_link_by_id(hit["id"]),
+                    cgi.escape(hit["name"])
+                )
             )
             if (hit["title"] != "") and (hit["title"] != None) and hit["title"] != hit["name"]:
-                print " - %s" % cgi.escape(hit["title"])
+                self.response.write(" - %s" % cgi.escape(hit["title"]))
 
-            print "</a>&nbsp;<small>(%s points)</small>" % hit["points"]
-            print "<br />"
-            print "<small>"
+            self.response.write(
+                "</a>&nbsp;<small>(%s points)</small>" % hit["points"]
+            )
+            self.response.write("<br />\n<small>\n")
             for s in search_words:
                 content = cgi.escape(hit["content"])
                 try:
@@ -230,9 +249,9 @@ class search:
                     txt = content[index-text_cut:index+text_cut]
                     txt = txt.replace(s,"<strong>%s</strong>" % s)
                     if txt == "": continue
-                    print "...%s...<br />" % txt
-            print "</small>"
+                    self.response.write("...%s...<br />\n" % txt)
+            self.response.write("</small>\n")
 
-            print "</p></li>"
-        print "</ol>"
+            self.response.write("</p></li>\n")
+        self.response.write("</ol>\n")
 

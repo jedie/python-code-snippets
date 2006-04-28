@@ -184,11 +184,14 @@ class page_msg:
     def __call__(self, *msg):
         """ Fügt eine neue Zeile mit einer Nachricht hinzu """
         if self.debug:
-            import inspect
-            # Angaben zur Datei, Zeilennummer, aus dem die Nachricht stammt
-            filename = inspect.stack()[1][1].split("/")[-1][-20:]
-            fileinfo = "%-20s line %3s: " % (filename, inspect.stack()[1][2])
-            self.data += fileinfo.replace(" ","&nbsp;")
+            try:
+                import inspect
+                # Angaben zur Datei, Zeilennummer, aus dem die Nachricht stammt
+                filename = inspect.stack()[1][1].split("/")[-1][-20:]
+                fileinfo = "%-20s line %3s: " % (filename, inspect.stack()[1][2])
+                self.data += fileinfo.replace(" ","&nbsp;")
+            except Exception, e:
+                self.data += "<small>(inspect Error: %s)</small> " % e
 
         self.data += "%s <br />\n" % " ".join([str(i) for i in msg])
 

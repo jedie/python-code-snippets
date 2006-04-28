@@ -19,7 +19,7 @@ class Install_MenuGenerator(ObjectApp_MenuGenerator):
 
     def root_link(self, path, info):
         "Methode zum Überscheiben"
-        try: # Zahlen bei den Hauptmení±µnkten weg schneiden
+        try: # Zahlen bei den Hauptmenüpunkten weg schneiden
             info = info.split(" ",1)[1]
         except:
             pass
@@ -29,14 +29,12 @@ class Install_MenuGenerator(ObjectApp_MenuGenerator):
 class menu(ObjectApp_Base):
     def index(self):
         "Main Menu"
-        #~ self._write_head(backlink=False)
         self.response.write("Please select:")
-        #~ self.make_menu()
         self.MenuGenerator.make_menu()
 
-    def name(self, arg1="Default", arg2="Default"):
-        """Beispiel für eine Parameter übergabe"""
-        self._info('index.name')
-        self.response.write(
-            'arg1="%s" - arg2="%s"' % (arg1, arg2)
-        )
+    #~ def name(self, arg1="Default", arg2="Default"):
+        #~ """Beispiel für eine Parameter übergabe"""
+        #~ self._info('index.name')
+        #~ self.response.write(
+            #~ 'arg1="%s" - arg2="%s"' % (arg1, arg2)
+        #~ )

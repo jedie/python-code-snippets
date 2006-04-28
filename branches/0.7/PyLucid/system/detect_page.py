@@ -23,10 +23,9 @@ class detect_page:
     Speichert die ID als "page_id"-Key in den Session-Daten, also: request.session["page_id"]
     """
     def __init__(self, request):
+        self.request        = request
 
         # shorthands
-        #~ self.CGIdata        = request.CGIdata
-        self.GET            = request.GET
         self.page_msg       = request.page_msg
         self.db             = request.db
         self.session        = request.session
@@ -39,12 +38,12 @@ class detect_page:
     def detect_page(self):
         "Findet raus welches die aktuell anzuzeigende Seite ist"
 
-        if self.GET.has_key("page_id"):
+        if self.request.args.has_key("page_id"):
             # Bei Modulen kann die ID schon in der URL mitgeschickt werden.
-            self.check_page_id(self.GET["page_id"])
+            self.check_page_id(self.request.args["page_id"])
             return
 
-        if self.GET.has_key("command"):
+        if self.request.args.has_key("command"):
             # Ein internes Kommando (LogIn, EditPage ect.) wurde ausgeführt
             self.set_history_page()
             return
