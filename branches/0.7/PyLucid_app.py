@@ -46,10 +46,18 @@ class PyLucidApp(BaseApplication):
     charset = 'utf-8'
     slash_append = True
 
-    def __init__(self, *args):
-        super(PyLucidApp, self).__init__(*args)
+    def __init__(self, environ, start_response):
+        print " -"*40
+        print environ.get('PATH_INFO', '/')
+        super(PyLucidApp, self).__init__(environ, start_response)
+
         self.response = HttpResponse()
-        #~ self.request.response = self.response
+
+        self.request.init2 = False
+        self.request.log            = None
+        self.request.render         = None
+        self.request.session        = None
+        self.request.module_manager = None
 
         # Tools
         tools.request       = self.request  # Request Objekt an tools übergeben
@@ -107,7 +115,6 @@ class PyLucidApp(BaseApplication):
         # Überprüfe Rechte der Seite
         #~ self.verify_page()
 
-        self.request.parser = page_parser.parser(self.request)
         self.request.render = page_parser.render(self.request, self.response)
 
         # Verwaltung von erweiterungs Modulen/Plugins
@@ -118,33 +125,38 @@ class PyLucidApp(BaseApplication):
 
         # Der ModulManager, wird erst nach dem Parser instanziert. Damit aber
         # der Parser auf ihn zugreifen kann, packen wir ihn einfach dorthin ;)
-        self.request.parser.module_manager = self.request.module_manager
+        #~ self.request.parser.module_manager = self.request.module_manager
+
+        self.request.init2 = True
 
         #Shorthands
-        self.parser = self.request.parser
         self.render = self.request.render
         self.session = self.request.session
         self.module_manager = self.request.module_manager
 
 
     def process_request(self):
-        self.page_msg("jep! Ich lebe...")
-
         pathInfo = self.request.environ.get('PATH_INFO', '/')
+        print "app pathInfo1: |%s|" % pathInfo
+
         pathInfo = urllib.unquote(pathInfo)
         try:
             pathInfo = unicode(pathInfo, "utf-8")
         except:
             pass
 
+        print "app pathInfo2: |%s|" % pathInfo
         if pathInfo.startswith("/%s" % self.preferences["installURLprefix"]):
             self.installPyLucid()
         else:
             self.process_normal_request(pathInfo)
 
-        self.db.close()
-        self.page_msg("ENDE!")
         return self.response
+
+    def close(self):
+        self.page_msg("ENDE!")
+        print "ende"
+        self.db.close()
 
     def process_normal_request(self, pathInfo):
 
@@ -157,28 +169,39 @@ class PyLucidApp(BaseApplication):
             self.response.write(content)
             return
 
-        self.render.render_page()
+        """ Baut die Seite zusammen """
+        template_data = self.db.side_template_by_id(self.session["page_id"])
+        self.response.write(template_data)
 
     def setup_staticTags(self):
-        # "Statische" Tag's definieren
-        self.parser.tag_data["powered_by"]  = __info__
+        """
+        "Statische" Tag's definieren
+        """
+        self.request.staticTags = {}
+
+        self.request.staticTags["powered_by"]  = __info__
         if self.session["user"] != False:
-            self.parser.tag_data["script_login"] = \
+            self.request.staticTags["script_login"] = \
             '<a href="%s&amp;command=auth&amp;action=logout">logout [%s]</a>' % (
                 self.request.URLs["base"], self.request.session["user"]
             )
         else:
-            self.parser.tag_data["script_login"] = \
+            self.request.staticTags["script_login"] = \
             '<a href="%s&amp;command=auth&amp;action=login">login</a>' % (
                 self.request.URLs["base"]
             )
 
     def installPyLucid(self):
-        self.response.write("<h3>install %s</h3>" % __info__)
         from PyLucid.install.install import InstallApp
+        InstallApp.__info__ = __info__
         InstallApp(self.request, self.response).process_request()
 
 app = PyLucidApp
+
+
+# Middleware um die Tags auszuführen
+from PyLucid.middlewares.Replacer import ReplacePyLucidTags
+app = ReplacePyLucidTags(app)
 
 # Middleware um die Page-Msg Ausgaben einzusetzten
 from PyLucid.middlewares.Replacer import ReplacePageMsg
@@ -187,6 +210,7 @@ app = ReplacePageMsg(app, "<lucidTag:page_msg/>")
 # Middleware, die den Tag <script_duration /> ersetzt
 from PyLucid.middlewares.Replacer import ReplaceDurationTime
 app = ReplaceDurationTime(app, "<lucidTag:script_duration/>")
+
 
 if __name__ == '__main__':
     from colubrid.debug import DebuggedApplication

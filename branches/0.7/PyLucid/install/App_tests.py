@@ -50,17 +50,39 @@ class tests(ObjectApp_Base):
         self.response.write("</ul>")
 
 
-    def module_admin_info(self):
+    def module_admin_info(self, module_id=None):
         "Information about installed modules"
         self._write_info()
 
-        self.response.write("Not ready, yet!")
-        return
+        #~ self.response.write("Not ready, yet!")
+        #~ return
 
-        self.PyLucid["URLs"]["current_action"] = "?action=module_admin&sub_action=module_admin_info"
+        self._URLs["current_action"] = ""
         module_admin = self._get_module_admin()
-        module_admin.debug_installed_modules_info()
+
+        if module_id != None:
+            module_admin.debug_module_info(module_id)
+        else:
+            module_admin.debug_installed_modules_info()
+
 
     def path_info(self):
         "Path/URL check"
         self._write_info()
+
+        self.response.write("<h4>generates automatically:</h4>")
+        self.response.write("<pre>")
+        for k,v in self._URLs.iteritems():
+            self.response.write("%15s: %s\n" % (k,v))
+        self.response.write("</pre>")
+        self.response.write("<hr/>")
+
+
+
+
+
+
+
+
+
+

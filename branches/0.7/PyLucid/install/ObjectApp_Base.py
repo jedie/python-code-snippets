@@ -38,3 +38,13 @@ class ObjectApp_Base(object):
             self._environ["SCRIPT_ROOT"], self._preferences["installURLprefix"]
         )
         self.response.write('<p><a href="%s">menu</a></p>' % url)
+
+
+    def _get_module_admin(self):
+        self._URLs["action"] = "?action=module_admin&sub_action="
+
+        from PyLucid.modules import module_admin
+
+        module_admin = module_admin.module_admin(self.request, self.response)
+
+        return module_admin

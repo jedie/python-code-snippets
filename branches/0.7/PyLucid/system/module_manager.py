@@ -281,7 +281,6 @@ class module_manager:
         self.preferences    = request.preferences
         self.environ        = request.environ
         self.URLs           = request.URLs
-        self.parser         = request.parser
         self.render         = request.render
         self.tools          = request.tools
 
@@ -344,19 +343,19 @@ class module_manager:
         print pathInfo
         pathInfo = pathInfo.lstrip("/")
         pathInfo = pathInfo.split("/")
-        
+
         if len(pathInfo) != 3 or \
             pathInfo[0] != self.preferences["commandURLprefix"]:
             self.page_mag("Error in command.")
             return
-            
+
         try:
             self.module_name = pathInfo[1]
             self.method_name = pathInfo[2]
         except KeyError, e:
             self.page_msg( "Error in command: KeyError", e )
             return
-            
+
         print self.module_name, self.method_name
 
         if debug == True: self.page_msg( "Command: %s; action: %s" % (self.module_name, self.method_name) )
@@ -591,11 +590,11 @@ class module_manager:
             # Objekt geschrieben
             moduleOutput = responseOutput
 
-        if self.plugin_data["has_Tags"] == True:
-            # Die Ausgaben des Modules haben Tags, die aufgelöst werden sollen.
-            if self.plugin_data.plugin_debug == True:
-                self.page_msg( "Parse Tags." )
-            return self.parser.parse(moduleOutput)
+        #~ if self.plugin_data["has_Tags"] == True:
+            #~ # Die Ausgaben des Modules haben Tags, die aufgelöst werden sollen.
+            #~ if self.plugin_data.plugin_debug == True:
+                #~ self.page_msg( "Parse Tags." )
+            #~ return self.parser.parse(moduleOutput)
 
         return moduleOutput
 
