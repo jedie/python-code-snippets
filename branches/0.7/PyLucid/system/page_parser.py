@@ -32,103 +32,6 @@ sondern die richtigen Namen verwenden geht das leider noch nicht :(
 
 import sys, cgi, re, time
 
-class parser:
-    """
-    Der Parser füllt alle bekannten lucid-Tags (lucidTag & lucidFunction) aus.
-    """
-    def __init__(self, request):
-
-        # shorthands
-        self.page_msg       = request.page_msg
-
-        # self.module_manager --> Wird in der index.py setup_parser() hierhin "übertragen"
-
-        self.tag_data = {} # "Statische" Tags-Daten
-
-        # Tags die nicht bearbeitet werden:
-        self.ignore_tag = ("page_msg","script_duration")
-
-    def parse(self, content, out_object):
-        """
-        Die Hauptfunktion.
-        per re.sub() werden die Tags ersetzt
-
-        out_object muß eine write Methode besitzten
-        """
-        #~ print "OK", content
-        if type(content)!=str:
-            out_object.write("page_parser Error! Content not string.\n")
-            out_object.write("Content is type %s\n" % cgi.escape(str(type(content))))
-            out_object.write("Content: %s" % content)
-            return
-
-        #~ start_time = time.time()
-        #~ try:
-        content = re.sub("<lucidTag:(.*?)/?>", self.handle_tag, content)
-        #~ except Exception, e:
-            #~ print "ERROR:", e, content
-            #~ return "ERROR:", e
-        #~ self.page_msg( "Zeit (re.sub-lucidTag) :", time.time()-start_time )
-
-        #~ start_time = time.time()
-        #~ try:
-        content = re.sub("<lucidFunction:(.*?)>(.*?)</lucidFunction>", self.handle_function, content)
-        #~ except Exception, e:
-            #~ print "ERROR:", e, content
-            #~ return "ERROR:", e
-        #~ self.page_msg( "Zeit (re.sub-lucidFunction) :", time.time()-start_time )
-
-        out_object.write(content)
-
-    def handle_tag( self, matchobj ):
-        """
-        Abarbeiten eines <lucidTag:... />
-        """
-        #~ print matchobj.group(1)
-        return_string = self.appy_tag( matchobj )
-        if type(return_string) != str:
-            self.page_msg("result of tag '%s' is not type string! Result: '%s'" % (
-                    matchobj.group(1), cgi.escape( str(return_string) )
-                )
-            )
-
-            return_string = str(return_string)
-        #~ print "OK"
-        return return_string
-
-    def appy_tag( self, matchobj ):
-        tag = matchobj.group(1)
-        if tag in self.ignore_tag:
-            # Soll ignoriert werden. Bsp.: script_duration, welches wirklich am ende
-            # erst "ausgefüllt" wird ;)
-            return matchobj.group(0)
-
-        if self.tag_data.has_key( tag ):
-            # Als "Statische" Information vorhanden
-            return self.tag_data[tag]
-
-        content = self.module_manager.run_tag(tag)
-        if type(content) != str:
-            content = "<p>[Content from module '%s' is not type string!] Content:</p>%s" % (
-                function_name, str(content)
-            )
-        return content
-
-        return matchobj.group(0)
-
-    def handle_function( self, matchobj ):
-        function_name = matchobj.group(1)
-        function_info = matchobj.group(2)
-
-        #~ print function_name, function_info
-
-        content = self.module_manager.run_function( function_name, function_info )
-        if type(content) != str:
-            content = "<p>[Content from module '%s' is not type string!] Content:</p>%s" % (
-                function_name, str(content)
-            )
-        return content
-
 
 
 class render:
@@ -146,13 +49,13 @@ class render:
         self.preferences    = request.preferences
         self.environ        = request.environ
         self.URLs           = request.URLs
-        self.parser         = request.parser
         self.tools          = request.tools
 
-    def render_page(self):
-        """ Baut die Seite zusammen """
-        template_data = self.db.side_template_by_id(self.session["page_id"])
-        self.parser.parse(template_data, self.response)
+    #~ def render_page(self):
+        #~ """ Baut die Seite zusammen """
+        #~ template_data = self.db.side_template_by_id(self.session["page_id"])
+        #~ self.response.write(template_data)
+        #~ self.parser.parse(template_data, self.response)
 
     def render( self, side_data ):
 
@@ -174,9 +77,6 @@ class render:
             self.parser.tag_data["robots"] = self.config.system.robots_tag["internal_pages"]
         else:
             self.parser.tag_data["robots"] = self.config.system.robots_tag["content_pages"]
-
-        # lucidTag's und lucidFunction's auflösen
-        side_content = self.parser.parse( side_content )
 
         return side_content
 

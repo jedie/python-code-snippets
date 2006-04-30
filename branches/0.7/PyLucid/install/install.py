@@ -75,10 +75,9 @@ HTML_head = """<?xml version="1.0" encoding="UTF-8"?>
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <title>PyLucid Setup</title>
+<meta http-equiv="expires"      content="0">
 <meta name="robots"             content="noindex,nofollow" />
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-</head>
-<body>
 <style type="text/css">
 html, body {
     padding: 30px;
@@ -119,7 +118,9 @@ a:hover {
     background-color: #F4F4D2;
 }
 </style>
-<h2>PyLucid Setup %s</h2>""" % __version__
+</head>
+<body>
+"""
 HTML_bottom = "</body></html>"
 
 
@@ -141,8 +142,8 @@ class InstallApp(ObjectApplication):
     """
     Klasse die die Programmlogik zusammenstellt
     """
-    #~ charset = 'utf-8'
-    #~ slash_append = True
+    charset = 'utf-8'
+    slash_append = True
 
     root = menu.menu
     root.install        = install
@@ -155,11 +156,15 @@ class InstallApp(ObjectApplication):
         self.request = request
         self.response = response
 
+        self.response.write(HTML_head)
+        self.response.write("<h3>%s - Setup</h3>" % self.__info__)
+
         # Shorthands
         self.environ        = self.request.environ
         self.page_msg       = self.request.page_msg
         self.db             = self.request.db
         self.preferences    = self.request.preferences
+        self.URLs           = self.request.URLs
 
         # Die Basisklasse für die einzelnen Module vorbereiten
         self.setup_ObjectApp_Base()
@@ -181,10 +186,11 @@ class InstallApp(ObjectApplication):
         ObjectApp_Base.request  = self.request
 
         # Shorthands übergeben
-        ObjectApp_Base._db          = self.db
-        ObjectApp_Base._page_msg    = self.page_msg
-        ObjectApp_Base._preferences = self.preferences
-        ObjectApp_Base._environ     = self.environ
+        ObjectApp_Base._db              = self.db
+        ObjectApp_Base._page_msg        = self.page_msg
+        ObjectApp_Base._preferences     = self.preferences
+        ObjectApp_Base._environ         = self.environ
+        ObjectApp_Base._URLs            = self.URLs
 
 
     def process_request(self):
@@ -193,11 +199,14 @@ class InstallApp(ObjectApplication):
         pathInfo = pathInfo.lstrip("/")
         if pathInfo.startswith(self.preferences["installURLprefix"]):
             pathInfo = pathInfo[len(self.preferences["installURLprefix"]):]
+
+        print "inst pathInfo: |%s|" % pathInfo
+
         self._environ = {
             "PATH_INFO": pathInfo
         }
 
-        self.response.echo(self._environ)
+        #~ self.response.echo(self._environ)
 
         super(InstallApp, self).process_request()
 
@@ -213,7 +222,7 @@ class InstallApp(ObjectApplication):
         #~ self.response.write(self.page_msg.get())
         #~ self.response.write(HTML_bottom)
 
-        self.response.write("JAUUUUUU")
+        self.response.write(HTML_bottom)
 
 
     #~ def _write_head(self, backlink=True):

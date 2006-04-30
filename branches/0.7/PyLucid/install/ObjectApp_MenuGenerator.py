@@ -78,7 +78,7 @@ class ObjectApp_MenuGenerator(object):
             temp = []
             subobjnamelist = self._get_objnamelist(obj_attr, attr_type="methods")
             for sub_info, sub_path, _ in subobjnamelist:
-                sub_path = "%s/%s" % (path, sub_path)
+                sub_path = "/%s/%s/" % (path, sub_path)
                 temp.append((sub_path, sub_info))
             result.append(temp)
         return result

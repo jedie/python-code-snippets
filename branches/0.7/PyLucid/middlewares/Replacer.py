@@ -6,11 +6,12 @@ Einfache Middelware um <script_duration /> in den
 Ausgaben zu ersetzten.
 """
 
+import time, re
+
 WSGIrequestKey = "colubrid.request"
 
 
 # Als erstes Mal die Zeit stoppen ;)
-import time
 start_time = time.time()
 start_clock = time.clock()
 
@@ -60,5 +61,95 @@ class ReplacePageMsg(ReplacerBase):
 
         line = line.replace(self.pageMsgTag, page_msg.get())
         return line
-        
-        
+
+
+class ReplacePyLucidTags(ReplacerBase):
+
+    def __init__(self, app):
+        self.app = app
+        #self.data = None
+
+        self.tag_data = {} # "Statische" Tags-Daten
+        self.ignore_tag = ("page_msg", "script_duration")
+
+        self.lucidTagRE = re.compile("<lucidTag:(.*?)/?>")
+        self.lucidFunctionRE = re.compile("<lucidFunction:(.*?)>(.*?)</lucidFunction>")
+
+
+    def rewrite(self, line, environ):
+        request = environ[WSGIrequestKey]
+        if not request.init2:
+            return line
+        #~ page_msg = request.page_msg
+        self.module_manager = request.module_manager
+        self.staticTags = request.staticTags
+
+        if "<lucidTag:" in line:
+            line = self.lucidTagRE.sub(self.handle_tag, line)
+        if "<lucidFunction:" in line:
+            line = self.lucidFunctionRE.sub(self.handle_function, line)
+
+        #~ line = line.replace(self.pageMsgTag, page_msg.get())
+        return line
+
+    def handle_tag(self, matchobj):
+        """
+        Abarbeiten eines <lucidTag:... />
+        """
+        return_string = self.appy_tag(matchobj)
+        if type(return_string) != str:
+            self.page_msg("result of tag '%s' is not type string! Result: '%s'" % (
+                    matchobj.group(1), cgi.escape( str(return_string) )
+                )
+            )
+
+            return_string = str(return_string)
+
+        return return_string
+
+
+    def appy_tag(self, matchobj):
+        tag = matchobj.group(1)
+        if tag in self.ignore_tag:
+            # Soll ignoriert werden. Bsp.: script_duration, welches wirklich am ende
+            # erst "ausgefüllt" wird ;)
+            return matchobj.group(0)
+
+        if self.staticTags.has_key(tag):
+            # Als "Statische" Information vorhanden
+            return self.staticTags[tag]
+
+        content = self.module_manager.run_tag(tag)
+        if type(content) != str:
+            content = "<p>[Content from module '%s' is not type string!] Content:</p>%s" % (
+                function_name, str(content)
+            )
+        return content
+
+        return matchobj.group(0)
+
+
+    def handle_function(self, matchobj):
+        function_name = matchobj.group(1)
+        function_info = matchobj.group(2)
+
+        #~ print function_name, function_info
+
+        content = self.module_manager.run_function( function_name, function_info )
+        if type(content) != str:
+            content = "<p>[Content from module '%s' is not type string!] Content:</p>%s" % (
+                function_name, str(content)
+            )
+        return content
+
+
+
+
+
+
+
+
+
+
+
+
