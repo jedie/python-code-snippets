@@ -183,15 +183,6 @@ class PyDown(BaseApplication):
     Klasse die die Programmlogik zusammenstellt
     """
     charset = 'utf-8'
-
-    #~ urls = [
-        #~ (r'^$', 'index'),
-        #~ (r'^browse/(.*?)$',     "PyDown.browse.index"),
-        #~ (r'^download/(.*?)$',   "PyDown.download.index"),
-        #~ (r'^upload/(.*?)$',     "PyDown.upload.index"),
-        #~ (r'^info/status/$',     "PyDown.info.status"),
-        #~ (r'^info/setup/$',      "PyDown.info.setup"),
-    #~ ]
     slash_append = True
 
     naviTABs = [
