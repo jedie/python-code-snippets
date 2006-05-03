@@ -89,7 +89,9 @@ class module_admin(PyLucidBaseModule):
         self.module_manager.build_menu()#self.module_manager_data, self.URLs["action"] )
 
     def link(self, action):
-        self.response.write('<p><a href="%s%s">%s</a></p>' % (self.URLs["action"], action, action))
+        if self.request.init2:
+            # Nur wenn nicht im "/install" Bereich
+            self.response.write('<p><a href="%s%s">%s</a></p>' % (self.URLs["action"], action, action))
 
     def administation_menu(self, print_link=True):
         """
@@ -786,8 +788,9 @@ class module_admin(PyLucidBaseModule):
             self.response.write("<h1>Can't get installed module data from DB:</h1>")
             self.response.write("<h4>%s</h4>" % e)
             self.response.write("<h3>Did you run install_PyLucid.py ???</h3>")
-            sys.exit()
-        return installed_modules_info
+            return None
+        else:
+            return installed_modules_info
 
     #________________________________________________________________________________________
     # Hilfs methoden
@@ -805,7 +808,7 @@ class module_admin(PyLucidBaseModule):
             else:
                 self.response.write("OK")
 
-    def debug_installed_modules_info(self):
+    def debug_installed_modules_info(self, module_id=None):
         """
         Listet alle Module/Plugins, mit ihren registrierten Methoden und CGI-depent-Daten auf
         """
@@ -823,25 +826,28 @@ class module_admin(PyLucidBaseModule):
             data_dict[plugin['id']] = plugin["package_name"], plugin['module_name']
             self.response.write('<li><a href="%s/%s">' % (self.URLs['current_action'], plugin['id']))
             self.response.write(
-                '%s.<strong style="color:blue">%s</strong>' % (
+                '%s.<strong style="color:blue">%s</strong></a>' % (
                     plugin["package_name"], plugin['module_name']
                 )
             )
             self.response.write('<small style="color:grey">(plugin id: %s)</small>' % plugin['id'])
-            self.response.write("</a></li>")
+            self.response.write("</li>")
         self.response.write("</ul>")
 
         self.response.write("<pre>")
-        module_id = self.request.args.get("module_id",False)
-        if module_id != False:
-            self.response.write(
-                '%s.<strong>%s</strong> <small>(plugin id:%s)</small>' % (
-                    data_dict[module_id][0], data_dict[module_id][1], module_id
+        if module_id:
+            try:
+                self.response.write(
+                    '%s.<strong>%s</strong> <small>(plugin id:%s)</small>\n' % (
+                        data_dict[module_id][0], data_dict[module_id][1], module_id
+                    )
                 )
-            )
-            #~ self.response.write(data_dict[module_id])
+            except KeyError, e:
+                self.response.write("KeyError, Module with id '%s' not found" % e)
+
             self.debug_module_info(module_id)
-        self.response.write("</pre>")
+
+        self.response.write("</pre>\n")
 
     def debug_module_info(self, module_id):
 
@@ -850,6 +856,11 @@ class module_admin(PyLucidBaseModule):
         if plugindata_temp == []:
             self.response.write("Module with id: '%s' unknown!" % module_id)
             return
+
+        #~ self.response.write("<pre>")
+
+        self.response.write(" -"*40)
+        self.response.write("\n")
 
         # Daten in eine andere Form bringen
         plugindata = {}
@@ -865,42 +876,63 @@ class module_admin(PyLucidBaseModule):
             if parent_method_id != None:
                 data[parent_method_id].append([method_id, methodname])#methodname)
 
+
+        def printPluginData(methodname, id, plugindata):
+            self.response.write(
+                '<em style="color:blue">%s</em> ' % methodname
+            )
+            self.response.write(
+                '<small style="color:grey">(method id:%s)</small>\n' % id
+            )
+
+            for k,v in plugindata.iteritems():
+                if v in (None,0) or k in ("internal_page_info","plugin_id","id"):
+                    continue
+
+                self.response.write("%30s: " % k)
+                if k in ("CGI_laws", "get_CGI_data"):
+                    try:
+                        self.response.write(
+                            "<var>%s</var>\n" % cgi.escape(
+                                str(pickle.loads(v))
+                            )
+                        )
+                    except Exception, e:
+                        self.response.write(
+                            "pickle.loads ERROR: %s\n" % s
+                        )
+                    continue
+
+                self.response.write("%s\n" % v)
+
+
         # Daten Ausgeben
         for id, methoddata in data.iteritems():
             if methoddata[0] != None:
                 continue
-            self.response.write(' * <em style="color:blue">%s</em>' % methoddata[2])
-            self.response.write('<small style="color:grey">(method id: %s)</small>' % id)
-            #~ self.response.write("+++", methoddata)
+            self.response.write(' * ')
+            printPluginData(methoddata[2], id, plugindata[id])
+
             if len(methoddata)>3:
                 for id,methodname in methoddata[3:]:
-                    #~ self.response.write(i)
-                    self.response.write('     ^- <em style="color:blue">%s</em> <small style="color:grey">(method id:%s)</small>' % (methodname, id))
+                    self.response.write('     ^-')
+                    printPluginData(methodname, id, plugindata[id])
 
-                    for item in ("CGI_laws", "get_CGI_data"):
-                        data = plugindata[id][item]
-                        if data != None:
-                            self.response.write("%25s:" % item,)
-                            try:
-                                self.response.write("<var>%s</var>" % cgi.escape(str(pickle.loads(data))))
-                            except Exception, e:
-                                self.response.write("pickle.loads ERROR: %s" % s)
-
-                    #~ self.response.write(plugindata[id]["get_CGI_data"])
-                    #~ self.response.write(plugindata[id])
+            self.response.write("\n")
 
 
         self.response.write("\n")
         self.response.write("_"*80)
+        self.response.write("\n")
         self.response.write("<em>Internal pages info:</em>\n")
         for page_info in self.db.get_internal_pages_info_by_module(module_id):
             #~ self.response.write(page_info)
-            self.response.write("<strong>%s</strong> - %s" % (
+            self.response.write("<strong>%s</strong> - %s\n" % (
                     page_info['name'], page_info['description']
                 )
             )
             self.response.write(
-                "   ^- <small>markup: '%s', updated by: %s, last update: %s</small>" % (
+                "   ^- <small>markup: '%s', updated by: %s, last update: %s</small>\n" % (
                     page_info['markup'], page_info['lastupdateby'], page_info['lastupdatetime']
                 )
             )

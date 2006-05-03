@@ -71,11 +71,11 @@ SourceCodeParser = "/cgi-bin/PyLucid/system/SourceCode.py"
 
 
 class parser:
-    def __init__(self, out_obj, PyLucid, newline="\n"):
+    def __init__(self, out_obj, request, newline="\n"):
         self.out        = out_obj
-        self.PyLucid    = PyLucid
-        self.page_msg   = PyLucid["page_msg"]
-        self.tools      = PyLucid["tools"]
+        self.request    = request
+        self.page_msg   = request.page_msg
+        self.tools      = request.tools
         self.newline    = newline
 
         # Regeln für Blockelemente

@@ -8,9 +8,11 @@
 Generiert eine Liste der "letzten Änderungen"
 """
 
-__version__="0.1.1"
+__version__="0.2"
 
 __history__="""
+v0.2
+    - Anpassung an v0.7
 v0.1.1
     - Bugfix: URLs heißt das und nicht URL
 v0.1.0
@@ -37,17 +39,12 @@ import cgitb;cgitb.enable()
 import cgi, re
 
 
+from PyLucid.system.BaseModule import PyLucidBaseModule
 
-class list_of_new_sides:
 
-    def __init__( self, PyLucid ):
-        #~ self.CGIdata        = PyLucid["CGIdata"]
-        self.db             = PyLucid["db"]
-        self.config         = PyLucid["config"]
-        self.tools          = PyLucid["tools"]
-        self.URLs           = PyLucid["URLs"]
+class list_of_new_sides(PyLucidBaseModule):
 
-    def lucidTag( self ):
+    def lucidTag(self):
         """
         Aufruf über <lucidTag:list_of_new_sides />
         """
@@ -59,7 +56,7 @@ class list_of_new_sides:
             limit           = ( 0, 5 )
         )
 
-        print '<ul id="ListOfNewSides">'
+        self.response.write('<ul id="ListOfNewSides">\n')
 
         self.url_entry  = '<li>%(date)s - <a href="'
         self.url_entry += self.URLs["link"]
@@ -73,13 +70,15 @@ class list_of_new_sides:
                 # Eine Seite muß nicht zwingent ein Title haben
                 linkTitle = item["name"]
 
-            print self.url_entry % {
-                "date"  : self.tools.convert_date_from_sql( item["lastupdatetime"] ),
-                "link"  : prelink,# + item["name"],
-                "title" : cgi.escape( linkTitle ),
-            }
+            self.response.write(
+                self.url_entry % {
+                    "date"  : self.tools.convert_date_from_sql( item["lastupdatetime"] ),
+                    "link"  : prelink,# + item["name"],
+                    "title" : cgi.escape( linkTitle ),
+                }
+            )
 
-        print "</ul>"
+        self.response.write("</ul>\n")
 
 
 

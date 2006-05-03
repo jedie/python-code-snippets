@@ -9,7 +9,7 @@ from PyLucid.install.ObjectApp_Base import ObjectApp_Base
 
 class tests(ObjectApp_Base):
     "4. info / tests"
-    def db_info(self):
+    def db_info(self, jau="jo"):
         "DB connection Information"
         self._write_info()
 
@@ -54,20 +54,14 @@ class tests(ObjectApp_Base):
         "Information about installed modules"
         self._write_info()
 
-        #~ self.response.write("Not ready, yet!")
-        #~ return
-
-        self._URLs["current_action"] = ""
+        self._URLs["current_action"] = self._URLs["base"]
         module_admin = self._get_module_admin()
 
-        if module_id != None:
-            module_admin.debug_module_info(module_id)
-        else:
-            module_admin.debug_installed_modules_info()
+        module_admin.debug_installed_modules_info(module_id)
 
 
-    def path_info(self):
-        "Path/URL check"
+    def path_check(self):
+        "Path and URL check"
         self._write_info()
 
         self.response.write("<h4>generates automatically:</h4>")

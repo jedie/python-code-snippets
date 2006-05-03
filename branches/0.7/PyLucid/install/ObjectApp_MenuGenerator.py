@@ -106,10 +106,12 @@ class ObjectApp_MenuGenerator(object):
         for item in self.get_menu_data():
             if isinstance(item, list):
                 # Untermenüpunkte
+                self.response.write(self.root_list_tags[2])
                 self.response.write(self.sub_list_tags[0])
                 for sub_item in item:
                     write_menu(self.sub_link, sub_item, self.sub_list_tags)
                 self.response.write(self.sub_list_tags[1])
+                self.response.write(self.root_list_tags[3])
             else:
                 # Hauptmenüpunkt
                 write_menu(

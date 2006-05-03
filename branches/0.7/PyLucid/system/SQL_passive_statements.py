@@ -607,6 +607,7 @@ class passive_statements(SQL_wrapper):
                 "module_name", "package_name", "id","version","author","url","description","active"
             ],
             from_table      = "plugins",
+            #~ debug = True,
         )
 
     def get_module_deinstall_info(self, id):

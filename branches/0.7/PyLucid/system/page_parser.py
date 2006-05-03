@@ -51,46 +51,48 @@ class render:
         self.URLs           = request.URLs
         self.tools          = request.tools
 
-    #~ def render_page(self):
-        #~ """ Baut die Seite zusammen """
-        #~ template_data = self.db.side_template_by_id(self.session["page_id"])
-        #~ self.response.write(template_data)
-        #~ self.parser.parse(template_data, self.response)
+    def render_page(self):
+        """ Baut die Seite zusammen """
 
-    def render( self, side_data ):
+        page_id = self.session["page_id"]
+        side_data = self.db.get_side_data(page_id)
+        self.setup_staticTags(side_data)
 
-        side_content = self.apply_markup( side_data["content"], side_data["markup"] )
+        template_data = self.db.side_template_by_id(self.session["page_id"])
+        self.response.write(template_data)
 
-        self.parser.tag_data["page_name"]           = cgi.escape( side_data["name"] )
-        self.parser.tag_data["page_title"]          = cgi.escape( side_data["title"] )
-        self.parser.tag_data["page_last_modified"]  = self.tools.convert_date_from_sql(
+    def setup_staticTags(self, side_data):
+
+        self.request.staticTags["page_body"] = self.apply_markup(
+            side_data["content"], side_data["markup"]
+        )
+
+        self.request.staticTags["markup"]               = side_data["markup"]
+        self.request.staticTags["page_name"]            = cgi.escape(side_data["name"])
+        self.request.staticTags["page_title"]           = cgi.escape(side_data["title"])
+        self.request.staticTags["page_keywords"]        = side_data["keywords"]
+        self.request.staticTags["page_description"]     = side_data["description"]
+
+        self.request.staticTags["page_last_modified"]   = self.tools.convert_date_from_sql(
             side_data["lastupdatetime"], format = "preferences"
         )
-        self.parser.tag_data["page_datetime"]       = self.tools.convert_date_from_sql(
+
+        self.request.staticTags["page_datetime"]        = self.tools.convert_date_from_sql(
             side_data["lastupdatetime"], format = "DCTERMS.W3CDTF"
         )
-        self.parser.tag_data["page_keywords"]       = side_data["keywords"]
-        self.parser.tag_data["page_description"]    = side_data["description"]
-
-        if self.request.args.has_key("command"):
-            # Ein Kommando soll ausgeführt werden -> Interne Seite
-            self.parser.tag_data["robots"] = self.config.system.robots_tag["internal_pages"]
-        else:
-            self.parser.tag_data["robots"] = self.config.system.robots_tag["content_pages"]
-
-        return side_content
-
 
     def apply_markup( self, content, markup ):
         """
         Wendet das Markup auf den Seiteninhalt an
         """
+        #~ self.page_msg("markup: '%s' content: '%s'" % (markup, content))
+
         # Die Markup-ID Auflösen zum richtigen Namen
         markup = self.db.get_markup_name( markup )
 
         if markup == "textile":
             # textile Markup anwenden
-            if self.config.system.ModuleManager_error_handling == True:
+            if self.preferences["ModuleManager_error_handling"] == True:
                 try:
                     from PyLucid_system import tinyTextile
                     out = self.tools.out_buffer()
@@ -99,9 +101,9 @@ class render:
                 except Exception, e:
                     self.page_msg( "Can't use textile-Markup (%s)" % e )
             else:
-                from PyLucid_system import tinyTextile
+                from PyLucid.system import tinyTextile
                 out = self.tools.out_buffer()
-                tinyTextile.parser( out, self.PyLucid ).parse( content )
+                tinyTextile.parser(out, self.request).parse(content)
                 return out.get()
         elif markup in ("none", "None", None, "string formatting"):
             return content
@@ -109,13 +111,3 @@ class render:
             self.page_msg( "Markup '%s' not supported yet :(" % markup )
             return content
 
-
-    #~ def apply_template( self, side_content, template ):
-        #~ """
-        #~ Alle Tags im Template ausfüllen und dabei die Seite in Template einbauen
-        #~ """
-        #~ self.parser.tag_data["page_body"]    = side_content
-
-        #~ side_content = self.parser.parse( template )
-
-        #~ return side_content

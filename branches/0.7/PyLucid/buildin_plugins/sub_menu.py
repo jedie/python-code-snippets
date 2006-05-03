@@ -11,9 +11,11 @@ eingebunden kann es per lucid-"IncludeRemote"-Tag:
 <lucidFunction:IncludeRemote>/cgi-bin/PyLucid/Menu.py?page_name=<lucidTag:page_name/></lucidFunction>
 """
 
-__version__="0.1.1"
+__version__="0.2"
 
 __history__="""
+v0.2
+    - Anpassung an v0.7
 v0.1.1
     - Bugfix URLs
 v0.1.0
@@ -55,20 +57,10 @@ import re, os, sys, urllib, cgi
 
 
 
+from PyLucid.system.BaseModule import PyLucidBaseModule
 
 
-class sub_menu:
-
-    def __init__( self, PyLucid ):
-        #~ self.PyLucid = PyLucid
-        self.CGIdata        = PyLucid["CGIdata"]
-        #~ self.CGIdata.debug()
-        self.db             = PyLucid["db"]
-        self.session        = PyLucid["session"]
-        #~ self.session.debug()
-        self.config         = PyLucid["config"]
-        self.preferences    = PyLucid["preferences"]
-        self.URLs           = PyLucid["URLs"]
+class sub_menu(PyLucidBaseModule):
 
     def where_filter( self, where_rules ):
         """
@@ -87,13 +79,13 @@ class sub_menu:
         self.url_entry += '%(link)s">%(title)s</a>'
         self.url_entry += self.preferences["subMenu"]["after"] + "\n"# List Item ende, default: </li>
 
-        current_page_id = self.CGIdata["page_id"]
+        current_page_id = self.request.session["page_id"]
 
         level_prelink = self.get_level_prelink( current_page_id )
 
         #~ mainMenu - {'begin': '<ul>', 'finish': '</ul>', 'after': '</li>', 'currentAfter': '', 'currentBefore': '', 'before': '<li>'}
         # List Anfang, default: <ul>
-        print self.preferences["subMenu"]["begin"] + "\n"
+        self.response.write(self.preferences["subMenu"]["begin"] + "\n")
 
         menu_data = self.db.select(
                 select_items    = ["name","title"],
@@ -108,13 +100,15 @@ class sub_menu:
             if title == None or title == "":
                 title = SQLline["name"]
 
-            print self.url_entry % {
-                "link"  : level_prelink + urllib.quote_plus(SQLline["name"]),
-                "title" : cgi.escape( title )
-            }
+            self.response.write(
+                self.url_entry % {
+                    "link"  : level_prelink + urllib.quote_plus(SQLline["name"]),
+                    "title" : cgi.escape( title )
+                }
+            )
 
         # List Ende, Default: </ul>
-        print self.preferences["subMenu"]["finish"] + "\n"
+        self.response.write(self.preferences["subMenu"]["finish"] + "\n")
 
 
     def get_level_prelink( self, page_id ):

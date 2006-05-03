@@ -53,28 +53,18 @@ v0.0.1
 import re, os, sys, urllib, cgi
 
 
+from PyLucid.system.BaseModule import PyLucidBaseModule
 
+class main_menu(PyLucidBaseModule):
 
-class main_menu:
-
-    def __init__(self, request, response):
-        #~ self.request = request
-        self.response = response
-
-        # shorthands
-        self.db             = request.db
-        #~ self.CGIdata        = PyLucid["CGIdata"]
-        self.session        = request.session
-        #~ self.config         = PyLucid["config"]
-        self.preferences    = request.preferences
-        self.URLs           = request.URLs
-        self.page_msg       = request.page_msg
+    def __init__(self, *args, **kwargs):
+        super(main_menu, self).__init__(*args, **kwargs)
 
         self.menulink  = '<a%(style)s class="level%(level)s" href="'
         self.menulink += self.URLs["link"].replace("%","%%") # StringOperator-Escape
         self.menulink += '%(link)s" title="%(title)s">%(name)s</a>'
 
-        self.current_page_id  = request.session["page_id"]
+        self.current_page_id  = self.request.session["page_id"]
 
         # Wird von self.create_menudata() "befüllt"
         self.menudata = []
@@ -135,7 +125,7 @@ class main_menu:
         """
         # Alle Daten der aktuellen Ebene hohlen
         parents = self.db.select(
-                select_items    = ["id","name","title","parent"],
+                select_items    = ["id","name","shortcut","title","parent"],
                 from_table      = "pages",
                 where           = self.where_filter( [("parent",parentID)] ),
                 order           = ("position","ASC")
@@ -190,7 +180,8 @@ class main_menu:
             else:
                 CSS_style_tag = ""
 
-            link = "%s/%s" % ( parentname, urllib.quote_plus( name ) )
+            link = "%s/%s" % ( parentname, menuitem["shortcut"] )
+            link = link.lstrip("/")
 
             self.response.write(
                 "%s%s\n" % (spacer, self.preferences["mainMenu"]["before"])
@@ -198,11 +189,11 @@ class main_menu:
 
             self.response.write(" " * ((menulevel+1) * 2))
             htmlLink = self.menulink % {
-                "style" : CSS_style_tag,
-                "level" : menulevel,
-                "link"  : link,
-                "name"  : cgi.escape( name ),
-                "title" : cgi.escape( title )
+                "style"     : CSS_style_tag,
+                "level"     : menulevel,
+                "link"      : link,
+                "name"      : cgi.escape(name),
+                "title"     : cgi.escape(title)
             }
             self.response.write("%s\n" % htmlLink)
 

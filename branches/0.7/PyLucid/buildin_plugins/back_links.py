@@ -45,19 +45,12 @@ import re, os, sys, cgi, urllib
 
 indexSide = "Start"
 
+from PyLucid.system.BaseModule import PyLucidBaseModule
 
-class back_links:
-    def __init__(self, request, response):
-        #~ self.request = request
-        self.response = response
+class back_links(PyLucidBaseModule):
 
-        # shorthands
-        self.db             = request.db
-        #~ self.session        = request.session
-        self.preferences    = request.preferences
-        self.URLs           = request.URLs
-        #~ self.page_msg       = request.page_msg
-        #~ self.log            = request.log
+    def __init__(self, *args, **kwargs):
+        super(back_links, self).__init__(*args, **kwargs)
 
         self.indexlink = '<a href="%s">Index</a>' % (
             self.URLs["link"]
@@ -66,7 +59,7 @@ class back_links:
         self.backlink  = '<a href="%s' % self.URLs["link"]
         self.backlink += '%(url)s">%(title)s</a>'
 
-        self.current_page_id  = request.session["page_id"]
+        self.current_page_id  = self.request.session["page_id"]
 
     def lucidTag( self ):
         "Backlinks generieren"
@@ -110,7 +103,7 @@ class back_links:
 
     def make_links( self, data ):
         """ Generiert aus den Daten eine Link-Zeile """
-        print self.indexlink
+        self.response.write(self.indexlink)
 
         oldurl = ""
         for link_data in data:
@@ -121,10 +114,11 @@ class back_links:
             if (title == None) or (title == ""):
                 title = link_data["name"]
 
-            print " &lt; " + self.backlink % {
+            link = self.backlink % {
                 "url": url,
                 "title": cgi.escape( title ),
             }
+            self.response.write(" &lt; %s" % link)
 
 
 

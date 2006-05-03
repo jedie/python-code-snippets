@@ -104,11 +104,10 @@ config = {
     #~ "document_root"     : os.path.split(os.environ['PATH_TRANSLATED'])[0],
 
     ## page_ident
-    # Paremter, der für Links genommen werden soll. Dieser wird automatisch
-    # auf ="" gesetzt, wenn poormans_modrewrite eingeschaltet ist. Er muß
-    # immer mit "?" anfangen und mit "=" enden und muß immer gesetzt werden.
-    # Standart: "?p="
-    "page_ident" : "?p=",
+    # URL-Paremter, der für Links genommen werden soll. Wird ignoriert, wenn
+    # poormans_modrewrite eingeschaltet ist.
+    # Standart: "p"
+    "page_ident" : "p",
 
     ## poormans_modrewrite
     # Um auch ohne apache's Modrewrite eine saubere URL *ohne* URL-Parameter
@@ -121,8 +120,8 @@ config = {
     #
     # Wenn poormans_modrewrite verwendet werden soll, muß poormans_url leer oder am
     # Ende kein "/" haben!
-    "poormans_modrewrite" : True,
-    #~ "poormans_modrewrite" : False,
+    #~ "poormans_modrewrite" : True,
+    "poormans_modrewrite" : False,
     #
     # Für eine schnellere Abarbeitung echter "404 Not Found" Fehler
     # beim "poormans_modrewrite = True" werden Requests auf Dateien
@@ -135,8 +134,8 @@ config = {
     "mod_rewrite_user_agents" : ("Gecko","Mozilla","Opera"),
 
 
-    "installURLprefix" : "_install",
-    "commandURLprefix" : "_command",
+    "installURLprefix" : "install",
+    "commandURLprefix" : "command",
 }
 
 
