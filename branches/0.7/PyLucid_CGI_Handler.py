@@ -1,8 +1,11 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 
-#~ print "Content-type: text/html; charset=utf-8\r\n"
-#~ import cgitb;cgitb.enable()
+#~ print "Content-type: text/html; charset=utf-8\r\n\r\n<pre>DEBUG:"
+import cgitb;cgitb.enable()
+
+
+import sys
 
 
 from PyLucid import PEP333_WSGI_CGIServer as CGIServer
@@ -11,5 +14,12 @@ from colubrid.debug import DebuggedApplication
 
 
 if __name__ == "__main__":
+    oldstdout = sys.stdout
+    sys.stdout = sys.stderr
+
     app = DebuggedApplication('PyLucid_app:app')
+    #~ from PyLucid_app import app
+
+    sys.stdout = oldstdout
+
     CGIServer.run_with_cgi(app)

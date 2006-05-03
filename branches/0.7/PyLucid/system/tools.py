@@ -53,6 +53,51 @@ class echo:
         )
 #________________________________________________________________________________________________
 
+def page_msg_debug(obj):
+    try:
+        request.page_msg("Debug:", obj.__name__)
+    except AttributeError:
+        pass
+    result = []
+    if isinstance(obj, dict):
+        keys = obj.keys()
+        keys.sort()
+        for key in keys:
+            result.append("%-25s: '%s'" % (key,obj[key]))
+    result = "\n".join(result)
+    request.page_msg("<pre>%s</pre>" % result)
+
+#________________________________________________________________________________________________
+
+def getUniqueShortcut(pageName, nameList):
+    """
+    Liefert einen eindeutige Abkürzung von pageName zurück.
+    pageName wird von Sonderzeichen gesäubert und evtl. eine
+    Zahl angehanden, wenn der Kurzname schon in nameList vorkommt.
+    """
+    import string
+
+    parts = [""]
+    for char in pageName:
+        if not char in string.ascii_letters:
+            parts.append("")
+        else:
+            parts[-1] += char
+
+    parts = [i.capitalize() for i in parts if i!=""]
+    shortcut = "".join(parts)
+
+    # doppelte Namen mit Zahlen eindeutig machen
+    if shortcut in nameList:
+        for i in xrange(1, 1000):
+            testname = "%s%i" % (shortcut, i)
+            if testname not in nameList:
+                shortcut = testname
+                break
+
+    return shortcut
+#________________________________________________________________________________________________
+
 def convert_date_from_sql( RAWsqlDate, format="preferences" ):
     """
     Wandelt ein Datum aus der SQL-Datenbank in ein Format, welches

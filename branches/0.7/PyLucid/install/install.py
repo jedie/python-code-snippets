@@ -75,7 +75,7 @@ HTML_head = """<?xml version="1.0" encoding="UTF-8"?>
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <title>PyLucid Setup</title>
-<meta http-equiv="expires"      content="0">
+<meta http-equiv="expires"      content="0" />
 <meta name="robots"             content="noindex,nofollow" />
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <style type="text/css">
@@ -138,12 +138,12 @@ from PyLucid.install.App_ScratchInstall import install
 
 
 
-class InstallApp(ObjectApplication):
+class InstallApp:
     """
     Klasse die die Programmlogik zusammenstellt
     """
     charset = 'utf-8'
-    slash_append = True
+    slash_append = False
 
     root = menu.menu
     root.install        = install
@@ -152,7 +152,6 @@ class InstallApp(ObjectApplication):
     root.tests          = tests
 
     def __init__(self, request, response):
-        #~ super(PyLucidInstallApp, self).__init__(*args)
         self.request = request
         self.response = response
 
@@ -165,6 +164,7 @@ class InstallApp(ObjectApplication):
         self.db             = self.request.db
         self.preferences    = self.request.preferences
         self.URLs           = self.request.URLs
+        self.tools          = self.request.tools
 
         # Die Basisklasse für die einzelnen Module vorbereiten
         self.setup_ObjectApp_Base()
@@ -177,7 +177,8 @@ class InstallApp(ObjectApplication):
         ObjectApp_Base.MenuGenerator = menu.Install_MenuGenerator(
         #~ menu.Install_MenuGenerator(
             self.response, self.root,
-            base_path = self.environ.get('PATH_INFO', ''),
+            #~ base_path = self.environ.get('PATH_INFO', ''),
+            base_path = self.environ.get('APPLICATION_REQUEST', ''),
             blacklist = ("response",)
         )
 
@@ -191,38 +192,72 @@ class InstallApp(ObjectApplication):
         ObjectApp_Base._preferences     = self.preferences
         ObjectApp_Base._environ         = self.environ
         ObjectApp_Base._URLs            = self.URLs
+        ObjectApp_Base._tools           = self.tools
+
+        self.URLs["base"] = self.URLs["base"].strip("/")
+        self.URLs["base"] = self.URLs["base"].split("/")
+        self.URLs["base"] = self.URLs["base"][:3]
+        self.URLs["base"] = "/%s" % "/".join(self.URLs["base"])
 
 
     def process_request(self):
-        # Für colubrid's ObjectApplication
-        pathInfo = self.environ["PATH_INFO"]
-        pathInfo = pathInfo.lstrip("/")
-        if pathInfo.startswith(self.preferences["installURLprefix"]):
-            pathInfo = pathInfo[len(self.preferences["installURLprefix"]):]
+        path = self.environ.get('PATH_INFO', '').strip('/')
+        parts = path.split('/')
 
-        print "inst pathInfo: |%s|" % pathInfo
+        parts = parts[1:] # install-Prefix auslassen
+        print parts
 
-        self._environ = {
-            "PATH_INFO": pathInfo
-        }
+        # Resolve the path
+        handler = self.root
+        args = []
+        for part in parts:
+            node = getattr(handler, part, None)
+            if node is None:
+                if part:
+                    try:
+                        part = int(part)
+                    except ValueError:
+                        pass
+                    args.append(part)
+            else:
+                handler = node
 
-        #~ self.response.echo(self._environ)
+        container = None
 
-        super(InstallApp, self).process_request()
+        # Find handler and make first container check
+        import inspect
+        if inspect.ismethod(handler):
+            if handler.__name__ == 'index':
+                # the handler is called index so it's the leaf of
+                # itself. we don't want a slash, even if forced
+                container = False
+        else:
+            index = getattr(handler, 'index', None)
+            if not index is None:
+                if not hasattr(index, 'container'):
+                    container = True
+                handler = index
+            else:
+                raise #PageNotFound
 
-        #~ pathInfo = self.request.environ.get('PATH_INFO', '/')
-        #~ pathInfo = urllib.unquote(pathInfo)
-        #~ try:
-            #~ pathInfo = unicode(pathInfo, "utf-8")
-        #~ except:
-            #~ pass
+        # update with hardcoded container information
+        if container is None and hasattr(handler, 'container'):
+            container = handler.container
 
-        #~ make_menu
+        # Check for handler arguments and update container
+        handler_args, varargs, _, defaults = inspect.getargspec(handler)
 
-        #~ self.response.write(self.page_msg.get())
-        #~ self.response.write(HTML_bottom)
+        # call handler
+        parent = handler.im_class()
+        parent.request = self.request
+        handler(parent, *args)
 
         self.response.write(HTML_bottom)
+
+
+    def error(self, *msg):
+        msg = [str(i) for i in msg]
+        self.response.write("<h1>Error:<h1><h3>%s</h3>" % msg)
 
 
     #~ def _write_head(self, backlink=True):

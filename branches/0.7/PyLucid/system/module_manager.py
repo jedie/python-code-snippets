@@ -340,7 +340,6 @@ class module_manager:
         """
         ein Kommando ausführen.
         """
-        print pathInfo
         pathInfo = pathInfo.lstrip("/")
         pathInfo = pathInfo.split("/")
 
@@ -355,8 +354,6 @@ class module_manager:
         except KeyError, e:
             self.page_msg( "Error in command: KeyError", e )
             return
-
-        print self.module_name, self.method_name
 
         if debug == True: self.page_msg( "Command: %s; action: %s" % (self.module_name, self.method_name) )
 
@@ -515,8 +512,12 @@ class module_manager:
                     )
                 )
         else:
-            class_instance = module_class(self.request, responseObject)
-
+            try:
+                class_instance = module_class(self.request, responseObject)
+            except TypeError, e:
+                raise TypeError(
+                    "TypeError, module '%s': %s" % (self.module_name, e)
+                )
 
         # Methode aus Klasse erhalten
         if self.preferences["ModuleManager_error_handling"] == True:

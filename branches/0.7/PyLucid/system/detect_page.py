@@ -17,23 +17,16 @@ v0.1
 
 import urllib
 
-class detect_page:
+
+from PyLucid.system.BaseModule import PyLucidBaseModule
+
+class detect_page(PyLucidBaseModule):
     """
     Legt die page ID der aktuellen Seite fest.
     Speichert die ID als "page_id"-Key in den Session-Daten, also: request.session["page_id"]
     """
-    def __init__(self, request):
-        self.request        = request
-
-        # shorthands
-        self.page_msg       = request.page_msg
-        self.db             = request.db
-        self.session        = request.session
-        self.preferences    = request.preferences
-        self.environ        = request.environ
-        self.URLs           = request.URLs
-
-    #_________________________________________________________________________
+    #~ def __init__(self, *args, **kwargs):
+        #~ super(detect_page, self).__init__(*args, **kwargs)
 
     def detect_page(self):
         "Findet raus welches die aktuell anzuzeigende Seite ist"
@@ -68,19 +61,26 @@ class detect_page:
             self.check_page_name(request_uri)
             return
 
-        if len(self.CGIdata) == 0:
-            # keine CGI-Daten vorhanden
-            # `-> Keine Seite wurde angegeben -> default-Seite wird angezeigt
-            self.set_default_page()
+        pageIdent = self.preferences["page_ident"]
+        if self.request.args.has_key(pageIdent):
+            page_name = self.request.args[pageIdent]
+            self.check_page_name(page_name)
             return
 
-        page_ident = self.preferences["page_ident"].replace("?","")
-        page_ident = page_ident.replace("=","")
-        if self.CGIdata.has_key(page_ident):
+
+        #~ if len(self.CGIdata) == 0:
+            #~ # keine CGI-Daten vorhanden
+            #~ # `-> Keine Seite wurde angegeben -> default-Seite wird angezeigt
+            #~ self.set_default_page()
+            #~ return
+
+        #~ page_ident = self.preferences["page_ident"].replace("?","")
+        #~ page_ident = page_ident.replace("=","")
+        #~ if self.CGIdata.has_key(page_ident):
             #~ self.CGIdata.debug()
             #~ self.page_msg( cgi.escape( self.CGIdata[page_ident] ) )
-            self.check_page_name(self.CGIdata[page_ident])
-            return
+            #~ self.check_page_name(self.CGIdata[page_ident])
+            #~ return
 
         # Es konnte keine Seite in URL-Parametern gefunden werden, also
         # wird die Standart-Seite genommen
@@ -111,36 +111,28 @@ class detect_page:
             self.page_msg( "Debug: History nicht vorhanden!" )
             self.set_default_page()
 
-    def check_page_name( self, page_name ):
+    def check_page_name(self, page_name):
         """ ermittelt anhand des page_name die page_id """
 
-        # Aufteilen: /bsp/ -> ['','%3ClucidTag%3ABsp%2F%3E','']
-        page_name_split = page_name.split("/")
+        # /bsp/und%2Foder/ -> bsp/und%2Foder
+        page_name = page_name.strip("/")
 
-        # unquote + Leere Einträge löschen: ['','%3ClucidTag%3ABsp%2F%3E',''] -> ['<lucidTag:Bsp/>']
-        page_name_split = [urllib.unquote_plus(i) for i in page_name_split if i!=""]
-
-        #~ page_name = urllib.unquote(  )
-        #~ self.CGIdata["REQUEST_URI"] = urllib.unquote_plus(page_name)
-
-        if page_name == "/" or page_name == "":
+        if page_name == "":
             # Index Seite wurde aufgerufen. Zumindest bei poor-modrewrite
             self.set_default_page()
             return
 
-        page_id = 0
-        for name in page_name_split:
-            #~ self.page_msg( name )
-            if name.startswith("index.py?") and name[-1] == "=":
-                # Ist ein Parameter und kein Seitenname
-                continue
+        # bsp/und%2Foder -> ['bsp', 'und%2Foder']
+        page_name_split = page_name.split("/")
 
+        page_id = 0
+        for shortcut in page_name_split:
             try:
                 page_id = self.db.select(
-                        select_items    = ["id","parent"],
-                        from_table      = "pages",
-                        where           = [("name",name), ("parent",page_id)]
-                    )[0]["id"]
+                    select_items    = ["id","parent"],
+                    from_table      = "pages",
+                    where           = [("shortcut",shortcut), ("parent",page_id)]
+                )[0]["id"]
             except Exception,e:
                 if self.URLs["real_self_url"] == self.environ["APPLICATION_REQUEST"]:
                     # Aufruf der eigenen index.py Datei

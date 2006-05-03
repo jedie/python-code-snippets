@@ -33,7 +33,9 @@ class ReplacerBase(object):
 
 
 class ReplaceDurationTime(ReplacerBase):
-
+    """
+    <lucidTag:script_duration/> - ersetzten
+    """
     def __init__(self, app, durationTag):
         self.app = app
         self.durationTag = durationTag
@@ -49,7 +51,9 @@ class ReplaceDurationTime(ReplacerBase):
 
 
 class ReplacePageMsg(ReplacerBase):
-
+    """
+    <lucidTag:page_msg/> - ersetzten
+    """
     def __init__(self, app, pageMsgTag):
         self.app = app
         self.pageMsgTag = pageMsgTag
@@ -64,7 +68,9 @@ class ReplacePageMsg(ReplacerBase):
 
 
 class ReplacePyLucidTags(ReplacerBase):
-
+    """
+    Alle Tags in der Seite ersetzten...
+    """
     def __init__(self, app):
         self.app = app
         #self.data = None
@@ -80,9 +86,11 @@ class ReplacePyLucidTags(ReplacerBase):
         request = environ[WSGIrequestKey]
         if not request.init2:
             return line
-        #~ page_msg = request.page_msg
+
+        # Shorthands
+        self.page_msg       = request.page_msg
         self.module_manager = request.module_manager
-        self.staticTags = request.staticTags
+        self.staticTags     = request.staticTags
 
         if "<lucidTag:" in line:
             line = self.lucidTagRE.sub(self.handle_tag, line)
@@ -110,6 +118,9 @@ class ReplacePyLucidTags(ReplacerBase):
 
     def appy_tag(self, matchobj):
         tag = matchobj.group(1)
+
+        #~ self.page_msg("tag: %s" % tag)
+
         if tag in self.ignore_tag:
             # Soll ignoriert werden. Bsp.: script_duration, welches wirklich am ende
             # erst "ausgefüllt" wird ;)

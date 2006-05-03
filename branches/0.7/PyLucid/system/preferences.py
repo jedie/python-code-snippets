@@ -101,15 +101,10 @@ class URLs(dict):
 
         if self.preferences["poormans_modrewrite"] == True:
             self.preferences["page_ident"] = ""
-        else:
-            if self["real_self_url"][-1] == "/": # Slash am Ende entfernen
-                self["real_self_url"] = self["real_self_url"][:-1]
-
-            self["real_self_url"] += "/index.py"
 
         self["poormans_url"] = self["real_self_url"]
 
-        self["link"] = "%s%s" % (
+        self["link"] = "%s?%s=" % (
             self["poormans_url"], self.preferences["page_ident"]
         )
         self["base"] = "%s?page_id=%s" % (
@@ -126,3 +121,16 @@ class URLs(dict):
             result.append((k,v))
 
         return result
+
+    def debug(self):
+        self.page_msg("path debug:")
+        for k,v in self.items():
+            self.page_msg(
+                "- %15s:%s" % (k,v)
+            )
+
+
+
+
+
+

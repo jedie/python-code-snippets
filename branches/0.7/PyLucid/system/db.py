@@ -92,7 +92,7 @@ class db(active_statements):
         self.preferences    = self.request.preferences
 
         super(db, self).__init__(
-            request,
+            response,
             dbtyp           = self.preferences["dbTyp"],
             databasename    = self.preferences["dbDatabaseName"],
             tableprefix     = self.preferences["dbTablePrefix"],
