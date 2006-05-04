@@ -88,7 +88,7 @@ class plugin_data:
         self.db             = request.db
         self.session        = request.session
         self.URLs           = request.URLs
-        self.CGIdata        = request.values
+        self.preferences    = request.preferences
 
         self.plugindata = {}
 
@@ -103,6 +103,7 @@ class plugin_data:
         # Fast Patch to new Filesystem (v0.7)!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         for k,v in self.plugins.iteritems():
             v['package_name'] = v['package_name'].replace("PyLucid_", "PyLucid.")
+            v['package_name'] = v['package_name'].replace("PyLucid/", "PyLucid.")
             #~ self.page_msg(k,v)
 
         if debug:
@@ -111,6 +112,7 @@ class plugin_data:
     def setup_module(self, module_name, method_name):
         self.module_name = module_name
         self.method_name = method_name
+
         try:
             self.module_id = self.plugins[module_name]["id"]
         except KeyError:
@@ -160,16 +162,16 @@ class plugin_data:
             return
 
         for k,type_obj in self.current_properties["get_CGI_data"].iteritems():
-            if not self.CGIdata.has_key(k):
+            if not self.request.values.has_key(k):
                 continue
 
             # CGI-Daten in den angebenen Type konvertieren
             try:
-                self.get_CGI_data[k] = type_obj(self.CGIdata[k])
+                self.get_CGI_data[k] = type_obj(self.request.values[k])
             except Exception, e:
                 self.page_msg(
                     "Error: Can't convert CGIdata Type from %s to %s (%s)" % (
-                        cgi.escape(self.CGIdata[k]), cgi.escape(str(type_obj)), self.current_method
+                        cgi.escape(self.request.values[k]), cgi.escape(str(type_obj)), self.current_method
                     )
                 )
         if debug:
@@ -196,10 +198,15 @@ class plugin_data:
         """
         URLs für Module vorbereiten
         """
-        self.URLs["command"]        = "%s&command=%s" % (self.URLs["base"], self.module_name)
-        self.URLs["action"]         = "%s&command=%s&action=" % (self.URLs["base"], self.module_name)
-        self.URLs["main_action"]    = self.URLs["action"] + self.method_name
-        self.URLs["current_action"] = self.URLs["action"] + self.method_name
+        self.URLs["command"] = "/".join((
+            self.URLs["base"],
+            self.preferences["commandURLprefix"],
+            self.module_name
+        ))
+
+        #~ self.URLs["action"]         = "%s&command=%s&action=" % (self.URLs["base"], self.module_name)
+        #~ self.URLs["main_action"]    = self.URLs["action"] + self.method_name
+        #~ self.URLs["current_action"] = self.URLs["action"] + self.method_name
 
     def check_rights(self):
         """
@@ -290,7 +297,7 @@ class module_manager:
         self.module_name    = "undefined"
         self.method_name    = "undefined"
 
-    def run_tag( self, tag ):
+    def run_tag(self, tag):
         """
         Ausführen von:
         <lucidTag:'tag'/>
@@ -299,7 +306,6 @@ class module_manager:
             self.module_name, self.method_name = tag.split(".",1)
         else:
             self.module_name = tag
-            self.method_name = "lucidTag"
             self.method_name = "lucidTag"
 
         try:
@@ -345,15 +351,16 @@ class module_manager:
 
         if len(pathInfo) != 3 or \
             pathInfo[0] != self.preferences["commandURLprefix"]:
-            self.page_mag("Error in command.")
-            return
-
+            msg = "command len error (command:'%s')" % pathInfo
+            self.page_msg(msg)
+            return msg
         try:
             self.module_name = pathInfo[1]
             self.method_name = pathInfo[2]
         except KeyError, e:
-            self.page_msg( "Error in command: KeyError", e )
-            return
+            msg = "Error in command: KeyError %s" % e
+            self.page_msg(msg)
+            return msg
 
         if debug == True: self.page_msg( "Command: %s; action: %s" % (self.module_name, self.method_name) )
 
@@ -375,7 +382,6 @@ class module_manager:
         "run_module_error"-Exception mit einer passenden Fehlermeldung.
         """
         #~ if debug: self.page_msg("method_arguments:", method_arguments)
-
         #~ try:
         self.plugin_data.setup_module(self.module_name, self.method_name)
         #~ except KeyError:

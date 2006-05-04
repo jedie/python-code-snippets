@@ -49,21 +49,15 @@ from PyLucid.system import crypt
 Debug = False
 
 
+from PyLucid.system.BaseModule import PyLucidBaseModule
 
-class auth:
+class auth(PyLucidBaseModule):
 
-    def __init__( self, PyLucid ):
-        self.MyCookie = SimpleCookie()
+    #~ def __init__(self, *args, **kwargs):
+        #~ super(auth, self).__init__(*args, **kwargs)
 
-        self.config     = PyLucid["config"]
-        #~ self.config.debug()
-        self.CGIdata    = PyLucid["CGIdata"]
-        #~ self.CGIdata.debug()
-        self.log        = PyLucid["log"]
-        self.session    = PyLucid["session"]
-        #~ self.session.debug()
-        self.db         = PyLucid["db"]
-        self.page_msg   = PyLucid["page_msg"]
+        #~ self.MyCookie = SimpleCookie()
+
 
     ####################################################
     # LogIn
@@ -76,13 +70,11 @@ class auth:
         import random
         rnd_login = random.randint(10000,99999)
 
-        url = "%s?page_id=%s&amp;command=auth&amp;action=check_login" % (
-            self.config.system.real_self_url, self.CGIdata["page_id"]
-        )
+        url = self.URLs.make_command_link("auth", "check_login")
 
         try:
             # Alten Usernamen, nach einem Fehlgeschlagenen Login, wieder anzeigen
-            username = self.CGIdata["user"]
+            username = self.request.form["user"]
         except KeyError:
             username = ""
 
@@ -93,7 +85,7 @@ class auth:
         if Debug == True:
             self.session.debug()
 
-        return self.db.get_internal_page(
+        self.db.render_internal_page(
             internal_page_name = "auth_login",
             page_dict = {
                 "user"          : username,

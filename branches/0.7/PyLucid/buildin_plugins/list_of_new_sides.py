@@ -58,21 +58,23 @@ class list_of_new_sides(PyLucidBaseModule):
 
         self.response.write('<ul id="ListOfNewSides">\n')
 
-        self.url_entry  = '<li>%(date)s - <a href="'
-        self.url_entry += self.URLs["link"]
-        self.url_entry += '%(link)s">%(title)s</a></li>\n'
+        url_entry  = '<li>%(date)s - <a href="'
+        url_entry += self.URLs["link"]
+        url_entry += '%(link)s">%(title)s</a></li>\n'
 
         for item in SQLresult:
-            prelink = self.db.get_page_link_by_id( item["id"] )
+            prelink = self.db.get_page_link_by_id(item["id"])
             linkTitle   = item["title"]
 
             if (linkTitle == None) or (linkTitle == ""):
                 # Eine Seite muß nicht zwingent ein Title haben
                 linkTitle = item["name"]
 
+            lastupdate = self.tools.convert_date_from_sql( item["lastupdatetime"] )
+
             self.response.write(
-                self.url_entry % {
-                    "date"  : self.tools.convert_date_from_sql( item["lastupdatetime"] ),
+                url_entry % {
+                    "date"  : lastupdate,
                     "link"  : prelink,# + item["name"],
                     "title" : cgi.escape( linkTitle ),
                 }

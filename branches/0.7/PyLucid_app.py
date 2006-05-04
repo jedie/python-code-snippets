@@ -94,6 +94,7 @@ class PyLucidApp(BaseApplication):
         self.db             = self.request.db
         self.preferences    = self.request.preferences
         self.tools          = self.request.tools
+        self.URLs           = self.request.URLs
 
 
     def init2(self):
@@ -111,7 +112,7 @@ class PyLucidApp(BaseApplication):
         # Allgemeiner CGI Sessionhandler auf mySQL-Basis
         self.request.session = sessionhandling.sessionhandler(
             #~ self.request, page_msg_debug=False
-            self.request, page_msg_debug=True
+            self.request, self.response, page_msg_debug=True
         )
 
         # Aktuelle Seite ermitteln und festlegen
@@ -141,8 +142,8 @@ class PyLucidApp(BaseApplication):
 
     def process_request(self):
         pathInfo = self.request.environ.get('PATH_INFO', '/')
-        #self.response.write("OK: %s" % pathInfo)
-        #return self.response
+        #~ self.response.write("OK: %s" % pathInfo)
+        #~ return self.response
 
         pathInfo = urllib.unquote(pathInfo)
         try:
@@ -152,11 +153,11 @@ class PyLucidApp(BaseApplication):
 
         if pathInfo.startswith("/%s" % self.preferences["installURLprefix"]):
             self.installPyLucid()
-        elif pathInfo.startswith("/debug"):
-            from colubrid.debug import debug_info
-            self.response.write(debug_info(self.request))
         else:
             self.process_normal_request(pathInfo)
+
+        from colubrid.debug import debug_info
+        self.page_msg(debug_info(self.request))
 
         return self.response
 
@@ -197,15 +198,15 @@ class PyLucidApp(BaseApplication):
 
         self.request.staticTags["powered_by"]  = __info__
         if self.session["user"] != False:
+            link = self.URLs.make_command_link("auth", "logout")
             self.request.staticTags["script_login"] = \
-            '<a href="%s&amp;command=auth&amp;action=logout">logout [%s]</a>' % (
-                self.request.URLs["base"], self.request.session["user"]
+            '<a href="%s">logout [%s]</a>' % (
+                link, self.request.session["user"]
             )
         else:
+            link = self.URLs.make_command_link("auth", "login")
             self.request.staticTags["script_login"] = \
-            '<a href="%s&amp;command=auth&amp;action=login">login</a>' % (
-                self.request.URLs["base"]
-            )
+            '<a href="%s">login</a>' % (link)
 
     def installPyLucid(self):
         from PyLucid.install.install import InstallApp

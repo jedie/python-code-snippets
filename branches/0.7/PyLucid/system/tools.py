@@ -33,7 +33,8 @@ v0.0.1
 
 import os, sys, cgi, time, re, htmlentitydefs, threading, signal
 
-from PyLucid.python_backports.utils import *
+
+#~ from PyLucid.python_backports.utils import *
 
 # Für Debug-print-Ausgaben
 #~ print "Content-type: text/html\n\n<pre>%s</pre>" % __file__
@@ -77,6 +78,7 @@ def getUniqueShortcut(pageName, nameList):
     """
     import string
 
+    # Nur ASCII Zeichen erlauben und gleichzeitig trennen
     parts = [""]
     for char in pageName:
         if not char in string.ascii_letters:
@@ -84,7 +86,8 @@ def getUniqueShortcut(pageName, nameList):
         else:
             parts[-1] += char
 
-    parts = [i.capitalize() for i in parts if i!=""]
+    # Erster Buchstabe immer groß geschrieben
+    parts = [i[0].upper() + i[1:] for i in parts if i!=""]
     shortcut = "".join(parts)
 
     # doppelte Namen mit Zahlen eindeutig machen
@@ -96,6 +99,13 @@ def getUniqueShortcut(pageName, nameList):
                 break
 
     return shortcut
+
+#~ nameList = ["GibtsSchon","UndAuchDas","UndAuchDas1","UndAuchDas2"]
+
+#~ print getUniqueShortcut("Ich bin neu!", nameList)
+#~ print getUniqueShortcut("gibts schon", nameList)
+#~ print getUniqueShortcut("#und!auch(das)", nameList)
+#~ sys.exit()
 #________________________________________________________________________________________________
 
 def convert_date_from_sql( RAWsqlDate, format="preferences" ):

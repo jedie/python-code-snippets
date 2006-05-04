@@ -315,9 +315,9 @@ class parser:
         self.python_source_data += self.newline + block + self.newline
 
     def python_area_end(self, dummy):
-        from PyLucid_system import sourcecode_parser
+        from PyLucid.system import sourcecode_parser
 
-        p = sourcecode_parser.python_source_parser(self.PyLucid)
+        p = sourcecode_parser.python_source_parser(self.request)
         self.out.write(p.get_CSS())
         self.out.write('<div class="SourceCode">')
 

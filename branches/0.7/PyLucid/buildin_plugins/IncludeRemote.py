@@ -26,14 +26,10 @@ v0.0.1
 import socket, urllib2, re, time
 
 
-class IncludeRemote:
+from PyLucid.system.BaseModule import PyLucidBaseModule
 
-    def __init__( self, request, response):
-        #~ self.request = request
-        #~ self.response = response
 
-        # Es werden keine PyLucid-Objekte benötigt...
-        pass
+class IncludeRemote(PyLucidBaseModule):
 
     def lucidFunction( self, function_info ):
         """
@@ -58,26 +54,37 @@ class IncludeRemote:
 
         try:
             # Stylesheets rausfiltern
-            sidecontent = re.sub('(<link.*?rel.*?stylesheet.*?>)(?is)',"",sidecontent)
+            sidecontent = re.sub(
+                '(<link.*?rel.*?stylesheet.*?>)(?is)',"",sidecontent
+            )
         except:
             pass
 
         try:
             # JavaScripte rausfiltern
-            sidecontent = re.sub('(<script.*?</script>)(?is)',"",sidecontent)
+            sidecontent = re.sub(
+                '(<script.*?</script>)(?is)',"",sidecontent
+            )
         except:
             pass
 
         try:
             # Inhalt nach UTF-8 wandeln
-            charset = re.findall('<meta.*?Content-Type.*?charset=(.*?)"', sidecontent)[0]
-            sidecontent = sidecontent.decode( charset ).encode( "utf_8" )
+            charset = re.findall(
+                '<meta.*?content-type.*?charset=(.*?)"', sidecontent.lower()
+            )[0]
+            sidecontent = sidecontent.decode(charset).encode("utf_8")
         except:
             pass
 
         try:
-            print re.findall("<body.*?>(.*?)</body>(?is)", sidecontent)[0]
+            self.response.write(
+                re.findall("<body.*?>(.*?)</body>(?is)", sidecontent)[0]
+            )
         except:
-            print sidecontent
+            self.response.write(sidecontent)
 
-        print '<small class="IncludeRemote_info">(response time: %0.2fsec.)</small>' % duration_time
+        self.response.write('<small class="IncludeRemote_info">')
+        self.response.write(
+            '(response time: %0.2fsec.)</small>' % duration_time
+        )

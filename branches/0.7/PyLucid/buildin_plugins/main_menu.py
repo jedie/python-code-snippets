@@ -61,7 +61,7 @@ class main_menu(PyLucidBaseModule):
         super(main_menu, self).__init__(*args, **kwargs)
 
         self.menulink  = '<a%(style)s class="level%(level)s" href="'
-        self.menulink += self.URLs["link"].replace("%","%%") # StringOperator-Escape
+        self.menulink += self.URLs["link"]
         self.menulink += '%(link)s" title="%(title)s">%(name)s</a>'
 
         self.current_page_id  = self.request.session["page_id"]
@@ -69,7 +69,8 @@ class main_menu(PyLucidBaseModule):
         # Wird von self.create_menudata() "befüllt"
         self.menudata = []
 
-    def lucidTag( self ):
+    def lucidTag(self):
+        self.page_msg(self.URLs)
         # "Startpunkt" für die Menügenerierung feststellen
         parentID = self.db.select(
                 select_items    = ["parent"],
@@ -180,8 +181,8 @@ class main_menu(PyLucidBaseModule):
             else:
                 CSS_style_tag = ""
 
-            link = "%s/%s" % ( parentname, menuitem["shortcut"] )
-            link = link.lstrip("/")
+            link = "%s/%s" % (parentname, menuitem["shortcut"])
+            #~ link = link.lstrip("/")
 
             self.response.write(
                 "%s%s\n" % (spacer, self.preferences["mainMenu"]["before"])

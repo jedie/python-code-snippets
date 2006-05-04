@@ -167,7 +167,7 @@ class active_statements(passive_statements):
 
         content = internal_page_data["content"]
         try:
-            return content % page_dict
+            content = content % page_dict
         except UnicodeError, e:
             self.page_msg("UnicodeError: Can't render internal page: %s" % e)
             self.page_msg("(Try to go around.)")
@@ -178,9 +178,13 @@ class active_statements(passive_statements):
                     except AttributeError: # z.B. bei Zahlen
                         pass
 
-                print content.encode("utf_8", 'replace') % page_dict
+                self.response.write(
+                    content.encode("utf_8", 'replace') % page_dict
+                )
             except:
-                print "<h4>Can't go around the UnicodeError!</h4>"
+                self.response.write(
+                    "<h4>Can't go around the UnicodeError!</h4>"
+                )
                 if not self.config.system.ModuleManager_error_handling: raise
         except Exception, e:
             self.page_msg("Error information:")
@@ -224,6 +228,12 @@ class active_statements(passive_statements):
                     sys.exc_info()[0], e, internal_page_name,
                 )
             )
+        else:
+            return content
+
+    def render_internal_page(self, internal_page_name, page_dict={}):
+        content = self.get_rendered_internal_page(internal_page_name, page_dict)
+        self.response.write(content)
 
     def print_internal_TAL_page(self, internal_page_name, context_dict):
 
