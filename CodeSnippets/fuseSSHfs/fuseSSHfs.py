@@ -67,7 +67,7 @@ def menu(urls):
         for no, line in enumerate(urls):
             print "%-3s - %s" % (no+1, line)
 
-        no = raw_input("Please select (Strg-C to abort: ")
+        no = raw_input("Please select (Strg-C to abort): ")
         print
         try:
             no = int(no)
