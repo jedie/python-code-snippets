@@ -32,23 +32,9 @@ __todo__ = """
 
 import cgi, time, urllib
 
+from PyLucid.system.BaseModule import PyLucidBaseModule
 
-class search:
-    def __init__(self, request, response):
-        #~ self.request = request
-        self.response = response
-
-        # shorthands
-        #~ self.request        = request
-        self.db             = request.db
-        self.session        = request.session
-        self.preferences    = request.preferences
-        self.URLs           = request.URLs
-        self.page_msg       = request.page_msg
-
-        #~ self.CGIdata    = PyLucid["CGIdata"]
-        self.log            = request.log
-
+class search(PyLucidBaseModule):
 
     def lucidTag(self, search_string=""):
 
@@ -57,7 +43,7 @@ class search:
         return self.db.get_rendered_internal_page(
             internal_page_name = "search_input_form",
             page_dict = {
-                "url"               : self.URLs["action"] + "do_search",
+                "url"               : self.make_action_link("do_search"),
                 "old_search_string" : search_string
             }
         )
@@ -126,8 +112,9 @@ class search:
             count = message.split(":")[-1]
             search_words = message.split("]")[0][1:]
 
-            url = '%sdo_search&search_string=%s' % (
-                self.URLs["action"], urllib.quote_plus(search_words)
+            url = '%s&search_string=%s' % (
+                self.URLs.make_command_link("search", "do_search"),
+                urllib.quote_plus(search_words)
             )
 
             self.response.write(

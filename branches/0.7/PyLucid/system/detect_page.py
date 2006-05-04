@@ -61,30 +61,21 @@ class detect_page(PyLucidBaseModule):
             self.check_page_name(request_uri)
             return
 
-        pageIdent = self.preferences["page_ident"]
-        if self.request.args.has_key(pageIdent):
-            page_name = self.request.args[pageIdent]
-            self.check_page_name(page_name)
-            return
 
+        pathInfo = self.environ.get("PATH_INFO","/")
+        self.check_page_name(pathInfo)
+        return
 
-        #~ if len(self.CGIdata) == 0:
-            #~ # keine CGI-Daten vorhanden
-            #~ # `-> Keine Seite wurde angegeben -> default-Seite wird angezeigt
-            #~ self.set_default_page()
+        #~ pageIdent = self.preferences["page_ident"]
+        #~ if self.request.args.has_key(pageIdent):
+            #~ page_name = self.request.args[pageIdent]
+            #~ self.check_page_name(page_name)
             #~ return
 
-        #~ page_ident = self.preferences["page_ident"].replace("?","")
-        #~ page_ident = page_ident.replace("=","")
-        #~ if self.CGIdata.has_key(page_ident):
-            #~ self.CGIdata.debug()
-            #~ self.page_msg( cgi.escape( self.CGIdata[page_ident] ) )
-            #~ self.check_page_name(self.CGIdata[page_ident])
-            #~ return
 
         # Es konnte keine Seite in URL-Parametern gefunden werden, also
         # wird die Standart-Seite genommen
-        self.set_default_page()
+        #~ self.set_default_page()
 
     def check_page_id( self, page_id ):
         """ Testet ob die page_id auch richtig ist """
@@ -139,7 +130,9 @@ class detect_page(PyLucidBaseModule):
                     self.set_default_page()
                     return
                 else:
-                    self.page_msg( "404 Not Found. The requested URL '%s' was not found on this server." % name )
+                    self.page_msg(
+                        "404 Not Found. The requested URL '%s' was not found on this server." % shortcut
+                    )
                     #~ self.page_msg( page_name_split )
                     if page_id == 0:
                         # Nur wenn nicht ein Teil der URL stimmt, wird auf die Hauptseite gesprunngen

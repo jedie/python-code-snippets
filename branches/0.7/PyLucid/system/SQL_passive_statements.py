@@ -255,26 +255,27 @@ class passive_statements(SQL_wrapper):
     def get_page_link_by_id(self, page_id):
         """ Generiert den absolut-Link zur Seite """
         data = []
+
         while page_id != 0:
             result = self.select(
-                    select_items    = ["name","parent"],
+                    select_items    = ["shortcut","parent"],
                     from_table      = "pages",
                     where           = ("id",page_id)
                 )[0]
             page_id  = result["parent"]
-            data.append( result["name"] )
+            data.append(result["shortcut"])
 
         # Liste umdrehen
         data.reverse()
 
-        data = [urllib.quote_plus(i) for i in data]
+        #~ data = [urllib.quote_plus(i) for i in data]
 
         return "/" + "/".join(data)
 
     def get_sitemap_data(self):
         """ Alle Daten die für`s Sitemap benötigt werden """
         return self.select(
-                select_items    = ["id","name","title","parent"],
+                select_items    = ["id","name","shortcut","title","parent"],
                 from_table      = "pages",
                 where           = [("showlinks",1), ("permitViewPublic",1)],
                 order           = ("position","ASC"),

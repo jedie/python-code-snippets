@@ -44,15 +44,18 @@ import sys, os, cgi, sys
 
 
 
-class SourceCode:
+from PyLucid.system.BaseModule import PyLucidBaseModule
 
-    def __init__( self, PyLucid ):
-        self.tools      = PyLucid["tools"]
-        self.PyLucid    = PyLucid
+class SourceCode(PyLucidBaseModule):
 
     def lucidFunction( self, function_info ):
         filename = function_info # Daten aus dem <lucidFunction>-Tag
-        filepath = os.environ["DOCUMENT_ROOT"] + filename
+        try:
+            filepath = os.environ["DOCUMENT_ROOT"]
+        except KeyError:
+            return "Error: DOCUMENT_ROOT not defined!"
+
+        filepath += filename
         filepath = os.path.normpath( filepath )
 
         try:
@@ -60,8 +63,7 @@ class SourceCode:
             source = f.read()
             f.close()
         except Exception, e:
-            print "Error to Display file '%s' (%s)" % ( filename, e )
-            return
+            return "Error to Display file '%s' (%s)" % ( filename, e )
 
         #~ print '<a href="%sdownload&file=%s" class="SourceCodeFilename">%s</a>' % (
             #~ self.action_url, filename, filename
@@ -71,15 +73,19 @@ class SourceCode:
 
         if os.path.splitext( filename )[1] == ".py":
             from PyLucid_system import sourcecode_parser
-            parser = sourcecode_parser.python_source_parser(self.PyLucid)
-            print parser.get_CSS()
-            print '<fieldset class="SourceCode"><legend>%s</legend>' % filename
-            parser.parse( source.strip() )
+            parser = sourcecode_parser.python_source_parser(self.request)
+            self.response.write(parser.get_CSS())
+            self.response.write(
+                '<fieldset class="SourceCode"><legend>%s</legend>\n' % filename
+            )
+            parser.parse(source.strip())
         else:
-            print '<fieldset class="SourceCode"><legend>%s</legend>' % filename
+            self.response.write(
+                '<fieldset class="SourceCode"><legend>%s</legend>\n' % filename
+            )
             self.format_code( source )
 
-        print '</fieldset>'
+        self.response.write('</fieldset>\n')
 
     def format_code( self, source ):
         """
@@ -89,7 +95,7 @@ class SourceCode:
             line = cgi.escape( line )
             line = line.replace("\t","    ") # Tabulatoren nach Leerzeilen
             line = line.replace(" ","&nbsp;") # Leerzeilen nach non-breaking-Spaces
-            print line, "<br />"
+            self.response.write("%s<br />\n" % line)
 
     #~ def download(self, file):
         #~ print "Location: %s\n" % file

@@ -32,16 +32,11 @@ import cgi, urllib
 
 
 
+from PyLucid.system.BaseModule import PyLucidBaseModule
 
-class SiteMap:
+class SiteMap(PyLucidBaseModule):
 
-    def __init__( self, PyLucid ):
-        self.db         = PyLucid["db"]
-        self.config     = PyLucid["config"]
-        self.page_msg   = PyLucid["page_msg"]
-        self.URLs       = PyLucid["URLs"]
-
-    def lucidTag( self ):
+    def lucidTag(self):
         """ Baut die SiteMap zusammen """
         self.data = self.db.get_sitemap_data()
 
@@ -52,39 +47,49 @@ class SiteMap:
         self.link += self.URLs["link"]
         self.link += '%(link)s">%(name)s</a>'
 
-        print '<div id="SiteMap">'
+        self.response.write('<div id="SiteMap">\n')
         self.make_sitemap()
-        print '</div>'
+        self.response.write('</div>\n')
 
-    def get_parent_list( self ):
+    def get_parent_list(self):
         parents = []
         for site in self.data:
             if not site["parent"] in parents:
-                parents.append( site["parent"] )
+                parents.append(site["parent"])
         return parents
 
-    def make_sitemap( self, parentname = "", id = 0, deep = 0 ):
-        print '<ul class="id_%s deep_%s">\n' % ( id, deep )
+    def make_sitemap(self, parentname = "", id = 0, deep = 0):
+        self.response.write(
+            '<ul class="id_%s deep_%s">\n' % (id, deep)
+        )
         for site in self.data:
             if site["parent"] == id:
-                print '<li class="id_%s deep_%s">' % ( site["id"], deep )
+                self.response.write(
+                    '<li class="id_%s deep_%s">' % (site["id"], deep)
+                )
 
-                link = "%s/%s" % ( parentname, urllib.quote_plus( site["name"] ) )
+                link = "%s/%s" % (parentname, site["shortcut"])
 
-                print self.link % {
-                    "link"  : link,
-                    "name"  : cgi.escape( site["name"] ),
-                }
+                self.response.write(
+                    self.link % {
+                        "link"  : link,
+                        "name"  : cgi.escape(site["name"]),
+                    }
+                )
 
-                if (site["title"] != "") and (site["title"] != None) and (site["title"] != site["name"]):
-                    print " - %s" % cgi.escape( site["title"] )
+                if (site["title"] != "") and \
+                        (site["title"] != None) and \
+                        (site["title"] != site["name"]):
+                    self.response.write(
+                        " - %s" % cgi.escape(site["title"])
+                    )
 
-                print "</li>\n"
+                self.response.write("</li>\n")
 
                 if site["id"] in self.parent_list:
-                    self.make_sitemap( link, site["id"], deep +1 )
+                    self.make_sitemap(link, site["id"], deep +1)
 
-        print "</ul>\n"
+        self.response.write("</ul>\n")
 
 
 

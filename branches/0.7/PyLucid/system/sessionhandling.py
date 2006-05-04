@@ -119,11 +119,13 @@ class sessionhandler(dict):
     http://www.python-forum.de/viewtopic.php?p=19523#19523
     """
 
-    def __init__ (self, request, page_msg_debug):
+    def __init__ (self, request, response, page_msg_debug):
         dict.__init__(self)
 
-        # shorthands
         self.request        = request
+        self.response       = response
+
+        # shorthands
         self.db             = request.db
         self.log            = request.log
         self.page_msg       = request.page_msg
@@ -305,7 +307,7 @@ class sessionhandler(dict):
 
     def write_session_cookie( self ):
         "Generiert eine Session ID und speichert diese als Cookie"
-        session_id = md5.new( str(time.time()) + os.environ["REMOTE_ADDR"] ).hexdigest()
+        session_id = md5.new( str(time.time()) + self.request.environ["REMOTE_ADDR"] ).hexdigest()
         self.writeCookie( session_id )
         return session_id
 
@@ -314,11 +316,13 @@ class sessionhandler(dict):
 
     def readCookie( self ):
         "liest Cookie"
-        #~ if self.page_msg_debug == True: self.page_msg( os.environ["HTTP_COOKIE"] )
-        self.Cookie.load(os.environ["HTTP_COOKIE"])
-        if self.page_msg_debug == True:
-            self.page_msg("readCookie: '%s'" % self.Cookie[self.CookieName].value)
-        return self.Cookie[self.CookieName].value
+        #~ if self.page_msg_debug == True: self.page_msg( self.request.environ["HTTP_COOKIE"] )
+        #~ self.Cookie.load(self.request.environ["HTTP_COOKIE"])
+        #~ if self.page_msg_debug == True:
+            #~ self.page_msg("readCookie: '%s'" % self.Cookie[self.CookieName].value)
+        #~ return self.Cookie[self.CookieName].value
+        return self.request.cookies[self.CookieName]
+
 
     def writeCookie( self, Text, expires=None ):
         """
@@ -326,19 +330,20 @@ class sessionhandler(dict):
         Es wird kein 'expires' gesetzt, somit ist der Cookie gültig/vorhanden bis der
         Browser beendet wurde.
         """
+        self.response.set_cookie(self.CookieName, Text)
         #~ if expires==None: expires=self.timeout_sec
-        self.Cookie[self.CookieName] = Text
-        self.Cookie[self.CookieName]["path"] = self.preferences["poormans_url"]
+        #~ self.Cookie[self.CookieName] = Text
+        #~ self.Cookie[self.CookieName]["path"] = self.preferences["poormans_url"]
 
         #~ self.Cookie[self.CookieName]["expires"] = expires
 
         # Cookie an den Browser "schicken"
-        print self.Cookie[self.CookieName]
-        if self.page_msg_debug == True:
-            self.page_msg( "writeCookie:", self.Cookie[self.CookieName] )
+        #~ print self.Cookie[self.CookieName]
+        #~ if self.page_msg_debug == True:
+            #~ self.page_msg( "writeCookie:", self.Cookie[self.CookieName] )
 
     def deleteCookie( self ):
-        self.writeCookie( "" , 0)
+        self.response.delete_cookie(self.CookieName)
 
     #____________________________________________________________________________________________
     # Allgemeine SQL-Funktionen
@@ -347,7 +352,7 @@ class sessionhandler(dict):
         "Eröffnet eine Session"
         self.delete_old_sessions() # L�schen veralteter Sessions in der DB
 
-        session_data = pickle.dumps(self)
+        session_data = pickle.dumps(dict(self))
         if base64format == True:
             session_data = base64.b64encode( session_data )
         self.RAW_session_data_len = len( session_data )

@@ -97,19 +97,22 @@ class URLs(dict):
         #~ self.preferences["document_root"]   = os.path.normpath(self.preferences["document_root"])
 
         # Pfad für Links festlegen
-        self["real_self_url"] = self.environ["APPLICATION_REQUEST"]
+        #~ self["real_self_url"] = self.environ["APPLICATION_REQUEST"]
+        self["real_self_url"] = self.environ.get('SCRIPT_NAME',"")
 
         if self.preferences["poormans_modrewrite"] == True:
             self.preferences["page_ident"] = ""
 
         self["poormans_url"] = self["real_self_url"]
 
-        self["link"] = "%s?%s=" % (
-            self["poormans_url"], self.preferences["page_ident"]
-        )
-        self["base"] = "%s?page_id=%s" % (
-            self["real_self_url"], -1#CGIdata["page_id"]
-        )
+        self["link"] = self["base"] = self["poormans_url"]
+
+        #~ self["link"] = "%s?%s=" % (
+            #~ self["poormans_url"], self.preferences["page_ident"]
+        #~ )
+        #~ self["base"] = "%s?page_id=%s" % (
+            #~ self["real_self_url"], -1#CGIdata["page_id"]
+        #~ )
 
     def items(self):
         """ Überschreibt das items() von dict, um eine Reihenfolge zu erwirken """
@@ -121,6 +124,16 @@ class URLs(dict):
             result.append((k,v))
 
         return result
+
+    def make_command_link(self, modulename, methodname):
+        return "/".join(
+            (
+                self["base"],
+                self.preferences["commandURLprefix"],
+                modulename,
+                methodname
+            )
+        )
 
     def debug(self):
         self.page_msg("path debug:")

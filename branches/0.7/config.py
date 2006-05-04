@@ -134,8 +134,8 @@ config = {
     "mod_rewrite_user_agents" : ("Gecko","Mozilla","Opera"),
 
 
-    "installURLprefix" : "install",
-    "commandURLprefix" : "command",
+    "installURLprefix" : "_install",
+    "commandURLprefix" : "_command",
 }
 
 

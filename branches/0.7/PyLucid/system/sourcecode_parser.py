@@ -28,8 +28,8 @@ token.KEYWORD = token.NT_OFFSET + 1
 
 class python_source_parser:
 
-    def __init__(self, PyLucid):
-        self.page_msg = PyLucid["page_msg"]
+    def __init__(self, request):
+        self.page_msg = request.page_msg
 
     def parse(self, raw_txt):
         """

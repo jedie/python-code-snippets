@@ -46,3 +46,7 @@ class PyLucidBaseModule(object):
 
         self.environ        = request.environ
 
+    def make_action_link(self, methodname):
+        return "/".join(
+            (self.URLs["command"], methodname)
+        )
