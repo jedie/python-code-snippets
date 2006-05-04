@@ -1,0 +1,7 @@
+#
+# fuseSSHfs.py
+#
+# Here you can list all you SSH-Server URLs for the mount menu.
+#
+
+username@example.com
