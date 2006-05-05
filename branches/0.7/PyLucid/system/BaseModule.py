@@ -43,6 +43,7 @@ class PyLucidBaseModule(object):
         self.log            = request.log
         self.module_manager = request.module_manager
         self.tools          = request.tools
+        self.render         = request.render
 
         self.environ        = request.environ
 

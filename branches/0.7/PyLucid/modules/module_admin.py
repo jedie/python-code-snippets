@@ -89,8 +89,8 @@ class module_admin(PyLucidBaseModule):
         self.module_manager.build_menu()#self.module_manager_data, self.URLs["action"] )
 
     def link(self, action):
-        if self.request.init2:
-            # Nur wenn nicht im "/install" Bereich
+        if self.request.runlevel != "install":
+            # Nur wenn nicht im "install" Bereich
             self.response.write('<p><a href="%s%s">%s</a></p>' % (self.URLs["action"], action, action))
 
     def administation_menu(self, print_link=True):
@@ -112,9 +112,9 @@ class module_admin(PyLucidBaseModule):
             "action_url"    : self.URLs["action"],
         }
 
-        if self.call_from_install_PyLucid == True:
+        if self.request.runlevel == "install":
             # Wurde von install_PyLucid.py aufgerufen.
-            from simpleTAL import simpleTAL, simpleTALES
+            from PyLucid.simpleTAL import simpleTAL, simpleTALES
 
             context = simpleTALES.Context(allowPythonPath=1)
             #~ self.page_msg(context_dict)
@@ -129,7 +129,7 @@ class module_admin(PyLucidBaseModule):
                 return
 
             template = simpleTAL.compileHTMLTemplate(install_template, inputEncoding="UTF-8")
-            template.expand(context, self.request, outputEncoding="UTF-8")
+            template.expand(context, self.response, outputEncoding="UTF-8")
         else:
             # Normal als Modul aufgerufen
             self.db.print_internal_TAL_page("module_admin_administation_menu", context_dict)
@@ -279,25 +279,20 @@ class module_admin(PyLucidBaseModule):
     #________________________________________________________________________________________
     # install
 
-    def install(self, package, module_name, print_info=True):
+    def install(self, info):
         """
         Modul in die DB eintragen
         """
-        if print_info:
-            self.link("administation_menu")
-            self.response.write(
-                "<h3>Install %s.<strong>%s</strong></h3>" % (
-                    package, module_name
-                )
+        package = ".".join(info[:-1])
+        module_name = info[-1]
+
+        self.link("administation_menu")
+        self.response.write(
+            "<h3>Install %s.<strong>%s</strong></h3>" % (
+                package, module_name
             )
-            self.response.write("<pre>")
-        else:
-            self.response.write("_"*80)
-            self.response.write(
-                "Install %s.<strong>%s</strong>\n" % (
-                    package, module_name
-                )
-            )
+        )
+        self.response.write("<pre>")
 
         module_data = self._get_module_data(package, module_name)
 
@@ -379,14 +374,13 @@ class module_admin(PyLucidBaseModule):
 
         self.register_methods(package, module_name, module_data)
 
-        if print_info:
-            self.response.write("</pre>")
-            self.response.write(
-                'activate this Module? <a href="%sactivate&id=%s">yes, enable it</a>' % (
-                    self.URLs["action"], self.registered_plugin_id
-                )
+        self.response.write("</pre>")
+        self.response.write(
+            'activate this Module? <a href="%s/activate/%s">yes, enable it</a>' % (
+                self.URLs["action"], self.registered_plugin_id
             )
-            self.link("administation_menu")
+        )
+        self.link("administation_menu")
 
     def _install_internal_page(self, method_data, package, module_name, method_name):
         """
@@ -595,12 +589,14 @@ class module_admin(PyLucidBaseModule):
     # Activate / Deactivate
 
     def activate(self, id, print_info=True):
+        id = int(id)
         self.db.activate_module(id)
         if print_info==True:
             self.page_msg("Enable Module/Plugin (ID: %s)" % id)
             self.administation_menu()
 
     def deactivate(self, id):
+        id = int(id)
         self.db.deactivate_module(id)
         self.page_msg("Disable Module/Plugin (ID: %s)" % id)
         self.administation_menu()

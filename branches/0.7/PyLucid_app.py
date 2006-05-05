@@ -10,6 +10,12 @@ __url__     = "http://www.PyLucid.org"
 __info__ = """<a href="%s" title="PyLucid - A OpenSource CMS in pure Python CGI by Jens Diemer">\
 PyLucid</a> v0.7.0Alpha""" % __url__
 
+
+debug = True
+#~ debug = False
+
+
+
 import cgi, urllib, os
 import sys #Debug
 
@@ -55,11 +61,14 @@ class PyLucidApp(BaseApplication):
 
         self.environ        = environ
 
-        self.request.init2 = False
+        self.request.runlevel = "init"
         self.request.log            = None
         self.request.render         = None
         self.request.session        = None
         self.request.module_manager = None
+
+        # environ['PATH_INFO'] anpassen
+        self.setup_path_info()
 
         # Tools
         tools.request       = self.request  # Request Objekt an tools übergeben
@@ -88,6 +97,7 @@ class PyLucidApp(BaseApplication):
 
         # Anbindung an die SQL-Datenbank, mit speziellen PyLucid Methoden
         self.request.db = db.db(self.request, self.response)
+        self.request.db.page_msg = self.request.page_msg
 
         # Shorthands
         self.page_msg       = self.request.page_msg
@@ -96,6 +106,30 @@ class PyLucidApp(BaseApplication):
         self.tools          = self.request.tools
         self.URLs           = self.request.URLs
 
+    def setup_path_info(self):
+        pathInfo = self.request.environ.get('PATH_INFO', '/')
+        #~ self.response.write("OK: %s" % pathInfo)
+        #~ return self.response
+
+        pathInfo = urllib.unquote(pathInfo)
+        try:
+            pathInfo = unicode(pathInfo, "utf-8")
+        except:
+            pass
+
+        pathInfo = pathInfo.strip("/")
+        self.request.environ["PATH_INFO"] = pathInfo
+
+    def setup_runlevel(self):
+
+        pathInfo = self.request.environ["PATH_INFO"]
+
+        if pathInfo.startswith(self.preferences["installURLprefix"]):
+            self.request.runlevel = "install"
+        elif pathInfo.startswith(self.preferences["commandURLprefix"]):
+            self.request.runlevel = "command"
+        else:
+            self.request.runlevel = "normal"
 
     def init2(self):
         """
@@ -132,8 +166,6 @@ class PyLucidApp(BaseApplication):
         # der Parser auf ihn zugreifen kann, packen wir ihn einfach dorthin ;)
         #~ self.request.parser.module_manager = self.request.module_manager
 
-        self.request.init2 = True
-
         #Shorthands
         self.render = self.request.render
         self.session = self.request.session
@@ -141,23 +173,17 @@ class PyLucidApp(BaseApplication):
 
 
     def process_request(self):
-        pathInfo = self.request.environ.get('PATH_INFO', '/')
-        #~ self.response.write("OK: %s" % pathInfo)
-        #~ return self.response
 
-        pathInfo = urllib.unquote(pathInfo)
-        try:
-            pathInfo = unicode(pathInfo, "utf-8")
-        except:
-            pass
+        self.setup_runlevel()
 
-        if pathInfo.startswith("/%s" % self.preferences["installURLprefix"]):
+        if self.request.runlevel == "install":
             self.installPyLucid()
         else:
-            self.process_normal_request(pathInfo)
+            self.process_normal_request()
 
-        from colubrid.debug import debug_info
-        self.page_msg(debug_info(self.request))
+        if debug:
+            from colubrid.debug import debug_info
+            self.page_msg(debug_info(self.request))
 
         return self.response
 
@@ -170,25 +196,6 @@ class PyLucidApp(BaseApplication):
     def close(self):
         self.page_msg("ENDE!")
         self.db.close()
-
-    def process_normal_request(self, pathInfo):
-
-        self.init2()
-        self.setup_staticTags()
-
-        #~ self.tools.page_msg_debug(self.environ)
-
-        if pathInfo.startswith("/%s" % self.preferences["commandURLprefix"]):
-            # Ein Kommando soll ausgeführt werden
-            self.request.staticTags["robots"] = self.preferences["robots_tag"]["internal_pages"]
-            content = self.module_manager.run_command(pathInfo)
-            self.response.write(content)
-            return
-        else:
-            # Normale Seite wird ausgegeben
-            self.request.staticTags["robots"] = self.preferences["robots_tag"]["content_pages"]
-
-            self.render.render_page()
 
     def setup_staticTags(self):
         """
@@ -207,6 +214,30 @@ class PyLucidApp(BaseApplication):
             link = self.URLs.make_command_link("auth", "login")
             self.request.staticTags["script_login"] = \
             '<a href="%s">login</a>' % (link)
+
+    def process_normal_request(self):
+
+        self.init2()
+        self.setup_staticTags()
+
+        #~ self.tools.page_msg_debug(self.environ)
+
+        if self.request.runlevel == "command":
+            # Ein Kommando soll ausgeführt werden
+            self.request.staticTags["robots"] = self.preferences["robots_tag"]["internal_pages"]
+
+            # Schreibt das Template für das aktuelle Kommando ins
+            # response Objekt. Darin ist der page_body-Tag der von
+            # der replacer-Middleware bzw. mit dem page_body-Module
+            # ausgefüllt wird.
+            self.render.write_command_template()
+        else:
+            # Normale Seite wird ausgegeben
+            self.request.staticTags["robots"] = self.preferences["robots_tag"]["content_pages"]
+
+            # Schreib das Template mit dem page_body-Tag ins
+            # response Objekt.
+            self.render.write_page_template()
 
     def installPyLucid(self):
         from PyLucid.install.install import InstallApp

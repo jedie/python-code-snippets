@@ -316,7 +316,7 @@ class module_manager:
             if self.plugin_data["no_rights_error"] == 1:
                 return ""
 
-        self.page_msg( "run tag %s, error '%s'" % (tag,e) )
+        self.page_msg("run tag %s, error '%s'" % (tag,e))
         return str(e)
 
     def run_function( self, function_name, function_info ):
@@ -324,8 +324,7 @@ class module_manager:
         Ausführen von:
         <lucidFunction:'function_name'>'function_info'</lucidFunction>
         """
-        self.module_name    = function_name
-        self.method_name    = "lucidFunction"
+        self.module_name = function_name
         self.method_name = "lucidFunction"
 
         #~ if debug: self.page_msg("function_name:", function_name, "function_info:", function_info)
@@ -342,37 +341,31 @@ class module_manager:
         self.page_msg(e)
         return str(e)
 
-    def run_command(self, pathInfo):
+    def run_command(self):
         """
         ein Kommando ausführen.
         """
-        pathInfo = pathInfo.lstrip("/")
-        pathInfo = pathInfo.split("/")
+        pathInfo = self.environ["PATH_INFO"]
+        pathInfo = pathInfo.split("/")[1:]
 
-        if len(pathInfo) != 3 or \
-            pathInfo[0] != self.preferences["commandURLprefix"]:
-            msg = "command len error (command:'%s')" % pathInfo
-            self.page_msg(msg)
-            return msg
-        try:
-            self.module_name = pathInfo[1]
-            self.method_name = pathInfo[2]
-        except KeyError, e:
-            msg = "Error in command: KeyError %s" % e
-            self.page_msg(msg)
-            return msg
+        self.module_name = pathInfo[0]
+        self.method_name = pathInfo[1]
+        function_info = pathInfo[2:]
 
-        if debug == True: self.page_msg( "Command: %s; action: %s" % (self.module_name, self.method_name) )
+        if function_info == []:
+            function_info = {}
+        else:
+            function_info = {"function_info": function_info}
 
         try:
-            return self._run_module_method()
+            return self._run_module_method(function_info)
         except run_module_error, e:
             pass
         except rights_error, e:
-            if self.plugin_data["no_rights_error"] == 1:
+            if self.plugin_data.get_properties()["no_rights_error"] == 1:
                 return ""
 
-        self.page_msg( "Error run command:", e )
+        self.page_msg(e)
         return str(e)
 
     def _run_module_method(self, method_arguments={}):
@@ -499,13 +492,13 @@ class module_manager:
                 raise Exception(msg)
 
 
-        if self.plugin_data["direct_out"] == True:
-            # Direktes schreiben in das globale response Objekt
-            responseObject = self.response
-        else:
-            # Das Modul schreibt in einem lokalen Puffer, um die Ausgaben in
-            # die CMS Seite einbauen zu können
-            responseObject = self.tools.out_buffer()
+        #~ if self.plugin_data["direct_out"] == True:
+            #~ # Direktes schreiben in das globale response Objekt
+            #~ responseObject = self.response
+        #~ else:
+        # Das Modul schreibt in einem lokalen Puffer, um die Ausgaben in
+        # die CMS Seite einbauen zu können
+        responseObject = self.tools.out_buffer()
 
         # Instanz erstellen und PyLucid-Objekte übergeben
         if self.preferences["ModuleManager_error_handling"] == True:
@@ -567,9 +560,9 @@ class module_manager:
         ##________________________________________________________________________________________
         ## Ausgaben verarbeiten
 
-        if self.plugin_data["direct_out"] == True:
+        #~ if self.plugin_data["direct_out"] == True:
             # Das Modul hat direkt zum globalen response Objekt geschrieben
-            return
+            #~ return
 
         responseOutput = responseObject.get()
 

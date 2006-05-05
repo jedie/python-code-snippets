@@ -62,11 +62,14 @@ class auth(PyLucidBaseModule):
     ####################################################
     # LogIn
 
-    def login( self ):
+    def login(self):
         """
         Der User will einloggen.
         Holt das LogIn-Formular aus der DB und stellt es zusammen
         """
+        #~ self.response.write("HAU!")
+        #~ return
+
         import random
         rnd_login = random.randint(10000,99999)
 
@@ -85,10 +88,10 @@ class auth(PyLucidBaseModule):
         if Debug == True:
             self.session.debug()
 
-        self.db.render_internal_page(
+        return self.db.get_rendered_internal_page(
             internal_page_name = "auth_login",
             page_dict = {
-                "user"          : username,
+                "user"          : str(username), #FIXME Unicode <-> str
                 "rnd"           : rnd_login,
                 "url"           : url
             }
@@ -99,16 +102,16 @@ class auth(PyLucidBaseModule):
         Überprüft die Daten vom abgeschickten LogIn-Formular und logt den User ein
         """
         try:
-            username    = self.CGIdata["user"]
-            form_pass1  = self.CGIdata["md5pass1"]
-            form_pass2  = self.CGIdata["md5pass2"]
+            username    = self.request.form["user"]
+            form_pass1  = self.request.form["md5pass1"]
+            form_pass2  = self.request.form["md5pass2"]
         except KeyError, e:
             # Formulardaten nicht vollständig
             msg  = "<h1>Login Error:</h1>"
             msg += "<h3>Form data not complete: '%s'</h3>" %e
             msg += "<p>Have you enabled JavaScript?</p>"
             msg += "<p>Did you run 'install_PyLucid.py'? Check login form in SQL table 'pages_internal'.</p>"
-            if Debug: msg += "CGI-Keys: " + str(self.CGIdata.keys())
+            if Debug: msg += "CGI-Keys: " + str(self.request.form.keys())
             return msg
 
         return self.check_md5_login( username, form_pass1, form_pass2 )

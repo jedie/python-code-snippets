@@ -41,8 +41,6 @@ class ObjectApp_Base(object):
 
 
     def _get_module_admin(self):
-        self._URLs["action"] = "?action=module_admin&sub_action="
-
         from PyLucid.modules import module_admin
 
         module_admin = module_admin.module_admin(self.request, self.response)

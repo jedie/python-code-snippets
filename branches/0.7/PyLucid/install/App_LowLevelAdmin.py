@@ -5,22 +5,28 @@
 Information und Tests
 """
 
+from PyLucid.system.exceptions import *
+
 from PyLucid.install.ObjectApp_Base import ObjectApp_Base
 
 class LowLevelAdmin(ObjectApp_Base):
     "2. low level Admin"
-    def module_admin(self):
+    def module_admin(self, sub_action=None, *info):
         "Module/Plugin Administration"
         #~ self._write_info()
         self._write_backlink()
 
+        self.response.write("sub_action: %s\n" % sub_action)
+        self.response.write("sinfo: %s\n" % str(info))
+
+        #~ sub_action = ""
+
         module_admin = self._get_module_admin()
 
-        sub_action = self.request.GET.get("sub_action", None)
-
         if sub_action == "install":
+            self.request.db.commit()
             try:
-                module_admin.install(self.request.GET["package"], self.request.GET["module_name"])
+                module_admin.install(info)
             except IntegrityError, e:
                 self.response.write("DB Error: %s\n" % e)
                 self.request.db.rollback()
@@ -32,7 +38,7 @@ class LowLevelAdmin(ObjectApp_Base):
             return
         elif sub_action == "deinstall":
             try:
-                module_admin.deinstall(self.request.GET["id"])
+                module_admin.deinstall(info[0])
             except IntegrityError, e:
                 self.response.write("DB Error: %s\n" % e)
                 self.request.db.rollback()
@@ -44,7 +50,7 @@ class LowLevelAdmin(ObjectApp_Base):
             return
         elif sub_action == "reinit":
             try:
-                module_admin.reinit(self.request.GET["id"])
+                module_admin.reinit(info[0])
             except IntegrityError, e:
                 self.response.write("DB Error: %s\n" % e)
                 self.request.db.rollback()
@@ -56,12 +62,12 @@ class LowLevelAdmin(ObjectApp_Base):
             return
         elif sub_action == "activate":
             try:
-                module_admin.activate(self.request.GET["id"])
+                module_admin.activate(info[0])
             except KeyError, e:
                 self.response.write("KeyError: %s" % e)
         elif sub_action == "deactivate":
             try:
-                module_admin.deactivate(self.request.GET["id"])
+                module_admin.deactivate(info[0])
             except KeyError, e:
                 self.response.write("KeyError: %s" % e)
         elif sub_action == "module_admin_info":

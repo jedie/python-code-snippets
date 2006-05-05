@@ -22,13 +22,13 @@
 
         <span tal:condition="python:data['active'] == 1" class="action">&dArr;</span>
         <a tal:condition="python:data['active'] == 1"
-            tal:attributes="href string:${'action_url'}deactivate&amp;id=${'data/id'};title string:deactivate ${'data/module_name'}">
+            tal:attributes="href string:${'action_url'}/deactivate/${'data/id'};title string:deactivate ${'data/module_name'}">
         deactivate</a>
     </td>
     <td></td>
     <td>
         <a tal:condition="data/active"
-            tal:attributes="href string:${'action_url'}reinit&amp;id=${'data/id'};title string:reinit ${'data/module_name'}">
+            tal:attributes="href string:${'action_url'}/reinit/${'data/id'};title string:reinit ${'data/module_name'}">
         reinit</a>
     </td>
 </tr>
@@ -46,16 +46,16 @@
     <td class="version" tal:content="string:v${'data/version'}"></td>
     <td>
         <span class="action">&dArr;</span>
-        <a tal:attributes="href string:${'action_url'}deinstall&amp;id=${'data/id'};title string:deinstall ${'data/module_name'}">
+        <a tal:attributes="href string:${'action_url'}/deinstall/${'data/id'};title string:deinstall ${'data/module_name'}">
         deinstall</a>
     </td>
     <td>
         <span class="action">&uArr;</span>
-        <a tal:attributes="href string:${'action_url'}activate&amp;id=${'data/id'};title string:activate ${'data/module_name'}">
+        <a tal:attributes="href string:${'action_url'}/activate/${'data/id'};title string:activate ${'data/module_name'}">
         activate</a>
     </td>
     <td>
-        <a tal:attributes="href string:${'action_url'}reinit&amp;id=${'data/id'};title string:reinit ${'data/module_name'}">
+        <a tal:attributes="href string:${'action_url'}/reinit/${'data/id'};title string:reinit ${'data/module_name'}">
         reinit</a>
 
         <small tal:condition="python:data['active'] == -1">[buildin module]</small>
@@ -73,7 +73,7 @@
     <td class="version" tal:content="string:v${'data/version'}"></td>
     <td>
         <span class="action">&uArr;</span>
-        <a tal:attributes="href string:${'action_url'}install&amp;package=${'data/package'}&amp;module_name=${'data/module_name'};title string:install ${'data/module_name'}">
+        <a tal:attributes="href string:${'action_url'}/install/${'data/package'}/${'data/module_name'};title string:install ${'data/module_name'}">
         install</a>
     </td>
     <td></td>
