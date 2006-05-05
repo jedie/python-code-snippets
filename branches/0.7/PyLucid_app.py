@@ -4,11 +4,13 @@
 # copyleft: jensdiemer.de (GPL v2 or above)
 
 __author__  = "Jens Diemer (www.jensdiemer.de)"
-__license__ = "GNU General Public License v2 or above - http://www.opensource.org/licenses/gpl-license.php"
+__license__ = """GNU General Public License v2 or above -
+ http://www.opensource.org/licenses/gpl-license.php"""
 __url__     = "http://www.PyLucid.org"
 
-__info__ = """<a href="%s" title="PyLucid - A OpenSource CMS in pure Python CGI by Jens Diemer">\
-PyLucid</a> v0.7.0Alpha""" % __url__
+__info__ = """<a href="%s" title="\
+PyLucid - A OpenSource CMS in pure Python CGI by Jens Diemer">PyLucid</a>\
+v0.7.0Alpha""" % __url__
 
 
 debug = True
@@ -25,15 +27,15 @@ from PyLucid.system.exceptions import *
 from colubrid import BaseApplication
 from colubrid import HttpResponse
 
+WSGIrequestKey = "colubrid.request"
 
 
-import config # PyLucid Konfiguration
+import config # PyLucid Grundconfiguration
 
 #__init__
-from PyLucid.system import sessiondata
-from PyLucid.system import preferences
 from PyLucid.system import tools
 from PyLucid.system import db
+from PyLucid.system import URLs
 from PyLucid.system import jinjaRenderer
 
 # init2
@@ -83,20 +85,19 @@ class PyLucidApp(BaseApplication):
         #~ self.request.jinjaRenderer = jinjaRenderer.jinjaRenderer(self.request)
 
         # Speichert Nachrichten die in der Seite angezeigt werden sollen
-        self.request.page_msg = sessiondata.page_msg(debug=True)
-        #~ self.request.page_msg = sessiondata.page_msg(debug=False)
+        self.request.page_msg = environ['PyLucid.page_msg']
 
-        # Verwaltung für Einstellungen aus der Datenbank
-        self.request.preferences = preferences.preferences(
-            self.request, config.config
-        )
+        # Verwaltung für Einstellungen aus der Datenbank (Objekt aus der Middleware)
+        self.request.preferences = environ['PyLucid.preferences']
 
         # Passt die verwendeten Pfade an.
-        self.request.URLs = preferences.URLs(self.request)
+        self.request.URLs = URLs.URLs(self.request)
         self.request.URLs.debug()
 
         # Anbindung an die SQL-Datenbank, mit speziellen PyLucid Methoden
-        self.request.db = db.db(self.request, self.response)
+        self.request.db = environ['PyLucid.database']
+        self.request.db.connect(self.request.preferences)
+        #~ self.request.db = db.db(self.request, self.response)
         self.request.db.page_msg = self.request.page_msg
 
         # Shorthands
@@ -137,7 +138,8 @@ class PyLucidApp(BaseApplication):
         ausgeliefert werden sollte oder PyLucid installieret werden soll...
         Dazu sind die restilichen Objekte garnicht nötig.
         """
-        self.preferences.update_from_sql() # Preferences aus der DB lesen
+        # Preferences aus der DB lesen
+        self.request.preferences.update_from_sql(self.db)
 
         # Log-Ausgaben in SQL-DB
         self.request.log    = SQL_logging.log(self.request)
@@ -193,10 +195,6 @@ class PyLucidApp(BaseApplication):
             "%s\n" % " ".join([str(i) for i in txt])
         )
 
-    def close(self):
-        self.page_msg("ENDE!")
-        self.db.close()
-
     def setup_staticTags(self):
         """
         "Statische" Tag's definieren
@@ -244,21 +242,37 @@ class PyLucidApp(BaseApplication):
         InstallApp.__info__ = __info__
         InstallApp(self.request, self.response).process_request()
 
+
 app = PyLucidApp
+
+# preferences
+from PyLucid.middlewares.preferences import preferencesMiddleware
+app = preferencesMiddleware(app)
+
+# database
+from PyLucid.middlewares.database import DatabaseMiddleware
+app = DatabaseMiddleware(app)
+
+# Middleware Page-Message-Object
+from PyLucid.middlewares.page_msg import page_msg
+app = page_msg(app)
 
 
 # Middleware um die Tags auszuführen
 from PyLucid.middlewares.Replacer import ReplacePyLucidTags
-app = ReplacePyLucidTags(app)
-app = ReplacePyLucidTags(app)
+app = ReplacePyLucidTags(app, WSGIrequestKey)
+app = ReplacePyLucidTags(app, WSGIrequestKey)
+
 
 # Middleware um die Page-Msg Ausgaben einzusetzten
-from PyLucid.middlewares.Replacer import ReplacePageMsg
+from PyLucid.middlewares.page_msg import ReplacePageMsg
 app = ReplacePageMsg(app, "<lucidTag:page_msg/>")
+
 
 # Middleware, die den Tag <lucidTag:script_duration/> ersetzt
 from PyLucid.middlewares.Replacer import ReplaceDurationTime
-app = ReplaceDurationTime(app, "<lucidTag:script_duration/>")
+app = ReplaceDurationTime(app, "<lucidTag:script_duration/>", WSGIrequestKey)
+
 
 
 if __name__ == '__main__':
