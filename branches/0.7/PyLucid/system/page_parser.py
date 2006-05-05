@@ -51,7 +51,7 @@ class render:
         self.URLs           = request.URLs
         self.tools          = request.tools
 
-    def render_page(self):
+    def write_page_template(self):
         """ Baut die Seite zusammen """
 
         page_id = self.session["page_id"]
@@ -61,11 +61,12 @@ class render:
         template_data = self.db.side_template_by_id(self.session["page_id"])
         self.response.write(template_data)
 
-    def setup_staticTags(self, side_data):
+    def write_command_template(self):
+        # FIXME - Quick v0.7 Patch !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        template_data = self.db.side_template_by_id(self.session["page_id"])
+        self.response.write(template_data)
 
-        self.request.staticTags["page_body"] = self.apply_markup(
-            side_data["content"], side_data["markup"]
-        )
+    def setup_staticTags(self, side_data):
 
         self.request.staticTags["markup"]               = side_data["markup"]
         self.request.staticTags["page_name"]            = cgi.escape(side_data["name"])
@@ -81,7 +82,16 @@ class render:
             side_data["lastupdatetime"], format = "DCTERMS.W3CDTF"
         )
 
-    def apply_markup( self, content, markup ):
+
+    def get_rendered_page(self, page_id):
+        page = self.db.get_content_and_markup(page_id)
+        content = self.apply_markup(
+            content = page["content"],
+            markup = page["markup"]
+        )
+        return content
+
+    def apply_markup(self, content, markup):
         """
         Wendet das Markup auf den Seiteninhalt an
         """
@@ -99,7 +109,9 @@ class render:
                     tinyTextile.parser( out, self.PyLucid ).parse( content )
                     return out.get()
                 except Exception, e:
-                    self.page_msg( "Can't use textile-Markup (%s)" % e )
+                    msg = "Can't use textile-Markup (%s)" % e
+                    self.page_msg(msg)
+                    return msg
             else:
                 from PyLucid.system import tinyTextile
                 out = self.tools.out_buffer()
@@ -108,6 +120,6 @@ class render:
         elif markup in ("none", "None", None, "string formatting"):
             return content
         else:
-            self.page_msg( "Markup '%s' not supported yet :(" % markup )
+            self.page_msg("Markup '%s' not supported yet :(" % markup)
             return content
 

@@ -84,7 +84,7 @@ class ReplacePyLucidTags(ReplacerBase):
 
     def rewrite(self, line, environ):
         request = environ[WSGIrequestKey]
-        if not request.init2:
+        if request.runlevel == "install":
             return line
 
         # Shorthands
@@ -133,7 +133,7 @@ class ReplacePyLucidTags(ReplacerBase):
         content = self.module_manager.run_tag(tag)
         if type(content) != str:
             content = "<p>[Content from module '%s' is not type string!] Content:</p>%s" % (
-                function_name, str(content)
+                tag, str(content)
             )
         return content
 

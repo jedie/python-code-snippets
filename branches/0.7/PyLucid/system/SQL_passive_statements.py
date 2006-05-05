@@ -66,7 +66,7 @@ class passive_statements(SQL_wrapper):
 
         side_data = self.select(
                 select_items    = [
-                        "name", "title", "content", "markup", "lastupdatetime","keywords","description"
+                        "markup", "name", "title", "lastupdatetime","keywords","description"
                     ],
                 from_table      = "pages",
                 where           = ( "id", page_id )
@@ -75,7 +75,7 @@ class passive_statements(SQL_wrapper):
         side_data["template"] = self.side_template_by_id(page_id)
 
         # None in "" konvertieren
-        for key in ("content", "name", "keywords", "description"):
+        for key in ("name", "keywords", "description"):
             if side_data[key] == None:
                 side_data[key] = ""
 
@@ -83,6 +83,13 @@ class passive_statements(SQL_wrapper):
             side_data["title"] = side_data["name"]
 
         return side_data
+
+    def get_content_and_markup(self, page_id):
+        return self.select(
+            select_items    = ["content", "markup"],
+            from_table      = "pages",
+            where           = ("id", page_id)
+        )[0]
 
     def side_template_by_id(self, page_id):
         "Liefert den Inhalt des Template-ID und Templates für die Seite mit der >page_id< zurück"
@@ -200,15 +207,21 @@ class passive_statements(SQL_wrapper):
             CSS_id = get_id(page_id)
         except (IndexError, KeyError):
             # Beim löschen einer Seite kann es zu einem KeyError kommen
-            print "/* Index Error with page_id = %s */" % page_id
+            self.page_msg(
+                "Index Error with page_id = %s" % page_id
+            )
             try:
                 # versuchen wir es mit dem parent
                 CSS_id = get_id(self.parentID_by_id(page_id))
-                print "/* Use the styles from parent page! */"
+                self.page_msg(
+                    "Use the styles from parent page!"
+                )
             except (IndexError, KeyError):
                 # Letzter Versuch
                 CSS_id = get_id(self.get_first_page_id())
-                print "/* Use the styles from the first page! */"
+                self.page_msg(
+                    "Use the styles from the first page!"
+                )
 
         CSS_content = self.select(
                 select_items    = ["content"],

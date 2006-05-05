@@ -120,8 +120,15 @@ a:hover {
 </style>
 </head>
 <body>
+<h3>%(info)s - Setup</h3>
+<lucidTag:page_msg/>
 """
-HTML_bottom = "</body></html>"
+HTML_bottom = """
+<hr />
+<small>
+<p>Rendertime: <lucidTag:script_duration/></p>
+</small>
+</body></html>"""
 
 
 
@@ -155,8 +162,9 @@ class InstallApp:
         self.request = request
         self.response = response
 
-        self.response.write(HTML_head)
-        self.response.write("<h3>%s - Setup</h3>" % self.__info__)
+        self.response.write(
+            HTML_head % {"info": self.__info__}
+        )
 
         # Shorthands
         self.environ        = self.request.environ
@@ -199,13 +207,18 @@ class InstallApp:
         self.URLs["base"] = self.URLs["base"][:3]
         self.URLs["base"] = "/%s" % "/".join(self.URLs["base"])
 
+        currentAction = self.environ["PATH_INFO"].split("/")
+        currentAction = currentAction[:3]
+        self.URLs["action"] = "/".join(
+            [self.URLs["real_self_url"]] + currentAction
+        )
+
 
     def process_request(self):
-        path = self.environ.get('PATH_INFO', '').strip('/')
+        path = self.environ["PATH_INFO"]
         parts = path.split('/')
 
         parts = parts[1:] # install-Prefix auslassen
-        print parts
 
         # Resolve the path
         handler = self.root

@@ -154,6 +154,7 @@ class Database(object):
                     msg += ", probably the server '%s' is wrong!" % host
                 msg += " [%s]" % e
                 raise ConnectionError(msg)
+            self.conn.autocommit(False) # Autocommit sollte immer aus sein!
 
         #_____________________________________________________________________
         elif self.dbtyp == "sqlite":
@@ -435,7 +436,7 @@ class SQL_wrapper(Database):
             }
 
         result = self.process_statement(SQLcommand, values)
-        if debug: self.debug_command("insert")
+        if debug: self.debug_command("insert", result)
         return result
 
     def update(self, table, data, where, limit=False, debug=False):
@@ -458,7 +459,7 @@ class SQL_wrapper(Database):
             }
 
         result = self.process_statement(SQLcommand, values)
-        if debug: self.debug_command("update")
+        if debug: self.debug_command("update", result)
         return result
 
 
@@ -505,7 +506,7 @@ class SQL_wrapper(Database):
         SQLcommand += self._make_limit(limit)
 
         result = self.process_statement(SQLcommand, values)
-        if debug: self.debug_command("select")
+        if debug: self.debug_command("select", result)
         return result
 
     def delete(self, table, where, limit=1, debug=False):
@@ -523,7 +524,7 @@ class SQL_wrapper(Database):
         SQLcommand += ";"
 
         result = self.process_statement(SQLcommand, values)
-        if debug: self.debug_command("delete")
+        if debug: self.debug_command("delete", result)
         return result
 
     #_________________________________________________________________________
@@ -655,7 +656,7 @@ class SQL_wrapper(Database):
         return result
 
     def exist_table_name(self, table_name):
-        """ Ý¢erprí§´ die existens eines Tabellen-Namens """
+        """ PrÃ¼ft die existens eines Tabellen-Namens """
         for line in self.table_names():
             if line[0] == table_name:
                 return True
@@ -694,13 +695,17 @@ class SQL_wrapper(Database):
         for i, line in enumerate(result):
             self.request.write("%s - %s\n" % (i, line))
 
-    def debug_command(self, methodname):
+    def debug_command(self, methodname, result=None):
         self.request.write("-"*79)
-        self.request.write("\ndb.%s - Debug:\n" % methodname)
-        self.request.write("last SQL statement:\n")
-        self.request.write("%s\n" % str(self.cursor.last_statement))
+        self.request.write("<br />\n")
+        self.request.write("db.%s - Debug:<br />\n" % methodname)
+        self.request.write("last SQL statement:<br />\n")
+        self.request.write("%s<br />\n" % str(self.cursor.last_statement))
+        if result:
+            self.request.write("Result:<br />\n")
+            self.request.write("<pre>%s</pre><br />\n" % result)
         self.request.write("-"*79)
-        self.request.write("\n")
+        self.request.write("<br />\n")
 
 
 class ConnectionError(Exception):

@@ -166,6 +166,7 @@ class active_statements(passive_statements):
             )
 
         content = internal_page_data["content"]
+        return content % page_dict
         try:
             content = content % page_dict
         except UnicodeError, e:
@@ -185,7 +186,8 @@ class active_statements(passive_statements):
                 self.response.write(
                     "<h4>Can't go around the UnicodeError!</h4>"
                 )
-                if not self.config.system.ModuleManager_error_handling: raise
+                if self.preferences["ModuleManager_error_handling"] != True:
+                    raise
         except Exception, e:
             self.page_msg("Error information:")
 
@@ -230,10 +232,6 @@ class active_statements(passive_statements):
             )
         else:
             return content
-
-    def render_internal_page(self, internal_page_name, page_dict={}):
-        content = self.get_rendered_internal_page(internal_page_name, page_dict)
-        self.response.write(content)
 
     def print_internal_TAL_page(self, internal_page_name, context_dict):
 
@@ -437,7 +435,6 @@ class active_statements(passive_statements):
                 "debug"                     : module_data["module_manager_debug"],
                 "SQL_deinstall_commands"    : module_data["SQL_deinstall_commands"],
             },
-            execute_only=True
         )
         return self.cursor.lastrowid
 
@@ -474,7 +471,6 @@ class active_statements(passive_statements):
         self.insert(
             table = "plugindata",
             data  = method_cfg,
-            execute_only=True
         )
 
     def delete_plugin(self, id):
@@ -483,7 +479,6 @@ class active_statements(passive_statements):
                 table = "plugins",
                 where = ("id", id),
                 limit = 999,
-                execute_only=True
             )
         except Exception, e:
             raise IntegrityError(
@@ -497,6 +492,5 @@ class active_statements(passive_statements):
             table = "plugindata",
             where = ("plugin_id", plugin_id),
             limit = 999,
-            execute_only=True
         )
 

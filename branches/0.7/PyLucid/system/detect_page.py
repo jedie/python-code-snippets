@@ -36,7 +36,7 @@ class detect_page(PyLucidBaseModule):
             self.check_page_id(self.request.args["page_id"])
             return
 
-        if self.request.args.has_key("command"):
+        if self.request.runlevel == "command":
             # Ein internes Kommando (LogIn, EditPage ect.) wurde ausgeführt
             self.set_history_page()
             return
