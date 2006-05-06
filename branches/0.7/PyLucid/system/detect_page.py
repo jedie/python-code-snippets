@@ -6,6 +6,7 @@ Durch poormans_modrewrite ist es nicht ganz so einfach festzustellen, welche
 Seite die aktuelle ist :)
 """
 
+
 __version__="0.1"
 
 __history__="""

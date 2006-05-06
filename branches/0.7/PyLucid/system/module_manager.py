@@ -5,8 +5,6 @@
 Module Manager
 
 # by jensdiemer.de (steht unter GPL-License)
-
-
 """
 
 __version__="0.3"

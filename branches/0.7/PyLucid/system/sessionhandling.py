@@ -101,6 +101,7 @@ from Cookie import SimpleCookie
 
 # Bestimmt den Log-Typ
 log_typ = "sessionhandling"
+verbose_log    = True
 
 # Sollen die Daten im base64 Format in die Datenbank geschrieben werden
 base64format = False
@@ -108,7 +109,151 @@ if base64format == True:
     import base64
 
 
+<<<<<<< .mine
+<<<<<<< .mine
 class cookieHandler:
+    def __init__ (self, request, response, page_msg_debug):
+        self.request        = request
+        self.response       = response
+        self.page_msg_debug = page_msg_debug
+
+        # shorthands
+        self.log            = request.log
+        self.page_msg       = request.page_msg
+        self.preferences    = request.preferences
+
+        self.CookieName     = "PyLucid_id"
+
+    def getClientID(self):
+        """
+        Liefert ein existierender Client-ID zurück.
+        Wenn noch kein cookie existiert, wird dieser erstellt.
+        """
+        clientID = self._read_cookie()
+
+        if clientID == False:
+            # Kein Cookie vorhanden, also machen wir eins
+            clientID = self._gen_clientID()
+            self.writeCookie(clientID)
+
+        return clientID
+
+
+    def _read_cookie(self):
+        """ Liest die ID von einem evtl. vorhandenen Cookie """
+
+        if self.page_msg_debug == True:
+            self.page_msg( "-"*30 )
+
+        cookie_id = self.readCookie()
+        if cookie_id == False:
+            # Es gibt kein Session-Cookie, also gibt es keine gültige Session
+            msg = "no client cookie found."
+            if verbose_log == True:
+                self.log.write( msg, "sessionhandling", "error" )
+            if self.page_msg_debug == True:
+                self.page_msg( msg )
+                self.page_msg( "-"*30 )
+            return False
+
+        if cookie_id == "":
+            self.status = "deleted Cookie found / Client not LogIn!"
+            if verbose_log==True:
+                self.log.write(self.status, "sessionhandling", "error" )
+            return False
+
+        if len(cookie_id) != 32:
+            # Mit dem Cookie stimmt wohl was nicht ;)
+            self.deleteCookie()
+            msg = "wrong Cookie len: %s !" % len( cookie_id )
+            if verbose_log == True:
+                self.log.write( msg, "sessionhandling", "error" )
+            if self.page_msg_debug == True:
+                self.page_msg( msg )
+                self.page_msg( "-"*30 )
+            return False
+
+        return cookie_id
+
+    def _gen_clientID(self):
+        "Generiert eine Session ID anhand der Zeit und der REMOTE_ADDR"
+        clientID = md5.new(
+            str(time.time()) + self.request.environ["REMOTE_ADDR"]
+        ).hexdigest()
+
+        return clientID
+
+    #____________________________________________________________________________________________
+    # Allgemeine Cookie-Funktionen
+
+    def readCookie(self):
+        "liest Cookie"
+        if not self.CookieName in self.request.cookies:
+            return False
+
+        try:
+            cookieData = self.request.cookies[self.CookieName].value
+        except KeyError:
+            return False
+
+        if self.page_msg_debug == True:
+            self.page_msg(
+                "client cookie '%s' exists: '%s'" % (
+                    self.CookieName, cookieData
+                )
+            )
+        return cookieData
+
+
+    def writeCookie(self, Text, expires=None):
+        """
+        speichert Cookie
+        Es wird kein 'expires' gesetzt, somit ist der Cookie gültig/vorhanden bis der
+        Browser beendet wurde.
+        """
+        #~ if expires==None: expires=self.timeout_sec
+        #~ self.Cookie[self.CookieName]["path"] = self.preferences["poormans_url"]
+        #~ self.Cookie[self.CookieName]["expires"] = expires
+
+
+        if self.CookieName in self.request.cookies:
+            raise "Existiert schon!"
+
+        if self.page_msg_debug == True:
+            self.page_msg( "set_cookie '%s': %s" % (self.CookieName, Text))
+
+        self.response.set_cookie(self.CookieName, Text)
+
+        #~ if self.page_msg_debug == True:
+            #~ CookieData = self.request.cookies[self.CookieName].value
+            #~ self.page_msg("test Cookie: '%s'" % CookieData)
+
+    def deleteCookie(self):
+        if self.page_msg_debug == True:
+            self.page_msg( "delete_cookie '%s'" % self.CookieName)
+
+        if self.CookieName in self.request.cookies:
+            self.response.delete_cookie(self.CookieName)
+
+
+#_____________________________________________________________________________
+
+
+
+class sessionhandler(dict):
+    """
+    CGI-Session Handler
+    used mySQL and Cookies
+
+    http://www.python-forum.de/viewtopic.php?p=19523#19523
+    """
+
+=======
+class cookieHandler:
+>>>>>>> .r351
+=======
+class cookieHandler:
+>>>>>>> .r351
     def __init__ (self, request, response, page_msg_debug):
         dict.__init__(self)
 
@@ -121,13 +266,55 @@ class cookieHandler:
         self.page_msg       = request.page_msg
         self.preferences    = request.preferences
 
-        self.CookieName     = "PyLucid_id"
+<<<<<<< .mine
+<<<<<<< .mine
+        self.sql_tablename  = "session_data"
+=======
+>>>>>>> .r351
+=======
+>>>>>>> .r351
         self.timeout_sec    = 1800
 
+<<<<<<< .mine
+<<<<<<< .mine
+        self.set_default_values()
+
+        # Client ID ermitteln
+        c = cookieHandler(request, response, page_msg_debug)
+        self["user_id"] = c.getClientID()
+
+        # Evtl. vorhandene Session-Daten aus DB einlesen
+        self.read_session()
+
+        # Daten die erst mit dem sessionhandling verfügbar sind,
+        # in das Logging Module übertragen
+        self.log.client_sID = self["user_id"]
+        self.log.client_user_name = self["user"]
+        self.log.client_domain_name = self["client_domain_name"]
+
+    def set_default_values(self):
+=======
     def getClientID(self):
+>>>>>>> .r351
+=======
+    def getClientID(self):
+>>>>>>> .r351
         """
+<<<<<<< .mine
+<<<<<<< .mine
+        Setzt Interne Session-Variable auf voreinstestellte
+        'keine-Session-vorhanden-Werte'
+        benötigt von:
+        self.__init__()
+        self.delete_session()
+=======
         Liefert ein existierender Client-ID zurück.
         Wenn noch kein cookie existiert, wird dieser erstellt.
+>>>>>>> .r351
+=======
+        Liefert ein existierender Client-ID zurück.
+        Wenn noch kein cookie existiert, wird dieser erstellt.
+>>>>>>> .r351
         """
         clientID = self._read_cookie()
 
@@ -138,9 +325,20 @@ class cookieHandler:
         return clientID
 
 
+<<<<<<< .mine
+<<<<<<< .mine
+    def read_session(self):
+        status = self.read_session_data(self["user_id"])
+        if status == False:
+=======
     def _read_cookie(self):
         """ Liest die ID von einem evtl. vorhandenen Cookie """
 
+=======
+    def _read_cookie(self):
+        """ Liest die ID von einem evtl. vorhandenen Cookie """
+
+>>>>>>> .r351
         if self.page_msg_debug == True:
             self.page_msg( "-"*30 )
 
@@ -192,6 +390,7 @@ class cookieHandler:
             return False
 
         try:
+<<<<<<< .mine
             cookieData = self.request.cookies[self.CookieName].value
         except KeyError:
             return False
@@ -294,9 +493,123 @@ class sessionhandler(dict):
     def read_session(self):
         status = self.read_session_data(self["user_id"])
         if status == False:
+>>>>>>> .r351
+=======
+            cookieData = self.request.cookies[self.CookieName].value
+        except KeyError:
+            return False
+
+        if self.page_msg_debug == True:
+            self.page_msg("client cookie '%s' exists: '%s'" % (self.CookieName, CookieData))
+        return cookieData
+
+
+    def writeCookie(self, Text, expires=None):
+        """
+        speichert Cookie
+        Es wird kein 'expires' gesetzt, somit ist der Cookie gültig/vorhanden bis der
+        Browser beendet wurde.
+        """
+        #~ if expires==None: expires=self.timeout_sec
+        #~ self.Cookie[self.CookieName]["path"] = self.preferences["poormans_url"]
+        #~ self.Cookie[self.CookieName]["expires"] = expires
+
+
+        if self.CookieName in self.request.cookies:
+            raise "Existiert schon!"
+
+        if self.page_msg_debug == True:
+            self.page_msg( "set_cookie '%s': %s" % (self.CookieName, Text))
+
+        self.response.set_cookie(self.CookieName, Text)
+
+        #~ if self.page_msg_debug == True:
+            #~ CookieData = self.request.cookies[self.CookieName].value
+            #~ self.page_msg("test Cookie: '%s'" % CookieData)
+
+    def deleteCookie(self):
+        if self.page_msg_debug == True:
+            self.page_msg( "delete_cookie '%s'" % self.CookieName)
+
+        if self.CookieName in self.request.cookies:
+            self.response.delete_cookie(self.CookieName)
+
+
+class sessionhandler(dict):
+    """
+    CGI-Session Handler
+    used mySQL and Cookies
+
+    http://www.python-forum.de/viewtopic.php?p=19523#19523
+    """
+
+    def __init__ (self, request, response, page_msg_debug):
+        dict.__init__(self)
+
+        self.request        = request
+        self.response       = response
+        self.page_msg_debug = page_msg_debug
+
+        # shorthands
+        self.db             = request.db
+        self.log            = request.log
+        self.page_msg       = request.page_msg
+        self.preferences    = request.preferences
+
+        self.sql_tablename  = "session_data"
+        self.verbose_log    = True
+
+        getClientCookie
+
+        self.set_default_values()
+        self.read_cookie()
+        if self["user_id"] == False:
+            # Der Client ist nicht mit einem session cookie versehen.
+            self["user_id"] = self.write_session_cookie()
+            return
+
+        # Evtl. vorhandene Session-Daten aus DB einlesen
+        self.read_session()
+
+        # Daten die erst mit dem sessionhandling verfügbar sind,
+        # in das Logging Module übertragen
+        self.log.client_sID = self["user_id"]
+        self.log.client_user_name = self["user"]
+        self.log.client_domain_name = self["client_domain_name"]
+
+    def set_default_values(self):
+        """
+        Setzt Interne Session-Variable auf voreinstestellte 'keine-Session-vorhanden-Werte'
+        benötigt von:
+        self.__init__()
+        self.delete_session()
+        """
+        self["client_IP"] = self.request.environ.get("REMOTE_ADDR","unknown")
+        self["client_domain_name"] = "[not detected]"
+
+        self["user_id"] = False
+        self["isadmin"] = False
+        self["user"] = False
+
+        self.RAW_session_data_len   = -1
+
+
+    def read_session(self):
+        status = self.read_session_data(self["user_id"])
+        if status == False:
+>>>>>>> .r351
             # Es gibt keine Daten zur ID / Falsche Daten vorhanden
+<<<<<<< .mine
+<<<<<<< .mine
             msg = "no session data for id '%s'" % self["user_id"]
+            if verbose_log == True:
+=======
+            msg = "no session data for id '%s'" % self["user_id"]
+=======
+            msg = "no session data for id '%s'" % self["user_id"]
+>>>>>>> .r351
             if self.verbose_log == True:
+>>>>>>> .r351
                 self.log.write( msg, "sessionhandling", "error" )
             if self.page_msg_debug == True:
                 self.page_msg(msg)
@@ -319,8 +632,17 @@ class sessionhandler(dict):
                 self.page_msg( "Your logged out!" )
                 return
 
+<<<<<<< .mine
+<<<<<<< .mine
         msg = "found Session for ID: %s" % self["user_id"]
+        if verbose_log == True:
+=======
+        msg = "found Session for ID: %s" % self["user_id"]
+=======
+        msg = "found Session for ID: %s" % self["user_id"]
+>>>>>>> .r351
         if self.verbose_log == True:
+>>>>>>> .r351
             self.log.write( msg, "sessionhandling", "OK" )
         if self.page_msg_debug == True:
             self.page_msg( msg )
@@ -347,7 +669,7 @@ class sessionhandler(dict):
         msg = "Session is OK\nSession-Data %.2fSec old" % (
             time.time()-DB_data["timestamp"]
         )
-        if self.verbose_log == True:
+        if verbose_log == True:
             self.log.write( msg, "sessionhandling", "OK" )
         if self.page_msg_debug == True: self.page_msg( msg )
 
@@ -375,8 +697,6 @@ class sessionhandler(dict):
             self.status = "OK;Client is LogOut, can't LogOut a second time :-)!"
             return
 
-        self.deleteCookie()
-
         if self.page_msg_debug == True: self.debug_session_data()
         self.db.delete(
             table = self.sql_tablename,
@@ -392,18 +712,43 @@ class sessionhandler(dict):
         self.status = "OK;delete Session data / LogOut for '%s'" % oldID
 
 
-
-    #____________________________________________________________________________________________
-    # Allgemeine SQL-Funktionen
-
-    def insert_session(self):
-        "Eröffnet eine Session"
-        self.delete_old_sessions() # Löschen veralteter Sessions in der DB
+<<<<<<< .mine
+<<<<<<< .mine
+    def commit(self):
+        """
+        Schreibt die aktuellen Sessiondaten in die DB.
+        Sollte also immer als letztes Aufgerufen werden ;)
+        """
 
         session_data = pickle.dumps(dict(self))
         if base64format == True:
             session_data = base64.b64encode( session_data )
         self.RAW_session_data_len = len( session_data )
+
+        self.delete_old_sessions() # Löschen veralteter Sessions in der DB
+
+=======
+
+=======
+
+>>>>>>> .r351
+>>>>>>> .r351
+    #____________________________________________________________________________________________
+    # Allgemeine SQL-Funktionen
+
+    def insert_session(self):
+        "Eröffnet eine Session"
+<<<<<<< .mine
+<<<<<<< .mine
+        self.state
+=======
+        self.delete_old_sessions() # Löschen veralteter Sessions in der DB
+>>>>>>> .r351
+=======
+        self.delete_old_sessions() # Löschen veralteter Sessions in der DB
+>>>>>>> .r351
+
+
 
         self.db.insert(
             table = self.sql_tablename,
@@ -441,7 +786,7 @@ class sessionhandler(dict):
         )
         #~ self.debug_session_data()
 
-        if self.verbose_log == True:
+        if verbose_log == True:
             self.log.write( "update Session: ID:%s" % self["user_id"], "sessionhandling", "OK" )
         if self.page_msg_debug == True:
             self.page_msg("update Session: ID:%s" % self["user_id"])
@@ -498,8 +843,17 @@ class sessionhandler(dict):
 
     #____________________________________________________________________________________________
 
+<<<<<<< .mine
+<<<<<<< .mine
     def debug_session_data(self):
+        if verbose_log != True:
+=======
+    def debug_session_data(self):
+=======
+    def debug_session_data(self):
+>>>>>>> .r351
         if self.verbose_log != True:
+>>>>>>> .r351
             return
 
         import inspect
