@@ -48,6 +48,7 @@ from PyLucid.system import detect_page
 
 
 
+
 class PyLucidApp(BaseApplication):
     """
     Klasse die die Programmlogik zusammenstellt
