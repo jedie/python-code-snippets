@@ -8,8 +8,6 @@ Ausgaben zu ersetzten.
 
 import time, re
 
-WSGIrequestKey = "colubrid.request"
-
 
 # Als erstes Mal die Zeit stoppen ;)
 start_time = time.time()
@@ -18,8 +16,9 @@ start_clock = time.clock()
 
 class ReplacerBase(object):
 
-    def __init__(self, app):
+    def __init__(self, app, WSGIrequestKey):
         self.app = app
+        self.WSGIrequestKey = WSGIrequestKey
 
     def rewrite(self, line, environ):
         raise NotImplementedError
@@ -32,12 +31,14 @@ class ReplacerBase(object):
             result.close()
 
 
+
 class ReplaceDurationTime(ReplacerBase):
     """
     <lucidTag:script_duration/> - ersetzten
     """
-    def __init__(self, app, durationTag):
-        self.app = app
+    def __init__(self, app, WSGIrequestKey, durationTag):
+        super(ReplaceDurationTime, self).__init__(app, WSGIrequestKey)
+
         self.durationTag = durationTag
 
     def rewrite(self, line, environ):
@@ -50,30 +51,17 @@ class ReplaceDurationTime(ReplacerBase):
         return line
 
 
-class ReplacePageMsg(ReplacerBase):
-    """
-    <lucidTag:page_msg/> - ersetzten
-    """
-    def __init__(self, app, pageMsgTag):
-        self.app = app
-        self.pageMsgTag = pageMsgTag
-        #self.data = None
 
-    def rewrite(self, line, environ):
-        request = environ[WSGIrequestKey]
-        page_msg = request.page_msg
 
-        line = line.replace(self.pageMsgTag, page_msg.get())
-        return line
+
 
 
 class ReplacePyLucidTags(ReplacerBase):
     """
     Alle Tags in der Seite ersetzten...
     """
-    def __init__(self, app):
-        self.app = app
-        #self.data = None
+    def __init__(self, app, WSGIrequestKey):
+        super(ReplacePyLucidTags, self).__init__(app, WSGIrequestKey)
 
         self.tag_data = {} # "Statische" Tags-Daten
         self.ignore_tag = ("page_msg", "script_duration")
@@ -83,7 +71,7 @@ class ReplacePyLucidTags(ReplacerBase):
 
 
     def rewrite(self, line, environ):
-        request = environ[WSGIrequestKey]
+        request = environ[self.WSGIrequestKey]
         if request.runlevel == "install":
             return line
 
