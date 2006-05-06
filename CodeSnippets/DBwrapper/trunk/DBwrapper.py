@@ -27,9 +27,13 @@ ToDo
     * Es wird immer das paramstyle 'format' benutzt. Also mit %s escaped
 """
 
-__version__="0.6.1"
+__version__="0.7"
 
 __history__="""
+v0.7
+    - Die connect-Methode wird nun nicht mehr automatisch aufgerufen.
+    - Die Connection-Parameter müßen nun explizit zur verwendeten dbapi passen!
+    - Für jeder Datenbanktyp (MySQL, SQLite) gibt es eine eigene connect-Methode.
 v0.6.1
     - encode_sql_results für unicode angepasst.
     - databasename global gemacht
@@ -104,87 +108,89 @@ class Database(object):
     """
     Klasse, die nur allgemeine SQL-Funktionen beinhaltet
     """
-    def __init__(self, dbtyp, databasename, tableprefix="", host=None, \
-        username=None, password=None):
-
+    def __init__(self):
         # Zum speichern der letzten SQL-Statements (evtl. für Fehlerausgabe)
         self.last_statement = None
 
-        self.dbtyp = dbtyp
-        self.databasename = databasename
-        self.tableprefix = tableprefix
+        self.dbtyp = None
+        self.tableprefix = ""
 
-        #~ try:
-        self._make_connection(host, username, password)
-        #~ except Exception, e:
-            #~ error( "Can't connect to database!", e )
+    def connect_mysqldb(self, *args, **kwargs):
+        self.dbtyp = "MySQLdb"
 
-    def _make_connection(self, host, username, password):
-        """
-        Baut connection zur DB auf.
-        Stellt self.conn und self.cursor zur verfügung
-        """
-
-        #_____________________________________________________________________
-        if self.dbtyp == "MySQLdb":
-            try:
-                import MySQLdb as dbapi
-            except ImportError, e:
-                msg  = "MySQLdb import error! Modul "
-                msg += '<a href="http://sourceforge.net/projects/mysql-python/">'
-                msg += 'python-mysqldb</a> not installed??? [%s]' % e
-                raise ImportError(msg)
-
-            self._setup_paramstyle(dbapi.paramstyle)
-
-            try:
-                self.conn = WrappedConnection(
-                    dbapi.connect(
-                        host    = host,
-                        user    = username,
-                        passwd  = password,
-                        db      = self.databasename,
-                    ),
-                    placeholder = self.placeholder,
-                    prefix = self.tableprefix
-                )
-            except Exception, e:
-                msg = "Can't connect to DB"
-                if e[1].startswith("Can't connect to local MySQL server through socket"):
-                    msg += ", probably the server '%s' is wrong!" % host
-                msg += " [%s]" % e
-                raise ConnectionError(msg)
-            self.conn.autocommit(False) # Autocommit sollte immer aus sein!
-
-        #_____________________________________________________________________
-        elif self.dbtyp == "sqlite":
-            try:
-                from pysqlite2 import dbapi2 as dbapi
-            except ImportError, e:
-                msg  = "pysqlite import error: %s" % e
-                msg += 'Modul <a href="http://pysqlite.org">pysqlite-mysqldb</a>'
-                msg += " not installed???"""
-                raise ImportError(msg)
-
-            self._setup_paramstyle(dbapi.paramstyle)
-
-            try:
-                self.conn = WrappedConnection(
-                    dbapi.connect(self.databasename),
-                    placeholder = self.placeholder,
-                    prefix = self.tableprefix
-                )
-            except Exception, e:
-                import os
-                msg = "Can't connect to SQLite-DB (%s)\n - " % e
-                msg += "check the write rights on '%s'\n - " % os.getcwd()
-                msg += "Databasename: '%s'" % self.databasename
-                raise ConnectionError(msg)
-
-            self.conn.text_factory = str
+        try:
+            import MySQLdb as dbapi
+        except ImportError, e:
+            msg  = "MySQLdb import error! Modul "
+            msg += '<a href="http://sourceforge.net/projects/mysql-python/">'
+            msg += 'python-mysqldb</a> not installed??? [%s]' % e
+            raise ImportError(msg)
 
         self.dbapi = dbapi
+        self._setup_paramstyle(dbapi.paramstyle)
+
+        try:
+            self.conn = WrappedConnection(
+                dbapi.connect(*args, **kwargs),
+                    #~ host    = host,
+                    #~ user    = username,
+                    #~ passwd  = password,
+                    #~ db      = self.databasename,
+                #~ ),
+                placeholder = self.placeholder,
+                prefix = self.tableprefix
+            )
+        except Exception, e:
+            msg = "Can't connect to DB"
+            try:
+                if e[1].startswith("Can't connect to local MySQL server through socket"):
+                    msg += ", probably the server '%s' is wrong!" % host
+            except IndexError:
+                pass
+            msg += " [%s]\n - " % e
+            msg += "connect method args...: %s\n - " % str(args)
+            msg += "connect method kwargs.: %s" % str(kwargs)
+            raise ConnectionError(msg)
+
         self.cursor = self.conn.cursor()
+
+        # Autocommit sollte immer aus sein!
+        # Geht aber nur bei bestimmten MySQL-Datenbank-Typen!
+        self.conn.autocommit(False)
+
+
+    def connect_sqlite(self, *args, **kwargs):
+        self.dbtyp = "sqlite"
+        try:
+            from pysqlite2 import dbapi2 as dbapi
+        except ImportError, e:
+            msg  = "PySqlite import error: %s\n" % e
+            msg += 'Modul <a href="http://pysqlite.org">pysqlite-mysqldb</a>\n'
+            msg += " not installed???"
+            raise ImportError(msg)
+
+        self.dbapi = dbapi
+        self._setup_paramstyle(dbapi.paramstyle)
+
+        try:
+            self.conn = WrappedConnection(
+                dbapi.connect(*args, **kwargs),
+                placeholder = self.placeholder,
+                prefix = self.tableprefix
+            )
+        except Exception, e:
+            import os
+            msg = "Can't connect to SQLite-DB (%s)\n - " % e
+            msg += "check the write rights on '%s'\n - " % os.getcwd()
+            msg += "connect method args...: %s\n - " % str(args)
+            msg += "connect method kwargs.: %s" % str(kwargs)
+            raise ConnectionError(msg)
+
+        self.cursor = self.conn.cursor()
+
+        self.conn.text_factory = str
+
+
         #_____________________________________________________________________
         #~ elif self.dbtyp == "odbc":
             #~ try:
@@ -393,9 +399,9 @@ class SQL_wrapper(Database):
     Es geht auch sys.stdout :)
     """
 
-    def __init__(self, request, *args, **kwargs):
+    def __init__(self, outObject, *args, **kwargs):
         super(SQL_wrapper, self).__init__(*args, **kwargs)
-        self.request = request
+        self.outObject = outObject
 
     def process_statement(self, SQLcommand, SQL_values = ()):
         """ kombiniert execute und fetchall """
@@ -627,14 +633,14 @@ class SQL_wrapper(Database):
             SQLcommand = "SHOW FIELDS FROM $$%s;" % table_name
 
         if debug:
-            self.request.write("-"*79)
-            self.request.write("\nget_table_field_information: %s\n" % SQLcommand)
+            self.outObject.write("-"*79)
+            self.outObject.write("\nget_table_field_information: %s\n" % SQLcommand)
 
         result = self.process_statement(SQLcommand)
         if debug:
-            self.request.write("Raw result: %s\n" % result)
-            self.request.write("-"*79)
-            self.request.write("\n")
+            self.outObject.write("Raw result: %s\n" % result)
+            self.outObject.write("-"*79)
+            self.outObject.write("\n")
         return result
 
     def get_table_fields(self, table_name, debug=False):
@@ -676,7 +682,7 @@ class SQL_wrapper(Database):
                 except Exception, e:
                     if not post_error:
                         # Fehler nur einmal anzeigen
-                        self.request.write(
+                        self.outObject.write(
                             "decode_sql_results() error in line %s: %s\n" % (
                                 line, e
                             )
@@ -691,21 +697,21 @@ class SQL_wrapper(Database):
         self.dump_select_result(result, info="dump table '%s'" % tablename)
 
     def dump_select_result(self, result, info="dumb select result"):
-        self.request.write("*** %s ***\n" % info)
+        self.outObject.write("*** %s ***\n" % info)
         for i, line in enumerate(result):
-            self.request.write("%s - %s\n" % (i, line))
+            self.outObject.write("%s - %s\n" % (i, line))
 
     def debug_command(self, methodname, result=None):
-        self.request.write("-"*79)
-        self.request.write("<br />\n")
-        self.request.write("db.%s - Debug:<br />\n" % methodname)
-        self.request.write("last SQL statement:<br />\n")
-        self.request.write("%s<br />\n" % str(self.cursor.last_statement))
+        self.outObject.write("-"*79)
+        self.outObject.write("<br />\n")
+        self.outObject.write("db.%s - Debug:<br />\n" % methodname)
+        self.outObject.write("last SQL statement:<br />\n")
+        self.outObject.write("%s<br />\n" % str(self.cursor.last_statement))
         if result:
-            self.request.write("Result:<br />\n")
-            self.request.write("<pre>%s</pre><br />\n" % result)
-        self.request.write("-"*79)
-        self.request.write("<br />\n")
+            self.outObject.write("Result:<br />\n")
+            self.outObject.write("<pre>%s</pre><br />\n" % result)
+        self.outObject.write("-"*79)
+        self.outObject.write("<br />\n")
 
 
 class ConnectionError(Exception):
@@ -729,18 +735,28 @@ if __name__ == "__main__":
     #~ print "Content-type: text/html; charset=utf-8\r\n"
     #~ print "<pre>"
 
-    dbtyp="sqlite"
-    databasename=":memory:"
-    db = SQL_wrapper(sys.stdout, dbtyp, databasename)
+    db = SQL_wrapper(sys.stdout)
+    db.tableprefix="Foo_"
 
-    print "dbtyp.......:", dbtyp
-    print "databasename:", db.databasename
+    db.connect_sqlite(":memory:")
+
+    #~ db.connect_mysqldb(
+        #~ host    = "dbHost",
+        #~ user    = "dbUserName",
+        #~ passwd  = "dbPassword",
+        #~ db      = "dbDatabaseName",
+    #~ )
+
+
+    print "dbtyp.......:", db.dbtyp
+    #~ print "databasename:", db.databasename
+    print "tableprefix.:", db.tableprefix
     print "paramstyle..:", db.paramstyle
     print "placeholder.:", db.placeholder
 
     print "\n\ndb.get_tables():", db.get_tables()
 
-    if dbtyp == "sqlite":
+    if db.dbtyp == "sqlite":
         SQLcommand = (
             "CREATE TABLE $$TestTable ("
             "id INTEGER PRIMARY KEY,"
@@ -748,7 +764,7 @@ if __name__ == "__main__":
             "data2 VARCHAR(50) NOT NULL"
             ");"
         )
-    elif dbtype == "mysql":
+    elif db.dbtype == "mysql":
         SQLcommand = (
             "CREATE TABLE $$TestTable ("
             "id INT( 11 ) NOT NULL AUTO_INCREMENT,"
