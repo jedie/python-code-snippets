@@ -405,6 +405,7 @@ class SQL_wrapper(Database):
 
     def process_statement(self, SQLcommand, SQL_values = ()):
         """ kombiniert execute und fetchall """
+        #~ self.outObject("DEBUG:", SQLcommand)
         try:
             self.cursor.execute(SQLcommand, SQL_values)
         except Exception, e:

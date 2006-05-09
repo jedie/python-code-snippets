@@ -25,8 +25,10 @@ class LowLevelAdmin(ObjectApp_Base):
 
         if sub_action == "install":
             self.request.db.commit()
+            package_name = ".".join(info[:-1])
+            module_name = info[-1]
             try:
-                module_admin.install(info)
+                module_admin.install(package_name, module_name)
             except IntegrityError, e:
                 self.response.write("DB Error: %s\n" % e)
                 self.request.db.rollback()

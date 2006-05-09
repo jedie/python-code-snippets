@@ -190,7 +190,7 @@ class show_internals:
         #~ result = self.db.select(
                 #~ select_items    = ["session_data"],
                 #~ from_table      = "session_data",
-                #~ where           = [("session_id",self.session.ID)]
+                #~ where           = [("session_id",self.session["session_id"])]
             #~ )
         #~ for line in result:
             #~ print str( line ).replace("\\n","<br/>")

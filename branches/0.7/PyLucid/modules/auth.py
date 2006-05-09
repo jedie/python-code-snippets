@@ -125,6 +125,7 @@ class auth(PyLucidBaseModule):
         if Debug:
             # Debug Modus: Es wird mehr Informationen an den Client geschickt
             self.page_msg( "Debug:",log_msg )
+
         # Login-Form wieder anzeigen
         return self.login()
 
@@ -132,6 +133,7 @@ class auth(PyLucidBaseModule):
         """
         Überprüft die md5-JavaScript-Logindaten
         """
+        self.session.debug()
         try:
             # Die Zufallszahl beim login, wird aus der Datenbank geholt, nicht aus
             # den zurück geschickten Formular-Daten
@@ -199,9 +201,12 @@ class auth(PyLucidBaseModule):
             self.session["isadmin"] = True
         else:
             self.session["isadmin"] = False
-        self.session.update_session()
 
-        self.log.write( "OK:Session erstellt. User:'%s' sID:'%s'" % (username, self.session.ID) )
+        self.log.write(
+            "OK:Session erstellt. User:'%s' sID:'%s'" % (
+                username, self.session["session_id"]
+            )
+        )
         self.page_msg( "You are logged in." )
 
     def logout( self ):
