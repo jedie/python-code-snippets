@@ -29,37 +29,34 @@ v0.0.1
 __todo__ = """
 """
 
-# Python-Basis Module einbinden
-#~ import
 
 
+from PyLucid.system.BaseModule import PyLucidBaseModule
 
-class admin_menu:
+class admin_menu(PyLucidBaseModule):
 
-    def __init__( self, PyLucid ):
-        self.db         = PyLucid["db"]
-        self.page_msg   = PyLucid["page_msg"]
-        self.config     = PyLucid["config"]
-        self.CGIdata    = PyLucid["CGIdata"]
-        self.URLs       = PyLucid["URLs"]
+    #~ def __init__(self, *args, **kwargs):
+        #~ super(main_menu, self).__init__(*args, **kwargs)
 
     def lucidTag( self ):
         """
         Front menu anzeigen
         """
-        try:
-            self.db.print_internal_page("admin_menu_top_menu")
-        except Exception, e:
-            print "[Error: Can't print internal page: %s]" % e
-
-    def edit_page_link( self ):
-        print '<a href="%s&amp;command=pageadmin&amp;action=edit_page">edit page</a>' % self.URLs["base"]
-
-    def new_page_link( self ):
-        print '<a href="%s&amp;command=pageadmin&amp;action=new_page">new page</a>' % self.URLs["base"]
-
-    def sub_menu_link( self ):
-        print '<a href="%ssub_menu">sub menu</a>' % self.URLs["action"]
+        data = {
+            "login"             : self.request.staticTags['script_login'],
+            "edit_page_link"    : self.URLs.make_command_link("pageadmin", "edit_page"),
+            "new_page_link"     : self.URLs.make_command_link("pageadmin", "new_page"),
+            "sub_menu_link"     : self.URLs.make_command_link("admin_menu", "sub_menu"),
+        }
+        return self.db.get_rendered_internal_page("admin_menu_top_menu", data)
 
     def sub_menu( self ):
         return self.db.get_internal_page("admin_menu_sub_menu")
+
+
+
+
+
+
+
+

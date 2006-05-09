@@ -41,7 +41,7 @@ session = sessionhandling.sessionhandler( mySQLdb.cursor, sql_tablename, file_li
 # Erst nach der Instanzierung kann der HTML-Header an den Client geschickt werden
 print "Content-type: text/html\n"
 
-if self.session.ID == False:
+if self.session["session_id"] == False:
     # Keine Session vorhanden
 else:
     # eine Session ist vorhanden
@@ -237,6 +237,14 @@ class cookieHandler:
 #_____________________________________________________________________________
 
 
+class BrokenSessionData(Exception):
+    """
+    Mit den Session Daten aus der DB stimmt was nicht.
+    """
+    pass
+
+
+
 
 class sessionhandler(dict):
     """
@@ -266,14 +274,14 @@ class sessionhandler(dict):
 
         # Client ID ermitteln
         c = cookieHandler(request, response, page_msg_debug)
-        self["user_id"] = c.getClientID()
+        self["session_id"] = c.getClientID()
 
         # Evtl. vorhandene Session-Daten aus DB einlesen
         self.read_session()
 
         # Daten die erst mit dem sessionhandling verfügbar sind,
         # in das Logging Module übertragen
-        self.log.client_sID = self["user_id"]
+        self.log.client_sID = self["session_id"]
         self.log.client_user_name = self["user"]
         self.log.client_domain_name = self["client_domain_name"]
 
@@ -285,10 +293,12 @@ class sessionhandler(dict):
         self.__init__()
         self.delete_session()
         """
+        self.state = "no session" # Keine Session vorhanden
+
         self["client_IP"] = self.request.environ.get("REMOTE_ADDR","unknown")
         self["client_domain_name"] = "[not detected]"
 
-        self["user_id"] = False
+        self["session_id"] = False
         self["isadmin"] = False
         self["user"] = False
 
@@ -296,97 +306,99 @@ class sessionhandler(dict):
 
 
     def read_session(self):
-        status = self.read_session_data(self["user_id"])
-        if status == False:
-            # Es gibt keine Daten zur ID / Falsche Daten vorhanden
-            msg = "no session data for id '%s'" % self["user_id"]
-            if verbose_log == True:
-                self.log.write( msg, "sessionhandling", "error" )
-            if self.page_msg_debug == True:
-                self.page_msg(msg)
-                self.page_msg("-"*30)
-            return
-
-        if self.page_msg_debug == True:
-            self.debug()
-
-        # Session-Daten auf Vollständigkeit prüfen
-        for key in ("isadmin","user_id","user"):
-            if not self.session_data.has_key(key):
-                # Mit den Session-Daten stimmt was nicht :(
-                msg = "Error in Session Data: Key %s not exists." % key
-                self.log.write( msg, "sessionhandling", "error" )
-                if self.page_msg_debug == True:
-                    self.page_msg( msg )
-                    self.debug_session_data()
-                self.delete_session()
-                self.page_msg( "Your logged out!" )
-                return
-
-        msg = "found Session for ID: %s" % self["user_id"]
-        if verbose_log == True:
-            self.log.write( msg, "sessionhandling", "OK" )
-        if self.page_msg_debug == True:
-            self.page_msg( msg )
-            self.page_msg( "-"*30 )
-            #~ for k,v in self.session_data.iteritems():
-                #~ self.page_msg( "%s - %s" % (k,v) )
-
-    def read_session_data(self, cookie_id):
-        "Liest Session-Daten zur angegebenen ID aus der DB"
-        DB_data = self.read_from_DB(cookie_id)
+        "Liest Session-Daten aus der DB"
+        DB_data = self.read_from_DB(self["session_id"])
         if DB_data == False:
             # Keine Daten in DB
-            return False
+            if self.page_msg_debug == True:
+                self.page_msg(
+                    "No Session data for id %s in DB" % self["session_id"]
+                )
+            return
 
-        if DB_data["ip"] != self["client_IP"]:
-            self.delete_session()
-            raise IndexError(
-                "Wrong client IP from DB: %s from Client: %s" % (
+
+
+        def checkSessiondata(DB_data):
+            if DB_data["ip"] != self["client_IP"]:
+                msg = "Wrong client IP from DB: %s from Client: %s" % (
                     DB_data["ip"], current_IP
                 )
-            )
+                raise BrokenSessionData, msg
+
+            # Session-Daten auf Vollständigkeit prüfen
+            for key in ("isadmin","session_id","user"):
+                if not DB_data.has_key(key):
+                    # Mit den Session-Daten stimmt was nicht :(
+                    msg = "Error in Session Data: Key %s not exists." % key
+                    raise BrokenSessionData, msg
+
+        try:
+            checkSessiondata(DB_data)
+        except BrokenSessionData, msg:
+            self.log.write(msg, "sessionhandling", "error")
+            if self.page_msg_debug == True:
+                self.page_msg(msg)
+                self.debug_session_data()
+            self.delete_session()
+            self.page_msg("Your logged out!")
+            return
+
+        # Daten aus der DB in's eigene Dict übernehmen
+        self.update(DB_data)
 
         # Session ist OK
-        msg = "Session is OK\nSession-Data %.2fSec old" % (
-            time.time()-DB_data["timestamp"]
-        )
-        if verbose_log == True:
-            self.log.write( msg, "sessionhandling", "OK" )
-        if self.page_msg_debug == True: self.page_msg( msg )
+        if verbose_log == True or self.page_msg_debug == True:
+            msg = "Session is OK\nSession-Data %.2fSec old" % (
+                time.time()-DB_data["timestamp"]
+            )
+            if verbose_log == True:
+                self.log.write(msg, "sessionhandling", "OK")
+            if self.page_msg_debug == True:
+                self.page_msg(msg)
+                self.debug()
 
-        self["user_id"]     = cookie_id
-        self.session_data   = DB_data["session_data"]
+        # Soll beim commit aktualisiert werden:
+        self.state = "update session"
 
 
     def makeSession(self):
         """
         Startet eine Session
         """
+        if self.page_msg_debug == True:
+            self.page_msg("makeSession!")
+
         # Stellt Client-Domain-Name fest
         try:
             self["client_domain_name"] = getfqdn(self["client_IP"])
         except Exception, e:
             self["client_domain_name"] = "[getfqdn Error: %s]" % e
 
-        # Speichert den User in der SQL-DB
-        self.insert_session()
+        # Muß beim commit in die DB eingetragen werden
+        self.state = "new session"
 
 
     def delete_session(self):
         "Löscht die aktuelle Session"
-        if self["user_id"] == False:
+        if self["session_id"] == False:
             self.status = "OK;Client is LogOut, can't LogOut a second time :-)!"
             return
 
-        if self.page_msg_debug == True: self.debug_session_data()
+        if self.page_msg_debug == True:
+            self.page_msg("-"*30)
+            self.page_msg("Delete Session!")
+            self.page_msg("debug before:")
+            self.debug_session_data()
         self.db.delete(
             table = self.sql_tablename,
-            where = ("session_id",self["user_id"])
+            where = ("session_id",self["session_id"])
         )
-        if self.page_msg_debug == True: self.debug_session_data()
+        if self.page_msg_debug == True:
+            self.page_msg("debug after:")
+            self.debug_session_data()
+            self.page_msg("-"*30)
 
-        oldID = self["user_id"]
+        oldID = self["session_id"]
 
         # Interne-Session-Variablen rücksetzten
         self.set_default_values()
@@ -399,64 +411,86 @@ class sessionhandler(dict):
         Schreibt die aktuellen Sessiondaten in die DB.
         Sollte also immer als letztes Aufgerufen werden ;)
         """
+        if self.page_msg_debug == True:
+            self.page_msg("session.commit() - state: '%s'" % self.state)
 
-        session_data = pickle.dumps(dict(self))
+        if self.state == "no session":
+            return
+
+        if self["session_id"] == False:
+            self.page_msg("session_id == False!!!")
+            return
+
+        if self.state == "new session":
+            # Es ist eine neue Session die in der DB erst erstellt werden muß
+
+            #~ # Evtl. vorhandene Daten löschen
+            #~ self.db.delete(
+                #~ table = self.sql_tablename,
+                #~ where = ("session_id", self["session_id"]),
+            #~ )
+
+            session_data = self._prepare_sessiondata()
+            self.db.insert(
+                table = self.sql_tablename,
+                data  = {
+                    "session_id"    : self["session_id"],
+                    "timestamp"     : time.time(),
+                    "ip"            : self["client_IP"],
+                    "domain_name"   : self["client_domain_name"],
+                    "session_data"  : session_data,
+                }
+            )
+            self.db.commit()
+            self.log.write( "created Session.", "sessionhandling", "OK" )
+            if self.page_msg_debug == True:
+                self.page_msg("insert session data for:", self["session_id"])
+                self.debug_session_data()
+
+        elif self.state == "update session":
+            session_data = self._prepare_sessiondata()
+            self.db.update(
+                table   = self.sql_tablename,
+                data    = {
+                    "session_data"  : session_data,
+                    "timestamp"     : time.time()
+                },
+                where   = ("session_id", self["session_id"]),
+                limit   = 1,
+            )
+            self.db.commit()
+            #~ self.debug_session_data()
+
+            if verbose_log == True:
+                self.log.write( "update Session: ID:%s" % self["session_id"], "sessionhandling", "OK" )
+            if self.page_msg_debug == True:
+                self.page_msg("update Session: ID:%s" % self["session_id"])
+                self.debug_session_data()
+
+        if self.page_msg_debug == True:
+            self.debug()
+
+    def _prepare_sessiondata(self):
+        session_data = dict(self) # Kopie des Dict's machen
+
+        # "doppelte" Keys löschen:
+        del(session_data["session_id"])
+        del(session_data["client_IP"])
+        del(session_data["client_domain_name"])
+
+        session_data = pickle.dumps(session_data)
         if base64format == True:
-            session_data = base64.b64encode( session_data )
-        self.RAW_session_data_len = len( session_data )
+            session_data = base64.b64encode(session_data)
+        self.RAW_session_data_len = len(session_data)
 
-        self.delete_old_sessions() # Löschen veralteter Sessions in der DB
+        return session_data
 
     #____________________________________________________________________________________________
     # Allgemeine SQL-Funktionen
 
-    def insert_session(self):
-        "Eröffnet eine Session"
-        self.state
-
-
-
-        self.db.insert(
-            table = self.sql_tablename,
-            data  = {
-                "session_id"    : self["user_id"],
-                "timestamp"     : time.time(),
-                "ip"            : self["client_IP"],
-                "domain_name"   : self["client_domain_name"],
-                "session_data"  : session_data,
-            }
-        )
-        self.log.write( "created Session.", "sessionhandling", "OK" )
-        if self.page_msg_debug == True:
-            self.page_msg("insert session data for:", self["user_id"])
-            self.debug_session_data()
-
-    def update_session(self):
-        "Aktualisiert die Session-Daten"
-        self.delete_old_sessions() # Löschen veralteter Sessions in der DB
-
-        session_data = pickle.dumps(self)
-        if base64format == True:
-            session_data = base64.b64encode( session_data )
-
-        self.RAW_session_data_len = len( session_data )
-
-        self.db.update(
-            table   = self.sql_tablename,
-            data    = {
-                "session_data"  : session_data,
-                "timestamp"     : time.time()
-            },
-            where   = ("session_id", self["user_id"]),
-            limit   = 1,
-        )
-        #~ self.debug_session_data()
-
-        if verbose_log == True:
-            self.log.write( "update Session: ID:%s" % self["user_id"], "sessionhandling", "OK" )
-        if self.page_msg_debug == True:
-            self.page_msg("update Session: ID:%s" % self["user_id"])
-            self.debug_session_data()
+    #~ def insert_session(self):
+        #~ "Eröffnet eine Session"
+        #~ self.state = "new session"
 
     def read_from_DB(self, session_id):
         "Liest Sessiondaten des Users mit der >session_id<"
@@ -468,11 +502,14 @@ class sessionhandler(dict):
         if DB_data == []:
             return False
 
-        self.delete_old_sessions() # Löschen veralteter Sessions in der DB
+        self._delete_old_sessions() # Löschen veralteter Sessions in der DB
 
-        #~ if self.page_msg_debug == True: self.page_msg( "DB_data:",DB_data )
-        #~ if len(DB_data) != 1:
-            #~ raise "More than one Session in DB!", len(DB_data)
+        if self.page_msg_debug == True: self.page_msg( "DB_data:",DB_data )
+        if len(DB_data) > 1:
+            "More than one Session in DB! (%s session found!)" % len(DB_data)
+            self.page_msg(msg)
+            self.log.write(msg, "sessionhandling", "error")
+            return False
 
         DB_data = DB_data[0]
 
@@ -482,30 +519,39 @@ class sessionhandler(dict):
             DB_data["session_data"] = base64.b64decode(DB_data["session_data"])
         DB_data["session_data"] = pickle.loads(DB_data["session_data"])
 
-        if self.page_msg_debug == True:
-            self.debug_session_data()
+        DB_data.update(DB_data["session_data"])
+        del(DB_data["session_data"])
 
         return DB_data
 
 
-    def delete_old_sessions(self):
+    def _delete_old_sessions(self):
         "Löscht veraltete Sessions in der DB"
-        SQLcommand  = "DELETE FROM %s%s" % (self.db.tableprefix, self.sql_tablename)
-        SQLcommand += " WHERE timestamp < %s"
+        SQLcommand  = "DELETE FROM $$%s" % self.sql_tablename
+        SQLcommand += " WHERE timestamp < ?"
 
         current_timeout = time.time() - self.timeout_sec
 
+        if self.page_msg_debug == True:
+            self.page_msg("-"*30)
+            self.page_msg("Delete old Sessions!")
+            self.page_msg("SQLcomand:", SQLcommand, current_timeout)
+            self.page_msg("debug befor:")
+            self.debug_session_data()
+
         try:
-            self.db.cursor.execute(
-                SQLcommand,
-                ( current_timeout, )
-            )
+            self.db.cursor.execute(SQLcommand, (current_timeout,))
         except Exception, e:
-            print "Content-type: text/html\n"
-            print "Delete Old Session error: %s" % e
+            msg = "Content-type: text/html\n"
+            msg += "Delete Old Session error: %s" % e
+            self.page_msg(msg)
+            sys.stderr.write(msg)
             sys.exit()
 
-        if self.page_msg_debug == True: self.debug_session_data()
+        if self.page_msg_debug == True:
+            self.page_msg("debug after:")
+            self.debug_session_data()
+            self.page_msg("-"*30)
 
     #____________________________________________________________________________________________
 
@@ -520,8 +566,8 @@ class sessionhandler(dict):
             RAW_db_data = self.db.select(
                 select_items    = ['timestamp', 'session_data','session_id'],
                 from_table      = self.sql_tablename,
-                where           = [("session_id",self["user_id"])]
-            )[0]
+                where           = [("session_id",self["session_id"])]
+            )
             self.page_msg( "Debug from %s: %s<br />" % (stack_info, RAW_db_data) )
         except Exception, e:
             self.page_msg( "Debug-Error from %s: %s" % (stack_info,e) )
@@ -543,7 +589,7 @@ class sessionhandler(dict):
         self.page_msg("len:", len(self))
         for k,v in self.iteritems():
             self.page_msg( "%s - %s" % (k,v) )
-        self.page_msg("ID:", self["user_id"])
+        self.page_msg("ID:", self["session_id"])
         self.page_msg( "-"*30 )
 
     def debug_last(self):

@@ -214,7 +214,7 @@ class module_admin(PyLucidBaseModule):
         # module_manager_data in Tabelle "plugindata" eintragen
         self.response.write("register methods:\n")
         for method_name in module_data["module_manager_data"]:
-            self.response.write("* %s " % method_name)
+            self.response.write("\t* %s " % method_name)
             method_cfg = module_data["module_manager_data"][method_name]
 
             if type(method_cfg) != dict:
@@ -267,7 +267,7 @@ class module_admin(PyLucidBaseModule):
             )
 
             for method_name, cfg in dependent_cfg.iteritems():
-                self.response.write("*",method_name,)
+                self.response.write("\t*",method_name,)
 
                 #~ try:
                 self.db.register_plugin_method(plugin_id, method_name, cfg, parent_method_id)
@@ -279,13 +279,10 @@ class module_admin(PyLucidBaseModule):
     #________________________________________________________________________________________
     # install
 
-    def install(self, info):
+    def install(self, package, module_name):
         """
         Modul in die DB eintragen
         """
-        package = ".".join(info[:-1])
-        module_name = info[-1]
-
         self.link("administation_menu")
         self.response.write(
             "<h3>Install %s.<strong>%s</strong></h3>" % (
@@ -330,7 +327,7 @@ class module_admin(PyLucidBaseModule):
         if module_data["styles"] != None:
             self.response.write("install stylesheet:\n")
             for style in module_data["styles"]:
-                self.response.write("* %-25s" % style["name"])
+                self.response.write("\t* %-25s" % style["name"])
                 css_filename = os.path.join(
                     module_data['package_name'],
                     "%s_%s.css" % (module_data['module_name'], style["name"])
@@ -345,7 +342,7 @@ class module_admin(PyLucidBaseModule):
                 else:
                     try:
                         style["plugin_id"] = self.registered_plugin_id
-                        self.db.new_style(style, execute_only=True)
+                        self.db.new_style(style)
                     except Exception, e:
                         raise IntegrityError(
                             "Can't save new Style to DB: %s - %s" % (
@@ -357,7 +354,7 @@ class module_admin(PyLucidBaseModule):
 
         ##_____________________________________________
         # internal_pages
-        self.response.write("install internal_page:")
+        self.response.write("install internal_page:\n")
         for method_name, method_data in module_data["module_manager_data"].iteritems():
             self._install_internal_page(method_data, package, module_name, method_name)
 
@@ -402,10 +399,10 @@ class module_admin(PyLucidBaseModule):
             "markup"            : data["markup"],
         }
 
-        self.response.write("* %-25s " % internal_page["name"])
+        self.response.write("\t* %-25s " % internal_page["name"])
 
         internal_page_filename = os.path.join(
-            package, "%s.html" % internal_page["name"]
+            package.replace(".","/"), "%s.html" % internal_page["name"] #FIXME replace
         )
         self.response.write("%s..." % internal_page_filename)
         try:
@@ -425,7 +422,7 @@ class module_admin(PyLucidBaseModule):
             self.db.new_internal_page(internal_page, lastupdatetime)
         except Exception, e:
             raise IntegrityError("Can't save new internal page to DB: %s - %s" % (
-                    sys.exc_info()[0],":", e
+                    sys.exc_info()[0], e
                 )
             )
         else:
@@ -518,7 +515,7 @@ class module_admin(PyLucidBaseModule):
         except Exception, e:
             raise IntegrityError(
                     "Can't delete plugin style! ID: %s (%s: %s)" % (
-                    id, sys.exc_info()[0],":", e
+                    id, sys.exc_info()[0], e
                 )
             )
         else:
@@ -580,7 +577,7 @@ class module_admin(PyLucidBaseModule):
         self.deinstall(id, print_info=False)
 
         self.response.write(" *** install ***")
-        self.install(package_name, module_name, print_info=False)
+        self.install(package_name, module_name)#, print_info=False)
 
         self.response.write("</pre>")
         self.link("administation_menu")
@@ -668,6 +665,7 @@ class module_admin(PyLucidBaseModule):
         Liefert alle Daten zu einem Modul, aus der zugehörigen config-Datei.
         """
         def _import(package_name, module_name):
+            package_name = package_name.replace("/",".") #FIXME
             full_modulename = "%s.%s" % (package_name, module_name)
             #~ self.page_msg("full_modulename:", full_modulename)
             return __import__(

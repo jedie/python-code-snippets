@@ -31,7 +31,7 @@ module_manager_data = {
         "internal_page_info" : {
             "name"              : "top_menu",
             "description"       : "Administration front menu",
-            "template_engine"   : None,
+            "template_engine"   : "string formatting",
             "markup"            : None,
         },
     },

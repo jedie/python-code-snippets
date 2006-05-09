@@ -55,7 +55,7 @@ class active_statements(passive_statements):
             limit   = 1
         )
 
-    def new_style(self, style_data, execute_only=False):
+    def new_style(self, style_data):
         self.insert(
             table   = "styles",
             data    = {
@@ -64,7 +64,6 @@ class active_statements(passive_statements):
                 "description"   : style_data.get("description", None),
                 "content"       : style_data["content"],
             },
-            execute_only = execute_only,
         )
 
     def delete_style(self, style):
@@ -94,7 +93,6 @@ class active_statements(passive_statements):
             table           = "styles",
             where           = ("plugin_id",plugin_id),
             limit           = 99,
-            execute_only    = True
         )
         style_names = [i["name"] for i in style_names]
         return style_names
@@ -299,7 +297,6 @@ class active_statements(passive_statements):
                         table           = "pages_internal_category",
                         where           = ("id", line["id"]),
                         limit           = 99,
-                        execute_only    = True
                     )
                 except Exception, e:
                     raise IntegrityError(
@@ -352,7 +349,6 @@ class active_statements(passive_statements):
             table           = "pages_internal",
             where           = ("plugin_id", plugin_id),
             limit           = 99,
-            execute_only    = True
         )
         page_names = [i["name"] for i in page_names]
         return page_names

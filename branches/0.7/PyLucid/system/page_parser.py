@@ -33,6 +33,96 @@ sondern die richtigen Namen verwenden geht das leider noch nicht :(
 import sys, cgi, re, time
 
 
+lucidTagRE      = re.compile("<lucidTag:(.*?)/?>")
+lucidFunctionRE = re.compile("<lucidFunction:(.*?)>(.*?)</lucidFunction>")
+
+
+class ReplacePyLucidTags(object):
+    """
+    Alle Tags in der Seite ersetzten...
+    """
+    def __init__(self, request, response):
+        self.request = request
+        self.response = response
+
+        # Shorthands
+        self.page_msg       = request.page_msg
+        self.module_manager = request.module_manager
+        self.staticTags     = request.staticTags
+
+        self.tag_data = {} # "Statische" Tags-Daten
+        self.ignore_tag = ("page_msg", "script_duration")
+
+        # Tags ersetzten:
+        self.response.response = [self.rewrite(line) for line in self.response.response]
+
+    def rewrite(self, line):
+        if "<lucid" in line:
+            line = lucidTagRE.sub(self.handle_tag, line)
+            line = lucidFunctionRE.sub(self.handle_function, line)
+
+        #~ line = line.replace(self.pageMsgTag, page_msg.get())
+        return line
+
+    def handle_tag(self, matchobj):
+        """
+        Abarbeiten eines <lucidTag:... />
+        """
+        tag = matchobj.group(1)
+
+        #~ self.page_msg("tag: %s" % tag)
+
+        if tag in self.ignore_tag:
+            # Soll ignoriert werden. Bsp.: script_duration, welches wirklich am ende
+            # erst "ausgefüllt" wird ;)
+            return matchobj.group(0)
+
+        if self.staticTags.has_key(tag):
+            # Als "Statische" Information vorhanden
+            return self.check_result(tag, self.staticTags[tag])
+
+        content = self.module_manager.run_tag(tag)
+
+        return self.check_result(tag, content)
+
+
+    def handle_function(self, matchobj):
+        function_name = matchobj.group(1)
+        function_info = matchobj.group(2)
+
+        #~ print function_name, function_info
+
+        content = self.module_manager.run_function(function_name, function_info)
+
+        return self.check_result(
+            "%s.%s" % (function_name, function_info),
+            content
+        )
+
+
+    def check_result(self, tag, content):
+        # FIXME - besserer Umgang mit unicode content!
+
+        #~ if not isinstance(content, basestring):
+        if type(content) != str:
+            self.page_msg(
+                "result of tag '%s' is not type string! Is type: %s" % (
+                    tag, cgi.escape(str(type(content))),
+                )
+            )
+            self.page_msg("---- result is: ----")
+            self.page_msg(cgi.escape(str(content)))
+            self.page_msg("--------------------")
+            return str(content)
+
+        return content
+
+
+
+
+
+
+
 
 class render:
     """

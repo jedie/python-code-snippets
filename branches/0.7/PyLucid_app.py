@@ -34,7 +34,6 @@ import config # PyLucid Grundconfiguration
 
 #__init__
 from PyLucid.system import tools
-from PyLucid.system import db
 from PyLucid.system import URLs
 from PyLucid.system import jinjaRenderer
 
@@ -101,6 +100,9 @@ class PyLucidApp(BaseApplication):
         #~ self.request.db = db.db(self.request, self.response)
         self.request.db.page_msg = self.request.page_msg
 
+        # FIXME - Auch in der DB-Klasse wird tools benötigt
+        self.request.db.tools = self.request.tools
+
         # Shorthands
         self.page_msg       = self.request.page_msg
         self.db             = self.request.db
@@ -148,8 +150,8 @@ class PyLucidApp(BaseApplication):
 
         # Allgemeiner CGI Sessionhandler auf mySQL-Basis
         self.request.session = sessionhandling.sessionhandler(
-            #~ self.request, page_msg_debug=False
-            self.request, self.response, page_msg_debug=True
+            #~ self.request, self.response, page_msg_debug=True
+            self.request, self.response, page_msg_debug=False
         )
 
         # Aktuelle Seite ermitteln und festlegen
@@ -200,7 +202,10 @@ class PyLucidApp(BaseApplication):
         """
         "Statische" Tag's definieren
         """
-        self.request.staticTags = {}
+        self.request.staticTags = {
+            "commandURLprefix" : self.preferences["commandURLprefix"],
+            "installURLprefix" : self.preferences["installURLprefix"],
+        }
 
         self.request.staticTags["powered_by"]  = __info__
         if self.session["user"] != False:
@@ -238,6 +243,12 @@ class PyLucidApp(BaseApplication):
             # response Objekt.
             self.render.write_page_template()
 
+        # PyLucid-Tags aus dem response ersetzten:
+        page_parser.ReplacePyLucidTags(self.request, self.response)
+
+        # Evtl. vorhandene Sessiondaten in DB schreiben
+        self.session.commit()
+
     def installPyLucid(self):
         from PyLucid.install.install import InstallApp
         InstallApp.__info__ = __info__
@@ -257,13 +268,6 @@ app = DatabaseMiddleware(app)
 # Middleware Page-Message-Object
 from PyLucid.middlewares.page_msg import page_msg
 app = page_msg(app)
-
-
-# Middleware um die Tags auszuführen
-from PyLucid.middlewares.Replacer import ReplacePyLucidTags
-app = ReplacePyLucidTags(app, WSGIrequestKey)
-app = ReplacePyLucidTags(app, WSGIrequestKey)
-
 
 # Middleware um die Page-Msg Ausgaben einzusetzten
 from PyLucid.middlewares.page_msg import ReplacePageMsg
