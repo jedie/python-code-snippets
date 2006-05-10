@@ -14,32 +14,13 @@ start_time = time.time()
 start_clock = time.clock()
 
 
-#~ class ReplacerBase(object):
-
-    #~ def __init__(self, app, WSGIrequestKey):
-        #~ self.app = app
-        #~ self.WSGIrequestKey = WSGIrequestKey
-
-    #~ def rewrite(self, line, environ):
-        #~ raise NotImplementedError
-
-    #~ def __call__(self, environ, start_response):
-        #~ result = iter(self.app(environ, start_response))
-        #~ for line in result:
-            #~ yield self.rewrite(line, environ)
-        #~ if hasattr(result, 'close'):
-            #~ result.close()
-
-
 
 class ReplaceDurationTime(object):
     """
     <lucidTag:script_duration/> - ersetzten
     """
-    def __init__(self, app, WSGIrequestKey, durationTag):
-        #~ super(ReplaceDurationTime, self).__init__(app, WSGIrequestKey)
+    def __init__(self, app, durationTag):
         self.app = app
-
         self.durationTag = durationTag
 
     def rewrite(self, line, environ):
