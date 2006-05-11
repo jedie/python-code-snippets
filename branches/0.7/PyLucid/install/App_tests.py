@@ -54,7 +54,7 @@ class tests(ObjectApp_Base):
         "Information about installed modules"
         self._write_info()
 
-        self._URLs["current_action"] = self._URLs["base"]
+        #~ self._URLs["current_action"] = self._URLs["base"]
         module_admin = self._get_module_admin()
 
         module_admin.debug_installed_modules_info(module_id)

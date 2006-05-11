@@ -9,16 +9,16 @@ __license__ = """GNU General Public License v2 or above -
 __url__     = "http://www.PyLucid.org"
 
 __info__ = """<a href="%s" title="\
-PyLucid - A OpenSource CMS in pure Python CGI by Jens Diemer">PyLucid</a>\
+PyLucid - A OpenSource CMS in pure Python CGI by Jens Diemer">PyLucid</a> \
 v0.7.0Alpha""" % __url__
 
 
-debug = True
-#~ debug = False
+#~ debug = True
+debug = False
 
 
 
-import cgi, urllib, os
+import cgi, os
 import sys #Debug
 
 from PyLucid.system.exceptions import *
@@ -38,12 +38,15 @@ from PyLucid.system import URLs
 from PyLucid.system import jinjaRenderer
 
 # init2
+from PyLucid.system import staticTags
 from PyLucid.system import sessionhandling
 from PyLucid.system import SQL_logging
 from PyLucid.system import module_manager
 from PyLucid.system import page_parser
 from PyLucid.system import detect_page
 
+
+staticTags.__info__ = __info__ # Übertragen
 
 
 
@@ -64,13 +67,20 @@ class PyLucidApp(BaseApplication):
         self.environ        = environ
 
         self.request.runlevel = "init"
-        self.request.log            = None
-        self.request.render         = None
-        self.request.session        = None
-        self.request.module_manager = None
+        #~ self.request.log            = None
+        #~ self.request.render         = None
+        #~ self.request.tag_parser     = None
+        #~ self.request.session        = None
+        #~ self.request.module_manager = None
 
-        # environ['PATH_INFO'] anpassen
-        self.setup_path_info()
+        # Verwaltung für Einstellungen aus der Datenbank (Objekt aus der Middleware)
+        self.request.preferences = environ['PyLucid.preferences']
+
+        # Speichert Nachrichten die in der Seite angezeigt werden sollen
+        self.request.page_msg = environ['PyLucid.page_msg']
+
+        # Passt die verwendeten Pfade an.
+        self.request.URLs = URLs.URLs(self.request)
 
         # Tools
         tools.request       = self.request  # Request Objekt an tools übergeben
@@ -83,16 +93,6 @@ class PyLucidApp(BaseApplication):
         self.request.context = {}
 
         #~ self.request.jinjaRenderer = jinjaRenderer.jinjaRenderer(self.request)
-
-        # Speichert Nachrichten die in der Seite angezeigt werden sollen
-        self.request.page_msg = environ['PyLucid.page_msg']
-
-        # Verwaltung für Einstellungen aus der Datenbank (Objekt aus der Middleware)
-        self.request.preferences = environ['PyLucid.preferences']
-
-        # Passt die verwendeten Pfade an.
-        self.request.URLs = URLs.URLs(self.request)
-        self.request.URLs.debug()
 
         # Anbindung an die SQL-Datenbank, mit speziellen PyLucid Methoden
         self.request.db = environ['PyLucid.database']
@@ -110,19 +110,6 @@ class PyLucidApp(BaseApplication):
         self.tools          = self.request.tools
         self.URLs           = self.request.URLs
 
-    def setup_path_info(self):
-        pathInfo = self.request.environ.get('PATH_INFO', '/')
-        #~ self.response.write("OK: %s" % pathInfo)
-        #~ return self.response
-
-        pathInfo = urllib.unquote(pathInfo)
-        try:
-            pathInfo = unicode(pathInfo, "utf-8")
-        except:
-            pass
-
-        pathInfo = pathInfo.strip("/")
-        self.request.environ["PATH_INFO"] = pathInfo
 
     def setup_runlevel(self):
 
@@ -154,10 +141,7 @@ class PyLucidApp(BaseApplication):
             self.request, self.response, page_msg_debug=False
         )
 
-        # Aktuelle Seite ermitteln und festlegen
-        detect_page.detect_page(self.request, self.response).detect_page()
-        # Überprüfe Rechte der Seite
-        #~ self.verify_page()
+        self.request.staticTags = staticTags.staticTags(self.request, self.response)
 
         self.request.render = page_parser.render(self.request, self.response)
 
@@ -167,14 +151,22 @@ class PyLucidApp(BaseApplication):
         )
         #~ self.request.module_manager.debug()
 
-        # Der ModulManager, wird erst nach dem Parser instanziert. Damit aber
-        # der Parser auf ihn zugreifen kann, packen wir ihn einfach dorthin ;)
-        #~ self.request.parser.module_manager = self.request.module_manager
+        self.request.tag_parser = page_parser.tag_parser(self.request, self.response)
+
+        # Aktuelle Seite ermitteln und festlegen
+        detect_page.detect_page(self.request, self.response).detect_page()
+        # Überprüfe Rechte der Seite
+        #~ self.verify_page()
 
         #Shorthands
-        self.render = self.request.render
-        self.session = self.request.session
+        self.render         = self.request.render
+        self.tag_parser     = self.request.tag_parser
+        self.session        = self.request.session
         self.module_manager = self.request.module_manager
+        self.staticTags     = self.request.staticTags
+
+        # Übertragen von Objekten
+        self.db.render = self.render
 
 
     def process_request(self):
@@ -198,38 +190,15 @@ class PyLucidApp(BaseApplication):
             "%s\n" % " ".join([str(i) for i in txt])
         )
 
-    def setup_staticTags(self):
-        """
-        "Statische" Tag's definieren
-        """
-        self.request.staticTags = {
-            "commandURLprefix" : self.preferences["commandURLprefix"],
-            "installURLprefix" : self.preferences["installURLprefix"],
-        }
-
-        self.request.staticTags["powered_by"]  = __info__
-        if self.session["user"] != False:
-            link = self.URLs.make_command_link("auth", "logout")
-            self.request.staticTags["script_login"] = \
-            '<a href="%s">logout [%s]</a>' % (
-                link, self.request.session["user"]
-            )
-        else:
-            link = self.URLs.make_command_link("auth", "login")
-            self.request.staticTags["script_login"] = \
-            '<a href="%s">login</a>' % (link)
-
     def process_normal_request(self):
 
         self.init2()
-        self.setup_staticTags()
+        self.staticTags.setup()
 
         #~ self.tools.page_msg_debug(self.environ)
 
         if self.request.runlevel == "command":
             # Ein Kommando soll ausgeführt werden
-            self.request.staticTags["robots"] = self.preferences["robots_tag"]["internal_pages"]
-
             # Schreibt das Template für das aktuelle Kommando ins
             # response Objekt. Darin ist der page_body-Tag der von
             # der replacer-Middleware bzw. mit dem page_body-Module
@@ -237,14 +206,13 @@ class PyLucidApp(BaseApplication):
             self.render.write_command_template()
         else:
             # Normale Seite wird ausgegeben
-            self.request.staticTags["robots"] = self.preferences["robots_tag"]["content_pages"]
 
             # Schreib das Template mit dem page_body-Tag ins
             # response Objekt.
             self.render.write_page_template()
 
         # PyLucid-Tags aus dem response ersetzten:
-        page_parser.ReplacePyLucidTags(self.request, self.response)
+        self.tag_parser.rewrite_responseObject()
 
         # Evtl. vorhandene Sessiondaten in DB schreiben
         self.session.commit()
@@ -275,8 +243,8 @@ app = ReplacePageMsg(app, "<lucidTag:page_msg/>")
 
 
 # Middleware, die den Tag <lucidTag:script_duration/> ersetzt
-from PyLucid.middlewares.Replacer import ReplaceDurationTime
-app = ReplaceDurationTime(app, "<lucidTag:script_duration/>", WSGIrequestKey)
+from PyLucid.middlewares.script_duration import ReplaceDurationTime
+app = ReplaceDurationTime(app, "<lucidTag:script_duration/>")
 
 
 
