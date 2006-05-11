@@ -63,28 +63,19 @@ das Archiv nicht mehr angezeigt :(
 import sys, cgi, time, pickle, urllib
 
 
-class pageadmin:
+debug = True
+
+
+from PyLucid.system.BaseModule import PyLucidBaseModule
+
+
+class pageadmin(PyLucidBaseModule):
     """
     Editieren einer CMS-Seite mit Preview und Archivierung
     """
 
-    def __init__( self, PyLucid ):
-        self.PyLucid    = PyLucid
-
-        self.config         = PyLucid["config"]
-        #~ self.config.debug()
-        self.CGIdata        = PyLucid["CGIdata"]
-        #~ self.CGIdata.debug()
-        self.session        = PyLucid["session"]
-        #~ self.session.debug()
-        self.db             = PyLucid["db"]
-        #~ self.auth       = PyLucid["auth"]
-        self.page_msg       = PyLucid["page_msg"]
-        self.preferences    = PyLucid["preferences"]
-        self.tools          = PyLucid["tools"]
-        self.parser         = PyLucid["parser"]
-        self.render         = PyLucid["render"]
-        self.URLs           = PyLucid["URLs"]
+    def __init__(self, *args, **kwargs):
+        super(pageadmin, self).__init__(*args, **kwargs)
 
         # Der Name, bei dem kein encoding stattfindet (normal Einstellung)
         self.default_code_name = 'default'
@@ -95,8 +86,8 @@ class pageadmin:
         core = self.preferences["core"] # Basiseinstellungen
 
         page_data = {
-            "parent"            : int(self.CGIdata["page_id"]),
-            "new_page"          : 1, # Damit man beim speichern weiß, das die Seite neu ist.
+            "parent"            : int(self.session["page_id"]),
+            "new_page"          : "True", # Damit man beim speichern weiß, das die Seite neu ist.
             "name"              : "Newpage",
             "title"             : "Newpage",
             "template"          : core["defaultTemplate"],
@@ -111,9 +102,9 @@ class pageadmin:
             "keywords"          : "",
             "description"       : "",
         }
-        self.editor_page( page_data )
+        self.editor_page(page_data)
 
-    def get_page_data( self, page_id ):
+    def get_page_data(self, page_id):
         """
         Liefert alle Daten die zum editieren einer Seite notwendig sind zurück
         wird auch von self.archive_page() verwendet
@@ -142,7 +133,7 @@ class pageadmin:
             internal_page_name = "pageadmin_select_edit_page",
             page_dict={
                 "url"         : "%s?command=pageadmin&action=edit_page" % self.config.system.real_self_url,
-                "page_option" : self.tools.forms().siteOptionList( with_id = True, select = self.CGIdata["page_id"] )
+                "page_option" : self.tools.forms().siteOptionList( with_id = True, select = self.request.form["page_id"] )
             }
         )
 
@@ -150,10 +141,21 @@ class pageadmin:
         """
         Einstiegs Methode wenn man auf "edit page" klickt
         """
-        page_id = self.CGIdata["page_id"]
-        page_data = self.get_page_data(page_id)
-        page_data["new_page"] = "" # Es ist keine neue Seite, sondern ein editieren einer bestehenden
-        self.editor_page(page_data)
+        if debug:
+            from colubrid.debug import debug_info
+            self.page_msg(debug_info(self.request))
+
+        if self.request.form.has_key("preview"):
+            # Preview der aktuellen Seite
+            self.preview()
+        elif self.request.form.has_key("save"):
+            # Abspeichern der Änderungen
+            self.save()
+        else:
+            # Die aktuelle Seite soll editiert werden
+            page_data = self.get_page_data(self.session["page_id"])
+            page_data["new_page"] = "" # Es ist keine neue Seite, sondern ein editieren einer bestehenden
+            return self.editor_page(page_data)
 
     def editor_page(self, edit_page_data):
         """
@@ -180,11 +182,11 @@ class pageadmin:
 
         decode_option = MyOptionMaker.build_from_list(
             codecs,
-            select_item=self.CGIdata.get("decode_from", "")
+            select_item=self.request.form.get("decode_from", "")
         )
         encode_option = MyOptionMaker.build_from_list(
             codecs,
-            select_item=self.CGIdata.get("encode_to", "")
+            select_item=self.request.form.get("encode_to", "")
         )
 
         markup_option   = MyOptionMaker.build_from_list(
@@ -218,80 +220,69 @@ class pageadmin:
             edit_page_data["content"] = ""
 
         #~ edit_page_data["content"] += "\n\n" + str( edit_page_data )
-        #~ form_url = "%s?command=pageadmin&page_id=%s" % ( self.config.system.real_self_url, self.CGIdata["page_id"] )
+        #~ form_url = "%s?command=pageadmin&page_id=%s" % ( self.config.system.real_self_url, self.request.form["page_id"] )
         #~ self.page_msg( edit_page_data )
 
-        self.db.print_internal_page(
-            internal_page_name = "pageadmin_edit_page",
-            page_dict = {
-                # hidden Felder
-                "new_page"                  : edit_page_data.get("new_page",""),
-                # Textfelder
-                "url"                       : self.URLs["main_action"],
-                "abort_url"                 : self.URLs["base"],
-                "summary"                   : edit_page_data["summary"],
-                "name"                      : cgi.escape( edit_page_data["name"] ),
-                "title"                     : cgi.escape( edit_page_data["title"] ),
-                "keywords"                  : edit_page_data["keywords"],
-                "description"               : edit_page_data["description"],
-                "content"                   : cgi.escape( edit_page_data["content"] ),
-                # Checkboxen
-                "showlinks"                 : showlinks,
-                "permitViewPublic"          : permitViewPublic,
-                # List-Optionen
-                "decode_option"             : decode_option,
-                "encode_option"             : encode_option,
-                "markup_option"             : markup_option,
-                "parent_option"             : parent_option,
-                "template_option"           : template_option,
-                "style_option"              : style_option,
-                "ownerID_option"            : ownerID_option,
-                "permitEditGroupID_option"  : permitEditGroupID_option,
-                "permitViewGroupID_option"  : permitViewGroupID_option,
-            }
+        page_dict = {
+            # hidden Felder
+            "new_page"                  : edit_page_data.get("new_page",""),
+            # Textfelder
+            "url"                       : self.URLs.make_action_link("edit_page"),
+            "abort_url"                 : self.URLs["base"],
+            "summary"                   : edit_page_data["summary"],
+            "name"                      : cgi.escape( edit_page_data["name"] ),
+            "title"                     : cgi.escape( edit_page_data["title"] ),
+            "keywords"                  : edit_page_data["keywords"],
+            "description"               : edit_page_data["description"],
+            "content"                   : cgi.escape( edit_page_data["content"] ),
+            # Checkboxen
+            "showlinks"                 : showlinks,
+            "permitViewPublic"          : permitViewPublic,
+            # List-Optionen
+            "decode_option"             : decode_option,
+            "encode_option"             : encode_option,
+            "markup_option"             : markup_option,
+            "parent_option"             : parent_option,
+            "template_option"           : template_option,
+            "style_option"              : style_option,
+            "ownerID_option"            : ownerID_option,
+            "permitEditGroupID_option"  : permitEditGroupID_option,
+            "permitViewGroupID_option"  : permitViewGroupID_option,
+        }
+
+        self.response.write(
+            self.db.get_rendered_internal_page(
+                "pageadmin_edit_page", page_dict
+            )
         )
 
-    def _set_default( self, dictionary ):
-        """
-        Kompletiert evtl. nicht vorhandene Keys.
-        Leere HTML-input-Felder bzw. nicht aktivierte checkboxen erscheinen nicht in den CGIdaten,
-        diese müßen aber für die Weiterverarbeitung im Dict vorhanden sein.
-        Diese Methode wird beim Preview und beim speichern benötigt.
-        """
-        default_dict = {
-            "name":"", "title":"", "content":"", "keywords":"", "description":"",
-            "showlinks":0, "permitViewPublic":0
-        }
-        for key, value in default_dict.iteritems():
-            if not dictionary.has_key( key ):
-                dictionary[key] = value
-        return dictionary
-
-    def preview(self, page_id):
+    def preview(self):
         "Preview einer editierten Seite"
 
         # CGI-Daten holen und leere Form-Felder "einfügen"
-        edit_page_data = self._set_default( self.CGIdata )
+        edit_page_data = self._set_default( self.request.form )
 
         # CGI daten sind immer vom type str, die parent ID muß allerdings eine Zahl sein.
         # Ansonsten wird in MyOptionMaker.build_html_option() kein 'selected'-Eintrag gesetzt :(
         edit_page_data["parent"] = int( edit_page_data["parent"] )
 
         # Preview der Seite erstellen
-        print "\n<h3>edit preview:</h3>\n"
-        print '<div id="page_edit_preview">\n'
-
-        # Möchte der rendere gern wissen ;)
-        edit_page_data['lastupdatetime'] = "now"
+        self.response.write("\n<h3>edit preview:</h3>\n")
+        self.response.write('<div id="page_edit_preview">\n')
 
         # Alle Tags ausfüllen und Markup anwenden
         try:
-            print self.render.render(edit_page_data)
+            content = edit_page_data["content"]
+            content = self.tag_parser.rewrite_String(content)
+            markup = edit_page_data["markup"]
+            content = self.render.apply_markup(content, markup)
         except Exception, e:
-            print "<h4>Can't render preview: %s</h4>" % e
-            print "<h3>Don't save this changes!</h3>"
+            self.response.write("<h4>Can't render preview: %s</h4>" % e)
+            self.response.write("<h3>Don't save this changes!</h3>")
+        else:
+            self.response.write(content)
 
-        print "\n</div>\n"
+        self.response.write("\n</div>\n")
 
         # Formular der Seite zum ändern wieder dranhängen
         self.editor_page( edit_page_data )
@@ -339,25 +330,26 @@ class pageadmin:
     #_______________________________________________________________________
     # SAVE
 
-    def save(self, page_id):
-        """Abspeichern einer editierten Seite"""
+    def save(self):
+        """
+        Abspeichern einer neuen oder einer geänderten Seite
+        """
+        page_data = self._get_edit_data() # Daten, aufbereitet, holen
 
-        # Daten, aufbereitet, holen
-        page_data = self._get_edit_data()
-
-        if page_data.get("new_page", False):
+        if page_data.has_key("new_page"):
             # Eine neue Seite muß mit einem INSERT eingefügt werden
-            self.save_new(page_data)
-            return
+            self.insert_new_page(page_data)
+        else:
+            self.update_page(page_data)
 
-        #~ self.page_msg(page_data)
-
+    def insert_new_page(self, page_data):
+        """Abspeichern einer editierten Seite"""
         # Archivieren der alten Daten
-        if self.CGIdata.has_key("trivial"):
+        if self.request.form.has_key("trivial"):
             self.page_msg("trivial modifications selected. Old page is not archived.")
         else:
-            if self.CGIdata.has_key("summary"):
-                comment = self.CGIdata["summary"]
+            if self.request.form.has_key("summary"):
+                comment = self.request.form["summary"]
             else:
                 comment = ""
 
@@ -367,11 +359,6 @@ class pageadmin:
                 self.page_msg("Can't archive old page data: '%s'" % e)
             else:
                 self.page_msg("Archived old pagedata.")
-
-        if page_data["parent"] == page_id:
-            # Zur Sicherheit
-            self.page_msg("Error in page data. Parent-ID == page_id ! (ID: %s)" % page_id)
-            return
 
         # Daten speichern
         try:
@@ -386,8 +373,17 @@ class pageadmin:
         else:
             self.page_msg( "New page data updated." )
 
-    def save_new(self, page_data):
+
+    def update_page(self, page_data):
         """ Abspeichern einer neu erstellten Seite """
+
+        if page_data["parent"] == self.session["page_id"]:
+            # Zur Sicherheit
+            self.page_msg(
+                "Error in page data. Parent-ID == page_id ! (ID: %s)" % \
+                self.session["page_id"]
+            )
+            return
 
         # Diente nur zur Info, das es kein UPDATE sondern ein INSERT einer neuen Seite ist
         del(page_data["new_page"])
@@ -398,12 +394,29 @@ class pageadmin:
                     data    = page_data,
                 )
         except Exception, e:
-            print "<h3>Error to insert new page:'%s'</h3><p>Use browser back botton!</p>" % e
+            self.response.write("<h3>Error to insert new page:'%s'</h3><p>Use browser back botton!</p>" % e)
         else:
             self.page_msg( "New page saved." )
 
         # Setzt die aktuelle Seite auf die neu erstellte.
-        self.CGIdata["page_id"] = self.db.cursor.lastrowid
+        self.request.form["page_id"] = self.db.cursor.lastrowid
+
+
+    def _set_default(self, dictionary):
+        """
+        Kompletiert evtl. nicht vorhandene Keys.
+        Leere HTML-input-Felder bzw. nicht aktivierte checkboxen erscheinen nicht in den CGIdaten,
+        diese müßen aber für die Weiterverarbeitung im Dict vorhanden sein.
+        Diese Methode wird beim Preview und beim speichern benötigt.
+        """
+        default_dict = {
+            "name":"", "title":"", "content":"", "keywords":"", "description":"",
+            "showlinks":0, "permitViewPublic":0
+        }
+        for key, value in default_dict.iteritems():
+            if not dictionary.has_key( key ):
+                dictionary[key] = value
+        return dictionary
 
 
     def _get_edit_data(self):
@@ -411,19 +424,26 @@ class pageadmin:
         Liefert Daten für das speichern einer editierten und einer neu erstellen Seite.
         """
         # CGI-Daten holen und leere Form-Felder "einfügen"
-        CGIdata = self._set_default( self.CGIdata )
+        CGIdata = self.request.form
+        CGIdata = self._set_default(CGIdata)
 
-        item_list = (
-            "new_page", "parent", "name", "title", "parent", "template", "style",
-            "markup", "content", "keywords", "description", "showlinks",
-            "permitViewPublic", "permitViewGroupID", "ownerID", "permitEditGroupID"
+        string_items = (
+            "new_page", "name", "title", "content", "keywords", "description",
         )
 
+        number_items = (
+            "parent", "parent", "template", "style",
+            "markup", "showlinks",
+            "permitViewPublic", "permitViewGroupID", "ownerID", "permitEditGroupID"
+        )
         # CGI-Daten filtern -> nur Einträge die SeitenInformationen enthalten
         page_data = {}
         for k,v in CGIdata.iteritems():
-            if k in item_list:
+            v = v[0] # Colubrid's MultiDict!
+            if k in string_items:
                 page_data[k] = v
+            elif k in number_items:
+                page_data[k] = int(v)
 
         # Daten ergänzen
         page_data["lastupdateby"]   = self.session["user_id"]
@@ -442,7 +462,7 @@ class pageadmin:
             internal_page_name = "pageadmin_select_del_page",
             page_dict = {
                 "url"         : self.URLs["action"] + "select_del_page",
-                "page_option" : self.tools.forms().siteOptionList( with_id = True, select = self.CGIdata["page_id"] )
+                "page_option" : self.tools.forms().siteOptionList( with_id = True, select = self.request.form["page_id"] )
             }
         )
         #~ self.db.print_internal_TAL_page(
@@ -460,7 +480,7 @@ class pageadmin:
         Löscht die Seite, die ausgewählt wurde
         """
 
-        comment = self.CGIdata.get("comment", "")
+        comment = self.request.form.get("comment", "")
 
         # Hat die Seite noch Unterseiten?
         parents = self.db.select(
@@ -472,12 +492,11 @@ class pageadmin:
             # Hat noch Unterseiten
             msg = "Can't delete Page!"
             self.page_msg( msg )
-            print "h3. %s" % msg
-            print
-            print "Page has parent pages:"
+            self.response.write("h3. %s\n" % msg)
+            self.response.write("Page has parent pages:")
             for page in parents:
-                print "* %s" % cgi.escape( page["name"] )
-            print "Please move parents."
+                self.response.write("* %s" % cgi.escape( page["name"] ))
+            self.response.write("Please move parents.")
 
             # "Menü" wieder anzeigen
             return self.select_del_page()
@@ -489,14 +508,14 @@ class pageadmin:
             self.page_msg( "Can't archive page with ID %s: %s" % (page_id_to_del, e) )
             return
 
-        if self.CGIdata["page_id"] == page_id_to_del:
+        if self.request.form["page_id"] == page_id_to_del:
             # Die aktuelle Seite wird gelöscht, also kann sie nicht mehr angezeigt werden.
             # Deswegen gehen wir halt zu parent Seite ;)
-            self.CGIdata["page_id"] = self.db.parentID_by_id(page_id_to_del)
-            if self.CGIdata["page_id"] == 0:
+            self.request.form["page_id"] = self.db.parentID_by_id(page_id_to_del)
+            if self.request.form["page_id"] == 0:
                 # Die oberste Ebene hat ID 0, obwohl es evtl. keine Seite gibt, die ID 0 hat :(
                 # Da nehmen wir doch lieber die default-Seite...
-                self.CGIdata["page_id"] = self.preferences["core"]["defaultPageName"]
+                self.request.form["page_id"] = self.preferences["core"]["defaultPageName"]
 
         start_time = time.time()
         try:
@@ -570,8 +589,8 @@ class pageadmin:
         """
         Positionsänderungen speichern
         """
-        #~ self.CGIdata.debug()
-        for key,value in self.CGIdata.iteritems():
+        #~ self.request.form.debug()
+        for key,value in self.request.form.iteritems():
             if key.startswith("page_id_"):
                 try:
                     page_id = int( key[8:] )
