@@ -15,7 +15,7 @@ v0.1
 """
 
 
-import os
+import os, posixpath, urllib
 
 
 
@@ -33,39 +33,48 @@ class URLs(dict):
         self.page_msg       = request.page_msg
         self.preferences    = request.preferences
 
-        self.setup()
+        self.setup_path_info()
+        self.setup_URLs()
 
-    def setup(self):
-        #~ if self.preferences["script_filename"] == "":
-            #~ self.preferences["script_filename"] = self.environ["APPLICATION_REQUEST"]
-            #~ "script_filename"   : os.environ['SCRIPT_FILENAME'],
 
-        #~ if self.preferences["document_root"] == "":
-            #~ self.preferences["document_root"] = os.environ['DOCUMENT_ROOT']
+    def setup_path_info(self):
+        pathInfo = self.request.environ.get('PATH_INFO', '/')
+        #~ self.response.write("OK: %s" % pathInfo)
+        #~ return self.response
 
-        #~ # Dateinamen rausschneiden
-        #~ self.preferences["script_filename"] = os.path.split(self.preferences["script_filename"])[0]
+        pathInfo = urllib.unquote(pathInfo)
+        try:
+            pathInfo = unicode(pathInfo, "utf-8")
+        except:
+            pass
 
-        #~ self.preferences["script_filename"] = os.path.normpath(self.preferences["script_filename"])
-        #~ self.preferences["document_root"]   = os.path.normpath(self.preferences["document_root"])
+        pathInfo = pathInfo.strip("/")
+        pathInfo = pathInfo + "/"
+        self.request.environ["PATH_INFO"] = pathInfo
 
+    def setup_URLs(self):
         # Pfad für Links festlegen
         #~ self["real_self_url"] = self.environ["APPLICATION_REQUEST"]
-        self["real_self_url"] = self.environ.get('SCRIPT_NAME',"")
+        self["real_self_url"] = self.environ.get('SCRIPT_NAME')
 
-        if self.preferences["poormans_modrewrite"] == True:
+        preferences = self.preferences
+        if preferences["poormans_modrewrite"] == True:
+        #~ if self.preferences["poormans_modrewrite"] == True:
             self.preferences["page_ident"] = ""
 
-        self["poormans_url"] = self["real_self_url"]
+        self["link"] = self["base"] = self["real_self_url"]
 
-        self["link"] = self["base"] = self["poormans_url"]
+        #~ self["poormans_url"] = self["real_self_url"]
 
-        #~ self["link"] = "%s?%s=" % (
-            #~ self["poormans_url"], self.preferences["page_ident"]
-        #~ )
-        #~ self["base"] = "%s?page_id=%s" % (
-            #~ self["real_self_url"], -1#CGIdata["page_id"]
-        #~ )
+        pathInfo = self.environ["PATH_INFO"].split("&")[0]
+
+        if self["base"] == "":
+            self["current_action"] = "/%s" % pathInfo
+        else:
+            self["current_action"] = "/".join(
+                (self["base"], pathInfo)
+            )
+
 
     def items(self):
         """ Überschreibt das items() von dict, um eine Reihenfolge zu erwirken """
@@ -78,6 +87,8 @@ class URLs(dict):
 
         return result
 
+    #_________________________________________________________________________
+
     def make_command_link(self, modulename, methodname):
         return "/".join(
             (
@@ -86,13 +97,26 @@ class URLs(dict):
                 modulename,
                 methodname
             )
+        ) + "/"
+
+    def make_action_link(self, methodname):
+        return "%s%s/" % (
+            self["command"], methodname
         )
+
+    def make_current_action_link(self, info):
+        return "%s%s/" % (
+            self['current_action'], info
+        )
+
+    #_________________________________________________________________________
 
     def debug(self):
         self.page_msg("path debug:")
+        self.page_msg("path_info:", self.environ["PATH_INFO"])
         for k,v in self.items():
             self.page_msg(
-                "- %15s:%s" % (k,v)
+                "- %15s: '%s'" % (k,v)
             )
 
 

@@ -164,7 +164,7 @@ class active_statements(passive_statements):
             )
 
         content = internal_page_data["content"]
-        return content % page_dict
+        #~ return content % page_dict
         try:
             content = content % page_dict
         except UnicodeError, e:
@@ -228,8 +228,11 @@ class active_statements(passive_statements):
                     sys.exc_info()[0], e, internal_page_name,
                 )
             )
-        else:
-            return content
+
+        self.page_msg("***", internal_page_data["markup"])
+        content = self.render.apply_markup(content, internal_page_data["markup"])
+
+        return content
 
     def print_internal_TAL_page(self, internal_page_name, context_dict):
 

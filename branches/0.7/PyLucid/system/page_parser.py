@@ -37,7 +37,7 @@ lucidTagRE      = re.compile("<lucidTag:(.*?)/?>")
 lucidFunctionRE = re.compile("<lucidFunction:(.*?)>(.*?)</lucidFunction>")
 
 
-class ReplacePyLucidTags(object):
+class tag_parser(object):
     """
     Alle Tags in der Seite ersetzten...
     """
@@ -53,8 +53,15 @@ class ReplacePyLucidTags(object):
         self.tag_data = {} # "Statische" Tags-Daten
         self.ignore_tag = ("page_msg", "script_duration")
 
+    def rewrite_responseObject(self):
         # Tags ersetzten:
         self.response.response = [self.rewrite(line) for line in self.response.response]
+
+    def rewrite_String(self, content):
+        content = content.split("\n")
+        content = [self.rewrite(line) for line in content]
+        content = "\n".join(content)
+        return content
 
     def rewrite(self, line):
         if "<lucid" in line:
@@ -140,13 +147,14 @@ class render:
         self.environ        = request.environ
         self.URLs           = request.URLs
         self.tools          = request.tools
+        self.staticTags     = request.staticTags
 
     def write_page_template(self):
         """ Baut die Seite zusammen """
 
         page_id = self.session["page_id"]
-        side_data = self.db.get_side_data(page_id)
-        self.setup_staticTags(side_data)
+        page_data = self.db.get_side_data(page_id)
+        self.staticTags.fill_with_page_data(page_data)
 
         template_data = self.db.side_template_by_id(self.session["page_id"])
         self.response.write(template_data)
@@ -155,23 +163,6 @@ class render:
         # FIXME - Quick v0.7 Patch !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         template_data = self.db.side_template_by_id(self.session["page_id"])
         self.response.write(template_data)
-
-    def setup_staticTags(self, side_data):
-
-        self.request.staticTags["markup"]               = side_data["markup"]
-        self.request.staticTags["page_name"]            = cgi.escape(side_data["name"])
-        self.request.staticTags["page_title"]           = cgi.escape(side_data["title"])
-        self.request.staticTags["page_keywords"]        = side_data["keywords"]
-        self.request.staticTags["page_description"]     = side_data["description"]
-
-        self.request.staticTags["page_last_modified"]   = self.tools.convert_date_from_sql(
-            side_data["lastupdatetime"], format = "preferences"
-        )
-
-        self.request.staticTags["page_datetime"]        = self.tools.convert_date_from_sql(
-            side_data["lastupdatetime"], format = "DCTERMS.W3CDTF"
-        )
-
 
     def get_rendered_page(self, page_id):
         page = self.db.get_content_and_markup(page_id)

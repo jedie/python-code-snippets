@@ -114,9 +114,11 @@ class plugin_data:
         try:
             self.module_id = self.plugins[module_name]["id"]
         except KeyError:
-            raise run_module_error(
-                "[Module/Plugin unknown or not installed/activated: %s]" % module_name
-            )
+            msg = "[Module/Plugin unknown or not installed/activated: %s]" % module_name
+            if self.request.runlevel == "command":
+                msg = "<!-- %s -->" % msg
+
+            raise run_module_error(msg)
 
         if self.plugin_debug():
             self.page_msg("Plugin Debug for %s:" % module_name)
@@ -200,9 +202,10 @@ class plugin_data:
             self.URLs["base"],
             self.preferences["commandURLprefix"],
             self.module_name
-        ))
+        )) + "/"
 
-        #~ self.URLs["action"]         = "%s&command=%s&action=" % (self.URLs["base"], self.module_name)
+        self.URLs["action"] = self.URLs["command"]
+
         #~ self.URLs["main_action"]    = self.URLs["action"] + self.method_name
         #~ self.URLs["current_action"] = self.URLs["action"] + self.method_name
 
@@ -300,6 +303,9 @@ class module_manager:
         Ausführen von:
         <lucidTag:'tag'/>
         """
+        if self.request.staticTags.has_key(tag):
+            return self.staticTags[tag]
+
         if tag.find(".") != -1:
             self.module_name, self.method_name = tag.split(".",1)
         else:
@@ -333,7 +339,7 @@ class module_manager:
         except run_module_error, e:
             pass
         except rights_error, e:
-            if self.plugin_data.get_properties()["no_rights_error"] == 1:
+            if self.plugin_data["no_rights_error"] == 1:
                 return ""
 
         self.page_msg(e)
@@ -343,7 +349,8 @@ class module_manager:
         """
         ein Kommando ausführen.
         """
-        pathInfo = self.environ["PATH_INFO"]
+        pathInfo = self.environ["PATH_INFO"].split("&")[0]
+        pathInfo = pathInfo.strip("/")
         pathInfo = pathInfo.split("/")[1:]
 
         self.module_name = pathInfo[0]
@@ -355,12 +362,16 @@ class module_manager:
         else:
             function_info = {"function_info": function_info}
 
+        self.request.staticTags["page_title"] = "%s.%s" % (
+            self.module_name, self.method_name
+        )
+
         try:
             return self._run_module_method(function_info)
         except run_module_error, e:
             pass
         except rights_error, e:
-            if self.plugin_data.get_properties()["no_rights_error"] == 1:
+            if self.plugin_data["no_rights_error"] == 1:
                 return ""
 
         self.page_msg(e)
@@ -475,6 +486,7 @@ class module_manager:
         """
         Startet die Methode und verarbeitet die Ausgaben
         """
+        #~ self.page_msg("method_arguments:", method_arguments, "---", self.module_name, self.method_name)
         if method_arguments=={}:
             method_arguments = self.plugin_data.get_CGI_data
         #~ if debug: self.page_msg("method_arguments:", method_arguments)
@@ -513,7 +525,9 @@ class module_manager:
                 class_instance = module_class(self.request, responseObject)
             except TypeError, e:
                 raise TypeError(
-                    "TypeError, module '%s': %s" % (self.module_name, e)
+                    "TypeError, module '%s.%s' --- method_args: '%s': %s" % (
+                        self.module_name, self.method_name, method_arguments, e
+                    )
                 )
 
         # Methode aus Klasse erhalten
@@ -588,11 +602,11 @@ class module_manager:
             # Objekt geschrieben
             moduleOutput = responseOutput
 
-        #~ if self.plugin_data["has_Tags"] == True:
-            #~ # Die Ausgaben des Modules haben Tags, die aufgelöst werden sollen.
-            #~ if self.plugin_data.plugin_debug == True:
-                #~ self.page_msg( "Parse Tags." )
-            #~ return self.parser.parse(moduleOutput)
+        if self.plugin_data["has_Tags"] == True:
+            # Die Ausgaben des Modules haben Tags, die aufgelöst werden sollen.
+            if self.plugin_data.plugin_debug == True:
+                self.page_msg( "Parse Tags." )
+            return self.request.tag_parser.rewrite_String(moduleOutput)
 
         return moduleOutput
 
@@ -600,22 +614,26 @@ class module_manager:
     # Zusatz Methoden für die Module selber
 
     def build_menu(self):
+        result = ""
         if debug:
-            print "module_manager.build_menu():"
-            print self.plugin_data.package_name
-            print self.module_name
-            print "self.plugin_data:", self.plugin_data.debug_data()
+            result += "module_manager.build_menu():"
+            result += self.plugin_data.package_name
+            result += self.module_name
+            result += "self.plugin_data:", self.plugin_data.debug_data()
 
         menu_data = self.plugin_data.get_menu_data()
-        print '<ul class="module_manager_menu">'
+        result += '<ul class="module_manager_menu">'
         for menu_section, section_data in menu_data.iteritems():
-            print "<li><h5>%s</h5><ul>" % menu_section
+            result += "<li><h5>%s</h5><ul>" % menu_section
             for item in section_data:
-                print '<li><a href="%s&command=%s&action=%s">%s</a></li>' % (
-                    self.URLs["base"], self.module_name, item["method_name"], item["menu_description"]
+                result += '<li><a href="%s">%s</a></li>' % (
+                    self.URLs.make_command_link(self.module_name, item["method_name"]),
+                    item["menu_description"]
                 )
-            print "</ul>"
-        print "</ul>"
+            result += "</ul>"
+        result += "</ul>"
+
+        return result
 
     #________________________________________________________________________________________
     # page_msg debug
