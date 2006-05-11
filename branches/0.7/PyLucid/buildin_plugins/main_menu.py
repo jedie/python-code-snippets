@@ -62,7 +62,7 @@ class main_menu(PyLucidBaseModule):
 
         self.menulink  = '<a%(style)s class="level%(level)s" href="'
         self.menulink += self.URLs["link"]
-        self.menulink += '%(link)s" title="%(title)s">%(name)s</a>'
+        self.menulink += '%(link)s/" title="%(title)s">%(name)s</a>'
 
         self.current_page_id  = self.request.session["page_id"]
 
