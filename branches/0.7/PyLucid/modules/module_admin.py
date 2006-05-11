@@ -818,7 +818,8 @@ class module_admin(PyLucidBaseModule):
         self.response.write("<ul>")
         for plugin in plugins_data:
             data_dict[plugin['id']] = plugin["package_name"], plugin['module_name']
-            self.response.write('<li><a href="%s/%s">' % (self.URLs['current_action'], plugin['id']))
+            url = self.make_current_action_link(str(plugin['id']))
+            self.response.write('<li><a href="%s">' % url)
             self.response.write(
                 '%s.<strong style="color:blue">%s</strong></a>' % (
                     plugin["package_name"], plugin['module_name']

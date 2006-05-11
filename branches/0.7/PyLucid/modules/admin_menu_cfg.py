@@ -46,7 +46,7 @@ module_manager_data = {
         "internal_page_info" : {
             "name"              : "sub_menu",
             "description"       : "Administration sub menu",
-            "template_engine"   : None,
+            "template_engine"   : "string formatting",
             "markup"            : "textile",
         },
     },
