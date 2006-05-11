@@ -72,7 +72,7 @@ class passive_statements(SQL_wrapper):
                 where           = ( "id", page_id )
             )[0]
 
-        side_data["template"] = self.side_template_by_id(page_id)
+        #~ side_data["template"] = self.side_template_by_id(page_id)
 
         # None in "" konvertieren
         for key in ("name", "keywords", "description"):
