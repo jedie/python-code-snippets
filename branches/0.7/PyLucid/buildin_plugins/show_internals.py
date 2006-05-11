@@ -27,7 +27,7 @@ v0.1.0
     - NEU: "Display all Python Modules"
 v0.0.5
     - NEU: Pfade werden nun angezeigt
-    - Auf print Ausgaben halb umgestellt
+    - Auf self.response.write(Ausgaben halb umgestellt)
 v0.0.4
     - Andere Handhabung von tools
 v0.0.3
@@ -49,79 +49,65 @@ import os, sys, cgi, imp, glob, time
 
 
 
-# Für Debug-print-Ausgaben
-#~ print "Content-type: text/html\n\n<pre>%s</pre>" % __file__
-#~ print "<pre>"
+from PyLucid.system.BaseModule import PyLucidBaseModule
 
+class show_internals(PyLucidBaseModule):
 
-#_______________________________________________________________________
-
-
-class show_internals:
-
-    def __init__( self, PyLucid ):
-        self.CGIdata        = PyLucid["CGIdata"]
-        #~ self.CGIdata.debug()
-        self.db             = PyLucid["db"]
-        self.log            = PyLucid["log"]
-        self.session        = PyLucid["session"]
-        #~ self.session.debug()
-        self.config         = PyLucid["config"]
-        self.tools          = PyLucid["tools"]
-        self.page_msg       = PyLucid["page_msg"]
-        self.module_manager = PyLucid["module_manager"]
-        self.URLs           = PyLucid["URLs"]
 
     def link( self ):
-        print '<a href="%smenu">show_internals</a>' % self.URLs["action"]
+        return '<a href="%smenu">show_internals</a>' % self.URLs["action"]
 
     #_______________________________________________________________________
 
     def menu( self ):
-        print "<h4>show internals v%s</h4>" % __version__
-        self.module_manager.build_menu()
+        self.response.write(
+            "<h4>show internals v%s</h4>" % __version__
+        )
+        self.response.write(self.module_manager.build_menu())
 
     #_______________________________________________________________________
 
     def python_modules( self ):
-        print "<h3>Python Module Info</h3>"
+        self.response.write("<h3>Python Module Info</h3>")
 
         start_time = time.time()
         modulelist = modules_info().modulelist
         duration_time = time.time() - start_time
 
-        print "%s Modules found in %.2fsec.:" % (len( modulelist ), duration_time )
-        print '<table>'
+        self.response.write("%s Modules found in %.2fsec.:" % (len( modulelist ), duration_time ))
+        self.response.write('<table>')
         Link = '<a href="%s' % self.URLs["action"]
         Link += '%s">more Info</a>'
 
         modulelist.sort()
         for modulename in modulelist:
             #~ if modei
-            print "<tr>"
-            print "<td>%s</td>" % modulename
-            print '<td><a href="%smodule_info&modulename=%s">more info</a></td>' % (
-                self.URLs["action"], modulename
+            self.response.write("<tr>")
+            self.response.write("<td>%s</td>" % modulename)
+            self.response.write(
+                '<td><a href="%smodule_info&modulename=%s">more info</a></td>' % (
+                    self.URLs["action"], modulename
+                )
             )
-            print "</tr>"
-        print "</table>"
+            self.response.write("</tr>")
+        self.response.write("</table>")
 
     def module_info( self ):
         back_link = '<a href="%spython_modules">back</a>' % self.URLs["action"]
-        print back_link
+        self.response.write(back_link)
         try:
-            module_name = self.CGIdata["modulename"]
+            module_name = self.request.args["modulename"]
         except KeyError, e:
-            print "Error:", e
+            self.response.write("Error:", e)
             return
 
-        print "<h3>Modul info: '%s'</h3>" % module_name
+        self.response.write("<h3>Modul info: '%s'</h3>" % module_name)
 
         try:
             t = imp.find_module( module_name )
         except Exception,e:
-            print "Can't import '%s':" % module_name
-            print e
+            self.response.write("Can't import '%s':" % module_name)
+            self.response.write(e)
             return
 
         try:
@@ -138,36 +124,36 @@ class show_internals:
             except:
                 fileinfo = process.out_data
 
-        print back_link
-        print "<ul>"
-        print "<li>pathname: %s</li>" % t[1]
-        print "<li>description: %s</li>" % str(t[2])
-        print "<li>fileinfo: %s</li>" % fileinfo
-        print "</ul>"
+        self.response.write(back_link)
+        self.response.write("<ul>")
+        self.response.write("<li>pathname: %s</li>" % t[1])
+        self.response.write("<li>description: %s</li>" % str(t[2]))
+        self.response.write("<li>fileinfo: %s</li>" % fileinfo)
+        self.response.write("</ul>")
 
         try:
             module = __import__( module_name )
         except Exception,e:
-            print "<p>Can't import module ;(</p>"
+            self.response.write("<p>Can't import module ;(</p>")
             return
         else:
-            print "<h4>help:</h4>"
-            print "<pre>"
+            self.response.write("<h4>help:</h4>")
+            self.response.write("<pre>")
             help( module )
-            print "</pre>"
+            self.response.write("</pre>")
 
         if t[2][1] == "rb":
-            print "<p>(SourceCode not available. It's a binary module.)</p>"
+            self.response.write("<p>(SourceCode not available. It's a binary module.)</p>")
         else:
             try:
-                print "<h4>SourceCode:</h4>"
+                self.response.write("<h4>SourceCode:</h4>")
                 filehandle = t[0]
-                print "<pre>"
+                self.response.write("<pre>")
                 for i in filehandle:
                     sys.stdout.write( i )
-                print "</pre>"
+                self.response.write("</pre>")
             except Exception, e:
-                print "Can't read Source:", e
+                self.response.write("Can't read Source:", e)
 
 
     #_______________________________________________________________________
@@ -176,179 +162,199 @@ class show_internals:
     def session_data( self ):
         """ Session Informationen anzeigen """
         self.menu()
-        print "<hr>"
+        self.response.write("<hr>")
 
-        print "<h3>session data</h3>"
-        print '<table id="internals_session_data" class="internals_table">'
+        self.response.write("<h3>session data</h3>")
+        self.response.write('<fieldset id="system_info"><legend>your session data:</legend>')
+        self.response.write('<table id="internals_session_data" class="internals_table">')
         for k,v in self.session.iteritems():
-            print "<tr>"
-            print "<td>%s</td>" % k
-            print "<td>: %s</td>" % v
-            #~ print "%s:%s\n" % (k,v)
-            print "</tr>"
+            self.response.write("<tr>")
+            self.response.write("<td>%s</td>" % k)
+            self.response.write("<td>: %s</td>" % v)
+            #~ self.response.write("%s:%s\n" % (k,v))
+            self.response.write("</tr>")
 
         #~ result = self.db.select(
                 #~ select_items    = ["session_data"],
                 #~ from_table      = "session_data",
                 #~ where           = [("session_id",self.session["session_id"])]
+                #~ limit           = 10
             #~ )
         #~ for line in result:
-            #~ print str( line ).replace("\\n","<br/>")
+            #~ self.response.write(str( line ).replace("\\n","<br/>"))
 
-        print "<tr><td>config.system.poormans_modrewrite</td>"
-        print "<td>: %s</td></tr>" % self.config.system.poormans_modrewrite
-
-        print "<tr><td>config.system.page_ident</td>"
-        print "<td>: '%s'</td></tr>" % self.config.system.page_ident
-
-        print "<tr><td>config.system.script_filename</td>"
-        print "<td>: '%s'</td></tr>" % self.config.system.script_filename
-
-        print "<tr><td>config.system.document_root</td>"
-        print "<td>: '%s'</td></tr>" % self.config.system.document_root
-
-        print "<tr><td>config.system.real_self_url</td>"
-        print "<td>: '%s'</td></tr>" % self.config.system.real_self_url
-
-        print "<tr><td>config.system.poormans_url</td>"
-        print "<td>: '%s'</td></tr>" % self.config.system.poormans_url
-
-        print "</table>"
+        self.response.write("</table>")
+        self.response.write("</fieldset>")
 
     #_______________________________________________________________________
 
     def system_info( self ):
         """ Allgemeine System Informationen """
         self.menu()
-        print "<hr>"
+        self.response.write("<hr>")
 
-        print "<h3>PyLucid environ information</h3>"
-        print '<fieldset id="system_info"><legend>PyLucid["URLs"]:</legend>'
-        print "<pre>"
-        values = [(len(v),k,v) for k,v in self.URLs.iteritems()]
-        values.sort()
-        for _,k,v in values:
-            print "%15s:%s" % (k,v)
-        print "</pre>"
-        print "</fieldset>"
+        self.response.write("<h3>PyLucid environ information</h3>")
+        self.response.write('<fieldset id="system_info"><legend>PyLucid["URLs"]:</legend>')
+        self.response.write("<pre>")
+        for k,v in self.URLs.items():
+            self.response.write("%15s: '%s'\n" % (k,v))
+        self.response.write("</pre>")
+        self.response.write("</fieldset>")
 
-        print "<h3>system info</h3>"
+        #_____________________________________________________________________
+
+        self.response.write("<h3>system info</h3>")
 
         def cmd_info( info, command, cwd="/" ):
-            print "<p>%s:</p>" % info
+            self.response.write(
+                '<fieldset id="system_info"><legend>%s:</legend>' % info
+            )
             try:
-                process = self.tools.subprocess2( command, cwd, 1 )
+                process = self.tools.subprocess2(command, cwd, 1)
             except Exception,e:
-                print "Can't get: %s" % e
+                self.response.write("Can't get: %s" % e)
             else:
-                print "<pre>%s</pre>" % process.out_data.replace("\n","<br />")
+                self.response.write("<pre>%s</pre>" % process.out_data)
+            self.response.write("</fieldset>")
 
-        print '<dl id="system_info">'
+        self.response.write('<dl id="system_info">')
         if hasattr(os,"uname"): # Nicht unter Windows verfügbar
-            print "<dt>os.uname():</dt>"
-            print "<dd>%s</dd>" % " - ".join( os.uname() )
+            self.response.write("<dt>os.uname():</dt>")
+            self.response.write("<dd>%s</dd>" % " - ".join( os.uname() ))
 
-        print "<dt>sys.version:</dt>"
-        print "<dd>Python v%s</dd>" % sys.version
+        self.response.write("<dt>sys.version:</dt>")
+        self.response.write("<dd>Python v%s</dd>" % sys.version)
 
-        print "<dt>sys.path:</dt>"
+        self.response.write("<dt>sys.path:</dt>")
         for i in sys.path:
-            print "<dd>%s</dd>" % i
+            self.response.write("<dd>%s</dd>" % i)
 
-        print "<dt>config file:</dt>"
-        print "<dd>%s</dd>" % self.config.__file__
+        #~ self.response.write("<dt>config file:</dt>")
+        #~ self.response.write("<dd>%s</dd>" % self.config.__file__)
 
         import locale
 
-        print "<dt>locale.getlocale():</dt>"
-        print "<dd>%s</dd>" % str( locale.getlocale() )
-        print "<dt>locale.getdefaultlocale():</dt>"
-        print "<dd>%s</dd>" % str( locale.getdefaultlocale() )
-        print "<dt>locale.getpreferredencoding():</dt>"
+        self.response.write("<dt>locale.getlocale():</dt>")
+        self.response.write("<dd>%s</dd>" % str( locale.getlocale() ))
+        self.response.write("<dt>locale.getdefaultlocale():</dt>")
+        self.response.write("<dd>%s</dd>" % str( locale.getdefaultlocale() ))
+        self.response.write("<dt>locale.getpreferredencoding():</dt>")
         try:
-            print "<dd>%s</dd>" % str( locale.getpreferredencoding() )
+            self.response.write("<dd>%s</dd>" % str( locale.getpreferredencoding() ))
         except Exception, e:
-            print "<dd>Error: %s</dd>" % e
+            self.response.write("<dd>Error: %s</dd>" % e)
 
-        print "</dl>"
+        self.response.write("</dl>")
 
         cmd_info( "uptime", "uptime" )
         cmd_info( "lokal Angemeldete Benutzer", "who -H -u --lookup" )
         cmd_info( "disk", "df -T -h" )
         cmd_info( "RAM", "free -m" )
 
-        print "<h3>OS-Enviroment:</h3>"
-        print '<dl id="environment">'
+        #_____________________________________________________________________
+
+        self.response.write("<h3>OS-Enviroment:</h3>")
+        self.response.write('<dl id="environment">')
         keys = os.environ.keys()
         keys.sort()
         for key in keys:
             value = os.environ[key]
-            print "<dt>%s</dt>" % key
-            print "<dd>%s</dd>" % value
-        print "</dl>"
+            self.response.write("<dt>%s</dt>" % key)
+            self.response.write("<dd>%s</dd>" % value)
+        self.response.write("</dl>")
+
+        #_____________________________________________________________________
+
+        self.response.write("<h3>Colubrid debug information</h3>")
+        self.response.write('<fieldset id="system_info"><legend>colubrid:</legend>')
+        try:
+            from colubrid.debug import debug_info
+            self.response.write(debug_info(self.request))
+        except Exception, e:
+            self.response.write("Error: %s" % e)
+        self.response.write("</fieldset>")
 
     #_______________________________________________________________________
 
     def sql_status( self ):
         self.menu()
-        print "<hr>"
+        self.response.write("<hr>")
 
-        print "<h3>SQL table status</h3>"
+        self.response.write("<h3>SQL table status</h3>")
 
-        SQLresult = self.db.fetchall("SHOW TABLE STATUS")
+        SQLresult = self.db.process_statement("SHOW TABLE STATUS")
 
-        print '<table id="internals_log_information" class="internals_table">'
+        self.response.write(
+            '<table id="internals_log_information" class="internals_table">'
+        )
 
         # Tabellen überschriften generieren
-        print "<tr>"
-        print "<th>name</th>"
-        print "<th>entries</th>" # Rows
-        print "<th>update_time</th>"
-        print "<th>size</th>"
-        print "<th>overhang</th>" # data_free
-        print "<th>collation</th>"
-        print "</tr>"
+        self.response.write("<tr>")
+        self.response.write("<th>name</th>")
+        self.response.write("<th>entries</th>") # Rows)
+        self.response.write("<th>update_time</th>")
+        self.response.write("<th>size</th>")
+        self.response.write("<th>overhang</th>") # data_free)
+        self.response.write("<th>collation</th>")
+        self.response.write("</tr>")
 
         total_rows = 0
         total_size = 0
         total_data_free = 0
         # eigentlichen Tabellen Daten erzeugen
         for line in SQLresult:
-            print "<tr>"
-            print "<td>%s</td>" % line["Name"]
+            self.response.write("<tr>")
+            self.response.write("<td>%s</td>" % line["Name"])
 
-            print '<td style="text-align: right;">%s</td>' % line["Rows"]
+            self.response.write(
+                '<td style="text-align: right;">%s</td>' % line["Rows"]
+            )
             total_rows += line["Rows"]
 
-            print "<td>%s</td>" % line["Update_time"]
+            self.response.write("<td>%s</td>" % line["Update_time"])
 
             size = line["Data_length"] + line["Index_length"]
-            print '<td style="text-align: right;">%sKB</td>' % self.tools.formatter( size/1024.0, "%0.1f")
+            self.response.write(
+                '<td style="text-align: right;">%sKB</td>' % \
+                    self.tools.formatter( size/1024.0, "%0.1f")
+            )
             total_size += size
 
             if line["Data_free"]>0:
-                data_free_size = "%sBytes" % self.tools.formatter( line["Data_free"], "%i" )
+                data_free_size = "%sBytes" % \
+                    self.tools.formatter(line["Data_free"], "%i")
             else:
                 data_free_size = '-'
-            print '<td style="text-align: center;">%s</td>' % data_free_size
+            self.response.write(
+                '<td style="text-align: center;">%s</td>' % data_free_size
+            )
             total_data_free += line["Data_free"]
 
-            print "<td>%s</td>" % line["Collation"]
-            #~ print "<td>%s</td>" % line["Comment"]
-            print "</tr>"
+            self.response.write("<td>%s</td>" % line["Collation"])
+            #~ self.response.write("<td>%s</td>" % line["Comment"])
+            self.response.write("</tr>")
 
-        print '<tr style="font-weight:bold">'
-        print "<td></td>"
-        print '<td style="text-align: right;">%s</td>' % total_rows
-        print "<td></td>"
-        print '<td style="text-align: right;">%sKB</td>' % self.tools.formatter( total_size/1024.0, "%0.1f")
-        print '<td style="text-align: center;">%sBytes</td>' % self.tools.formatter( total_data_free, "%i" )
-        print "<td></td>"
-        print "</tr>"
+        self.response.write('<tr style="font-weight:bold">')
+        self.response.write("<td></td>")
+        self.response.write('<td style="text-align: right;">%s</td>' % total_rows)
+        self.response.write("<td></td>")
+        self.response.write(
+            '<td style="text-align: right;">%sKB</td>' % \
+                self.tools.formatter( total_size/1024.0, "%0.1f")
+        )
+        self.response.write(
+            '<td style="text-align: center;">%sBytes</td>' % \
+                self.tools.formatter( total_data_free, "%i" )
+        )
+        self.response.write("<td></td>")
+        self.response.write("</tr>")
 
-        print "</table>"
+        self.response.write("</table>")
 
-        print '<p><a href="%soptimize_sql_tables">optimize SQL tables</a></p>' % self.URLs["action"]
+        self.response.write(
+            '<p><a href="%s">optimize SQL tables</a></p>' % \
+                self.URLs.make_action_link("optimize_sql_tables")
+        )
 
 
     #_______________________________________________________________________
@@ -357,17 +363,19 @@ class show_internals:
     def log_data( self ):
         """ Logging Informationen anzeigen """
         self.menu()
-        print "<hr>"
+        self.response.write("<hr>")
 
         limit = 100 # Anzahl der Einträge die angezeigt werden sollen
 
         result = self.db.get_last_logs(limit)
 
-        print "<h3>log information (last %i)</h3>" % limit
-        print self.tools.make_table_from_sql_select(
-            result,
-            id          = "internals_log_data",
-            css_class   = "internals_table"
+        self.response.write("<h3>log information (last %i)</h3>" % limit)
+        self.response.write(
+            self.tools.make_table_from_sql_select(
+                result,
+                id          = "internals_log_data",
+                css_class   = "internals_table"
+            )
         )
 
 
@@ -387,28 +395,28 @@ class show_internals:
                 tables_to_optimize.append( line["Name"] )
 
         if len(tables_to_optimize) > 0:
-            print "<h3>optimize SQL tables</h3>"
+            self.response.write("<h3>optimize SQL tables</h3>")
 
             tables_to_optimize = ",".join( tables_to_optimize )
 
             SQLresult = self.db.fetchall( "OPTIMIZE TABLE %s" % tables_to_optimize )
 
-            print '<table id="optimize_table" class="internals_table">'
+            self.response.write('<table id="optimize_table" class="internals_table">')
 
             # Überschriften
-            print "<tr>"
+            self.response.write("<tr>")
             for desc in SQLresult[0].keys():
-                print "<th>%s</th>" % desc
-            print "</tr>"
+                self.response.write("<th>%s</th>" % desc)
+            self.response.write("</tr>")
 
             # Ergebniss Werte auflisten
             for line in SQLresult:
-                print '<tr style="text-align: center;">'
+                self.response.write('<tr style="text-align: center;">')
                 for value in line.values():
-                    print "<td>%s</td>" % value
-                print "</tr>"
+                    self.response.write("<td>%s</td>" % value)
+                self.response.write("</tr>")
 
-            print "</table>"
+            self.response.write("</table>")
         else:
             self.page_msg( "All Tables already up to date." )
 

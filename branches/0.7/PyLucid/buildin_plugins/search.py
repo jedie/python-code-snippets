@@ -43,7 +43,7 @@ class search(PyLucidBaseModule):
         return self.db.get_rendered_internal_page(
             internal_page_name = "search_input_form",
             page_dict = {
-                "url"               : self.make_action_link("do_search"),
+                "url"               : self.URLs.make_action_link("do_search"),
                 "old_search_string" : search_string
             }
         )
@@ -154,7 +154,7 @@ class search(PyLucidBaseModule):
         partial_result = {}
 
         # UND suche im Text aller CMS Seiten
-        result = self.db.fetchall(
+        result = self.db.process_statement(
             SQLcommand = "SELECT id,content FROM $$pages WHERE content LIKE %s",
             SQL_values = ( "%%%s%%" % "%".join(search_words), )
         )
@@ -168,7 +168,7 @@ class search(PyLucidBaseModule):
         # ODER suche in Meta-Daten
         for column in ("keywords","description","name","title"):
             where_string = " OR ".join( [column+" LIKE %s" for i in xrange(len(search_words))] )
-            result = self.db.fetchall(
+            result = self.db.process_statement(
                 SQLcommand = "SELECT id FROM $$pages WHERE %s" % where_string,
                 SQL_values = tuple( ["%%%s%%" % i for i in search_words] )
             )
@@ -197,7 +197,7 @@ class search(PyLucidBaseModule):
         result = []
         for points in point_list:
             for id in result_IDs[points]:
-                side_info = self.db.fetchall(
+                side_info = self.db.process_statement(
                     SQLcommand = "SELECT id,name,title,content FROM $$pages WHERE id=%s",
                     SQL_values = (id,)
                 )[0]
