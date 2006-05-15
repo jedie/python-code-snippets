@@ -52,7 +52,7 @@ class admin_menu(PyLucidBaseModule):
 
     def sub_menu( self ):
         data = {
-            "commandURLprefix"  : self.request.staticTags['commandURLprefix'],
+            "commandURLprefix"  : self.URLs.get_commandURLPrefix()
         }
         return self.db.get_rendered_internal_page("admin_menu_sub_menu", data)
 
