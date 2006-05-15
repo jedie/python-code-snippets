@@ -267,7 +267,7 @@ class module_admin(PyLucidBaseModule):
             )
 
             for method_name, cfg in dependent_cfg.iteritems():
-                self.response.write("\t*",method_name,)
+                self.response.write("\t* %s" % method_name)
 
                 #~ try:
                 self.db.register_plugin_method(plugin_id, method_name, cfg, parent_method_id)
