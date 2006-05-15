@@ -116,6 +116,7 @@ class cookieHandler:
         self.page_msg_debug = page_msg_debug
 
         # shorthands
+        self.URLs            = request.URLs
         self.log            = request.log
         self.page_msg       = request.page_msg
         self.preferences    = request.preferences
@@ -181,7 +182,7 @@ class cookieHandler:
 
         return clientID
 
-    #____________________________________________________________________________________________
+    #_________________________________________________________________________
     # Allgemeine Cookie-Funktionen
 
     def readCookie(self):
@@ -213,18 +214,19 @@ class cookieHandler:
         #~ self.Cookie[self.CookieName]["path"] = self.preferences["poormans_url"]
         #~ self.Cookie[self.CookieName]["expires"] = expires
 
-
         if self.CookieName in self.request.cookies:
             raise "Existiert schon!"
 
         if self.page_msg_debug == True:
             self.page_msg( "set_cookie '%s': %s" % (self.CookieName, Text))
 
-        self.response.set_cookie(self.CookieName, Text)
+        self.response.set_cookie(
+            self.CookieName, Text,
+        )
 
-        #~ if self.page_msg_debug == True:
-            #~ CookieData = self.request.cookies[self.CookieName].value
-            #~ self.page_msg("test Cookie: '%s'" % CookieData)
+        if self.page_msg_debug == True:
+            CookieData = self.request.cookies[self.CookieName].value
+            self.page_msg("test Cookie: '%s'" % CookieData)
 
     def deleteCookie(self):
         if self.page_msg_debug == True:
@@ -389,21 +391,23 @@ class sessionhandler(dict):
             self.page_msg("Delete Session!")
             self.page_msg("debug before:")
             self.debug_session_data()
+
+        self.state = "no session"
         self.db.delete(
             table = self.sql_tablename,
             where = ("session_id",self["session_id"])
         )
+
         if self.page_msg_debug == True:
             self.page_msg("debug after:")
             self.debug_session_data()
             self.page_msg("-"*30)
 
-        oldID = self["session_id"]
-
         # Interne-Session-Variablen rücksetzten
-        self.set_default_values()
+        self["isadmin"] = False
+        self["user"] = False
 
-        self.status = "OK;delete Session data / LogOut for '%s'" % oldID
+        self.status = "OK;delete Session data / LogOut for '%s'" % self["session_id"]
 
 
     def commit(self):
@@ -424,11 +428,11 @@ class sessionhandler(dict):
         if self.state == "new session":
             # Es ist eine neue Session die in der DB erst erstellt werden muß
 
-            #~ # Evtl. vorhandene Daten löschen
-            #~ self.db.delete(
-                #~ table = self.sql_tablename,
-                #~ where = ("session_id", self["session_id"]),
-            #~ )
+            # Evtl. vorhandene Daten löschen
+            self.db.delete(
+                table = self.sql_tablename,
+                where = ("session_id", self["session_id"]),
+            )
 
             session_data = self._prepare_sessiondata()
             self.db.insert(
@@ -485,7 +489,7 @@ class sessionhandler(dict):
 
         return session_data
 
-    #____________________________________________________________________________________________
+    #_________________________________________________________________________
     # Allgemeine SQL-Funktionen
 
     #~ def insert_session(self):
@@ -553,7 +557,7 @@ class sessionhandler(dict):
             self.debug_session_data()
             self.page_msg("-"*30)
 
-    #____________________________________________________________________________________________
+    #_________________________________________________________________________
 
     def debug_session_data(self):
         if verbose_log != True:
@@ -573,7 +577,7 @@ class sessionhandler(dict):
             self.page_msg( "Debug-Error from %s: %s" % (stack_info,e) )
             #~ for i in inspect.stack(): self.page_msg( i )
 
-    #____________________________________________________________________________________________
+    #_________________________________________________________________________
     ## Debug
 
     def debug(self):
@@ -605,6 +609,32 @@ class sessionhandler(dict):
         for item in info:
             self.page_msg(item)
 
+
+
+    #_________________________________________________________________________
+    ## Spezielle PyLucid Methoden
+
+    def set_pageHistory(self, page_id):
+        """
+        Seite zur page_history hinzufügen
+        """
+        if not self.has_key("page_history") or \
+                    not isinstance(self["page_history"], list):
+            self["page_history"] = [page_id]
+            return
+
+        # Aktuelle Seite einfügen:
+        self["page_history"].insert(0, page_id)
+
+        # Auf letzten 10 limitieren:
+        self["page_history"] = self["page_history"][:10]
+
+
+    def delete_from_pageHistory(self, page_id):
+        self["page_history"] = [i for i in self["page_history"] if i!=page_id]
+
+        if self["page_history"]==[]:
+            self["page_history"]=[self.preferences["core"]["defaultPageName"]]
 
 
 

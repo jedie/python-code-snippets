@@ -77,11 +77,12 @@ def getUniqueShortcut(pageName, nameList):
     Zahl angehanden, wenn der Kurzname schon in nameList vorkommt.
     """
     import string
+    ascii = string.ascii_letters + string.ascii_letters
 
     # Nur ASCII Zeichen erlauben und gleichzeitig trennen
     parts = [""]
     for char in pageName:
-        if not char in string.ascii_letters:
+        if not char in ascii:
             parts.append("")
         else:
             parts[-1] += char
