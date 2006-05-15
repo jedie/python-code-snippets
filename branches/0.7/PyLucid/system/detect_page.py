@@ -99,6 +99,7 @@ class detect_page(PyLucidBaseModule):
     def set_history_page( self ):
         if self.session.has_key("page_history"):
             self.session["page_id"] = self.session["page_history"][0]
+            self.check_page_id(self.session["page_id"])
         else:
             self.page_msg( "Debug: History nicht vorhanden!" )
             self.set_default_page()
@@ -141,23 +142,10 @@ class detect_page(PyLucidBaseModule):
                         return
 
         self.session["page_id"] = int(page_id)
-        self.setup_page_history()
 
-    def setup_page_history(self):
-        """
-        Aktuelle Seite zur page_history hinzufügen
-        """
-        if not self.session.has_key("page_history") or \
-                    not isinstance(self.session["page_history"], list):
-            self.session["page_history"] = [self.session["page_id"]]
-        else:
-            # Aktuelle Seite einfügen:
-            self.session["page_history"].insert(0,self.session["page_id"])
+        # Aktuelle Seite zur page_history hinzufügen:
+        self.session.set_pageHistory(self.session["page_id"])
 
-            # Auf letzten 10 limitieren:
-            self.session["page_history"] = self.session["page_history"][:10]
-
-        self.page_msg('session["page_history"]:', self.session["page_history"])
 
     def set_default_page( self ):
         "Setzt die default-Page als aktuelle Seite"

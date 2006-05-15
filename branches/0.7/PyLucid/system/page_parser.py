@@ -111,6 +111,9 @@ class tag_parser(object):
         # FIXME - besserer Umgang mit unicode content!
 
         #~ if not isinstance(content, basestring):
+        if type(content) == unicode:
+            return str(content)
+
         if type(content) != str:
             self.page_msg(
                 "result of tag '%s' is not type string! Is type: %s" % (

@@ -44,6 +44,19 @@ class active_statements(passive_statements):
             limit=1
         )
 
+    def getUniqueShortcut(self, page_name, page_id = None):
+        """
+        Bearbeitet den gegebenen page_name so, das er Einmalig und "url-safe"
+        ist.
+        Ist eine page_id angegeben, wird der shortcut von dieser Seite
+        ignoriert (wird beim edit page/preview benötigt!)
+        """
+        shortcutList = self.get_shortcutList(page_id)
+
+        uniqueShortcut = self.tools.getUniqueShortcut(page_name, shortcutList)
+
+        return uniqueShortcut
+
     #_____________________________________________________________________________
     ## Funktionen für das ändern des Looks (Styles, Templates usw.)
 
@@ -229,7 +242,6 @@ class active_statements(passive_statements):
                 )
             )
 
-        self.page_msg("***", internal_page_data["markup"])
         content = self.render.apply_markup(content, internal_page_data["markup"])
 
         return content

@@ -84,6 +84,32 @@ class passive_statements(SQL_wrapper):
 
         return side_data
 
+    def get_shortcutList(self, page_id=None):
+        """
+        Liefert eine Liste (!) mit allen vorhandenen "shortcuts" zurück.
+        Wenn eine page_id angegeben wurde, dann wird dieser shortcut
+        herrausgefiltert.
+        """
+        shortcutList = self.select(
+            select_items    = ["id", "shortcut"],
+            from_table      = "pages"
+        )
+        if page_id!=None:
+            page_shortcut = None
+            for line in shortcutList:
+                if line["id"] == page_id:
+                    page_shortcut = line["shortcut"]
+                    break
+
+        shortcutList = [i["shortcut"] for i in shortcutList]
+
+        if page_shortcut!=None:
+            del(
+                shortcutList[shortcutList.index(page_shortcut)]
+            )
+
+        return shortcutList
+
     def get_content_and_markup(self, page_id):
         return self.select(
             select_items    = ["content", "markup"],
@@ -246,10 +272,11 @@ class passive_statements(SQL_wrapper):
     def page_items_by_id(self, item_list, page_id):
         "Allgemein: Daten zu einer Seite"
         page_items = self.select(
-                select_items    = item_list,
-                from_table      = "pages",
-                where           = ("id", page_id)
-            )[0]
+            select_items    = item_list,
+            from_table      = "pages",
+            where           = ("id", page_id)
+        )
+        page_items = page_items[0]
         for i in ("name", "title", "content", "keywords", "description"):
             if page_items.has_key(i) and page_items[i]==None:
                 page_items[i]=""

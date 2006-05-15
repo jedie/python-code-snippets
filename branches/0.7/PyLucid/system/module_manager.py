@@ -145,37 +145,8 @@ class plugin_data:
 
         self.current_properties = self.plugindata[self.module_name][self.method_name]
 
-        self.setup_get_CGI_data()
-
         if self.plugin_debug():
             self.page_msg("method_name:", self.method_name)
-
-
-    def setup_get_CGI_data(self):
-        """
-        Bereitet die CGI-Daten bei "get_CGI_data" vor, indem die Daten
-        in den verlangten Typ gewandert wird.
-        """
-        self.get_CGI_data = {}
-        if not self.current_properties.has_key("get_CGI_data") or \
-            self.current_properties["get_CGI_data"] == None:
-            return
-
-        for k,type_obj in self.current_properties["get_CGI_data"].iteritems():
-            if not self.request.values.has_key(k):
-                continue
-
-            # CGI-Daten in den angebenen Type konvertieren
-            try:
-                self.get_CGI_data[k] = type_obj(self.request.values[k])
-            except Exception, e:
-                self.page_msg(
-                    "Error: Can't convert CGIdata Type from %s to %s (%s)" % (
-                        cgi.escape(self.request.values[k]), cgi.escape(str(type_obj)), self.current_method
-                    )
-                )
-        if debug:
-            self.page_msg("setup_get_CGI_data()-Debug for %s: %s" % (self.current_method, self.get_CGI_data))
 
 
     def __getitem__(self, key):
@@ -198,6 +169,9 @@ class plugin_data:
         """
         URLs für Module vorbereiten
         """
+        self.oldCommandURL = self.URLs["command"]
+        self.oldActionURL = self.URLs["action"]
+
         self.URLs["command"] = "/".join((
             self.URLs["base"],
             self.preferences["commandURLprefix"],
@@ -206,8 +180,13 @@ class plugin_data:
 
         self.URLs["action"] = self.URLs["command"]
 
-        #~ self.URLs["main_action"]    = self.URLs["action"] + self.method_name
-        #~ self.URLs["current_action"] = self.URLs["action"] + self.method_name
+    def restore_URLs(self):
+        """
+        Nach dem das Modul ausgeführt wurde,
+        werden die alten URLs wiederhergestellt.
+        """
+        self.URLs["command"] = self.oldCommandURL
+        self.URLs["action"] = self.oldActionURL
 
     def check_rights(self):
         """
@@ -393,12 +372,17 @@ class module_manager:
 
         #~ self.page_msg(self.module_name, self.method_name, self.plugin_data.keys())
 
-        self.plugin_data.setup_URLs()
         self.plugin_data.check_rights()
 
         module_class = self._get_module_class()
 
-        return self._run_method(module_class, method_arguments)
+        self.plugin_data.setup_URLs()
+
+        content = self._run_method(module_class, method_arguments)
+
+        self.plugin_data.restore_URLs()
+
+        return content
 
 
     def _get_module_class(self):
@@ -455,31 +439,13 @@ class module_manager:
             real_method_arguments.sort()
             argcount = len(real_method_arguments)
 
-            # Bessere Fehlermeldung generieren, wenn die von der Methode per get_CGI_data definierten Argumente
-            # nicht in den CGI-Daten vorhanden sind.
-            try:
-                plugin_data_keys = self.plugin_data["get_CGI_data"].keys()
-                plugin_data_keys.sort()
-            except:
-                plugin_data_keys=[]
-
-            try:
-                method_arguments_keys = method_arguments.keys()
-                method_arguments_keys.sort()
-            except:
-                method_arguments_keys=[]
-
-            raise run_module_error(
-                "ModuleManager >get_CGI_data<-error: \
-                %s() takes exactly %s arguments %s, \
-                but %s existing in get_CGI_data config: %s, \
-                and %s given from CGI data: %s \
-                --- Compare the html form (internal page?), the get_CGI_data config and the real arguments in the method!" % (
-                    unbound_method.__name__, argcount, real_method_arguments,
-                    len(plugin_data_keys), plugin_data_keys,
-                    len(method_arguments_keys), method_arguments_keys,
-                )
+            msg = "ModuleManager 'method_arguments' error: "
+            msg += "%s() takes exactly %s arguments %s, " % (
+                unbound_method.__name__, argcount, real_method_arguments
             )
+            msg += "and I have %s given the dict: %s " % (len(method_arguments), method_arguments)
+
+            raise run_module_error(msg)
 
 
     def _run_method(self, module_class, method_arguments={}):
@@ -487,8 +453,7 @@ class module_manager:
         Startet die Methode und verarbeitet die Ausgaben
         """
         #~ self.page_msg("method_arguments:", method_arguments, "---", self.module_name, self.method_name)
-        if method_arguments=={}:
-            method_arguments = self.plugin_data.get_CGI_data
+
         #~ if debug: self.page_msg("method_arguments:", method_arguments)
         def run_error(msg):
             if self.plugin_data["direct_out"] != True:

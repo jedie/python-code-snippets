@@ -67,11 +67,13 @@ class PyLucidApp(BaseApplication):
         self.environ        = environ
 
         self.request.runlevel = "init"
-        #~ self.request.log            = None
-        #~ self.request.render         = None
-        #~ self.request.tag_parser     = None
-        #~ self.request.session        = None
-        #~ self.request.module_manager = None
+
+        # Für _install:
+        self.request.log            = None
+        self.request.render         = None
+        self.request.tag_parser     = None
+        self.request.session        = None
+        self.request.module_manager = None
 
         # Verwaltung für Einstellungen aus der Datenbank (Objekt aus der Middleware)
         self.request.preferences = environ['PyLucid.preferences']
@@ -81,6 +83,7 @@ class PyLucidApp(BaseApplication):
 
         # Passt die verwendeten Pfade an.
         self.request.URLs = URLs.URLs(self.request)
+        self.request.URLs.debug()
 
         # Tools
         tools.request       = self.request  # Request Objekt an tools übergeben
