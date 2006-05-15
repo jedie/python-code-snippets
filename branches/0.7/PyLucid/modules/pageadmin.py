@@ -80,62 +80,8 @@ class pageadmin(PyLucidBaseModule):
         # Der Name, bei dem kein encoding stattfindet (normal Einstellung)
         self.default_code_name = 'default'
 
-    def new_page(self):
-        "Neue Seite soll angelegt werden"
-
-        core = self.preferences["core"] # Basiseinstellungen
-
-        page_data = {
-            "parent"            : int(self.session["page_id"]),
-            "new_page"          : "True", # Damit man beim speichern weiß, das die Seite neu ist.
-            "name"              : "Newpage",
-            "title"             : "Newpage",
-            "template"          : core["defaultTemplate"],
-            "style"             : core["defaultStyle"],
-            "markup"            : core["defaultMarkup"],
-            "showlinks"         : core["defaultShowLinks"],
-            "permitViewPublic"  : core["defaultPermitPublic"],
-            "ownerID"           : self.session["user_id"],
-            "permitViewGroupID" : 1,
-            "permitEditGroupID" : 1,
-            "content"           : "",
-            "keywords"          : "",
-            "description"       : "",
-        }
-        self.editor_page(page_data)
-
-    def get_page_data(self, page_id):
-        """
-        Liefert alle Daten die zum editieren einer Seite notwendig sind zurück
-        wird auch von self.archive_page() verwendet
-        """
-        return self.db.page_items_by_id(
-            item_list   = ["parent", "name", "title", "template", "style",
-                            "markup", "content", "keywords", "description",
-                            "showlinks", "permitViewPublic", "permitViewGroupID",
-                            "ownerID", "permitEditGroupID"],
-            page_id     = page_id
-        )
-
     #_______________________________________________________________________
     # Edit a page
-
-    def select_edit_page(self):
-        """
-        Wenn eine Seite showlinks ausgeschaltet hat, kommt sie nicht mehr im Menü und
-        im siteMap vor. Um sie dennoch editieren zu können, kann man es hierrüber erledigen ;)
-
-        *Wichtig* "url" darf keine Modulemaneger Link nutzen, weil page_id= schon
-        enthalten ist. Dieser wird jedoch von der select-Box bestimmt!!!
-        """
-
-        return self.db.get_internal_page(
-            internal_page_name = "pageadmin_select_edit_page",
-            page_dict={
-                "url"         : "%s?command=pageadmin&action=edit_page" % self.config.system.real_self_url,
-                "page_option" : self.tools.forms().siteOptionList( with_id = True, select = self.request.form["page_id"] )
-            }
-        )
 
     def edit_page(self):
         """
@@ -154,8 +100,28 @@ class pageadmin(PyLucidBaseModule):
         else:
             # Die aktuelle Seite soll editiert werden
             page_data = self.get_page_data(self.session["page_id"])
-            page_data["new_page"] = "" # Es ist keine neue Seite, sondern ein editieren einer bestehenden
             return self.editor_page(page_data)
+
+    def select_edit_page(self):
+        """
+        Wenn eine Seite showlinks ausgeschaltet hat, kommt sie nicht mehr im
+        Menü und im siteMap vor. Um sie dennoch editieren zu können, kann man
+        es hierrüber erledigen ;)
+        """
+        if self.request.form.has_key("page_id"):
+            page_id = int(self.request.form["page_id"])
+            page_data = self.get_page_data(page_id)
+            return self.editor_page(page_data)
+        else:
+            return self.db.get_internal_page(
+                internal_page_name = "pageadmin_select_edit_page",
+                page_dict={
+                    "url": self.URLs.make_action_link("select_edit_page"),
+                    "page_option": self.tools.forms().siteOptionList(
+                        with_id = True, select = self.session["page_id"]
+                    )
+                }
+            )
 
     def editor_page(self, edit_page_data):
         """
@@ -171,8 +137,9 @@ class pageadmin(PyLucidBaseModule):
         else:
             permitViewPublic = ""
 
-        if not edit_page_data.has_key( "summary" ):
-            # Information kommt nicht von der Seite, ist aber beim Preview schon vorhanden!
+        if not edit_page_data.has_key( "summary"):
+            # Information kommt nicht von der Seite,
+            # ist aber beim Preview schon vorhanden!
             edit_page_data["summary"] = ""
 
         MyOptionMaker = self.tools.html_option_maker()
@@ -194,23 +161,35 @@ class pageadmin(PyLucidBaseModule):
             self.db.get_markup_id(edit_page_data["markup"])
         )
 
-        parent_option = self.tools.forms().siteOptionList( select=int(edit_page_data["parent"]) )
+        parent_option = self.tools.forms().siteOptionList(
+            select=int(edit_page_data["parent"])
+        )
 
 
-        def make_option( table_name, select_item ):
+        def make_option( table_name, select_item):
             """ Speziallfall: Select Items sind immer "id" und "name" """
             return MyOptionMaker.build_from_dict(
-                data            = self.db.select( ("id","name"), table_name ),
+                data            = self.db.select(("id","name"), table_name),
                 value_name      = "id",
                 txt_name        = "name",
                 select_item     = select_item
             )
 
-        template_option             = make_option( "templates", edit_page_data["template"] )
-        style_option                = make_option( "styles",    edit_page_data["style"] )
-        ownerID_option              = make_option( "md5users",  edit_page_data["ownerID"] )
-        permitEditGroupID_option    = make_option( "groups",    edit_page_data["permitEditGroupID"] )
-        permitViewGroupID_option    = make_option( "groups",    edit_page_data["permitViewGroupID"] )
+        template_option = make_option(
+            "templates", edit_page_data["template"]
+        )
+        style_option = make_option(
+            "styles",    edit_page_data["style"]
+        )
+        ownerID_option = make_option(
+            "md5users",  edit_page_data["ownerID"]
+        )
+        permitEditGroupID_option = make_option(
+            "groups",    edit_page_data["permitEditGroupID"]
+        )
+        permitViewGroupID_option = make_option(
+            "groups",    edit_page_data["permitViewGroupID"]
+        )
 
         if edit_page_data["content"] == None:
             # Wenn eine Seite mit lucidCMS frisch angelegt wurde und noch kein
@@ -220,17 +199,18 @@ class pageadmin(PyLucidBaseModule):
             edit_page_data["content"] = ""
 
         #~ edit_page_data["content"] += "\n\n" + str( edit_page_data )
-        #~ form_url = "%s?command=pageadmin&page_id=%s" % ( self.config.system.real_self_url, self.request.form["page_id"] )
+        #~ form_url = "%s?command=pageadmin&page_id=%s" % (self.config.system.real_self_url, self.request.form["page_id"] )
         #~ self.page_msg( edit_page_data )
 
         page_dict = {
             # hidden Felder
-            "new_page"                  : edit_page_data.get("new_page",""),
+            "page_id"                   : edit_page_data["page_id"],
             # Textfelder
             "url"                       : self.URLs.make_action_link("edit_page"),
             "abort_url"                 : self.URLs["base"],
             "summary"                   : edit_page_data["summary"],
             "name"                      : cgi.escape( edit_page_data["name"] ),
+            "shortcut"                  : edit_page_data["shortcut"],
             "title"                     : cgi.escape( edit_page_data["title"] ),
             "keywords"                  : edit_page_data["keywords"],
             "description"               : edit_page_data["description"],
@@ -260,11 +240,11 @@ class pageadmin(PyLucidBaseModule):
         "Preview einer editierten Seite"
 
         # CGI-Daten holen und leere Form-Felder "einfügen"
-        edit_page_data = self._set_default( self.request.form )
+        edit_page_data = self._set_default(self.request.form )
 
         # CGI daten sind immer vom type str, die parent ID muß allerdings eine Zahl sein.
         # Ansonsten wird in MyOptionMaker.build_html_option() kein 'selected'-Eintrag gesetzt :(
-        edit_page_data["parent"] = int( edit_page_data["parent"] )
+        edit_page_data["parent"] = int(edit_page_data["parent"])
 
         # Preview der Seite erstellen
         self.response.write("\n<h3>edit preview:</h3>\n")
@@ -336,14 +316,19 @@ class pageadmin(PyLucidBaseModule):
         """
         page_data = self._get_edit_data() # Daten, aufbereitet, holen
 
-        if page_data.has_key("new_page"):
+        page_id = page_data["page_id"]
+        # Soll ja nicht in der SQL Tabelle geupdated werden:
+        del(page_data["page_id"])
+
+        if page_id == -1:
             # Eine neue Seite muß mit einem INSERT eingefügt werden
             self.insert_new_page(page_data)
         else:
-            self.update_page(page_data)
+            self.update_page(page_id, page_data)
 
-    def insert_new_page(self, page_data):
+    def update_page(self, page_id, page_data):
         """Abspeichern einer editierten Seite"""
+
         # Archivieren der alten Daten
         if self.request.form.has_key("trivial"):
             self.page_msg("trivial modifications selected. Old page is not archived.")
@@ -360,6 +345,14 @@ class pageadmin(PyLucidBaseModule):
             else:
                 self.page_msg("Archived old pagedata.")
 
+        if page_data["parent"] == page_id:
+            # Zur Sicherheit
+            self.page_msg(
+                "Error in page data. Parent-ID == page_id ! (ID: %s)" % \
+                self.session["page_id"]
+            )
+            return
+
         # Daten speichern
         try:
             self.db.update(
@@ -374,19 +367,8 @@ class pageadmin(PyLucidBaseModule):
             self.page_msg( "New page data updated." )
 
 
-    def update_page(self, page_data):
+    def insert_new_page(self, page_data):
         """ Abspeichern einer neu erstellten Seite """
-
-        if page_data["parent"] == self.session["page_id"]:
-            # Zur Sicherheit
-            self.page_msg(
-                "Error in page data. Parent-ID == page_id ! (ID: %s)" % \
-                self.session["page_id"]
-            )
-            return
-
-        # Diente nur zur Info, das es kein UPDATE sondern ein INSERT einer neuen Seite ist
-        del(page_data["new_page"])
 
         try:
             self.db.insert(
@@ -402,21 +384,76 @@ class pageadmin(PyLucidBaseModule):
         self.request.form["page_id"] = self.db.cursor.lastrowid
 
 
-    def _set_default(self, dictionary):
+    def new_page(self):
+        "Neue Seite soll angelegt werden"
+
+        core = self.preferences["core"] # Basiseinstellungen
+
+        page_data = {
+            "parent"            : self.session["page_id"],
+            "page_id"           : "-1", # Damit man beim speichern weiß, das die Seite neu ist.
+            "name"              : "Newpage",
+            "shortcut"          : "",
+            "title"             : "Newpage",
+            "template"          : core["defaultTemplate"],
+            "style"             : core["defaultStyle"],
+            "markup"            : core["defaultMarkup"],
+            "showlinks"         : core["defaultShowLinks"],
+            "permitViewPublic"  : core["defaultPermitPublic"],
+            "ownerID"           : self.session["user_id"],
+            "permitViewGroupID" : 1,
+            "permitEditGroupID" : 1,
+            "content"           : "",
+            "keywords"          : "",
+            "description"       : "",
+        }
+        self.editor_page(page_data)
+
+    def get_page_data(self, page_id):
+        """
+        Liefert alle Daten die zum editieren einer Seite notwendig sind zurück
+        wird auch von self.archive_page() verwendet
+        """
+        page_data = self.db.page_items_by_id(
+            item_list   = [
+                "parent", "name", "shortcut", "title", "template",
+                "style", "markup", "content", "keywords", "description",
+                "showlinks", "permitViewPublic", "permitViewGroupID",
+                "ownerID", "permitEditGroupID"
+            ],
+            page_id     = page_id
+        )
+        page_data["page_id"] = page_id
+        return page_data
+
+
+    def _set_default(self, page_data):
         """
         Kompletiert evtl. nicht vorhandene Keys.
-        Leere HTML-input-Felder bzw. nicht aktivierte checkboxen erscheinen nicht in den CGIdaten,
-        diese müßen aber für die Weiterverarbeitung im Dict vorhanden sein.
-        Diese Methode wird beim Preview und beim speichern benötigt.
+        Leere HTML-input-Felder bzw. nicht aktivierte checkboxen erscheinen
+        nicht in den CGIdaten, diese müßen aber für die Weiterverarbeitung
+        im Dict vorhanden sein. Diese Methode wird beim Preview und beim
+        speichern benötigt.
         """
         default_dict = {
-            "name":"", "title":"", "content":"", "keywords":"", "description":"",
-            "showlinks":0, "permitViewPublic":0
+            "name":"", "shortcut":"", "title":"", "content":"", "keywords":"",
+            "description":"", "showlinks":0, "permitViewPublic":0
         }
         for key, value in default_dict.iteritems():
-            if not dictionary.has_key( key ):
-                dictionary[key] = value
-        return dictionary
+            if not page_data.has_key(key):
+                page_data[key] = value
+
+        if page_data["shortcut"] == "":
+            if page_data["name"] != "":
+                page_data["shortcut"] = page_data["name"]
+            else:
+                page_data["shortcut"] = page_data["title"]
+
+        page_data["shortcut"] = self.db.getUniqueShortcut(
+            page_data["shortcut"], int(page_data["page_id"])
+        )
+
+        return page_data
 
 
     def _get_edit_data(self):
@@ -428,11 +465,11 @@ class pageadmin(PyLucidBaseModule):
         CGIdata = self._set_default(CGIdata)
 
         string_items = (
-            "new_page", "name", "title", "content", "keywords", "description",
+            "name", "shortcut", "title", "content", "keywords", "description",
         )
 
         number_items = (
-            "parent", "parent", "template", "style",
+            "page_id", "parent", "parent", "template", "style",
             "markup", "showlinks",
             "permitViewPublic", "permitViewGroupID", "ownerID", "permitEditGroupID"
         )
@@ -447,7 +484,10 @@ class pageadmin(PyLucidBaseModule):
 
         # Daten ergänzen
         page_data["lastupdateby"]   = self.session["user_id"]
-        page_data["lastupdatetime"] = self.tools.convert_time_to_sql( time.time() ) # Letzte Änderungszeit
+
+        # Letzte Änderungszeit
+        page_data["lastupdatetime"] = \
+            self.tools.convert_time_to_sql(time.time())
 
         return page_data
 
@@ -458,22 +498,19 @@ class pageadmin(PyLucidBaseModule):
         """
         Auswahl welche Seite gelöscht werden soll
         """
+        if self.request.form.has_key("page_id_to_del"):
+            page_id_to_del = int(self.request.form["page_id_to_del"])
+            self.delete_page(page_id_to_del)
+
         return self.db.get_internal_page(
             internal_page_name = "pageadmin_select_del_page",
             page_dict = {
-                "url"         : self.URLs["action"] + "select_del_page",
-                "page_option" : self.tools.forms().siteOptionList( with_id = True, select = self.request.form["page_id"] )
+                "url": self.URLs.make_action_link("select_del_page"),
+                "page_option": self.tools.forms().siteOptionList(
+                    with_id = True, select = self.session["page_id"]
+                )
             }
         )
-        #~ self.db.print_internal_TAL_page(
-            #~ internal_page_name = "module_admin",
-            #~ context_dict = {
-                #~ "version"       : __version__,
-                #~ "package_data"  : data,
-                #~ "installed_data": self.installed_modules_info,
-                #~ "action_url"    : self.URLs["action"],
-            #~ }
-        #~ )
 
     def delete_page(self, page_id_to_del):
         """
@@ -492,30 +529,23 @@ class pageadmin(PyLucidBaseModule):
             # Hat noch Unterseiten
             msg = "Can't delete Page!"
             self.page_msg( msg )
-            self.response.write("h3. %s\n" % msg)
-            self.response.write("Page has parent pages:")
+            self.response.write("<h3>%s</h3>\n" % msg)
+            self.response.write("<p>Page has parent pages:</p><ul>\n")
             for page in parents:
-                self.response.write("* %s" % cgi.escape( page["name"] ))
-            self.response.write("Please move parents.")
-
-            # "Menü" wieder anzeigen
-            return self.select_del_page()
+                self.response.write(
+                    "<li>%s</li>\n" % cgi.escape(page["name"])
+                )
+            self.response.write("</ul><p>Please move parents first.</p>\n")
+            return
 
         try:
-            self.archive_page( page_id_to_del, "delete page", comment )
+            self.archive_page(page_id_to_del, "delete page", comment)
         except Exception, e:
             self.page_msg( "Delete page error:" )
             self.page_msg( "Can't archive page with ID %s: %s" % (page_id_to_del, e) )
             return
 
-        if self.request.form["page_id"] == page_id_to_del:
-            # Die aktuelle Seite wird gelöscht, also kann sie nicht mehr angezeigt werden.
-            # Deswegen gehen wir halt zu parent Seite ;)
-            self.request.form["page_id"] = self.db.parentID_by_id(page_id_to_del)
-            if self.request.form["page_id"] == 0:
-                # Die oberste Ebene hat ID 0, obwohl es evtl. keine Seite gibt, die ID 0 hat :(
-                # Da nehmen wir doch lieber die default-Seite...
-                self.request.form["page_id"] = self.preferences["core"]["defaultPageName"]
+        self.session.delete_from_pageHistory(page_id_to_del)
 
         start_time = time.time()
         try:
@@ -530,25 +560,24 @@ class pageadmin(PyLucidBaseModule):
                 "page with ID %s deleted in %.2fsec." % ( page_id_to_del, duration_time )
             )
 
-        # "Menü" wieder anzeigen
-        return self.select_del_page()
-
     #_______________________________________________________________________
 
-    def archive_page( self, page_id, type, comment ):
+    def archive_page(self, page_id, type, comment):
         """
         Archiviert die Seite mit der ID >page_id<
         Keine Fehlerabfrage, ob Seiten-ID richtig ist!
         """
         start_time = time.time()
+        page_data = self.get_page_data(page_id)
+        page_data = pickle.dumps(page_data)
         self.db.insert(
             table = "archive",
             data = {
                 "userID"    : self.session["user_id"],
                 "type"      : type,
-                "date"      : self.tools.convert_time_to_sql( time.time() ),
+                "date"      : self.tools.convert_time_to_sql(time.time()),
                 "comment"   : comment,
-                "content"   : pickle.dumps( self.get_page_data( page_id ) )
+                "content"   : page_data,
             }
         )
         duration_time = time.time()-start_time

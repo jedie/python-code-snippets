@@ -18,30 +18,27 @@ __essential_buildin__   = True
 #___________________________________________________________________________________________________
 # Module-Manager Daten
 
+global_rights = {
+    "must_login"    : True,
+    "must_admin"    : False,
+}
+
 module_manager_data = {
     "edit_page" : {
         "must_login"    : True,
         "must_admin"    : False,
-        "CGI_dependent_actions" : {
-            "preview"   : {
-                "CGI_laws"      : {"preview": "preview"}, # Submit-input-Button
-                "get_CGI_data"  : {"page_id": int},
-            },
-            "save"      : {
-                "CGI_laws"      : {"save": "save"}, # Submit-input-Button
-                "get_CGI_data"  : {"page_id": int},
-            },
-            "encode_from_db"    : {
-                "CGI_laws"      : {"encode": "encode"}, # Submit-input-Button
-                "get_CGI_data"  : {"page_id": int, "decode_from": str, "encode_to": str},
-            },
-        },
         "internal_page_info" : {
             "description"       : "HTML form to edit a CMS Page",
             "template_engine"   : "string formatting",
             "markup"            : None,
         },
     },
+    "new_page"          : global_rights,
+    "delete_page"       : global_rights,
+    "preview"           : global_rights,
+    "save"              : global_rights,
+    "encode_from_db"    : global_rights,
+
     "select_edit_page" : {
         "must_login"    : True,
         "must_admin"    : False,
@@ -51,35 +48,17 @@ module_manager_data = {
             "markup"            : None,
         },
     },
-    "new_page" : {
-        "must_login"    : True,
-        "must_admin"    : True,
-        "CGI_dependent_actions" : {
-            "preview"   : {
-                "CGI_laws"      : {"preview": "preview"}, # Submit-input-Button
-                "get_CGI_data"  : {"page_id": int},
-            },
-            "save"      : {
-                "CGI_laws"      : {"save": "save"}, # Submit-input-Button
-                "get_CGI_data"  : {"page_id": int},
-            },
-        },
-    },
+
     "select_del_page" : {
         "must_login"    : True,
         "must_admin"    : True,
-        "CGI_dependent_actions" : {
-            "delete_page"       : {
-                "CGI_laws"      : {"delete page":"delete page"}, # Submit-input-Button
-                "get_CGI_data"  : {"page_id_to_del": int},
-            },
-        },
         "internal_page_info" : {
             "description"       : "select a page to delete it",
             "template_engine"   : "string formatting",
             "markup"            : None,
         },
     },
+
     "sequencing" : {
         "must_login"    : True,
         "must_admin"    : False,
@@ -89,8 +68,5 @@ module_manager_data = {
             "markup"            : None,
         },
     },
-    "save_positions" : {
-        "must_login"    : True,
-        "must_admin"    : False,
-    },
+    "save_positions" : global_rights,
 }

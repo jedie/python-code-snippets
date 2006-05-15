@@ -22,7 +22,7 @@ function encoding_warning() {
 /* ]]> */
 </script>
 
-<form class="internalpage" name="login" method="post" action="%(url)s">
+<form class="internalpage" name="edit_page" method="post" action="%(url)s">
   <p>Page <strong>&quot;%(name)s&quot;</strong>:<br />
     <textarea id="page_content" name="content" rows="25" onchange="page_content_changed=1;">%(content)s</textarea>
   </p>
@@ -34,7 +34,8 @@ function encoding_warning() {
 
 <fieldset><legend>send</legend>
 <p>
-    <input name="new_page" type="hidden" value="%(new_page)s" />
+    <input name="page_id" type="hidden" value="%(page_id)s" />
+
     <input type="submit" value="save" name="save" />
     <input type="submit" value="preview" name="preview" />
     <input type="reset" onClick="self.location.href='%(abort_url)s'" name="abort" value="abort" />
@@ -52,6 +53,9 @@ function encoding_warning() {
 <fieldset><legend>Page Details</legend>
    <label class="left" for="name">page name:</label>
    <input class="right" id="name" name="name" type="text" value="%(name)s" size="50" maxlength="50" />
+   <br />
+   <label class="left" for="shortcut">page shortcut:</label>
+   <input class="right" id="shortcut" name="shortcut" type="text" value="%(shortcut)s" size="50" maxlength="50" />
    <br />
    <label class="left" for="title">page title:</label>
    <input class="right" id="title" name="title" type="text" value="%(title)s" size="50" maxlength="50" />
