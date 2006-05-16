@@ -14,25 +14,29 @@ __version__="0.3.3"
 
 __history__="""
 v0.3.3
-    - Ein sehr übler Fehler bei der Unterscheidung, zwischen dem editieren einer
-        bestehenden Seite oder dem anlegen einer neuen Seite.
+    - Ein sehr übler Fehler bei der Unterscheidung, zwischen dem editieren
+        einer bestehenden Seite oder dem anlegen einer neuen Seite.
     - Bugfixes beim erstellen und löschen von Seiten
 v0.3.2
     - Änderungen, damit das "encode from DB" besser funktioniert
 v0.3.1
     - "CGI_dependent_actions" bei new_page waren falsch.
 v0.3
-    - page_edit/save nutzt nun die allgemeine Archivierungs Methode archive_page()
+    - page_edit/save nutzt nun die allg. Archivierungs Methode archive_page()
     - Vereinheitlichung bei den HTML-Form-Buttons
-    - Ob eine neue Seite angelegt werden soll, oder eine bestehende nur editiert wird, erkennt
-        das Skript nun an der Page-ID und nicht mehr aus den Session-Daten.
+    - Ob eine neue Seite angelegt werden soll, oder eine bestehende nur
+        editiert wird, erkennt das Skript nun an der Page-ID und nicht mehr
+        aus den Session-Daten.
     - Trennung zwischen normalem editieren/speichern und neu/speichern
 v0.2
     - NEU: "sequencing" - Ändern der Seiten-Reihenfolge
-    - select_del_page benutzt nun CGI_dependent_actions (vereinheitlichung im Ablauf mit anderen Modulen)
+    - select_del_page benutzt nun CGI_dependent_actions (vereinheitlichung im
+        Ablauf mit anderen Modulen)
 v0.1.1
-    - NEU: select_edit_page: Editieren einer Seite mit Select-Box in denen _alle_ Seiten angezeigt werden.
-    - Bug 1275807 gefixed: "showlinks" und "permitViewPublic" werden nun richtig auf 0 gesetzt statt ""
+    - NEU: select_edit_page: Editieren einer Seite mit Select-Box in denen
+        _alle_ Seiten angezeigt werden.
+    - Bug 1275807 gefixed: "showlinks" und "permitViewPublic" werden nun
+        richtig auf 0 gesetzt statt ""
 v0.1.0
     - NEU: Das löschen von Seiten geht nun auch ;)
     - Anpassung an neuen Module-Manager
@@ -41,13 +45,15 @@ v0.0.7
     - "must_admin" für Module-Manager definiert
     - Nutzt Zeitumwandlung aus PyLucid["tools"]
 v0.0.6
-    - vereinfachung in parent_tree.make_parent_option() durch MySQLdb.cursors.DictCursor
+    - vereinfachung in parent_tree.make_parent_option() durch
+        MySQLdb.cursors.DictCursor
 v0.0.5
     - NEU: Pseudo Klasse 'module_info' liefert Daten für den Module-Manager
 v0.0.4
     - NEU: erstellen einer Seite
 v0.0.3
-    - NEU: encoding from DB (Daten werden in einem bestimmten Encoding aus der DB geholt)
+    - NEU: encoding from DB (Daten werden in einem bestimmten Encoding aus
+        der DB geholt)
 v0.0.2
     - Fehler behoben: parend-ID wird nach einem Preview auf 'root' gesetzt
 v0.0.1
@@ -55,8 +61,6 @@ v0.0.1
 """
 
 __todo__ = """
-lastupdatetime in der SQL Datenbank ändern: time-String keine gute Idee: in lucidCMS wird
-das Archiv nicht mehr angezeigt :(
 """
 
 # Python-Basis Module einbinden
@@ -97,6 +101,7 @@ class pageadmin(PyLucidBaseModule):
         elif self.request.form.has_key("save"):
             # Abspeichern der Änderungen
             self.save()
+            self.session["render follow"] = True
         else:
             # Die aktuelle Seite soll editiert werden
             page_data = self.get_page_data(self.session["page_id"])
@@ -230,11 +235,10 @@ class pageadmin(PyLucidBaseModule):
             "permitViewGroupID_option"  : permitViewGroupID_option,
         }
 
-        self.response.write(
-            self.db.get_rendered_internal_page(
-                "pageadmin_edit_page", page_dict
-            )
+        internal_page = self.db.get_rendered_internal_page(
+            "pageadmin_edit_page", page_dict
         )
+        self.response.write(internal_page)
 
     def preview(self):
         "Preview einer editierten Seite"
@@ -364,7 +368,7 @@ class pageadmin(PyLucidBaseModule):
         except Exception, e:
             self.page_msg("Error to update page data: %s" % e)
         else:
-            self.page_msg( "New page data updated." )
+            self.page_msg("New page data updated.")
 
 
     def insert_new_page(self, page_data):
@@ -381,7 +385,8 @@ class pageadmin(PyLucidBaseModule):
             self.page_msg( "New page saved." )
 
         # Setzt die aktuelle Seite auf die neu erstellte.
-        self.request.form["page_id"] = self.db.cursor.lastrowid
+        #~ self.request.form["page_id"] = self.db.cursor.lastrowid
+        self.session["page_id"] = self.db.cursor.lastrowid
 
 
     def new_page(self):
@@ -546,6 +551,9 @@ class pageadmin(PyLucidBaseModule):
             return
 
         self.session.delete_from_pageHistory(page_id_to_del)
+        # Wechselt die Aktuelle Seite zur übergeortneten Seite
+        parentID = self.db.parentID_by_id(page_id_to_del)
+        self.session["page_id"] = parentID
 
         start_time = time.time()
         try:

@@ -39,7 +39,10 @@ class detect_page(PyLucidBaseModule):
 
         if self.request.runlevel == "command":
             # Ein internes Kommando (LogIn, EditPage ect.) wurde ausgeführt
-            self.set_history_page()
+            if self.session.has_key("page_id"):
+                self.check_page_id(self.session["page_id"])
+            else:
+                self.set_history_page()
             return
 
         if self.preferences["poormans_modrewrite"] == True:

@@ -208,10 +208,10 @@ class passive_statements(SQL_wrapper):
         Die parent ID zur >page_id<
         """
         return self.select(
-                select_items    = ["parent"],
-                from_table      = "pages",
-                where           = ("id",page_id)
-            )[0]["parent"]
+            select_items    = ["parent"],
+            from_table      = "pages",
+            where           = ("id",page_id)
+        )[0]["parent"]
 
     def side_title_by_id(self, page_id):
         "Liefert den Page-Title anhand der >page_id< zurück"
