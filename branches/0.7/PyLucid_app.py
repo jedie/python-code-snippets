@@ -206,7 +206,15 @@ class PyLucidApp(BaseApplication):
             # response Objekt. Darin ist der page_body-Tag der von
             # der replacer-Middleware bzw. mit dem page_body-Module
             # ausgefüllt wird.
+            content = self.module_manager.run_command()
+            self.page_msg("Content:", cgi.escape(str(type(content))))
+            if not self.session.has_key("render follow"):
+                self.staticTags["page_body"] = content
+            else:
+                # Soll nur einmal zählen:
+                del(self.session["render follow"])
             self.render.write_command_template()
+            #~ self.page_msg(content)
         else:
             # Normale Seite wird ausgegeben
 

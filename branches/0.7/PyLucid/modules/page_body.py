@@ -32,16 +32,16 @@ from PyLucid.system.BaseModule import PyLucidBaseModule
 class page_body(PyLucidBaseModule):
 
     def lucidTag( self ):
-        if self.request.runlevel == "command":
-            self.command_content()
-        else:
-            self.normal_page()
+        #~ if self.request.runlevel == "command":
+            #~ self.command_content()
+        #~ else:
+            #~ self.normal_page()
 
-    def command_content(self):
-        content = self.module_manager.run_command()
-        self.response.write(content)
+    #~ def command_content(self):
+        #~ content = self.module_manager.run_command()
+        #~ self.response.write(content)
 
-    def normal_page(self):
+    #~ def normal_page(self):
         page_id = self.session["page_id"]
         content = self.render.get_rendered_page(page_id)
         self.response.write(content)

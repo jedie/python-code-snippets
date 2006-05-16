@@ -609,8 +609,6 @@ class sessionhandler(dict):
         for item in info:
             self.page_msg(item)
 
-
-
     #_________________________________________________________________________
     ## Spezielle PyLucid Methoden
 
