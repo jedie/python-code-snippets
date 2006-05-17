@@ -154,9 +154,19 @@ class Database(object):
 
         self.cursor = self.conn.cursor()
 
-        # Autocommit sollte immer aus sein!
-        # Geht aber nur bei bestimmten MySQL-Datenbank-Typen!
-        self.conn.autocommit(False)
+        # FIXME - Funktioniert das in allen Situationen???
+        try:
+            self.cursor.execute('set character set utf8;')
+        except:
+            pass
+        #~ self.cursor.execute('set names utf8;')
+
+        try:
+            # Autocommit sollte immer aus sein!
+            # Geht aber nur bei bestimmten MySQL-Datenbank-Typen!
+            self.conn.autocommit(False)
+        except:
+            pass
 
 
     def connect_sqlite(self, *args, **kwargs):
@@ -352,19 +362,28 @@ class IterableDictCursor(object):
         row = self._cursor.fetchone()
         if not row:
             return ()
-        result = {}
-        for idx, col in enumerate(self._cursor.description):
-            result[col[0]] = row[idx]
-        return result
+        row = self.makeDict(row)
+        return row
 
     def fetchall(self):
         rows = self._cursor.fetchall()
         result = []
         for row in rows:
-            tmp = {}
-            for idx, col in enumerate(self._cursor.description):
-                tmp[col[0]] = row[idx]
-            result.append(tmp)
+            row = self.makeDict(row)
+            result.append(row)
+        return result
+
+    def makeDict(self, row):
+        result = {}
+        for idx, col in enumerate(self._cursor.description):
+            item = row[idx]
+            if isinstance(item, str):
+                #FIXME!!!!
+                try:
+                    item = item.decode("utf_8", 'strict')
+                except UnicodeError:
+                    item = item.decode("utf_8", 'replace')
+            result[col[0]] = item
         return result
 
     def raw_fetchall(self):
@@ -414,14 +433,13 @@ class SQL_wrapper(Database):
             msg += "SQL-values: %s" % str(SQL_values)
             raise Exception(msg)
 
-        try:
-            result = self.cursor.fetchall()
-        except Exception, e:
-            raise Exception(
-                "fetchall Error: %s --- SQL-command: %s --- SQL-values: %s" % (
-                e, SQLcommand, SQL_values
-                )
-            )
+        #~ try:
+        result = self.cursor.fetchall()
+        #~ except Exception, e:
+            #~ msg = "fetchall '%s': %s --- SQL-command: %s --- SQL-values: %s" % (
+                #~ e.__doc__, e, SQLcommand, SQL_values
+            #~ )
+            #~ raise Exception, msg
 
         return result
 
@@ -668,6 +686,25 @@ class SQL_wrapper(Database):
             if line[0] == table_name:
                 return True
         return False
+
+    def get_table_keys(self, tableName, debug=False):
+        """
+        Informationen über die Indizes der Tabelle,
+        zurück kommt ein Dict welches als Key der Indize-Namen
+        hat und als value die Informationen beinhaltet.
+        """
+        if self.dbtyp == "sqlite":
+            raise NotImplemented
+        elif self.dbtyp == "adodb":
+            raise NotImplemented
+        else: # MySQL
+            SQLcommand = "SHOW KEYS FROM $$%s" % tableName
+
+        result = {}
+        for line in self.process_statement(SQLcommand):
+            result[line["Key_name"]] = line
+
+        return result
 
     def encode_sql_results(self, sql_results, codec="UTF-8"):
         """
