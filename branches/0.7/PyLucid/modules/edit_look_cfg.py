@@ -18,67 +18,38 @@ __essential_buildin__ = True
 #~ module_manager_debug = True
 module_manager_debug = False
 
+global_rights = {
+    "must_login"    : True,
+    "must_admin"    : True,
+}
+
 module_manager_data = {
     "stylesheet" : {
         "must_login"    : True,
         "must_admin"    : True,
-        "CGI_dependent_actions": {
-            "edit_style": {
-                "CGI_laws"      : {"edit": "edit"}, # Wert vom angeklicken Button
-                "get_CGI_data"  : {"id": int},
-                "internal_page_info" : {
-                    "description"       : "edit a CSS stylesheet",
-                    "template_engine"   : "string formatting",
-                    "markup"            : None
-                },
-            },
-            "del_style": {
-                "CGI_laws"      : {"del": "del"}, # Wert vom angeklicken Button
-                "get_CGI_data"  : {"id": int}
-            },
-            "clone_style": {
-                "CGI_laws"      : {"clone": "clone"}, # Wert vom angeklicken Button
-                "get_CGI_data"  : {"clone_name": str, "new_name": str},
-            },
-            "save_style": {
-                "CGI_laws"      : {"save": "save"},
-                "get_CGI_data"  : {"id": int, "name": str, "description": str, "content": str},
-            },
-        },
         "internal_page_info" : {
             "name"              : "select_style",
             "description"       : "select a stylesheet to edit it",
+            "template_engine"   : "jinja",
+            "markup"            : None
+        },
+    },
+    "edit_style": {
+        "must_login"    : True,
+        "must_admin"    : True,
+        "internal_page_info" : {
+            "description"       : "edit a CSS stylesheet",
             "template_engine"   : "string formatting",
             "markup"            : None
         },
     },
-
+    "del_style": global_rights,
+    "clone_style": global_rights,
+    "save_style": global_rights,
+    #-------------------------------------------------------------------------
     "template": {
         "must_login"    : True,
         "must_admin"    : True,
-        "CGI_dependent_actions" : {
-            "edit_template": {
-                "CGI_laws"      : {"edit": "edit"}, # Wert vom angeklicken Button
-                "get_CGI_data"  : {"id": int},
-                "internal_page_info" : {
-                    "description"       : "edit a page template",
-                    "template_engine"   : "string formatting",
-                    "markup"            : None
-                },
-            },
-            "del_template": {
-                "CGI_laws"      : {"del": "del"}, # Wert vom angeklicken Button
-                "get_CGI_data"  : {"id": int}
-            },
-            "clone_template": {
-                "CGI_laws"      : {"clone": "clone"}, # Wert vom angeklicken Button
-                "get_CGI_data"  : {"clone_name": str, "new_name": str},
-            },
-            "save_template": {
-                "CGI_laws"      : {"save": "save"},
-                "get_CGI_data"  : {"id": int, "name": str, "description": str, "content": str},
-            },
-        },
         "internal_page_info" : {
             "name"              : "select_template",
             "description"       : "select a template to edit it",
@@ -86,25 +57,22 @@ module_manager_data = {
             "markup"            : None
         },
     },
-
+    "edit_template": {
+        "must_login"    : True,
+        "must_admin"    : True,
+        "internal_page_info" : {
+            "description"       : "edit a page template",
+            "template_engine"   : "string formatting",
+            "markup"            : None
+        },
+    },
+    "del_template": global_rights,
+    "clone_template": global_rights,
+    "save_template": global_rights,
+    #-------------------------------------------------------------------------
     "internal_page" : {
         "must_login"    : True,
         "must_admin"    : True,
-        "CGI_dependent_actions" : {
-            "edit_internal_page": {
-                "CGI_laws"      : {"edit": "edit"}, # Wert vom angeklicken Button
-                "get_CGI_data"  : {"internal_page_name": str},
-                "internal_page_info" : {
-                    "description"       : "edit a internal page",
-                    "template_engine"   : "string formatting",
-                    "markup"            : None
-                },
-            },
-            "save_internal_page"        : {
-                "CGI_laws"      : {"save": "save"}, # Wert vom angeklicken Button
-                "get_CGI_data"  : {"internal_page_name": str, "content": str, "description": str, "markup": int},
-            },
-        },
         "internal_page_info" : {
             "name"              : "select_internal_page",
             "description"       : "select a internal page to edit it",
@@ -112,4 +80,15 @@ module_manager_data = {
             "markup"            : None
         },
     },
+
+    "edit_internal_page": {
+        "must_login"    : True,
+        "must_admin"    : True,
+        "internal_page_info" : {
+            "description"       : "edit a internal page",
+            "template_engine"   : "string formatting",
+            "markup"            : None
+        },
+    },
+    "save_internal_page": global_rights,
 }

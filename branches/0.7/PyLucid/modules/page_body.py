@@ -38,11 +38,15 @@ class page_body(PyLucidBaseModule):
             #~ self.normal_page()
 
     #~ def command_content(self):
-        #~ content = self.module_manager.run_command()
-        #~ self.response.write(content)
+        #~ self.module_manager.run_command()
+        #~ if self.session.has_key("render follow"):
+            #~ self.normal_page()
+            #~ # Soll nur einmal zählen:
+            #~ del(self.session["render follow"])
 
     #~ def normal_page(self):
         page_id = self.session["page_id"]
         content = self.render.get_rendered_page(page_id)
+        #~ self.page_msg("id",page_id,"content:", content)
         self.response.write(content)
 

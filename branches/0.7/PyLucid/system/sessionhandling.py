@@ -163,8 +163,8 @@ class cookieHandler:
 
         if len(cookie_id) != 32:
             # Mit dem Cookie stimmt wohl was nicht ;)
-            self.deleteCookie()
-            msg = "wrong Cookie len: %s !" % len( cookie_id )
+            self.deleteCookie(self.CookieName)
+            msg = "wrong Cookie len: %s !" % len(cookie_id)
             if verbose_log == True:
                 self.log.write( msg, "sessionhandling", "error" )
             if self.page_msg_debug == True:
@@ -181,6 +181,27 @@ class cookieHandler:
         ).hexdigest()
 
         return clientID
+
+    #_________________________________________________________________________
+    # Zusätzliche Daten als seperater Cookie
+
+    def set_dataCookie(self, key, value):
+        key = self._get_key(key)
+        self.response.set_cookie(key, value)
+
+    def get_dataCookie(self, key):
+        key = self._get_key(key)
+        if not key in self.request.cookies:
+            return False
+        else:
+            return self.request.cookies[key].value
+
+    def del_dataCookie(self, key):
+        key = self._get_key(key)
+        self.deleteCookie(key)
+
+    def _get_key(self, key):
+        return "%s_%s" % (self.CookieName, key)
 
     #_________________________________________________________________________
     # Allgemeine Cookie-Funktionen
@@ -228,12 +249,12 @@ class cookieHandler:
             CookieData = self.request.cookies[self.CookieName].value
             self.page_msg("test Cookie: '%s'" % CookieData)
 
-    def deleteCookie(self):
+    def deleteCookie(self, CookieName):
         if self.page_msg_debug == True:
-            self.page_msg( "delete_cookie '%s'" % self.CookieName)
+            self.page_msg( "delete_cookie '%s'" % CookieName)
 
-        if self.CookieName in self.request.cookies:
-            self.response.delete_cookie(self.CookieName)
+        if CookieName in self.request.cookies:
+            self.response.delete_cookie(CookieName)
 
 
 #_____________________________________________________________________________
@@ -275,8 +296,8 @@ class sessionhandler(dict):
         self.set_default_values()
 
         # Client ID ermitteln
-        c = cookieHandler(request, response, page_msg_debug)
-        self["session_id"] = c.getClientID()
+        self.cookie = cookieHandler(request, response, page_msg_debug)
+        self["session_id"] = self.cookie.getClientID()
 
         # Evtl. vorhandene Session-Daten aus DB einlesen
         self.read_session()
@@ -309,6 +330,16 @@ class sessionhandler(dict):
 
     def read_session(self):
         "Liest Session-Daten aus der DB"
+        isLogin = self.cookie.get_dataCookie("is_login")
+        if isLogin != "true":
+            # Kein Cookie, dann brauchen wir erst garnicht nachzusehen ;)
+            if self.page_msg_debug == True:
+                self.page_msg(
+                    "No 'is_login == true' Data-Cookie! -> Not login!"
+                )
+            return
+
+
         DB_data = self.read_from_DB(self["session_id"])
         if DB_data == False:
             # Keine Daten in DB
@@ -317,7 +348,6 @@ class sessionhandler(dict):
                     "No Session data for id %s in DB" % self["session_id"]
                 )
             return
-
 
 
         def checkSessiondata(DB_data):
@@ -392,6 +422,8 @@ class sessionhandler(dict):
             self.page_msg("debug before:")
             self.debug_session_data()
 
+        self.cookie.del_dataCookie("is_login")
+
         self.state = "no session"
         self.db.delete(
             table = self.sql_tablename,
@@ -446,6 +478,9 @@ class sessionhandler(dict):
                 }
             )
             self.db.commit()
+
+            self.cookie.set_dataCookie("is_login", "true")
+
             self.log.write( "created Session.", "sessionhandling", "OK" )
             if self.page_msg_debug == True:
                 self.page_msg("insert session data for:", self["session_id"])
@@ -498,6 +533,8 @@ class sessionhandler(dict):
 
     def read_from_DB(self, session_id):
         "Liest Sessiondaten des Users mit der >session_id<"
+        self._delete_old_sessions() # Löschen veralteter Sessions in der DB
+
         DB_data = self.db.select(
                 select_items    = ["session_id", "timestamp", "ip", "domain_name", "session_data"],
                 from_table      = self.sql_tablename,
@@ -505,8 +542,6 @@ class sessionhandler(dict):
             )
         if DB_data == []:
             return False
-
-        self._delete_old_sessions() # Löschen veralteter Sessions in der DB
 
         if self.page_msg_debug == True: self.page_msg( "DB_data:",DB_data )
         if len(DB_data) > 1:
@@ -517,14 +552,19 @@ class sessionhandler(dict):
 
         DB_data = DB_data[0]
 
-        self.RAW_session_data_len = len(DB_data["session_data"])
+        sessionData = DB_data["session_data"]
+        del(DB_data["session_data"])
+
+        self.RAW_session_data_len = len(sessionData)
+
+        if type(sessionData) == unicode:
+            sessionData = str(sessionData)
 
         if base64format == True:
-            DB_data["session_data"] = base64.b64decode(DB_data["session_data"])
-        DB_data["session_data"] = pickle.loads(DB_data["session_data"])
+            sessionData = base64.b64decode(sessionData)
+        sessionData = pickle.loads(sessionData)
 
-        DB_data.update(DB_data["session_data"])
-        del(DB_data["session_data"])
+        DB_data.update(sessionData)
 
         return DB_data
 

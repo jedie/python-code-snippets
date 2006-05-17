@@ -11,6 +11,44 @@ from PyLucid.install.ObjectApp_Base import ObjectApp_Base
 
 class LowLevelAdmin(ObjectApp_Base):
     "2. low level Admin"
+    def rebuildShortcuts(self):
+        "Rebuild all shortcuts"
+        self.response.write("<h4>Create shortcut's from pages names:</h4>\n")
+        self.response.write("<pre>\n")
+        result = self._db.select(
+            select_items    = ["id","name","title"],
+            from_table      = "pages",
+        )
+        nameList = []
+        for line in result:
+            id = line["id"]
+            name = line["name"]
+            if name=="" or name==None:
+                name = line["title"]
+
+            self.response.write("id %-3s: %-30s ->" % (id,cgi.escape(name)))
+
+            shortcut = self._tools.getUniqueShortcut(name, nameList)
+            nameList.append(shortcut)
+
+            self.response.write("%-30s" % shortcut)
+
+            self.response.write("--- update in db:")
+
+            try:
+                self._db.update(
+                    table   = "pages",
+                    data    = {"shortcut": shortcut},
+                    where   = ("id",id)
+                )
+            except Exception, e:
+                self.response.write("ERROR: %s" % e)
+            else:
+                self.response.write("OK")
+
+            self.response.write("\n")
+        self.response.write("</pre>\n")
+
     def module_admin(self, sub_action=None, *info):
         "Module/Plugin Administration"
         #~ self._write_info()

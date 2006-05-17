@@ -46,5 +46,7 @@ class PyLucidBaseModule(object):
         self.render         = request.render
         self.tag_parser     = request.tag_parser
 
+        self.templates      = request.templates
+
         self.environ        = request.environ
 

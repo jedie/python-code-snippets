@@ -88,14 +88,13 @@ class auth(PyLucidBaseModule):
         if Debug == True:
             self.session.debug()
 
-        return self.db.get_rendered_internal_page(
-            internal_page_name = "auth_login",
-            page_dict = {
-                "user"          : str(username), #FIXME Unicode <-> str
-                "rnd"           : rnd_login,
-                "url"           : url
-            }
-        )
+        context = {
+            "user"          : str(username), #FIXME Unicode <-> str
+            "rnd"           : rnd_login,
+            "url"           : url
+        }
+
+        self.templates.write("auth_login", context)
 
     def check_login( self ):
         """
@@ -114,7 +113,11 @@ class auth(PyLucidBaseModule):
             if Debug: msg += "CGI-Keys: " + str(self.request.form.keys())
             return msg
 
-        return self.check_md5_login( username, form_pass1, form_pass2 )
+        self.check_md5_login( username, form_pass1, form_pass2 )
+
+        # Nach dem Ausführen durch den ModuleManager, soll die aktuelle CMS
+        # Seite angezeigt werden, ansonsten wäre die Seite leer.
+        self.session["render follow"] = True
 
     def _error( self, log_msg, public_msg ):
         """Fehler werden abhängig vom Debug-Status angezeigt/gespeichert"""
@@ -212,6 +215,10 @@ class auth(PyLucidBaseModule):
     def logout( self ):
         self.session.delete_session()
         self.page_msg( "You are logged out." )
+
+        # Nach dem Ausführen durch den ModuleManager, soll die aktuelle CMS
+        # Seite angezeigt werden, ansonsten wäre die Seite leer.
+        self.session["render follow"] = True
 
 
 

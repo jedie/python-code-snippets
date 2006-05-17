@@ -25,7 +25,6 @@ from PyLucid.system.exceptions import *
 
 # Colubrid
 from colubrid import BaseApplication
-from colubrid import HttpResponse
 
 WSGIrequestKey = "colubrid.request"
 
@@ -33,20 +32,22 @@ WSGIrequestKey = "colubrid.request"
 import config # PyLucid Grundconfiguration
 
 #__init__
+from PyLucid.system import response
 from PyLucid.system import tools
 from PyLucid.system import URLs
 from PyLucid.system import jinjaRenderer
 
 # init2
-from PyLucid.system import staticTags
+#~ from PyLucid.system import staticTags
 from PyLucid.system import sessionhandling
 from PyLucid.system import SQL_logging
 from PyLucid.system import module_manager
 from PyLucid.system import page_parser
 from PyLucid.system import detect_page
+from PyLucid.system import template_engines
 
 
-staticTags.__info__ = __info__ # Übertragen
+response.__info__ = __info__ # Übertragen
 
 
 
@@ -62,7 +63,7 @@ class PyLucidApp(BaseApplication):
     def __init__(self, environ, start_response):
         super(PyLucidApp, self).__init__(environ, start_response)
 
-        self.response = HttpResponse()
+        self.response = response.HttpResponse()
 
         self.environ        = environ
 
@@ -74,6 +75,7 @@ class PyLucidApp(BaseApplication):
         self.request.tag_parser     = None
         self.request.session        = None
         self.request.module_manager = None
+        self.request.templates      = None
 
         # Verwaltung für Einstellungen aus der Datenbank (Objekt aus der Middleware)
         self.request.preferences = environ['PyLucid.preferences']
@@ -144,7 +146,7 @@ class PyLucidApp(BaseApplication):
             self.request, self.response, page_msg_debug=False
         )
 
-        self.request.staticTags = staticTags.staticTags(self.request, self.response)
+        self.request.staticTags = response.staticTags(self.request, self.response)
 
         self.request.render = page_parser.render(self.request, self.response)
 
@@ -154,22 +156,28 @@ class PyLucidApp(BaseApplication):
         )
         #~ self.request.module_manager.debug()
 
-        self.request.tag_parser = page_parser.tag_parser(self.request, self.response)
+        #~ self.request.tag_parser = page_parser.tag_parser(self.request, self.response)
 
         # Aktuelle Seite ermitteln und festlegen
         detect_page.detect_page(self.request, self.response).detect_page()
         # Überprüfe Rechte der Seite
         #~ self.verify_page()
 
+        # Einheitliche Schnittstelle zu den Templates Engines
+        self.request.templates = template_engines.TemplateEngines(self.request, self.response)
+
         #Shorthands
         self.render         = self.request.render
-        self.tag_parser     = self.request.tag_parser
+        #~ self.tag_parser     = self.request.tag_parser
         self.session        = self.request.session
         self.module_manager = self.request.module_manager
         self.staticTags     = self.request.staticTags
 
         # Übertragen von Objekten
         self.db.render = self.render
+
+        self.response.module_manager = self.module_manager
+        self.response.staticTags = self.staticTags
 
 
     def process_request(self):
@@ -180,6 +188,8 @@ class PyLucidApp(BaseApplication):
             self.installPyLucid()
         else:
             self.process_normal_request()
+            # Evtl. vorhandene Sessiondaten in DB schreiben
+            self.session.commit()
 
         if debug:
             from colubrid.debug import debug_info
@@ -194,41 +204,53 @@ class PyLucidApp(BaseApplication):
         )
 
     def process_normal_request(self):
-
+        """
+        Entweder wird ein "_command" ausgeführt oder eine
+        normale CMS Seite angezeigt.
+        """
+        # init der Objekte für einen normalen Request:
         self.init2()
+
+        # Statische-Tag-Informationen setzten:
         self.staticTags.setup()
 
-        #~ self.tools.page_msg_debug(self.environ)
 
         if self.request.runlevel == "command":
             # Ein Kommando soll ausgeführt werden
-            # Schreibt das Template für das aktuelle Kommando ins
-            # response Objekt. Darin ist der page_body-Tag der von
-            # der replacer-Middleware bzw. mit dem page_body-Module
-            # ausgefüllt wird.
-            content = self.module_manager.run_command()
-            self.page_msg("Content:", cgi.escape(str(type(content))))
+            self.module_manager.run_command()
+
+            # Ausgaben vom Modul speichern, dabei werden diese automatisch
+            # im response-Objekt gelöscht.
+            content = self.response.get()
+
             if not self.session.has_key("render follow"):
+                # Ausgaben vom Modul sollen in die Seite eingebaut werden:
                 self.staticTags["page_body"] = content
+                self.render.write_command_template()
+                return
+
             else:
-                # Soll nur einmal zählen:
+                # Es soll nicht die Ausgaben den Modules angezeigt werden,
+                # sondern die normale CMS Seite. (z.B. nach dem Speichern
+                # einer editierten Seite!)
+
+                # Soll nicht in die DB für den nächsten request gespeichert
+                # werden, deswegen wird der Eintrag einfach gelöscht:
                 del(self.session["render follow"])
-            self.render.write_command_template()
-            #~ self.page_msg(content)
-        else:
-            # Normale Seite wird ausgegeben
 
-            # Schreib das Template mit dem page_body-Tag ins
-            # response Objekt.
-            self.render.write_page_template()
 
-        # PyLucid-Tags aus dem response ersetzten:
-        self.tag_parser.rewrite_responseObject()
+        # Normale Seite wird ausgegeben
 
-        # Evtl. vorhandene Sessiondaten in DB schreiben
-        self.session.commit()
+        # Schreib das Template mit dem page_body-Tag ins
+        # response Objekt.
+        self.render.write_page_template()
+
+
 
     def installPyLucid(self):
+        """
+        Der aktuelle request ist im "_install"-Bereich
+        """
         from PyLucid.install.install import InstallApp
         InstallApp.__info__ = __info__
         InstallApp(self.request, self.response).process_request()

@@ -1,12 +1,34 @@
+{*
+    Jinja-Template
+*}
 <h2>Select CSS stylesheet to edit</h2>
 
-<form name="edit_style" method="post" action="%(main_action_url)s">
-Duplicate <select name="clone_name">%(clone_select)s</select> to a new named: <input name="new_name" value="" size="20" maxlength="50" type="text">
-<input type="submit" name="clone" value="clone" />
+<form name="edit_style" method="post" action="{{ url }}">
+    Duplicate <select name="clone_name">
+    {% for item in nameList %}
+        <option value="{{ item.name }}">{{ item.name }}</option>
+    {% endfor %}
+
+    </select> to a new named: <input name="new_name" value="" size="20" maxlength="50" type="text">
+    <input type="submit" name="clone" value="clone" />
 </form>
 
 <span class="select">
-%(select_table)s
+<table>
+{% for item in itemsDict %}
+    {% cycle rowclass through "odd", "even" %}
+
+    <tr>
+        <form name="edit_{{ item.name }}" method="post" action="{{ url }}">
+            <input name="id" type="hidden" value="{{ item.id }}">
+            <td class="name">{{ item.name|escapexml }}</td>
+            <td class="description">{{ item.description }}</td>
+            <td><input type="submit" value="edit" name="edit" /></td>
+            <td><input type="submit" value="del" name="del" /></td>
+        </form>
+    </tr>
+{% endfor %}
+</table>
 </span>
 
 <style type="text/css">

@@ -12,9 +12,11 @@ Editor für alles was mit aussehen zu tun hat:
 
 __author__ = "Jens Diemer (www.jensdiemer.de)"
 
-__version__="0.2"
+__version__="0.3"
 
 __history__="""
+v0.3
+    - Anpassung an PyLucid v0.7
 v0.2
     - Bug 1308063: Umstellung von <button> auf <input>, weil's der IE nicht kann
         s. http://www.python-forum.de/viewtopic.php?t=4180
@@ -43,33 +45,37 @@ import sys, cgi
 
 
 
+from PyLucid.system.BaseModule import PyLucidBaseModule
 
-class edit_look:
 
-    def __init__( self, PyLucid ):
-        self.config     = PyLucid["config"]
-        #~ self.config.debug()
-        self.CGIdata    = PyLucid["CGIdata"]
-        #~ self.CGIdata.debug()
-        self.db         = PyLucid["db"]
-        self.tools      = PyLucid["tools"]
-        self.page_msg   = PyLucid["page_msg"]
-        self.URLs       = PyLucid["URLs"]
-
+class edit_look(PyLucidBaseModule):
     #_______________________________________________________________________
     ## Stylesheet
 
-    def stylesheet( self ):
+    def stylesheet(self):
         """ Es wird die internal_page 'select_style' zusammen gebaut """
+        from colubrid.debug import debug_info
+        self.page_msg(debug_info(self.request))
+        if self.request.form.has_key("clone"):
+            self.clone_style()
+        elif self.request.form.has_key("del"):
+            self.del_style()
+        elif self.request.form.has_key("edit"):
+            self.edit_style()
+            return
+
         self.select_table(
             type        = "style",
             table_data  = self.db.get_style_list()
         )
 
-    def edit_style( self, id ):
+    def edit_style(self):
         """ Seite zum editieren eines Stylesheet """
+        id = self.request.form["id"]
+        id = int(id)
+
         try:
-            edit_data = self.db.get_style_data( id )
+            edit_data = self.db.get_style_data(id)
         except IndexError:
             print "bad style id!"
             return
@@ -81,8 +87,11 @@ class edit_look:
             id          = id,
         )
 
-    def clone_style( self, clone_name, new_name="NoName" ):
+    def clone_style(self):
         """ Ein Stylesheet soll kopiert werden """
+        clone_name = self.request.form["clone_name"]
+        new_name = self.request.form.get("new_name", "NoName")
+        new_name = self.db.get_UniqueStylename(new_name)
 
         style_content = self.db.get_style_data_by_name( clone_name )["content"]
 
@@ -98,7 +107,6 @@ class edit_look:
         else:
             self.page_msg( "style '%s' duplicated to '%s'" % (clone_name, new_name) )
 
-        self.stylesheet() # Auswahlseite wieder anzeigen
 
     def save_style(self, id, name, description="", content=""):
         """ Speichert einen editierten Stylesheet """
@@ -109,10 +117,12 @@ class edit_look:
         else:
             self.page_msg( "Style saved!" )
 
-        self.stylesheet() # Auswahlseite wieder anzeigen
 
-    def del_style( self, id ):
+    def del_style( self ):
         """ Lösche ein Stylesheet """
+        id = self.request.form["id"]
+        id = int(id)
+
         page_names = self.db.select(
             select_items    = ["name"],
             from_table      = "pages",
@@ -129,7 +139,6 @@ class edit_look:
             else:
                 self.page_msg( "Delete Style (id:'%s')" % id )
 
-        self.stylesheet() # Auswahlseite wieder anzeigen
 
     #_______________________________________________________________________
     ## Template
@@ -208,54 +217,42 @@ class edit_look:
     #_______________________________________________________________________
     ## Methoden für Stylesheet- und Template-Editing
 
-    def make_edit_page( self, edit_data, name, order, id ):
+    def make_edit_page(self, edit_data, name, order, id):
         """ Erstellt die Seite zum Stylesheet/Template editieren """
-        self.db.print_internal_page(
-            internal_page_name  = "edit_look_%s" % name,
-            page_dict           = {
-                "name"          : edit_data["name"],
-                "url"           : self.URLs["main_action"],
-                "content"       : cgi.escape( edit_data["content"] ),
-                "description"   : cgi.escape( edit_data["description"] ),
-                "back"          : "%s%s" % (self.URLs["action"], order),
-                "id"            : id,
-            }
-        )
+        internal_page_name = "edit_look_%s" % name
+        context = {
+            "name"          : edit_data["name"],
+            "url"           : self.URLs["current_action"],
+            "content"       : cgi.escape( edit_data["content"] ),
+            "description"   : cgi.escape( edit_data["description"] ),
+            "back"          : "%s%s" % (self.URLs["action"], order),
+            "id"            : id,
+        }
+        self.templates.write(internal_page_name, context)
 
-    def select_table( self, type, table_data ):
+    def select_table(self, type, table_data):
         """ Erstellt die Tabelle zum auswählen eines Style/Templates """
 
-        clone_select = self.tools.html_option_maker().build_from_list( [i["name"] for i in table_data] )
+        nameList = [i["name"] for i in table_data]
+        clone_select = self.tools.html_option_maker().build_from_list(nameList)
 
-        table = '<table>\n'
-        JS = '''onclick="return confirm('Are you sure to delete the item ?')"'''
-        for item in table_data:
-            table += "<tr>\n"
-            table += '  <form name="edit_%s" method="post" action="%s">\n' % (item["name"], self.URLs["main_action"])
-            table += '  <input name="id" type="hidden" value="%s">' % item["id"]
-            table += '  <td class="name">%s</td>\n' % item["name"]
-            table += '  <td class="description">%s</td>\n' % item["description"]
-            table += '  <td><input type="submit" value="edit" name="edit" /></td>\n'
-            table += '  <td><input type="submit" value="del" name="del" /></td>\n'
-            table += "  </form>\n"
-            table += "</tr>\n"
-        table += '</table>\n'
+        context = {
+            "url": self.URLs["current_action"],
+            "nameList": table_data,
+        }
+        internalPageName = "edit_look_select_%s" % type
 
         # Seite anzeigen
-        self.db.print_internal_page(
-            internal_page_name  = "edit_look_select_%s" % type,
-            page_dict           = {
-                "main_action_url"   : self.URLs["main_action"],
-                "clone_select"      : clone_select,
-                "select_table"      : table,
-            }
-        )
+        self.templates.write(internalPageName, context)
 
     #_______________________________________________________________________
     ## Interne Seiten editieren
 
-    def internal_page( self ):
+    def internal_page(self):
         """ Tabelle zum auswählen einer Internen-Seite zum editieren """
+        #~ from colubrid.debug import debug_info
+        #~ self.page_msg(debug_info(self.request))
+
         category_list   = self.db.get_internal_category()
         page_dict       = self.db.get_internal_page_dict()
 
@@ -269,7 +266,8 @@ class edit_look:
                         select_table += '<table id="edit_internal_pages_select">\n'
                         printed_head=True
                     select_table += "<tr>\n"
-                    select_table += '  <form name="internal_page" method="post" action="%s">\n' % self.URLs["main_action"]
+                    select_table += '  <form name="internal_page" method="post" action="%s">\n' % \
+                                                        self.URLs.make_action_link("edit_internal_page")
                     select_table += '  <input name="internal_page_name" type="hidden" value="%s" />\n' % page_name
                     select_table += '  <td><input type="submit" value="edit" name="edit" /></td>\n'
 
@@ -290,7 +288,8 @@ class edit_look:
             select_table += '<table id="edit_internal_pages_select">\n'
             for page_name, page in page_dict.iteritems():
                 select_table += "<tr>\n"
-                select_table += '  <form name="internal_page" method="post" action="%s">\n' % self.URLs["main_action"]
+                select_table += '  <form name="internal_page" method="post" action="%s">\n' % \
+                                                        self.URLs.make_action_link("edit_internal_page")
                 select_table += '  <input name="internal_page_name" type="hidden" value="%s" />\n' % page_name
                 select_table += '  <td><input type="submit" value="edit" name="edit" /></td>\n'
                 select_table += '  <td class="name">%s</td>\n' % page["name"]
@@ -300,17 +299,22 @@ class edit_look:
                 select_table += "</tr>\n"
             select_table += "</table>\n"
 
-        self.db.print_internal_page(
-            internal_page_name = "edit_look_select_internal_page",
-            page_dict = {
-                "select_table" : select_table,
-            }
+        self.response.write(
+            "<p><small>(edit_look v%s)</small></p>" % __version__
         )
 
-        print "<p><small>(edit_look v%s)</small></p>" % __version__
+        context = {
+            "select_table" : select_table,
+        }
 
-    def edit_internal_page(self, internal_page_name):
+        self.templates.write("edit_look_select_internal_page", context)
+
+    def edit_internal_page(self):
         """ Formular zum editieren einer internen Seite """
+        #~ from colubrid.debug import debug_info
+        #~ self.page_msg(debug_info(self.request))
+        internal_page_name = self.request.form['internal_page_name']
+
         try:
             # Daten der internen Seite, die editiert werden soll
             edit_data = self.db.get_internal_page_data( internal_page_name )
@@ -327,28 +331,32 @@ class edit_look:
             self.db.get_available_template_engines(), edit_data["template_engine"], select_value=False
         )
 
-        self.db.print_internal_page(
-            internal_page_name  = "edit_look_edit_internal_page",
-            page_dict = {
-                "name"                      : internal_page_name,
-                "url"                       : self.URLs["main_action"],
-                "content"                   : cgi.escape( edit_data["content"] ),
-                "description"               : cgi.escape( edit_data["description"] ),
-                "template_engine_option"    : template_engine_option,
-                "markup_option"             : markup_option,
-                "back"                      : "%sedit_internal_page" % self.URLs["action"],
-            }
+        context = {
+            "name"                      : internal_page_name,
+            "url"                       : self.URLs.make_action_link("save_internal_page"),
+            "content"                   : cgi.escape( edit_data["content"] ),
+            "description"               : cgi.escape( edit_data["description"] ),
+            "template_engine_option"    : template_engine_option,
+            "markup_option"             : markup_option,
+            "back"                      : "%sedit_internal_page" % self.URLs["action"],
+        }
+
+        self.templates.write("edit_look_edit_internal_page", context)
+
+    def save_internal_page(self):
+        """ Speichert einen editierte interne Seite """
+        #~ from colubrid.debug import debug_info
+        #~ self.page_msg(debug_info(self.request))
+
+        internal_page_name = self.request.form['internal_page_name']
+
+        page_data = self.get_filteredFormDict(
+            strings = ("content", "description"),
+            numbers = ("markup", "template_engine")
         )
 
-    def save_internal_page(self, internal_page_name, content, description, markup):
-        """ Speichert einen editierte interne Seite """
-        page_data = {
-            "content"       : content,
-            "description"   : description,
-            "markup"        : markup,
-        }
         try:
-            self.db.update_internal_page( internal_page_name, page_data )
+            self.db.update_internal_page(internal_page_name, page_data)
         except Exception, e:
             self.page_msg("Error saving internal page '%s': %s" % (cgi.escape(internal_page_name), e))
         else:
@@ -363,4 +371,13 @@ class edit_look:
         page  = "<h2>Error.</h2>"
         page += "<p>%s</p>" % "<br/>".join( [str(i) for i in msg] )
         return page
+
+    def get_filteredFormDict(self, strings=None, numbers=None):
+        result = {}
+        for name in strings:
+            result[name] = self.request.form[name]
+        for name in numbers:
+            result[name] = int(self.request.form[name])
+
+        return result
 

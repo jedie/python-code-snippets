@@ -228,7 +228,7 @@ class plugin_data:
         """
         result = {}
         for item in self.db.get_plugin_menu_data(self.module_id):
-            if item["parent_method_id"] == None and item["menu_section"] != None:
+            if item["menu_section"] != None:
                 if not result.has_key(item["menu_section"]):
                     result[item["menu_section"]] = []
                 result[item["menu_section"]].append(item)
@@ -270,6 +270,7 @@ class module_manager:
         self.URLs           = request.URLs
         self.render         = request.render
         self.tools          = request.tools
+        self.staticTags = self.request.staticTags
 
         self.plugin_data = plugin_data(request)
 
@@ -282,7 +283,7 @@ class module_manager:
         Ausführen von:
         <lucidTag:'tag'/>
         """
-        if self.request.staticTags.has_key(tag):
+        if self.staticTags.has_key(tag):
             return self.staticTags[tag]
 
         if tag.find(".") != -1:
@@ -473,12 +474,13 @@ class module_manager:
         #~ else:
         # Das Modul schreibt in einem lokalen Puffer, um die Ausgaben in
         # die CMS Seite einbauen zu können
-        responseObject = self.tools.out_buffer()
+        #~ old_responseObject = self.response
+        #~ self.response = self.tools.out_buffer()
 
         # Instanz erstellen und PyLucid-Objekte übergeben
         if self.preferences["ModuleManager_error_handling"] == True:
             try:
-                class_instance = module_class(self.request, responseObject)
+                class_instance = module_class(self.request, self.response)
             except Exception, e:
                 raise run_module_error(
                     "[Can't make class intance from module '%s': %s]" % (
@@ -487,13 +489,13 @@ class module_manager:
                 )
         else:
             try:
-                class_instance = module_class(self.request, responseObject)
+                class_instance = module_class(self.request, self.response)
             except TypeError, e:
-                raise TypeError(
-                    "TypeError, module '%s.%s' --- method_args: '%s': %s" % (
-                        self.module_name, self.method_name, method_arguments, e
-                    )
-                )
+                msg = (
+                    "TypeError, module '%s.%s': %s"
+                    " --- module-class must received: (request, response) !"
+                ) % (self.module_name, self.method_name, e)
+                raise TypeError(msg)
 
         # Methode aus Klasse erhalten
         if self.preferences["ModuleManager_error_handling"] == True:
@@ -540,8 +542,9 @@ class module_manager:
         #~ if self.plugin_data["direct_out"] == True:
             # Das Modul hat direkt zum globalen response Objekt geschrieben
             #~ return
-
-        responseOutput = responseObject.get()
+        return
+        #~ responseOutput = self.response.get()
+        #~ self.response = old_responseObject
 
         if type(moduleOutput) == dict:
             try:

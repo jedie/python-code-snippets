@@ -37,7 +37,6 @@ class passive_statements(SQL_wrapper):
         sys.stderr.write("<h1>SQL error</h1>")
         sys.stderr.write("<h1>%s</h1>" % type)
         sys.stderr.write("<p>%s</p>" % txt)
-        import sys
         sys.exit()
 
     def _type_error(self, itemname, item):
@@ -155,8 +154,8 @@ class passive_statements(SQL_wrapper):
                     "Page-ID: %s, Template-ID: %s" % (page_id, template_id)
                 )
 
-        if type(page_template) != str:
-            self._type_error( "Template-Content", page_template )
+        if not isinstance(page_template, basestring):
+            self._type_error("Template-Content", page_template)
 
         return page_template
 
@@ -288,9 +287,9 @@ class passive_statements(SQL_wrapper):
         wird in PyLucid_system.preferences verwendet
         """
         return self.select(
-                select_items    = ["section", "varName", "value"],
-                from_table      = "preferences",
-            )
+            select_items    = ["section", "varName", "value"],
+            from_table      = "preferences",
+        )
 
     def get_page_link_by_id(self, page_id):
         """ Generiert den absolut-Link zur Seite """
@@ -321,15 +320,15 @@ class passive_statements(SQL_wrapper):
                 order           = ("position","ASC"),
             )
 
-    def get_sequencing_data(self):
+    def get_sequencing_data(self, page_id):
         """ Alle Daten die für pageadmin.sequencing() benötigt werden """
-        parend_id = self.parentID_by_id(self.CGIdata["page_id"])
+        parend_id = self.parentID_by_id(page_id)
         return self.select(
-                select_items    = ["id","name","title","parent","position"],
-                from_table      = "pages",
-                where           = ("parent", parend_id),
-                order           = ("position","ASC"),
-            )
+            select_items    = ["id","name","title","parent","position"],
+            from_table      = "pages",
+            where           = ("parent", parend_id),
+            order           = ("position","ASC"),
+        )
 
     #_____________________________________________________________________________
     ## Funktionen für Styles, Templates usw.
@@ -341,12 +340,25 @@ class passive_statements(SQL_wrapper):
                 order           = ("name","ASC"),
             )
 
+    def get_stylenames(self):
+        stylenames = self.select(
+            select_items    = ["name"],
+            from_table      = "styles",
+        )
+        result = [i["name"] for i in stylenames]
+        return result
+
+    def get_UniqueStylename(self, styleName):
+        styleNameList = self.get_stylenames()
+        uniqueStyleName = self.tools.getUniqueShortcut(styleName, styleNameList)
+        return uniqueStyleName
+
     def get_style_data(self, style_id):
         return self.select(
-                select_items    = ["name","description","content"],
-                from_table      = "styles",
-                where           = ("id", style_id)
-            )[0]
+            select_items    = ["name","description","content"],
+            from_table      = "styles",
+            where           = ("id", style_id)
+        )[0]
 
     def get_style_data_by_name(self, style_name):
         return self.select(
@@ -456,6 +468,15 @@ class passive_statements(SQL_wrapper):
         if replace==True:
             data["template_engine"] = self.get_template_engine(data["template_engine"])
             data["markup"] = self.get_markup_id(data["markup"])
+
+        try:
+            data["content"] = data["content"].decode("utf_8")
+        except UnicodeError, e:
+            self.page_msg("Can't decode internal page content: %s" % e)
+            try:
+                data["content"] = data["content"].decode("utf_8", 'replace')
+            except UnicodeError, e:
+                pass
 
         return data
 
@@ -593,30 +614,28 @@ class passive_statements(SQL_wrapper):
 
     def get_method_properties(self, plugin_id, method_name):
 
-        def unpickle(SQL_result_list):
-            for line in SQL_result_list:
-                for item in ("CGI_laws", "get_CGI_data"):
-                    if line[item] == None:
-                        continue
+        #~ def unpickle(SQL_result_list):
+            #~ for line in SQL_result_list:
+                #~ for item in ("CGI_laws", "get_CGI_data"):
+                    #~ if line[item] == None:
+                        #~ continue
                     #~ try:
-                    line[item] = pickle.loads(line[item])
+                    #~ line[item] = pickle.loads(line[item])
                     #~ except:
-            return SQL_result_list
+            #~ return SQL_result_list
 
-
-        data_items = [
-            "must_login", "must_admin", "CGI_laws", "get_CGI_data", "menu_section",
-            "menu_description","direct_out", "sys_exit", "has_Tags", "no_rights_error"
-        ]
         # Daten der Methode holen
         method_properties = self.select(
-            select_items    = ["id", "parent_method_id"] + data_items,
+            select_items    = [
+                "id", "must_login", "must_admin", "menu_section", "menu_description",
+                "direct_out", "sys_exit", "has_Tags", "no_rights_error"
+            ],
             from_table      = "plugindata",
             where           = [("plugin_id", plugin_id), ("method_name",method_name)],
         )
-        method_properties = unpickle(method_properties)[0]
+        #~ method_properties = unpickle(method_properties)[0]
 
-        return method_properties
+        return method_properties[0]
 
     def get_method_id(self, plugin_id, method_name):
         """ Wird beim installieren eines Plugins benötigt """
@@ -679,7 +698,7 @@ class passive_statements(SQL_wrapper):
 
     def get_plugin_menu_data(self, plugin_id):
         return self.select(
-            select_items    = ["parent_method_id", "method_name", "menu_section", "menu_description"],
+            select_items    = ["method_name", "menu_section", "menu_description"],
             from_table      = "plugindata",
             where           = [("plugin_id", plugin_id)]#,("parent_method_id", None)],
         )
