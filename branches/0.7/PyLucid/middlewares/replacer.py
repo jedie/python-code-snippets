@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 
 """
-Einfache Middelware um <script_duration /> in den
+Einfache Middelware um Tags in den
 Ausgaben zu ersetzten.
 """
 
@@ -16,10 +16,7 @@ script_duration_tag = "<lucidTag:script_duration/>"
 
 
 
-class ReplaceDurationTime(object):
-    """
-    <lucidTag:script_duration/> - ersetzten
-    """
+class Replacer(object):
     def __init__(self, app):
         self.app = app
 
@@ -31,7 +28,7 @@ class ReplaceDurationTime(object):
             request_time, overall_clock
         )
 
-        line = line.replace(self.durationTag, "%s" % time_string)
+        line = line.replace(script_duration_tag, "%s" % time_string)
 
         return line
 

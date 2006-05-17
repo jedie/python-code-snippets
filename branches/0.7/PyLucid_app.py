@@ -229,7 +229,7 @@ class PyLucidApp(BaseApplication):
                 # Ausgaben vom Modul sollen in die Seite eingebaut werden:
                 self.staticTags["page_body"] = content
                 self.render.write_command_template()
-                return
+                return"<lucidTag:script_duration/>"
 
             else:
                 # Es soll nicht die Ausgaben den Modules angezeigt werden,
@@ -272,14 +272,9 @@ app = DatabaseMiddleware(app)
 from PyLucid.middlewares.page_msg import page_msg
 app = page_msg(app)
 
-# Middleware um die Page-Msg Ausgaben einzusetzten
-from PyLucid.middlewares.page_msg import ReplacePageMsg
-app = ReplacePageMsg(app, "<lucidTag:page_msg/>")
-
-
-# Middleware, die den Tag <lucidTag:script_duration/> ersetzt
-from PyLucid.middlewares.script_duration import ReplaceDurationTime
-app = ReplaceDurationTime(app, "<lucidTag:script_duration/>")
+# Middleware, die die Tags "script_duration" und "page_msg" ersetzt
+from PyLucid.middlewares.replacer import Replacer
+app = Replacer(app)
 
 
 
