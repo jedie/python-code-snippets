@@ -46,7 +46,11 @@ class ReplacePageMsg(object):
 
     def __call__(self, environ, start_response):
         result = iter(self.app(environ, start_response))
+
         for line in result:
-            yield self.rewrite(line, environ)
+            if self.pageMsgTag in line:
+                line = self.rewrite(line, environ)
+            yield line
+
         if hasattr(result, 'close'):
             result.close()

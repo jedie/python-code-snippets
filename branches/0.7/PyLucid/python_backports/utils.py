@@ -8,10 +8,13 @@ v1.0
     - init Version from http://aima.cs.berkeley.edu/python/utils.html
 """
 
-from __future__ import generators
-import operator, math, random, copy, sys, os.path, bisect
+"""Provide some widely useful utilities. Safe for "from utils import *".
 
-#______________________________________________________________________________
+"""
+
+from __future__ import generators
+import operator, math, random, copy, sys,  os.path, bisect
+
 # Compatibility with Python 2.2 and 2.3
 
 # The AIMA code is designed to run in Python 2.2 and up (at some point,
@@ -75,8 +78,7 @@ except NameError:
         >>> sorted([3, 1, 2])
         [1, 2, 3]
         """
-        #~ seq2 = copy.copy(seq)
-        seq2 = list(seq)
+        seq2 = list(seq)#seq2 = copy.copy(seq)
         if key:
             if cmp == None:
                 cmp = __builtins__.cmp
@@ -220,7 +222,6 @@ except NameError:
 
 
 
-#______________________________________________________________________________
 # Simple Data Structures: infinity, Dict, Struct
 
 infinity = 1.0e400
@@ -275,7 +276,6 @@ def update(x, **entries):
         x.__dict__.update(entries)
     return x
 
-#______________________________________________________________________________
 # Functions on Sequences (mostly inspired by Common Lisp)
 # NOTE: Sequence functions (count_if, find_if, every, some) take function
 # argument first (like reduce, filter, and map).
@@ -358,7 +358,6 @@ def isin(elt, seq):
         if elt is x: return True
     return False
 
-#______________________________________________________________________________
 # Functions on sequences of numbers
 # NOTE: these take the sequence argument first, like min and max,
 # and like standard math notation: \sigma (i = 1..n) fn(i)
@@ -424,7 +423,6 @@ def argmax_list(seq, fn):
 def argmax_random_tie(seq, fn):
     "Return an element with highest fn(seq[i]) score; break ties at random."
     return argmin_random_tie(seq, lambda x: -fn(x))
-#______________________________________________________________________________
 # Statistical and mathematical functions
 
 def histogram(values, mode=0, bin_function=None):
@@ -554,7 +552,6 @@ def clip(vector, lowest, highest):
     (0, 9)
     """
     return type(vector)(map(min, map(max, vector, lowest), highest))
-#______________________________________________________________________________
 # Misc Functions
 
 def printf(format, *args):
@@ -653,7 +650,6 @@ def DataFile(name, mode='r'):
     return AIMAFile(['..', 'data', name], mode)
 
 
-#______________________________________________________________________________
 # Queues: Stack, FIFOQueue, PriorityQueue
 
 class Queue:
@@ -716,6 +712,3 @@ class PriorityQueue(Queue):
 ## Fig: The idea is we can define things like Fig[3,10] later.
 ## Alas, it is Fig[3,10] not Fig[3.10], because that would be the same as Fig[3.1]
 Fig = {}
-
-
-

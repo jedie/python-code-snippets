@@ -18,7 +18,7 @@ debug = False
 
 
 
-import cgi, os
+import cgi, os, time
 import sys #Debug
 
 from PyLucid.system.exceptions import *
@@ -181,6 +181,8 @@ class PyLucidApp(BaseApplication):
 
 
     def process_request(self):
+
+        self.environ["request_start"] = time.time()
 
         self.setup_runlevel()
 
