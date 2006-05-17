@@ -27,9 +27,12 @@ ToDo
     * Es wird immer das paramstyle 'format' benutzt. Also mit %s escaped
 """
 
-__version__="0.7"
+__version__="0.8"
 
 __history__="""
+v0.8
+    - Es gibt nun eine encoding-Angabe, damit alle String als Unicode zurück
+        geliefert werden. Ist allerdings nur mit MySQLdb getestet!!!
 v0.7
     - Die connect-Methode wird nun nicht mehr automatisch aufgerufen.
     - Die Connection-Parameter müßen nun explizit zur verwendeten dbapi passen!
@@ -97,7 +100,7 @@ v0.0.1
 """
 
 from __future__ import generators
-import sys
+import sys, codecs
 
 
 debug = False
@@ -108,10 +111,12 @@ class Database(object):
     """
     Klasse, die nur allgemeine SQL-Funktionen beinhaltet
     """
-    def __init__(self):
+    def __init__(self, encoding="utf8"):
         # Zum speichern der letzten SQL-Statements (evtl. für Fehlerausgabe)
         self.last_statement = None
 
+        self.encoding = encoding
+        self.unicode_decoder = codecs.getdecoder(encoding)
         self.dbtyp = None
         self.tableprefix = ""
 
@@ -138,7 +143,8 @@ class Database(object):
                     #~ db      = self.databasename,
                 #~ ),
                 placeholder = self.placeholder,
-                prefix = self.tableprefix
+                unicode_decoder = self.unicode_decoder,
+                prefix = self.tableprefix,
             )
         except Exception, e:
             msg = "Can't connect to DB"
@@ -155,10 +161,10 @@ class Database(object):
         self.cursor = self.conn.cursor()
 
         # FIXME - Funktioniert das in allen Situationen???
-        try:
-            self.cursor.execute('set character set utf8;')
-        except:
-            pass
+        #~ try:
+        self.cursor.execute('set character set ?;', self.encoding)
+        #~ except:
+            #~ pass
         #~ self.cursor.execute('set names utf8;')
 
         try:
@@ -280,13 +286,14 @@ class Database(object):
 #_____________________________________________________________________________
 class WrappedConnection(object):
 
-    def __init__(self, cnx, placeholder, prefix=''):
+    def __init__(self, cnx, placeholder, unicode_decoder, prefix=''):
         self.cnx = cnx
         self.placeholder = placeholder
+        self.unicode_decoder = unicode_decoder
         self.prefix = prefix
 
     def cursor(self):
-        return IterableDictCursor(self.cnx, self.placeholder, self.prefix)
+        return IterableDictCursor(self.cnx, self.placeholder, self.unicode_decoder, self.prefix)
 
     def __getattr__(self, attr):
         """
@@ -303,9 +310,10 @@ class IterableDictCursor(object):
     -curosr.last_statement beinhaltet immer den letzten execute
     """
 
-    def __init__(self, cnx, placeholder, prefix):
+    def __init__(self, cnx, placeholder, unicode_decoder, prefix):
         self._cursor = cnx.cursor()
         self._placeholder = placeholder
+        self._unicode_decoder = unicode_decoder
         self._prefix = prefix
 
         if not hasattr(self._cursor, "lastrowid"):
@@ -380,9 +388,9 @@ class IterableDictCursor(object):
             if isinstance(item, str):
                 #FIXME!!!!
                 try:
-                    item = item.decode("utf_8", 'strict')
+                    item = self._unicode_decoder(item, 'strict')[0]
                 except UnicodeError:
-                    item = item.decode("utf_8", 'replace')
+                    item = self._unicode_decoder(item, 'replace')[0]
             result[col[0]] = item
         return result
 
