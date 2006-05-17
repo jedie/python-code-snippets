@@ -8,7 +8,7 @@
 # Damit man auch die index.py aus der URL verschwinden kann, muß
 # der DirectoryIndex die index.py ausführen
 # http://httpd.apache.org/docs/2.0/mod/mod_dir.html#directoryindex
-#DirectoryIndex /index.py
+DirectoryIndex PyLucid_CGI_Handler.py
 
 # Damit allgemein CGI's ausgeführt werden
 # http://httpd.apache.org/docs/2.0/mod/core.html#options
