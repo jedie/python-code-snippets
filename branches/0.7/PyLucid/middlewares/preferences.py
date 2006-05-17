@@ -27,14 +27,14 @@ class preferencesMiddleware(dict):
     def update_from_sql(self, db):
         """ Preferences aus der DB lesen und in self speichern """
 
-        try:
-            RAWdata = db.get_all_preferences()
-        except Exception, e:
-            msg = "<h1>Error: Can't read preferences:</h1>"
-            msg += str(e)
-            msg += "<p>(Did you install PyLucid correctly?)</p>"
-            msg += "<hr><address>PyLucid</address>"
-            raise Exception, msg # FIXME <- eigene Exception definieren und abfragen
+        #~ try:
+        RAWdata = db.get_all_preferences()
+        #~ except Exception, e:
+            #~ msg = "<h1>Error: Can't read preferences:</h1>"
+            #~ msg += str(e)
+            #~ msg += "<p>(Did you install PyLucid correctly?)</p>"
+            #~ msg += "<hr><address>PyLucid</address>"
+            #~ raise Exception, msg # FIXME <- eigene Exception definieren und abfragen
 
         for line in RAWdata:
             # Die Values sind in der SQL-Datenbank als Type varchar() angelegt.

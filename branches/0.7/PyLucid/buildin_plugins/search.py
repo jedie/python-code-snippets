@@ -37,16 +37,12 @@ from PyLucid.system.BaseModule import PyLucidBaseModule
 class search(PyLucidBaseModule):
 
     def lucidTag(self, search_string=""):
-
         search_string = cgi.escape(search_string).replace('"',"'")
-
-        return self.db.get_rendered_internal_page(
-            internal_page_name = "search_input_form",
-            page_dict = {
-                "url"               : self.URLs.make_action_link("do_search"),
-                "old_search_string" : search_string
-            }
-        )
+        context = {
+            "url"               : self.URLs.make_action_link("do_search"),
+            "old_search_string" : search_string
+        }
+        self.templates.write("search_input_form", context)
 
     def do_search(self, search_string=""):
         start_time = time.time()

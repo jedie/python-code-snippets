@@ -67,7 +67,8 @@ __todo__ = """
 import sys, cgi, time, pickle, urllib
 
 
-debug = True
+debug = False
+#~ debug = True
 
 
 from PyLucid.system.BaseModule import PyLucidBaseModule
@@ -91,9 +92,9 @@ class pageadmin(PyLucidBaseModule):
         """
         Einstiegs Methode wenn man auf "edit page" klickt
         """
-        if debug:
-            from colubrid.debug import debug_info
-            self.page_msg(debug_info(self.request))
+        #~ if debug:
+        from colubrid.debug import debug_info
+        self.page_msg(debug_info(self.request))
 
         if self.request.form.has_key("preview"):
             # Preview der aktuellen Seite
@@ -101,6 +102,7 @@ class pageadmin(PyLucidBaseModule):
         elif self.request.form.has_key("save"):
             # Abspeichern der Änderungen
             self.save()
+            # Die geänderte Seite soll nach dem speichern angezeigt werden:
             self.session["render follow"] = True
         else:
             # Die aktuelle Seite soll editiert werden
@@ -116,17 +118,17 @@ class pageadmin(PyLucidBaseModule):
         if self.request.form.has_key("page_id"):
             page_id = int(self.request.form["page_id"])
             page_data = self.get_page_data(page_id)
-            return self.editor_page(page_data)
-        else:
-            return self.db.get_internal_page(
-                internal_page_name = "pageadmin_select_edit_page",
-                page_dict={
-                    "url": self.URLs.make_action_link("select_edit_page"),
-                    "page_option": self.tools.forms().siteOptionList(
-                        with_id = True, select = self.session["page_id"]
-                    )
-                }
+            self.editor_page(page_data)
+            return
+
+        context = {
+            "url": self.URLs.make_action_link("select_edit_page"),
+            "page_option": self.tools.forms().siteOptionList(
+                with_id = True, select = self.session["page_id"]
             )
+        }
+
+        self.templates.write("pageadmin_select_edit_page", context)
 
     def editor_page(self, edit_page_data):
         """
@@ -207,7 +209,7 @@ class pageadmin(PyLucidBaseModule):
         #~ form_url = "%s?command=pageadmin&page_id=%s" % (self.config.system.real_self_url, self.request.form["page_id"] )
         #~ self.page_msg( edit_page_data )
 
-        page_dict = {
+        context = {
             # hidden Felder
             "page_id"                   : edit_page_data["page_id"],
             # Textfelder
@@ -235,10 +237,7 @@ class pageadmin(PyLucidBaseModule):
             "permitViewGroupID_option"  : permitViewGroupID_option,
         }
 
-        internal_page = self.db.get_rendered_internal_page(
-            "pageadmin_edit_page", page_dict
-        )
-        self.response.write(internal_page)
+        self.templates.write("pageadmin_edit_page", context)
 
     def preview(self):
         "Preview einer editierten Seite"
@@ -257,7 +256,6 @@ class pageadmin(PyLucidBaseModule):
         # Alle Tags ausfüllen und Markup anwenden
         try:
             content = edit_page_data["content"]
-            content = self.tag_parser.rewrite_String(content)
             markup = edit_page_data["markup"]
             content = self.render.apply_markup(content, markup)
         except Exception, e:
@@ -507,15 +505,15 @@ class pageadmin(PyLucidBaseModule):
             page_id_to_del = int(self.request.form["page_id_to_del"])
             self.delete_page(page_id_to_del)
 
-        return self.db.get_internal_page(
-            internal_page_name = "pageadmin_select_del_page",
-            page_dict = {
-                "url": self.URLs.make_action_link("select_del_page"),
-                "page_option": self.tools.forms().siteOptionList(
-                    with_id = True, select = self.session["page_id"]
-                )
-            }
-        )
+        context = {
+            "url": self.URLs.make_action_link("select_del_page"),
+            "page_option": self.tools.forms().siteOptionList(
+                with_id = True, select = self.session["page_id"]
+            )
+        }
+
+        self.templates.write("pageadmin_select_del_page", context)
+
 
     def delete_page(self, page_id_to_del):
         """
@@ -599,13 +597,19 @@ class pageadmin(PyLucidBaseModule):
         """
         Formular zum ändern der Seiten-Reihenfolge
         """
+        if self.request.form.has_key("save"):
+            self.save_positions()
+
         MyOptionMaker = self.tools.html_option_maker()
 
         position_list = [""] + [str(i) for i in xrange(-10,11)]
         position_option = MyOptionMaker.build_from_list( position_list, "" )
 
+        # Daten in der aktuellen Ebene
+        sequencing_data = self.db.get_sequencing_data(self.session["page_id"])
+
         table = '<table id="sequencing">\n'
-        for page in self.db.get_sequencing_data():
+        for page in sequencing_data:
             table += '<tr>\n'
             table += '  <td class="name">%s</td>\n' % cgi.escape( page["name"] )
             table += '  <td>weight: <strong>%s</strong></td>\n' % page["position"]
@@ -614,35 +618,36 @@ class pageadmin(PyLucidBaseModule):
             table += "</tr>\n"
         table += "</table>\n"
 
-        self.db.print_internal_page(
-            internal_page_name = "pageadmin_sequencing",
-            page_dict = {
-                "url"       : self.URLs["action"] + "save_positions",
-                "table_data" : table,
-            }
-        )
+        context = {
+            "url"       : self.URLs["current_action"],
+            "table_data" : table,
+        }
+
+        self.templates.write("pageadmin_sequencing", context)
 
     def save_positions(self):
         """
         Positionsänderungen speichern
         """
-        #~ self.request.form.debug()
         for key,value in self.request.form.iteritems():
             if key.startswith("page_id_"):
                 try:
-                    page_id = int( key[8:] )
-                    position = int( value )
+                    page_id = int(key[8:])
                 except Exception,e:
                     self.page_msg(
-                        "Can't change page position (%s,%s): %s" % (key, value, e)
+                        "Can't get page_id (%s,%s): %s" % (key, value, e)
+                    )
+                    continue
+                try:
+                    position = int(value[0])
+                except Exception,e:
+                    self.page_msg(
+                        "Can't get new page position (%s,%s): %s" % (key, value, e)
                     )
                     continue
 
                 self.db.change_page_position( page_id, position)
                 self.page_msg( "Save position %s for page with ID %s" % (position,page_id) )
-
-        # Menu wieder anzeigen
-        self.sequencing()
 
 
 

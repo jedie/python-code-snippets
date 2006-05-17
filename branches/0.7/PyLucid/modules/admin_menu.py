@@ -6,11 +6,11 @@ __license__ = "GNU General Public License (GPL)"
 __url__     = "http://www.PyLucid.org"
 
 """
-Erzeugt das Administration-Menü
+Erzeugt das Administration-MenÃ¼
 (ehemals front_menu aus dem alten page-renderer)
 
 <lucidTag:admin_menu/>
-Sollte im Template für jede Seite eingebunden werden.
+Sollte im Template fÃ¼r jede Seite eingebunden werden.
 """
 
 __version__="0.0.4"
@@ -42,19 +42,19 @@ class admin_menu(PyLucidBaseModule):
         """
         Front menu anzeigen
         """
-        data = {
+        context = {
             "login"             : self.request.staticTags['script_login'],
             "edit_page_link"    : self.URLs.make_command_link("pageadmin", "edit_page"),
             "new_page_link"     : self.URLs.make_command_link("pageadmin", "new_page"),
             "sub_menu_link"     : self.URLs.make_command_link("admin_menu", "sub_menu"),
         }
-        return self.db.get_rendered_internal_page("admin_menu_top_menu", data)
+        return self.templates.write("admin_menu_top_menu", context)
 
     def sub_menu( self ):
-        data = {
+        context = {
             "commandURLprefix"  : self.URLs.get_commandURLPrefix()
         }
-        return self.db.get_rendered_internal_page("admin_menu_sub_menu", data)
+        return self.templates.write("admin_menu_sub_menu", context)
 
 
 

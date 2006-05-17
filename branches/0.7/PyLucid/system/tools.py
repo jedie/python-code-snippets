@@ -360,9 +360,10 @@ class out_buffer:
         self.sep = sep
 
     def write( self, *txt ):
-        txt = [str(i) for i in txt]
-        #~ self.data += self.sep + " ".join( txt )
-        self.data += " ".join( txt )
+        for i in txt:
+            if not isinstance(i, basestring):
+                i = unicode(i)
+            self.data += i
 
     def __call__( self, *txt ):
         self.write( *txt )
@@ -771,8 +772,11 @@ class Find_StringOperators:
         """
         result = []
         for start,end in pos_list:
+            sliced = self.txt[start:end]
+            if isinstance(sliced, unicode):
+                sliced = str(sliced)
             result.append(
-                "...%s..." % self.txt[start:end].encode("String_Escape")
+                "...%s..." % sliced.encode("String_Escape")
             )
         return result
 

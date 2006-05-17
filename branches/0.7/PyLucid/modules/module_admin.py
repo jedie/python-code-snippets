@@ -109,7 +109,8 @@ class module_admin(PyLucidBaseModule):
             "version"       : __version__,
             "package_data"  : data,
             "installed_data": self.installed_modules_info,
-            "action_url"    : self.URLs["action"],
+            #~ "action_url"    : self.URLs["action"],
+            "action_url"    : self.URLs["current_action"],
         }
 
         if self.request.runlevel == "install":
@@ -665,6 +666,7 @@ class module_admin(PyLucidBaseModule):
         Liefert alle Daten zu einem Modul, aus der zugehörigen config-Datei.
         """
         def _import(package_name, module_name):
+            #~ package_name = package_name.replace("_",".") #FIXME
             package_name = package_name.replace("/",".") #FIXME
             full_modulename = "%s.%s" % (package_name, module_name)
             #~ self.page_msg("full_modulename:", full_modulename)

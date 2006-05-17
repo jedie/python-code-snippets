@@ -10,14 +10,6 @@ import inspect, sys, posixpath
 
 class ObjectApp_Base(object):
     """ Basisklasse von der jede ObjApp-Klasse ableitet """
-    def _get_module_admin(self):
-        self.request.URLs["action"] = "?action=module_admin&sub_action="
-
-        from PyLucid.modules import module_admin
-
-        module_admin = module_admin.module_admin(self.request, call_from_install_PyLucid = True)
-
-        return module_admin
 
     def _write_info(self):
         try:
@@ -46,3 +38,28 @@ class ObjectApp_Base(object):
         module_admin = module_admin.module_admin(self.request, self.response)
 
         return module_admin
+
+
+    def _execute(self, title, SQLcommand):
+        self.response.write("<h4>%s:</h4>\n" % title)
+        self.response.write("<pre>\n")
+
+        try:
+            self._db.cursor.execute(SQLcommand)
+        except Exception, e:
+            self.response.write("ERROR: %s" % e)
+        else:
+            self.response.write("OK")
+
+        self.response.write("</pre>\n")
+
+
+
+
+
+
+
+
+
+
+

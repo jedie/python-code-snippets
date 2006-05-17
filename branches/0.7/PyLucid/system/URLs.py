@@ -53,7 +53,12 @@ class URLs(dict):
         self.request.environ["PATH_INFO"] = pathInfo
 
     def setup_URLs(self):
-        """Pfad für Links festlegen"""
+        """
+        Pfad für Links festlegen
+
+        Als Regeln gilt:
+            - Alle Pfade ohne Slash am Ende
+        """
 
         self["command"] = None # Wird vom Module-Manager festgelegt
         self["action"] = None # Wird vom Module-Manager festgelegt
@@ -63,7 +68,7 @@ class URLs(dict):
         self["real_self_url"] = "%s://%s%s" % (
             self.environ.get('wsgi.url_scheme', "http"),
             self.environ['HTTP_HOST'],
-            self.environ['SCRIPT_ROOT'],
+            self.environ['SCRIPT_ROOT'].rstrip("/"),
         )
 
         preferences = self.preferences
@@ -76,6 +81,17 @@ class URLs(dict):
         #~ self["poormans_url"] = self["real_self_url"]
 
         pathInfo = self.environ["PATH_INFO"].split("&")[0]
+        pathInfo = pathInfo.rstrip("/")
+
+        if self.request.runlevel != "normal":
+            # Bei _command oder _install soll current_action nur aus
+            # der Basis bestehen.
+            # Statt /_install/tests/table_info/columns/lucid_pages
+            # ----> /_install/tests/table_info
+            # Also ohne "sub-Action-Parameter"
+            pathInfo = pathInfo.split("/")
+            pathInfo = pathInfo[:3]
+            pathInfo = "/".join(pathInfo)
 
         if self["base"] == "":
             self["current_action"] = "/%s" % pathInfo
@@ -156,7 +172,7 @@ class URLs(dict):
 
     def debug(self):
         self.page_msg("path debug:")
-        self.page_msg("path_info:", self.environ["PATH_INFO"])
+        self.page_msg('RAW environ["PATH_INFO"]:', self.environ["PATH_INFO"])
         #~ for k,v in self.iteritems():
             #~ self.page_msg(k,v)
         #~ self.page_msg(self)
@@ -165,7 +181,19 @@ class URLs(dict):
                 "- %15s: '%s'" % (k,v)
             )
 
+    #_________________________________________________________________________
 
+    def __getitem__(self, key):
+        try:
+            return dict.__getitem__(self, key)
+        except KeyError, e:
+            msg = (
+                "Key %s not exists in URLs!"
+                " --- Here the URLs dict: %s"
+            ) % (
+                e, self
+            )
+            raise KeyError, msg
 
 
 
