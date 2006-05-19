@@ -46,13 +46,39 @@ response = None
 request = None
 
 
-#________________________________________________________________________________________________
+#_____________________________________________________________________________
+def writeDictListTable(dictlist, outobj, keyfilter=[]):
+    """
+    Erstellt aus einer dict-cursor-SQL-Abfrage eine einfache Tabelle und
+    schreibt direkt in's outobj, was ja gut "response" sein kann ;)
+
+    - keyfilter ist eine liste mit keys die nicht angezeigt werden sollen
+    """
+    keys = dictlist[0].keys()
+
+    # keys die in keyfilter sind "löschen":
+    keys = [i for i in keys if not i in keyfilter]
+
+    outobj.write("<table><tr>\n")
+    for key in keys:
+        outobj.write("\t<th>%s</th>\n" % key)
+    outobj.write("</tr>\n")
+
+    for line in dictlist:
+        outobj.write("<tr>\n")
+        for key in keys:
+            outobj.write("\t<td>%s</td>\n" % line[key])
+        outobj.write("</tr>\n")
+
+    outobj.write("</table>\n")
+
+#_____________________________________________________________________________
 class echo:
     def __call__(self, *msg):
         response.write(
             "%s <br />\n" % " ".join([cgi.escape(str(i)) for i in msg])
         )
-#________________________________________________________________________________________________
+#_____________________________________________________________________________
 
 def page_msg_debug(obj):
     try:
@@ -68,7 +94,7 @@ def page_msg_debug(obj):
     result = "\n".join(result)
     request.page_msg("<pre>%s</pre>" % result)
 
-#________________________________________________________________________________________________
+#_____________________________________________________________________________
 
 def getUniqueShortcut(pageName, nameList):
     """
@@ -107,7 +133,7 @@ def getUniqueShortcut(pageName, nameList):
 #~ print getUniqueShortcut("gibts schon", nameList)
 #~ print getUniqueShortcut("#und!auch(das)", nameList)
 #~ sys.exit()
-#________________________________________________________________________________________________
+#_____________________________________________________________________________
 
 def convert_date_from_sql( RAWsqlDate, format="preferences" ):
     """
@@ -144,7 +170,7 @@ def convert_time_to_sql( time_value ):
 
     return time.strftime(request.preferences["dbdatetime_format"], time_value)
 
-#________________________________________________________________________________________________
+#_____________________________________________________________________________
 
 
 
@@ -181,7 +207,7 @@ def formatter( number, format="%0.2f", comma=",", thousand=".", grouplength=3):
 
 
 
-#________________________________________________________________________________________________
+#_____________________________________________________________________________
 
 
 class forms:
@@ -345,7 +371,7 @@ class html_option_maker:
 
 
 
-#________________________________________________________________________________________________
+#_____________________________________________________________________________
 
 
 class out_buffer:
@@ -416,7 +442,7 @@ class stdout_marker:
 #~ print "out:", out
 #~ sys.exit()
 
-#________________________________________________________________________________________________
+#_____________________________________________________________________________
 
 
 class subprocess2(threading.Thread):
@@ -510,7 +536,7 @@ class subprocess2(threading.Thread):
 
 
 
-#________________________________________________________________________________________________
+#_____________________________________________________________________________
 
 
 class email:
@@ -536,7 +562,7 @@ class email:
         s.close()
 
 
-#________________________________________________________________________________________________
+#_____________________________________________________________________________
 
 
 def make_table_from_sql_select(select_results, id, css_class):
@@ -560,7 +586,7 @@ def make_table_from_sql_select(select_results, id, css_class):
     return result
 
 
-#________________________________________________________________________________________________
+#_____________________________________________________________________________
 
 #~ class convertdateformat:
     #~ """

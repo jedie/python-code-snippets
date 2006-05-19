@@ -92,9 +92,9 @@ class pageadmin(PyLucidBaseModule):
         """
         Einstiegs Methode wenn man auf "edit page" klickt
         """
-        #~ if debug:
-        from colubrid.debug import debug_info
-        self.page_msg(debug_info(self.request))
+        if debug:
+            from colubrid.debug import debug_info
+            self.page_msg(debug_info(self.request))
 
         if self.request.form.has_key("preview"):
             # Preview der aktuellen Seite
@@ -366,6 +366,7 @@ class pageadmin(PyLucidBaseModule):
         except Exception, e:
             self.page_msg("Error to update page data: %s" % e)
         else:
+            self.db.commit()
             self.page_msg("New page data updated.")
 
 
@@ -380,6 +381,7 @@ class pageadmin(PyLucidBaseModule):
         except Exception, e:
             self.response.write("<h3>Error to insert new page:'%s'</h3><p>Use browser back botton!</p>" % e)
         else:
+            self.db.commit()
             self.page_msg( "New page saved." )
 
         # Setzt die aktuelle Seite auf die neu erstellte.

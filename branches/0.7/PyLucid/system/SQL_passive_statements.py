@@ -65,12 +65,19 @@ class passive_statements(SQL_wrapper):
 
         side_data = self.select(
                 select_items    = [
-                        "markup", "name", "title", "lastupdatetime","keywords","description"
+                        "markup", "name", "shortcut", "title",
+                        "lastupdatetime","keywords","description"
                     ],
                 from_table      = "pages",
                 where           = ( "id", page_id )
             )[0]
 
+        if side_data["shortcut"] == "" or side_data["shortcut"] == None:
+            self.page_msg(
+                "ERROR: shortcut for this page is not set!!! "
+                "Pages links may not worked! Use LowLevelAdmin to "
+                "correct this."
+            )
         #~ side_data["template"] = self.side_template_by_id(page_id)
 
         # None in "" konvertieren
