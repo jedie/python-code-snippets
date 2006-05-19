@@ -85,7 +85,6 @@ class PyLucidApp(BaseApplication):
 
         # Passt die verwendeten Pfade an.
         self.request.URLs = URLs.URLs(self.request)
-        self.request.URLs.debug()
 
         # Tools
         tools.request       = self.request  # Request Objekt an tools übergeben
@@ -194,6 +193,7 @@ class PyLucidApp(BaseApplication):
             self.session.commit()
 
         if debug:
+            self.request.URLs.debug()
             from colubrid.debug import debug_info
             self.page_msg(debug_info(self.request))
 

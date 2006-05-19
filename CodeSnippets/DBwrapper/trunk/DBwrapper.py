@@ -117,6 +117,7 @@ class Database(object):
 
         self.encoding = encoding
         self.unicode_decoder = codecs.getdecoder(encoding)
+        self.unicode_encoder = codecs.getencoder(encoding)
         self.dbtyp = None
         self.tableprefix = ""
 
@@ -144,6 +145,7 @@ class Database(object):
                 #~ ),
                 placeholder = self.placeholder,
                 unicode_decoder = self.unicode_decoder,
+                unicode_encoder = self.unicode_encoder,
                 prefix = self.tableprefix,
             )
         except Exception, e:
@@ -162,7 +164,7 @@ class Database(object):
 
         # FIXME - Funktioniert das in allen Situationen???
         #~ try:
-        self.cursor.execute('set character set ?;', self.encoding)
+        self.cursor.execute('set character set ?;', (self.encoding,))
         #~ except:
             #~ pass
         #~ self.cursor.execute('set names utf8;')
@@ -286,14 +288,21 @@ class Database(object):
 #_____________________________________________________________________________
 class WrappedConnection(object):
 
-    def __init__(self, cnx, placeholder, unicode_decoder, prefix=''):
+    def __init__(
+        self, cnx, placeholder, unicode_decoder, unicode_encoder, prefix=''
+        ):
+
         self.cnx = cnx
         self.placeholder = placeholder
-        self.unicode_decoder = unicode_decoder
+        self._unicode_decoder = unicode_decoder
+        self._unicode_encoder = unicode_encoder
         self.prefix = prefix
 
     def cursor(self):
-        return IterableDictCursor(self.cnx, self.placeholder, self.unicode_decoder, self.prefix)
+        return IterableDictCursor(
+            self.cnx, self.placeholder, self._unicode_decoder,
+            self._unicode_encoder, self.prefix
+        )
 
     def __getattr__(self, attr):
         """
@@ -310,10 +319,14 @@ class IterableDictCursor(object):
     -curosr.last_statement beinhaltet immer den letzten execute
     """
 
-    def __init__(self, cnx, placeholder, unicode_decoder, prefix):
+    def __init__(
+        self, cnx, placeholder, unicode_decoder, unicode_encoder, prefix
+        ):
+
         self._cursor = cnx.cursor()
         self._placeholder = placeholder
         self._unicode_decoder = unicode_decoder
+        self._unicode_encoder = unicode_encoder
         self._prefix = prefix
 
         if not hasattr(self._cursor, "lastrowid"):
@@ -348,7 +361,18 @@ class IterableDictCursor(object):
     def execute(self, sql, values=None):
         args = [self.prepare_sql(sql)]
         if values:
-            args.append(values)
+            temp = []
+            for item in values:
+                if type(item) == unicode:
+                    try:
+                        item = self._unicode_encoder(item, 'strict')[0]
+                    except UnicodeError:
+                        item = self._unicode_encoder(item, 'replace')[0]
+                        sys.stderr.write("Unicode encode Error!") #FIXME
+                temp.append(item)
+
+            temp = tuple(temp)
+            args.append(temp)
 
         self.last_statement = args
 
@@ -386,11 +410,11 @@ class IterableDictCursor(object):
         for idx, col in enumerate(self._cursor.description):
             item = row[idx]
             if isinstance(item, str):
-                #FIXME!!!!
                 try:
                     item = self._unicode_decoder(item, 'strict')[0]
                 except UnicodeError:
                     item = self._unicode_decoder(item, 'replace')[0]
+                    sys.stderr.write("Unicode decode Error!") #FIXME
             result[col[0]] = item
         return result
 

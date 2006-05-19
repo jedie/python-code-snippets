@@ -820,7 +820,7 @@ class module_admin(PyLucidBaseModule):
         self.response.write("<ul>")
         for plugin in plugins_data:
             data_dict[plugin['id']] = plugin["package_name"], plugin['module_name']
-            url = self.make_current_action_link(str(plugin['id']))
+            url = self.URLs.make_current_action_link(str(plugin['id']))
             self.response.write('<li><a href="%s">' % url)
             self.response.write(
                 '%s.<strong style="color:blue">%s</strong></a>' % (
@@ -848,91 +848,35 @@ class module_admin(PyLucidBaseModule):
 
     def debug_module_info(self, module_id):
 
-        plugindata_temp = self.db.get_plugindata(module_id)
+        plugindata = self.db.get_plugindata(module_id)
 
-        if plugindata_temp == []:
+        if plugindata == []:
             self.response.write("Module with id: '%s' unknown!" % module_id)
             return
 
-        #~ self.response.write("<pre>")
+        keyfilter = ["internal_page_info"]
+        self.tools.writeDictListTable(plugindata, self.response, keyfilter)
 
-        self.response.write(" -"*40)
-        self.response.write("\n")
-
-        # Daten in eine andere Form bringen
-        plugindata = {}
-        data = {}
-        for method in plugindata_temp:
-            plugindata[method['id']] = method
-            data[method['id']] = [method['parent_method_id'], method['id'], method['method_name']]
-
-        # Methoden mit Untermethoden verknüpfen
-        for id, methoddata in data.iteritems():
-            #~ self.response.write(id, methoddata)
-            parent_method_id, method_id, methodname = methoddata[:3]
-            if parent_method_id != None:
-                data[parent_method_id].append([method_id, methodname])#methodname)
-
-
-        def printPluginData(methodname, id, plugindata):
-            self.response.write(
-                '<em style="color:blue">%s</em> ' % methodname
-            )
-            self.response.write(
-                '<small style="color:grey">(method id:%s)</small>\n' % id
-            )
-
-            for k,v in plugindata.iteritems():
-                if v in (None,0) or k in ("internal_page_info","plugin_id","id"):
-                    continue
-
-                self.response.write("%30s: " % k)
-                if k in ("CGI_laws", "get_CGI_data"):
-                    try:
-                        self.response.write(
-                            "<var>%s</var>\n" % cgi.escape(
-                                str(pickle.loads(v))
-                            )
-                        )
-                    except Exception, e:
-                        self.response.write(
-                            "pickle.loads ERROR: %s\n" % s
-                        )
-                    continue
-
-                self.response.write("%s\n" % v)
-
-
-        # Daten Ausgeben
-        for id, methoddata in data.iteritems():
-            if methoddata[0] != None:
-                continue
-            self.response.write(' * ')
-            printPluginData(methoddata[2], id, plugindata[id])
-
-            if len(methoddata)>3:
-                for id,methodname in methoddata[3:]:
-                    self.response.write('     ^-')
-                    printPluginData(methodname, id, plugindata[id])
-
-            self.response.write("\n")
-
-
-        self.response.write("\n")
-        self.response.write("_"*80)
-        self.response.write("\n")
         self.response.write("<em>Internal pages info:</em>\n")
-        for page_info in self.db.get_internal_pages_info_by_module(module_id):
-            #~ self.response.write(page_info)
-            self.response.write("<strong>%s</strong> - %s\n" % (
-                    page_info['name'], page_info['description']
-                )
+        internal_pages = self.db.get_internal_pages_info_by_module(module_id)
+        if internal_pages == []:
+            self.response.write("<small>Module has no internal pages.</small>\n")
+            return
+
+        for page_info in internal_pages:
+            txt = (
+                "<strong>%s</strong> - %s\n"
+                "   ^- <small>markup: '%s',"
+                " updated by: %s,"
+                "last update: %s</small>\n\n"
+            ) % (
+                    page_info['name'], page_info['description'],
+                    page_info['markup'],
+                    page_info['lastupdateby'],
+                    page_info['lastupdatetime']
             )
-            self.response.write(
-                "   ^- <small>markup: '%s', updated by: %s, last update: %s</small>\n" % (
-                    page_info['markup'], page_info['lastupdateby'], page_info['lastupdatetime']
-                )
-            )
+
+            self.response.write(txt)
 
 
     def debug_package_data(self, data):

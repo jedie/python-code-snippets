@@ -5,9 +5,15 @@
 Information und Tests
 """
 
+import cgi
+
+
 from PyLucid.system.exceptions import *
 
+
 from PyLucid.install.ObjectApp_Base import ObjectApp_Base
+from PyLucid.install.ObjectApp_Base import SQL_dump
+
 
 class LowLevelAdmin(ObjectApp_Base):
     "2. low level Admin"
@@ -48,6 +54,8 @@ class LowLevelAdmin(ObjectApp_Base):
 
             self.response.write("\n")
         self.response.write("</pre>\n")
+
+    #_________________________________________________________________________
 
     def module_admin(self, sub_action=None, *info):
         "Module/Plugin Administration"
@@ -125,7 +133,48 @@ class LowLevelAdmin(ObjectApp_Base):
 
         module_admin.administation_menu()
 
+    #_________________________________________________________________________
 
     def re_init(self):
         "partially re-initialisation DB tables"
         self._write_info()
+
+        simulation = self.request.form.get("simulation",False)
+        d = SQL_dump(self.request, self.response, simulation)
+
+        selectedTables = self.request.form.getlist("tablename")
+        if selectedTables!=[]:
+            # Forumlar wurde abgeschickt
+            d.install_tables(selectedTables)
+            return
+
+        txt = (
+            '<form action="%s" method="post">\n'
+            '<p>Which tables reset to defaults:</p>\n'
+        ) % self._URLs["current_action"]
+        self.response.write(txt)
+
+        for name in d.get_table_names():
+            txt = (
+                '<input type="checkbox" id="%(name)s" name="tablename" value="%(name)s">'
+                '<label for="%(name)s">%(name)s</label><br />\n'
+            ) % {"name": name}
+            self.response.write(txt)
+
+        self.response.write(
+            '<h4><strong>WARNING:</strong> The specified tables lost all Data!</h4>\n'
+            '<label for="simulation">Simulation only:</label>\n'
+            '<input id="simulation" name="simulation"'
+            ' type="checkbox" value="yes" checked="checked" />\n'
+            '<br />\n'
+            '<input type="submit" value="reinit" name="reinit" />\n'
+            '</form>\n'
+        )
+
+
+
+
+
+
+
+

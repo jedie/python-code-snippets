@@ -22,46 +22,6 @@ class tests(ObjectApp_Base):
 
         self._autoSubAction(currentAction)
 
-    def _autoSubAction(self, actionName):
-        if actionName == None:
-            return
-
-        if not isinstance(actionName, basestring):
-            self.response.write("TypeError!")
-            return
-
-        if not hasattr(self, actionName):
-            self.response.write("Error: %s not exists!" % actionName)
-            return
-
-        action = getattr(self, actionName)
-        action()
-
-    def _write_subactionmenu(self, subactions):
-        self.response.write("<ul>\n")
-        for action in subactions:
-            if not hasattr(self, action):
-                self.response.write("Error: %s not exists!" % action)
-                continue
-
-            name = self._niceActionName(action)
-            txt = (
-                '\t<li>'
-                '<a href="%(url)s/%(action)s">%(name)s</a>'
-                '</li>\n'
-            ) % {
-                "url": self._URLs["current_action"],
-                "action": action,
-                "name": name,
-            }
-            self.response.write(txt)
-        self.response.write("</ul>\n")
-
-    def _niceActionName(self, actionName):
-        actionName = actionName.strip("_")
-        actionName = actionName.replace("_", " ")
-        return actionName
-
     def _connect_information(self):
         self.response.write("<pre>")
         for k,v in self.request.preferences.iteritems():
@@ -133,6 +93,8 @@ class tests(ObjectApp_Base):
 
             #~ self._execute_verbose("SHOW FULL TABLES;")
             #~ self._execute_verbose("SHOW TABLE STATUS FROM %s;" % item)
+            self._execute_verbose("CHECK TABLE %s;" % item)
+            self._execute_verbose("ANALYZE TABLE %s;" % item)
             self._execute_verbose("SHOW FULL COLUMNS FROM %s;" % item)
             self._execute_verbose("SHOW INDEX FROM %s;" % item)
 
@@ -166,7 +128,7 @@ class tests(ObjectApp_Base):
         if SQLcommand == None:
             SQLcommand = title
 
-        self.response.write("<h3>%s:</h3>\n" % title)
+        self.response.write("<h3>%s:</h3>\n" % title.rstrip(";"))
 
         try:
             self._db.cursor.execute(SQLcommand)
@@ -178,25 +140,10 @@ class tests(ObjectApp_Base):
             return
 
         result = self._db.cursor.fetchall()
-        keys = result[0].keys()
-        self.response.write("<table><tr>\n")
-        for key in keys:
-            self.response.write("\t<th>%s</th>\n" % key)
-        self.response.write("</tr>\n")
 
-        for line in result:
-            self.response.write("<tr>\n")
-            for key in keys:
-                self.response.write("\t<td>%s</td>\n" % line[key])
-            self.response.write("</tr>\n")
+        # Daten als HTML-Tabelle ins response Obj. schreiben lassen:
+        self._tools.writeDictListTable(result, self.response)
 
-        self.response.write("</table>\n")
-
-
-        #~ result = str(result)
-        #~ self.response.write(result)
-
-        #~ self.response.write("</pre>\n")
 
 
 

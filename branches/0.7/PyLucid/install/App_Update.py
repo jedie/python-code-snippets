@@ -19,6 +19,10 @@ class update(ObjectApp_Base):
         "update db tables (PyLucid v0.6.x -> 0.7)"
         self._write_info()
 
+        if not self._confirm("update db tables (PyLucid v0.6.x -> 0.7) ?"):
+            # Abfrage wurde nicht bestätigt
+            return
+
         # shortcut Spalte hinzufügen
         SQLcommand = (
             "ALTER TABLE $$pages "

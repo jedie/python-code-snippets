@@ -156,7 +156,7 @@ class URLs(dict):
         )
 
     def make_current_action_link(self, info):
-        return "%s%s/" % (
+        return "%s/%s/" % (
             self['current_action'], info
         )
 

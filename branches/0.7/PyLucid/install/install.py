@@ -263,7 +263,11 @@ class InstallApp:
         # call handler
         parent = handler.im_class()
         parent.request = self.request
-        handler(parent, *args)
+        try:
+            handler(parent, *args)
+        except SystemExit, e:
+            # sys.exit() wird immer bei einem totalabbruch gemacht ;)
+            self.response.write('<small style="color:grey">(exit %s)</small>' % e)
 
         self.response.write(HTML_bottom)
 
