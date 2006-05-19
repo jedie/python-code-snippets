@@ -347,12 +347,14 @@ class module_manager:
         )
 
         try:
-            return self._run_module_method(function_info)
+            moduleOutput = self._run_module_method(function_info)
         except run_module_error, e:
             pass
         except rights_error, e:
             if self.plugin_data["no_rights_error"] == 1:
                 return ""
+        else:
+            return moduleOutput
 
         self.page_msg(e)
         return str(e)
@@ -379,11 +381,11 @@ class module_manager:
 
         self.plugin_data.setup_URLs()
 
-        content = self._run_method(module_class, method_arguments)
+        moduleOutput = self._run_method(module_class, method_arguments)
 
         self.plugin_data.restore_URLs()
 
-        return content
+        return moduleOutput
 
 
     def _get_module_class(self):
@@ -542,7 +544,7 @@ class module_manager:
         #~ if self.plugin_data["direct_out"] == True:
             # Das Modul hat direkt zum globalen response Objekt geschrieben
             #~ return
-        return
+        return moduleOutput
         #~ responseOutput = self.response.get()
         #~ self.response = old_responseObject
 

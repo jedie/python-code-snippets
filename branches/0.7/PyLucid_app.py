@@ -10,7 +10,7 @@ __url__     = "http://www.PyLucid.org"
 
 __info__ = """<a href="%s" title="\
 PyLucid - A OpenSource CMS in pure Python CGI by Jens Diemer">PyLucid</a> \
-v0.7.0Alpha""" % __url__
+v0.7.0preAlpha""" % __url__
 
 
 #~ debug = True
@@ -63,11 +63,15 @@ class PyLucidApp(BaseApplication):
     def __init__(self, environ, start_response):
         super(PyLucidApp, self).__init__(environ, start_response)
 
+        # Eigenes response-Objekt. Eigentlich genau wie das
+        # original von colubrid, nur mit einer kleinen Erweiterung
         self.response = response.HttpResponse()
 
         self.environ        = environ
 
         self.request.runlevel = "init"
+
+        self.request.debug = self.request_debug
 
         # Für _install:
         self.request.log            = None
@@ -113,6 +117,10 @@ class PyLucidApp(BaseApplication):
         self.preferences    = self.request.preferences
         self.tools          = self.request.tools
         self.URLs           = self.request.URLs
+
+    def request_debug(self):
+        from colubrid.debug import debug_info
+        self.page_msg(debug_info(self.request))
 
 
     def setup_runlevel(self):
@@ -178,6 +186,9 @@ class PyLucidApp(BaseApplication):
         self.response.module_manager = self.module_manager
         self.response.staticTags = self.staticTags
 
+        # Statische-Tag-Informationen setzten:
+        self.staticTags.setup()
+
 
     def process_request(self):
 
@@ -187,17 +198,64 @@ class PyLucidApp(BaseApplication):
 
         if self.request.runlevel == "install":
             self.installPyLucid()
+            return self.response
+
+        # init der Objekte für einen normalen Request:
+        self.init2()
+
+
+
+        if self.request.runlevel == "normal":
+            # Normale CMS Seite ausgeben
+            self.normalRequest()
+
+        elif self.request.runlevel == "command":
+            # Ein Kommando soll ausgeführt werden
+            moduleOutput = self.module_manager.run_command()
+            if callable(moduleOutput):
+                # Wird wohl ein neues response-Objekt sein.
+                # z.B. bei einem Dateidownload!
+                return moduleOutput
+
+            # Ausgaben vom Modul speichern, dabei werden diese automatisch
+            # im response-Objekt gelöscht, denn ein "command"-Modul schreib
+            # auch, wie alle anderen Module ins response-Object ;)
+            content = self.response.get()
+
+            if self.session.has_key("render follow"):
+                # Eintrag löschen, damit der nicht in die DB für den nächsten
+                # request gespeichert wird:
+                del(self.session["render follow"])
+
+                # Es soll nicht die Ausgaben den Modules angezeigt werden,
+                # sondern die normale CMS Seite. (z.B. nach dem Speichern
+                # einer editierten Seite!)
+                self.normalRequest()
+            else:
+                # Ausgaben vom Modul sollen in die Seite eingebaut werden:
+                self.staticTags["page_body"] = content
+                self.render.write_command_template()
+
         else:
-            self.process_normal_request()
-            # Evtl. vorhandene Sessiondaten in DB schreiben
-            self.session.commit()
+            raise RuntimeError # Kann eigentlich nie passieren ;)
+
+        # Evtl. vorhandene Sessiondaten in DB schreiben
+        self.session.commit()
 
         if debug:
-            self.request.URLs.debug()
-            from colubrid.debug import debug_info
-            self.page_msg(debug_info(self.request))
+            self.request.debug()
 
         return self.response
+
+
+    def normalRequest(self):
+        # Normale Seite wird ausgegeben
+
+        # Schreib das Template mit dem page_body-Tag ins
+        # response Objekt.
+        self.render.write_page_template()
+
+
 
     def debug(self, *txt):
         #~ sys.stderr.write(
@@ -210,42 +268,7 @@ class PyLucidApp(BaseApplication):
         Entweder wird ein "_command" ausgeführt oder eine
         normale CMS Seite angezeigt.
         """
-        # init der Objekte für einen normalen Request:
-        self.init2()
 
-        # Statische-Tag-Informationen setzten:
-        self.staticTags.setup()
-
-
-        if self.request.runlevel == "command":
-            # Ein Kommando soll ausgeführt werden
-            self.module_manager.run_command()
-
-            # Ausgaben vom Modul speichern, dabei werden diese automatisch
-            # im response-Objekt gelöscht.
-            content = self.response.get()
-
-            if not self.session.has_key("render follow"):
-                # Ausgaben vom Modul sollen in die Seite eingebaut werden:
-                self.staticTags["page_body"] = content
-                self.render.write_command_template()
-                return"<lucidTag:script_duration/>"
-
-            else:
-                # Es soll nicht die Ausgaben den Modules angezeigt werden,
-                # sondern die normale CMS Seite. (z.B. nach dem Speichern
-                # einer editierten Seite!)
-
-                # Soll nicht in die DB für den nächsten request gespeichert
-                # werden, deswegen wird der Eintrag einfach gelöscht:
-                del(self.session["render follow"])
-
-
-        # Normale Seite wird ausgegeben
-
-        # Schreib das Template mit dem page_body-Tag ins
-        # response Objekt.
-        self.render.write_page_template()
 
 
 
