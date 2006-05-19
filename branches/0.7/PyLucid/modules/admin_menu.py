@@ -35,9 +35,6 @@ from PyLucid.system.BaseModule import PyLucidBaseModule
 
 class admin_menu(PyLucidBaseModule):
 
-    #~ def __init__(self, *args, **kwargs):
-        #~ super(main_menu, self).__init__(*args, **kwargs)
-
     def lucidTag( self ):
         """
         Front menu anzeigen
@@ -51,9 +48,10 @@ class admin_menu(PyLucidBaseModule):
         return self.templates.write("admin_menu_top_menu", context)
 
     def sub_menu( self ):
-        context = {
-            "commandURLprefix"  : self.URLs.get_commandURLPrefix()
-        }
+
+        context = {"commandURLprefix": self.URLs["base_command"]}
+        self.page_msg(context)
+
         return self.templates.write("admin_menu_sub_menu", context)
 
 

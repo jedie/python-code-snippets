@@ -100,6 +100,11 @@ class URLs(dict):
                 (self["base"], pathInfo)
             )
 
+        # Absolut-Link als Basis für _command-Links
+        self["base_command"] = posixpath.join(
+            "/", self["base"], self.preferences["commandURLprefix"]
+        )
+
 
     def items(self):
         """ Überschreibt das items() von dict, um eine Reihenfolge zu erwirken """
@@ -141,14 +146,19 @@ class URLs(dict):
     #_________________________________________________________________________
 
     def make_command_link(self, modulename, methodname):
-        return "/".join(
-            (
-                self["base"],
-                self.preferences["commandURLprefix"],
-                modulename,
-                methodname
-            )
-        ) + "/"
+        command_link = posixpath.join(
+            self["base_command"], modulename, methodname
+        )
+        return command_link
+
+        #~ return "/".join(
+            #~ (
+                #~ self["base"],
+                #~ self.preferences["commandURLprefix"],
+                #~ modulename,
+                #~ methodname
+            #~ )
+        #~ ) + "/"
 
     def make_action_link(self, methodname):
         return "%s%s/" % (
@@ -160,13 +170,13 @@ class URLs(dict):
             self['current_action'], info
         )
 
-    def get_commandURLPrefix(self):
-        if self["base"] == "":
-            base = "/"
-        else:
-            base = self["base"]
+    #~ def get_commandURLPrefix(self):
+        #~ base = self["base"]
+        #~ prefix = self.request.staticTags['commandURLprefix']
 
-        return base + self.request.staticTags['commandURLprefix']
+        #~ commandURLPrefix = posixpath.join("/", base, prefix)
+
+        #~ return commandURLPrefix
 
     #_________________________________________________________________________
 
