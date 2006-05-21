@@ -197,13 +197,17 @@ class PyLucidApp(BaseApplication):
         self.setup_runlevel()
 
         if self.request.runlevel == "install":
-            self.installPyLucid()
-            return self.response
+            try:
+                self.installPyLucid()
+            except WrongInstallLockCode:
+                # Der Zugang zum Install wurde verweigert, also
+                # zeigen wir die normale CMS-Seite
+                self.request.runlevel = "normal"
+            else:
+                return self.response
 
         # init der Objekte für einen normalen Request:
         self.init2()
-
-
 
         if self.request.runlevel == "normal":
             # Normale CMS Seite ausgeben
@@ -269,9 +273,6 @@ class PyLucidApp(BaseApplication):
         normale CMS Seite angezeigt.
         """
 
-
-
-
     def installPyLucid(self):
         """
         Der aktuelle request ist im "_install"-Bereich
@@ -279,6 +280,7 @@ class PyLucidApp(BaseApplication):
         from PyLucid.install.install import InstallApp
         InstallApp.__info__ = __info__
         InstallApp(self.request, self.response).process_request()
+
 
 
 app = PyLucidApp

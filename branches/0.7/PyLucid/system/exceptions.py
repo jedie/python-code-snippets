@@ -17,3 +17,9 @@ class WrongTemplateEngine(Exception):
     Die Template-Engine ist falsch
     """
     pass
+
+class WrongInstallLockCode(Exception):
+    """
+    Falscher "install Lock Code" in der URL
+    """
+    pass
