@@ -61,12 +61,17 @@ Sicherheitslücke: Es sollte nur ein Admin angelegt werden können, wenn noch ke
 
 
 
-import cgi, urllib
+import sys, cgi, urllib
 
 from PyLucid.system.exceptions import *
 
 # Colubrid
 from colubrid import ObjectApplication
+
+
+
+
+installLockFilename = "install_lock.txt"
 
 
 
@@ -162,10 +167,6 @@ class InstallApp:
         self.request = request
         self.response = response
 
-        self.response.write(
-            HTML_head % {"info": self.__info__}
-        )
-
         # Shorthands
         self.environ        = self.request.environ
         self.page_msg       = self.request.page_msg
@@ -174,18 +175,83 @@ class InstallApp:
         self.URLs           = self.request.URLs
         self.tools          = self.request.tools
 
+        self.LockCodeURL, self.PathInfo = self.prepareInstallPathInfo()
+
+    #_________________________________________________________________________
+
+    def prepareInstallPathInfo(self):
+        path = self.environ["PATH_INFO"]
+        parts = path.split('/')
+
+        LockCodeURL = parts[0]
+        PathInfo = parts[1:]
+
+        return LockCodeURL, PathInfo
+
+    #_________________________________________________________________________
+
+    def process_request(self):
+        """ request abarbeiten """
+
+        try:
+            self.checkLock()
+        except SystemExit:
+            # Keine lock-Datei vorhanden -> abbruch
+            return
+
+        self.writeHTMLhead()
+
         # Die Basisklasse für die einzelnen Module vorbereiten
         self.setup_ObjectApp_Base()
 
+        # Eigentliche Methode wird aufgerufen
+        self.startObjectApp()
+
+        self.writeHTMLfoot()
+
+    #_________________________________________________________________________
+
+    def checkLock(self):
+        """
+        Schaut nach, ob der URL-lock-Code mit dem aus der
+        Datei übereinstimmt
+        """
+        try:
+            f = file(installLockFilename, "rU")
+            lockCodeFile = f.readline()
+            f.close()
+        except IOError, e:
+            self.writeHTMLhead()
+            msg = (
+                "<h1>Error opening install lock file:</h1>\n"
+                "<h3>%s</h3>\n"
+
+            ) % e
+            self.response.write(msg)
+            self.writeHTMLfoot()
+            sys.exit(1)
+
+        #~ self.page_msg(
+            #~ "Debug: |%s| <-> |%s|" % (self.LockCodeURL, lockCodeFile)
+        #~ )
+
+        if len(lockCodeFile)<8:
+            self.page_msg("Install lock code to short! (len min. 8 chars!)")
+            raise WrongInstallLockCode()
+
+        if not self.LockCodeURL.endswith(lockCodeFile):
+            self.page_msg("Wrong install lock code!")
+            raise WrongInstallLockCode()
+
+    #_________________________________________________________________________
+
     def setup_ObjectApp_Base(self):
         """
-        Bereitet die Basisklasse vor (von dieser erben alle ObjApp-Module)
+        Bereitet die ObjectApp_Base-Klasse vor (von dieser erben alle ObjApp-Module)
         """
         # Menügenerator "einpflanzen"
         ObjectApp_Base.MenuGenerator = menu.Install_MenuGenerator(
-        #~ menu.Install_MenuGenerator(
             self.response, self.root,
-            #~ base_path = self.environ.get('PATH_INFO', ''),
             base_path = self.environ.get('APPLICATION_REQUEST', ''),
             blacklist = ("response",)
         )
@@ -213,17 +279,30 @@ class InstallApp:
             [self.URLs["real_self_url"]] + currentAction
         )
 
+    #_________________________________________________________________________
 
-    def process_request(self):
-        path = self.environ["PATH_INFO"]
-        parts = path.split('/')
+    def writeHTMLhead(self):
+        """ HTML Kopf schreiben """
+        self.response.write(
+            HTML_head % {"info": self.__info__}
+        )
 
-        parts = parts[1:] # install-Prefix auslassen
+    def writeHTMLfoot(self):
+        """ HTML Fuss schreiben """
+        self.response.write(HTML_bottom)
 
+    #_________________________________________________________________________
+
+    def startObjectApp(self):
+        """
+        Ruft die Methode auf, anhand von PATH_INFO
+
+        Fast das selbe wie colubrid.application.ObjectApplication !
+        """
         # Resolve the path
         handler = self.root
         args = []
-        for part in parts:
+        for part in self.PathInfo:
             node = getattr(handler, part, None)
             if node is None:
                 if part:
@@ -269,16 +348,7 @@ class InstallApp:
             # sys.exit() wird immer bei einem totalabbruch gemacht ;)
             self.response.write('<small style="color:grey">(exit %s)</small>' % e)
 
-        self.response.write(HTML_bottom)
 
-
-    def error(self, *msg):
-        msg = [str(i) for i in msg]
-        self.response.write("<h1>Error:<h1><h3>%s</h3>" % msg)
-
-
-    #~ def _write_head(self, backlink=True):
-        #~ self.response.write(HTML_head)
 
 
 
