@@ -192,6 +192,8 @@ class PyLucidApp(BaseApplication):
 
     def process_request(self):
 
+        #~ self.URLs.debug()
+
         self.environ["request_start"] = time.time()
 
         self.setup_runlevel()

@@ -51,6 +51,7 @@ class ObjectApp_Base(object):
             stack_info = stack_info[1]
             attr_name = stack_info[3]
             info = getattr(self, attr_name).__doc__
+            info = info.strip().split("\n",1)[0]
         except:
             info = self.request.environ['PATH_INFO']
 

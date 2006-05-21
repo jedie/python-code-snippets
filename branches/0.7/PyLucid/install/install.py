@@ -243,12 +243,15 @@ class InstallApp:
             self.page_msg("Wrong install lock code!")
             raise WrongInstallLockCode()
 
+        self.page_msg(self.LockCodeURL)
+
     #_________________________________________________________________________
 
     def setup_ObjectApp_Base(self):
         """
         Bereitet die ObjectApp_Base-Klasse vor (von dieser erben alle ObjApp-Module)
         """
+
         # Menügenerator "einpflanzen"
         ObjectApp_Base.MenuGenerator = menu.Install_MenuGenerator(
             self.response, self.root,
@@ -268,16 +271,20 @@ class InstallApp:
         ObjectApp_Base._URLs            = self.URLs
         ObjectApp_Base._tools           = self.tools
 
-        self.URLs["base"] = self.URLs["base"].strip("/")
-        self.URLs["base"] = self.URLs["base"].split("/")
-        self.URLs["base"] = self.URLs["base"][:3]
-        self.URLs["base"] = "/%s" % "/".join(self.URLs["base"])
+        #~ self.URLs["base"] = self.URLs["base"].strip("/")
+        #~ self.URLs["base"] = self.URLs["base"].split("/")
+        #~ self.URLs["base"] = self.URLs["base"][:3]
+        #~ self.URLs["base"] = "/%s" % "/".join(self.URLs["base"])
 
         currentAction = self.environ["PATH_INFO"].split("/")
         currentAction = currentAction[:3]
         self.URLs["action"] = "/".join(
             [self.URLs["real_self_url"]] + currentAction
         )
+
+
+        self.page_msg(self.environ["PATH_INFO"])
+        self.URLs.debug()
 
     #_________________________________________________________________________
 
