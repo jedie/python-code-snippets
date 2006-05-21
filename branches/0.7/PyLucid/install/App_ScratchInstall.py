@@ -33,15 +33,26 @@ class install(ObjectApp_Base):
         d.import_dump()
         #~ d.dump_data()
 
-    #~ #_________________________________________________________________________
+    #_________________________________________________________________________
 
-    #~ def init_modules(self):
-        #~ "2. init basic Modules"
-        #~ self._write_info()
+    def init_modules(self):
+        """
+        2. init basic Modules
+
+        Installiert die wichtisten Basis-Module
+
+        1. Erstellt die Tabellen für den Module/Plugin-Manager
+        2. installiert die Basic Module
+        3. aktiviert die Module
+        """
+        self._write_info()
 
         #~ if not self._confirm("Init basic Modules?"):
             #~ # Abfrage wurde nicht bestätigt
             #~ return
+
+        module_admin = self._get_module_admin()
+        module_admin.first_time_install()
 
     #~ #_________________________________________________________________________
 
