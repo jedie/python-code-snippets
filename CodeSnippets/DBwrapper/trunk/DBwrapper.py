@@ -27,9 +27,11 @@ ToDo
     * Es wird immer das paramstyle 'format' benutzt. Also mit %s escaped
 """
 
-__version__="0.8"
+__version__="0.8.1"
 
 __history__="""
+v0.8.1
+    - neu unittestDBwrapper.py ;)
 v0.8
     - Es gibt nun eine encoding-Angabe, damit alle String als Unicode zurück
         geliefert werden. Ist allerdings nur mit MySQLdb getestet!!!
@@ -194,7 +196,9 @@ class Database(object):
             self.conn = WrappedConnection(
                 dbapi.connect(*args, **kwargs),
                 placeholder = self.placeholder,
-                prefix = self.tableprefix
+                unicode_decoder = self.unicode_decoder,
+                unicode_encoder = self.unicode_encoder,
+                prefix = self.tableprefix,
             )
         except Exception, e:
             import os
@@ -786,210 +790,6 @@ class SQL_wrapper(Database):
 
 class ConnectionError(Exception):
     pass
-
-
-
-
-
-
-
-
-
-
-
-#_____________________________________________________________________________
-# Ein quasi billig Unit-Test:
-
-if __name__ == "__main__":
-    #~ import cgitb;cgitb.enable()
-    #~ print "Content-type: text/html; charset=utf-8\r\n"
-    #~ print "<pre>"
-
-    db = SQL_wrapper(sys.stdout)
-    db.tableprefix="Foo_"
-
-    db.connect_sqlite(":memory:")
-
-    #~ db.connect_mysqldb(
-        #~ host    = "dbHost",
-        #~ user    = "dbUserName",
-        #~ passwd  = "dbPassword",
-        #~ db      = "dbDatabaseName",
-    #~ )
-
-
-    print "dbtyp.......:", db.dbtyp
-    #~ print "databasename:", db.databasename
-    print "tableprefix.:", db.tableprefix
-    print "paramstyle..:", db.paramstyle
-    print "placeholder.:", db.placeholder
-
-    print "\n\ndb.get_tables():", db.get_tables()
-
-    if db.dbtyp == "sqlite":
-        SQLcommand = (
-            "CREATE TABLE $$TestTable ("
-            "id INTEGER PRIMARY KEY,"
-            "data1 VARCHAR(50) NOT NULL,"
-            "data2 VARCHAR(50) NOT NULL"
-            ");"
-        )
-    elif db.dbtype == "mysql":
-        SQLcommand = (
-            "CREATE TABLE $$TestTable ("
-            "id INT( 11 ) NOT NULL AUTO_INCREMENT,"
-            "data1 VARCHAR( 50 ) NOT NULL,"
-            "data2 VARCHAR( 50 ) NOT NULL,"
-            "PRIMARY KEY ( id )"
-            ") COMMENT = 'Temporary test table';"
-        )
-
-    print "\n\nCreat a temporary test table - execute SQL-command directly...",
-    db.cursor.execute(SQLcommand)
-    db.commit()
-    print "OK"
-
-
-    print "\n\ndb.get_tables()-Test:",
-    tables = db.get_tables()
-    if not 'TestTable' in tables:
-        print "ERROR:", tables
-    else:
-        print "OK:", tables
-
-
-    print "\n\ndb.get_table_fields()-Test:",
-    table_fields = db.get_table_fields("TestTable")
-    if table_fields != ['id', 'data1', 'data2']:
-        print "ERROR!"
-        print "Table fields not correct:"
-        print "should be: ['id', 'data1', 'data2']"
-        print "is: ", table_fields
-    else:
-        print "OK:", table_fields
-
-
-    print "\n\nSQL-insert Function:"
-    db.insert(
-        table = "TestTable",
-        data  = { "data1" : "Value A 1", "data2" : "Value A 2" },
-        debug = True
-    )
-    print "cursor.lastrowid:", db.cursor.lastrowid
-
-
-    print "\n\nadds a new value:"
-    db.insert(
-        table = "TestTable",
-        data  = { "data1" : "Value B 1", "data2" : "Value B 2" },
-        debug = True
-    )
-    print "cursor.lastrowid:", db.cursor.lastrowid
-
-
-    print "\n\nSQL-select Function (db.select):"
-    result = db.select(
-        select_items    = ["id","data1","data2"],
-        from_table      = "TestTable",
-        where           = ("data1","Value B 1"),
-        debug=1
-    )
-    db.dump_select_result(result)
-    if result == [{'data1': u'Value B 1', 'id': 2, 'data2': u'Value B 2'}]:
-        print "OK"
-    else:
-        print "ERROR!"
-
-
-    print "\n\ndelete the value with id=1:"
-    db.delete(
-        table = "TestTable",
-        where = ("id",1),
-        limit = 1,
-        debug = True
-    )
-    print "cursor.lastrowid:", db.cursor.lastrowid
-
-    db.dump_table("TestTable")
-
-    print "\n\nUpdate item (db.update)."
-    db.update(
-        table   = "TestTable",
-        data    = {"data1" : "NewValue1!"},
-        where   = ("id",2),
-        debug = True
-    )
-    print "cursor.lastrowid:", db.cursor.lastrowid
-
-    print "\n\nSee all values via SQL '*'-select and ordet it by 'id':"
-    result = db.select(
-        select_items    = ["id","data1","data2"],
-        from_table      = "TestTable",
-    )
-    db.dump_select_result(result)
-    old_values = [{'data1': 'NewValue1!', 'id': 2, 'data2': 'Value B 2'}]
-    print "\nCheck SQL:",
-    if result != old_values:
-        print "ERROR: Result not right!"
-    else:
-        print "OK, Data are as assumed."
-
-    db.commit() # Vorherigen Aktionen committen
-    print "\n\nTest Transaction:"
-    db.insert("TestTable", {"data1": "tranceact1", "data2": "1"})
-    id1 = db.cursor.lastrowid
-    db.insert("TestTable", {"data1": "tranceact2", "data2": "2"})
-    id2 = db.cursor.lastrowid
-    db.delete(
-        table = "TestTable",
-        where = ("id",id1),
-    )
-    db.update(
-        table   = "TestTable",
-        data    = {"data1": "tranceact3"},
-        where   = ("id",id2)
-    )
-    result = db.select(
-        select_items    = "*",
-        from_table      = "TestTable",
-        order           = ("id","ASC"),
-    )
-    db.dump_select_result(result)
-    db.rollback() # Alle letzten Befehle rückgängig machen
-    result = db.select(
-        select_items    = "*",
-        from_table      = "TestTable",
-        order           = ("id","ASC"),
-    )
-    db.dump_select_result(result)
-    print "\nCheck SQL:",
-    if result != old_values:
-        print "ERROR: Result not right!"
-    else:
-        print "OK, Data are as assumed."
-
-
-    print "\n\nDelete the temporary test Table."
-    db.cursor.execute("DROP TABLE $$TestTable")
-
-
-    print "\n\ndb.get_tables():", db.get_tables()
-
-
-    print "\n\nClose SQL-connection...",
-    db.close()
-    print "OK"
-
-    #~ print "<pre>"
-
-
-
-
-
-
-
-
-
 
 
 
