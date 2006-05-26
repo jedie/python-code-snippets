@@ -7,13 +7,11 @@
 __author__              = "Jens Diemer"
 __url__                 = "http://www.PyLucid.org"
 __description__         = "The Module/Plugin Administration"
+__long_description__    = """With the Module/Plugin Administration
+you can install/deinstall modules to the DB and you
+can activate/deactivate this modules in the DB.
+"""
 __essential_buildin__   = True
-
-#~ # Ausnahme: install_template wird in install_PyLucid.py benötigt!
-#~ import os
-#~ f = file(os.path.join("PyLucid/modules","module_admin_administation_menu.html"),"rU")
-#~ install_template = f.read()
-#~ f.close()
 
 #___________________________________________________________________________________________________
 # Module-Manager Daten
@@ -34,7 +32,7 @@ module_manager_data = {
         "menu_description"  : "Administation menu",
         "internal_page_info" : {
             "description"       : "The Module/Plugin Administration page",
-            "template_engine"   : "TAL",
+            "template_engine"   : "jinja",
             "markup"            : None
         },
     },
