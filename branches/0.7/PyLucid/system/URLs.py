@@ -297,7 +297,6 @@ class URLs(dict):
         return url
 
     def installBaseLink(self):
-        print self["scriptRoot"], self["commandBase"]
         url = posixpath.join(
             self["scriptRoot"], self["commandBase"]
         )

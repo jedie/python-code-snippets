@@ -415,10 +415,9 @@ class module_manager:
         """
         Importiert das Module und packt die Klasse als Objekt in self.data
         """
-        def _import():
+        def _import(package_name, module_name):
             return __import__(
-                "%s.%s" % (self.plugin_data.package_name, self.module_name),
-                {}, {}, [self.module_name]
+                "%s.%s" % (package_name, module_name), {}, {}, [module_name]
             )
 
         if self.plugin_data.plugin_debug():
@@ -427,11 +426,14 @@ class module_manager:
             ) % self.preferences["ModuleManager_error_handling"]
             self.page_msg(msg)
 
+        module_name = self.module_name
+        package_name = self.plugin_data.package_name
+
         if self.preferences["ModuleManager_error_handling"] == False:
-            import_object = _import()
+            import_object = _import(package_name, module_name)
 
         try:
-            import_object = _import()
+            import_object = _import(package_name, module_name)
         except Exception, e:
             raise run_module_error(
                 "[Can't import Modul '%s': %s]" % ( self.module_name, e )
