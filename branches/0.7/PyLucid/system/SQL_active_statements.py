@@ -135,6 +135,15 @@ class active_statements(passive_statements):
         style_names = [i["name"] for i in style_names]
         return style_names
 
+    def delete_all_plugin_styles(self):
+        """
+        Löscht alle Styles die einem Module/Plugin gehören
+        """
+        SQLcommand = (
+            "DELETE FROM $$styles WHERE plugin_id>0;"
+        )
+        self.cursor.execute(SQLcommand)
+
     def update_template(self, template_id, template_data):
         self.update(
             table   = "templates",
@@ -320,15 +329,18 @@ class active_statements(passive_statements):
             limit   = 1
         )
 
-    def install_plugin(self, module_data, simulation):
+    def install_plugin(self, module_data):
         """
         Installiert ein neues Plugin/Modul.
         Wichtig: Es wird extra jeder Wert herraus gepickt, weil in module_data
             mehr Keys sind, als in diese Tabelle gehören!!!
         """
+        active = module_data["active"]
         if module_data.has_key("essential_buildin") and \
                                     module_data["essential_buildin"] == True:
             active = -1
+        elif active == True:
+            active = 1
         else:
             active = 0
 
@@ -345,14 +357,10 @@ class active_statements(passive_statements):
             "SQL_deinstall_commands"    : module_data["SQL_deinstall_commands"],
         }
 
-        if simulation:
-            return
-
         self.insert("plugins", data)
         return self.cursor.lastrowid
 
-    def register_plugin_method(self, plugin_id, method_name, method_cfg, \
-                                                                simulation):
+    def register_plugin_method(self, plugin_id, method_name, method_cfg):
 
         where= [("plugin_id", plugin_id), ("method_name", method_name)]
 
@@ -375,9 +383,6 @@ class active_statements(passive_statements):
             "plugin_id"     : plugin_id,
             "method_name"   : method_name,
         })
-
-        if simulation:
-            return
 
         self.insert(
             table = "plugindata",

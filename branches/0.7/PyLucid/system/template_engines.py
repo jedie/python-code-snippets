@@ -18,6 +18,27 @@ import sys
 from PyLucid.system.exceptions import *
 from PyLucid.system.BaseModule import PyLucidBaseModule
 
+
+def render_jinja(template, context):
+    """
+    Ist als normale Funktion ausgelagert, damit sie auch während der _install
+    Phase benutzt werden kann...
+    """
+    import jinja
+
+    # FIXME: jinja.loader.load() wandelt immer selber in unicode um und
+    # mag deswegen kein unicode, also wandeln wir es in einen normale
+    # String :(
+    template = str(template)
+
+    t = jinja.Template(template, jinja.StringLoader())#, trim=True)
+    c = jinja.Context(context)
+    content = t.render(c)
+
+    return content
+
+
+
 class TemplateEngines(PyLucidBaseModule):
 
     def write(self, internalPageName, context):
@@ -27,7 +48,9 @@ class TemplateEngines(PyLucidBaseModule):
         if engine == "string formatting":
             self.render_stringFormatting(internalPageName, internal_page_data, context)
         elif engine == "jinja":
-            self.render_jinja(internalPageName, internal_page_data, context)
+            content = internal_page_data["content"]
+            content = render_jinja(content, context)
+            self.response.write(content)
         else:
             raise NotImplemented, "Template Engine \
                         '%s' not implemented!" % engine
@@ -106,24 +129,7 @@ class TemplateEngines(PyLucidBaseModule):
 
         self.response.write(content)
 
-    def render_jinja(self, internalPageName, internal_page_data, context):
 
-        self.page_msg("jinja context: %s" % context)
-
-        import jinja
-
-        template = internal_page_data["content"]
-
-        # FIXME: jinja.loader.load() wandelt immer selber in unicode um und
-        # mag deswegen kein unicode, also wandeln wir es in einen normale
-        # String :(
-        template = str(template)
-
-        t = jinja.Template(template, jinja.StringLoader())#, trim=True)
-        c = jinja.Context(context)
-        content = t.render(c)
-
-        self.response.write(content)
 
 
 
