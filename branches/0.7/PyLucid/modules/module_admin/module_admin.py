@@ -45,8 +45,8 @@ __history__="""
 v0.3
     - Anpassung an PyLucid v0.7
 v0.2
-    - NEU: debug_installed_modules_info() - Für einen besseren Überblick, welche Methoden
-        in der DB registriert sind.
+    - NEU: debug_installed_modules_info() - Für einen besseren Überblick,
+        welche Methoden in der DB registriert sind.
 v0.1.1
     - NEU: reinit
 v0.1
@@ -55,7 +55,7 @@ v0.1
 
 __todo__="""
     - CSS deinstallation
-    - Fehlerausgabe bei check_module_data
+    - Fehlerausgabe bei check_moduleData
 """
 
 
@@ -64,17 +64,567 @@ import sys, os, glob, imp, cgi, urllib, pickle
 
 debug = False
 #~ debug = True
+
 error_handling = False
-available_packages = (
-    "PyLucid/modules","PyLucid/buildin_plugins","PyLucid/plugins"
-)
-internal_page_file = "PyLucid/modules/module_admin_administation_menu.html"
+package_basedir = "PyLucid"
+available_packages = ("modules","buildin_plugins","plugins")
+# Wenn es von _install Aufgerufen wird, wird das Template von Platte gelesen:
+internal_page_file = "PyLucid/modules/module_admin/administation_menu.html"
+internal_page_css = "PyLucid/modules/module_admin/administation_menu.css"
 
 from PyLucid.system.exceptions import *
 from PyLucid.system.BaseModule import PyLucidBaseModule
 
 
-class module_admin(PyLucidBaseModule):
+class InternalPage(object):
+    """
+    Alle Daten zusammenhängent mit der internenSeite
+    """
+    def __init__(self, request, response, package_dir_list, module_name, data):
+        self.request = request
+        self.response = response
+
+        # shorthands
+        self.db             = request.db
+        self.page_msg       = request.page_msg
+
+        self.plugin_id = None
+
+        self.package_dir_list = package_dir_list
+        self.module_name = module_name
+
+        self.basePath = os.sep.join(self.package_dir_list)
+
+        self.name = data["name"]
+        del(data["name"])
+
+        self.data = data
+
+    #_________________________________________________________________________
+
+    def install(self, plugin_id):
+        """
+        Installiert die interne Seite mit zugehörigen CSS und JS Daten
+        """
+        self.plugin_id = plugin_id
+
+        # Hinweis: template_engine und markup werden von self.db umgewandelt
+        # in IDs!
+        self.response.write("\t\tinstall internal page '%s'..." % self.name)
+        internal_page = {
+            "name"              : self.name,
+            "plugin_id"         : self.plugin_id,
+            "category"          : self.module_name,
+            "description"       : self.data["description"],
+            "template_engine"   : self.data["template_engine"],
+            "markup"            : self.data["markup"],
+        }
+
+        internal_page_filename = "%s/%s.html" % (self.basePath, self.name)
+        print internal_page_filename
+
+
+        self.response.write("%s..." % internal_page_filename)
+        try:
+            lastupdatetime, content = self._getFiledata(internal_page_filename)
+        except Exception, e:
+            self.response.write("Error reading Template-File: %s\n" % e)
+            return
+
+        internal_page["content"] = content
+
+        try:
+            self.db.new_internal_page(internal_page, lastupdatetime)
+        except Exception, e:
+            raise IntegrityError(
+                "Can't save new internal page to DB: %s - %s" % (
+                    sys.exc_info()[0], e
+                )
+            )
+        else:
+            self.response.write("OK\n")
+            print "OK"
+
+        # Evtl. vorhandene CSS Datei auch in die DB bringen
+        self.installCSS()
+
+    def installCSS(self):
+        CSS_filename = "%s/%s.css" % (self.basePath, self.name)
+        if not os.path.isfile(CSS_filename):
+            # Es gibt keine zusätzlichen Styles ;)
+            return
+
+        print CSS_filename
+
+        self.response.write("\t\tinstall CSS '%s'..." % CSS_filename)
+        try:
+            lastupdatetime, content = self._getFiledata(CSS_filename)
+        except Exception, e:
+            self.response.write("Error reading CSS-File: %s\n" % e)
+            return
+
+        style = {
+            "name"          : self.name,
+            "plugin_id"     : self.plugin_id,
+            "description"   : "module/plugin stylesheet",
+            "content"       : content,
+        }
+
+        try:
+            self.db.new_style(style)
+        except Exception, e:
+            raise IntegrityError(
+                "Can't save new Style to DB: %s - %s" % (
+                    sys.exc_info()[0], e
+                )
+            )
+
+
+    def _getFiledata(self, filename):
+        try:
+            lastupdatetime = os.stat(filename).st_mtime
+        except:
+            lastupdatetime = None
+
+        f = file(filename, "rU")
+        content = f.read()
+        f.close()
+
+        return lastupdatetime, content
+
+    #_________________________________________________________________________
+
+    def debug(self):
+        self.page_msg("<ul>")
+        self.page_msg("<strong>internal Page</strong> '%s':" % self.name)
+        for k,v in self.data.iteritems():
+            self.page_msg("<li>%s: %s</li>" % (k,v))
+        self.page_msg("</ul>")
+
+
+class Method(object):
+    """
+    Daten einer Methode von einem Module/Plugin
+    """
+    def __init__(self, request, response, package_dir_list, module_name, name):
+        self.request = request
+        self.response = response
+
+        # shorthands
+        self.db             = request.db
+        self.page_msg       = request.page_msg
+
+        self.package_dir_list = package_dir_list
+        self.module_name = module_name
+        self.name = name
+
+        self.data = {}
+
+        # defaults
+        self.internalPage = None
+        self.data["must_login"] = True
+        self.data["must_admin"] = True
+
+    def assimilateConfig(self, config):
+        if 'internal_page_info' in config:
+            internal_page_info = config['internal_page_info']
+
+            # Eine interne Seite muß keinen speziellen Namen haben, dann nehmen
+            # wir einfach den Namen der Methode:
+            internal_page_info["name"] = internal_page_info.get(
+                "name", self.name
+            )
+
+            self.internalPage = InternalPage(
+                self.request, self.response,
+                self.package_dir_list, self.name, internal_page_info
+            )
+            del(config['internal_page_info'])
+
+        self.data.update(config)
+
+    #_________________________________________________________________________
+
+    def install(self, moduleID):
+        """
+        Installiert Methode in die DB
+        """
+        self.response.write("\tinstall method '%s'..." % self.name)
+        # methode in DB eintragen
+        self.db.register_plugin_method(moduleID, self.name, self.data)
+        self.response.write("OK\n")
+
+        if self.internalPage != None:
+            # zugehörige interne Seite in DB eintragen
+            self.internalPage.install(moduleID)
+
+    #_________________________________________________________________________
+
+    def debug(self):
+        self.page_msg("<ul>")
+        self.page_msg("Debug for method '<strong>%s</strong>':" % self.name)
+        for k,v in self.data.iteritems():
+            self.page_msg("<li>%s: %s</li>" % (k,v))
+        if self.internalPage != None:
+            self.internalPage.debug()
+        self.page_msg("</ul>")
+
+
+class Module(object):
+    """
+    Daten eines Modules
+    """
+    def __init__(self, request, response, name):
+        self.request = request
+        self.response = response
+
+        # shorthands
+        self.db             = request.db
+        self.page_msg       = request.page_msg
+
+        self.name = name
+
+        # defaults setzten:
+        self.data = {
+            "module_name": self.name,
+            "installed": False,
+            "active": False,
+            "essential_buildin": False,
+            "important_buildin": False,
+        }
+        self.methods = []
+
+    def add_fromDisk(self, package_dir_list):
+        self.data["config_name"] = "%s_cfg" % self.name
+        self.data["package_dir_list"] = package_dir_list
+        self.data["package_name"] = ".".join(package_dir_list)
+
+        configObject = self._readConfigObject()
+        self._assimilateConfig(configObject)
+        self._setupMethods(configObject)
+        self.data["version"] = self._getVersionInfo()
+
+    def add_fromDB(self, RAWdict):
+        #~ print RAWdict
+        package_dir_list = RAWdict['package_name']
+        package_dir_list = package_dir_list.split("/")
+
+        self.data["installed"] = True
+
+        keys = (
+            "id", "version",
+            "author", "description", "url"
+        )
+        for key in keys:
+            self.data[key] = RAWdict[key]
+
+        # FIXME: must change in DB?!?!?
+        self.data["module_name"] = RAWdict["module_name"]
+
+        self.data["builtin"] = False
+        if RAWdict["active"] == -1:
+            self.data["builtin"] = True
+            self.data["active"] = True
+        elif RAWdict["active"] == 1:
+            self.data["active"] = True
+        else:
+            self.data["active"] = False
+
+    #_________________________________________________________________________
+    # Config-Daten von Platte lesen
+
+    def _readConfigObject(self):
+        """
+        Liefert alle Daten zu einem Modul, aus der zugehörigen config-Datei.
+        """
+        package_dir_list = self.data["package_dir_list"][:] # Kopie der Liste
+        package_dir_list.append(self.data["config_name"])
+        packagePath = ".".join(package_dir_list)
+
+        try:
+            module_cfg_object = __import__(
+                packagePath, {}, {}, [self.data["config_name"]]
+            )
+        except SyntaxError, e:
+            msg = "Can't import %s.%s: %s" % (
+                packagePath, self.data["module_name"], e
+            )
+            raise SyntaxError, msg
+        else:
+            return module_cfg_object
+
+    def _getVersionInfo(self):
+        package_dir_list = self.data["package_dir_list"]
+        package_dir_list.append(self.name)
+        packagePath = ".".join(package_dir_list)
+
+        try:
+            version = __import__(
+                packagePath, {}, {}, [self.name]
+            ).__version__
+        except ImportError, e:
+            msg = "Can't import __version__ from Module '%s' (Error: %s)" % (
+                packagePath, e
+            )
+            raise ImportError, msg
+
+        return version
+
+    def _assimilateConfig(self, configObject):
+        def getattrStriped(object, attr):
+            result = getattr(object, attr)
+            if type(result) == str:
+                return result.strip()
+            return result
+
+        # Metadaten verarbeiten, die immer da sein müßen!
+        keys = (
+            "author", "url", "description", "long_description",
+        )
+        for key in keys:
+            keyTag = "__%s__" % key
+            try:
+                self.data[key] = getattrStriped(configObject, keyTag)
+            except AttributeError, e:
+                msg = (
+                    "Module/plugin config file '...%s' has no Entry for '%s'!"
+                ) % (configObject.__file__[-35:], keyTag)
+                raise AttributeError, msg
+
+        # Optionale Einstellungsdaten
+        self.data["module_manager_debug"] = getattr(
+            configObject, "module_manager_debug", False
+        )
+
+        keys = (
+            "SQL_install_commands", "SQL_deinstall_commands",
+        )
+        for key in keys:
+            self.data[key] = getattr(configObject, key, None)
+
+        keys = (
+            "essential_buildin", "important_buildin"
+        )
+        for key in keys:
+            keyTag = "__%s__" % key
+            self.data[key] = getattr(configObject, keyTag, False)
+
+    def _setupMethods(self, configObject):
+        module_manager_data = configObject.module_manager_data
+        for methodName, methodData in module_manager_data.iteritems():
+            method = Method(
+                self.request, self.response,
+                self.data["package_dir_list"], self.name, methodName
+            )
+            method.assimilateConfig(methodData)
+            self.methods.append(method)
+
+    #_________________________________________________________________________
+
+    def install(self, autoActivate=False):
+        """
+        Installiert das Modul und all seine Methoden
+        """
+        self.response.write(
+            "register Module '<strong>%s</strong>'..." % self.name
+        )
+
+        if autoActivate:
+            self.data["active"] = True
+
+        # Modul in DB eintragen
+        id = self.db.install_plugin(self.data)
+        self.response.write("OK\n")
+
+        self.response.write("register all Methodes:\n")
+        # Alle Methoden in die DB eintragen
+        for method in self.methods:
+            method.install(id)
+
+    def first_time_install(self):
+        """
+        installiert nur Module die wichtig sind
+        """
+        if self.data["essential_buildin"] or self.data["important_buildin"]:
+            self.install(autoActivate=True)
+
+    #_________________________________________________________________________
+
+    def getData(self):
+        return self.data
+
+    #_________________________________________________________________________
+
+    def debug(self):
+        self.page_msg("<ul>")
+        self.page_msg("Module '<strong>%s</strong>' debug:" % self.name)
+        for k,v in self.data.iteritems():
+            self.page_msg("<li><em>%s</em>: %s</li>" % (k,v))
+        for method in self.methods:
+            method.debug()
+        self.page_msg("</ul>")
+
+
+
+
+
+
+class Modules(object):
+    """
+    Daten aller Module
+    """
+    def __init__(self, request, response):
+        self.request = request
+        self.response = response
+
+        # shorthands
+        self.db             = request.db
+        self.page_msg       = request.page_msg
+
+        self.data = {}
+
+    def readAllModules(self):
+        self._get_from_db()
+        self.read_packages()
+
+    def addModule(self, module_name, package_dir_list):
+        if self.data.has_key(module_name):
+            # Daten sind schon aus der DB da.
+            return
+
+        module = Module(self.request, self.response, module_name)
+        module.add_fromDisk(package_dir_list)
+        self.data[module_name] = module
+
+    def addModule_fromDB(self, moduledata):
+        module_name = moduledata['module_name']
+        module = Module(self.request, self.response, module_name)
+        module.add_fromDB(moduledata)
+        self.data[module_name] = module
+
+    #_________________________________________________________________________
+
+    def getModuleStatusList(self):
+        "Liste alle vorhandenden Module"
+        result = []
+        for module_name, moduleData in self.data.iteritems():
+            data = moduleData.getData()
+            result.append(data)
+
+        return result
+
+    #_________________________________________________________________________
+
+    def read_packages(self):
+        """
+        Alle verfügbaren packages durch scannen.
+        """
+        for package in available_packages:
+            self._read_one_package(package)
+
+    def _read_one_package(self, package_name):
+        """
+        Dateiliste eines packages erstellen.
+        """
+        packageDir = os.path.join(package_basedir, package_name)
+        for item in os.listdir(packageDir):
+            itemDir = os.path.join(package_basedir, package_name, item)
+
+            if not os.path.isdir(itemDir):
+                continue
+
+            init = os.path.join(itemDir, "__init__.py")
+            if not os.path.isfile(init):
+                # Verz. hat keine init-Datei
+                continue
+
+            module_cfg = os.path.join(itemDir, "%s_cfg.py" % item)
+            if not os.path.isfile(module_cfg):
+                # Kein Config-Datei vorhanden -> kein PyLucid-Module
+                continue
+
+            module = os.path.join(itemDir, "%s.py" % item)
+            if os.path.isfile(module):
+                self.addModule(
+                    module_name = item,
+                    package_dir_list = [package_basedir, package_name, item]
+                )
+
+    #_________________________________________________________________________
+    # install
+
+    def installModule(self, module_name, package_name):
+        """
+        Installieren eines bestimmten Modules/Plugins
+        """
+        package_name = package_name.split(".")
+        self.addModule(module_name, package_name)
+
+        module = self.data[module_name]
+        module.install()
+
+    def first_time_install(self):
+        """
+        Alle wichtigen Module installieren
+        """
+        try:
+            for module_name, module in self.data.iteritems():
+                module.first_time_install()
+        except IntegrityError, e:
+            msg = (
+                "install all modules failed!"
+                " make DB rollback"
+                " Error: %s"
+            ) % e
+            self.response.write(msg)
+            self.db.rollback()
+        else:
+            self.db.commit()
+
+    #_________________________________________________________________________
+    # Informationen über in der DB installierte Module / Plugins
+
+    def _get_from_db(self):
+        try:
+            installed_modules_info = self.db.get_installed_modules_info()
+        except Exception, e:
+            self.response.write(
+                "<h1>Can't get installed module data from DB:</h1>"
+            )
+            self.response.write("<h4>%s</h4>" % e)
+            self.response.write("<h3>Did you run install_PyLucid.py ???</h3>")
+            raise #FIXME!
+        for moduleData in installed_modules_info:
+            self.addModule_fromDB(moduleData)
+
+    #_________________________________________________________________________
+    # Debug
+
+    def debug(self):
+        self.page_msg("Module Debug:")
+        oldPageMsgRaw = self.page_msg.raw
+        self.page_msg.raw = True
+
+        self.page_msg("<ul>")
+        for module_name, module in self.data.iteritems():
+            self.page_msg("<li>%s:" % module_name)
+            module.debug()
+            self.page_msg("</li>")
+        self.page_msg("</ul>")
+
+        self.page_msg.raw = oldPageMsgRaw
+
+
+
+
+
+
+
+
+
+class ModuleAdmin(PyLucidBaseModule):
+    #~ def __init__(self, *args, **kwargs):
+        #~ super(ModuleAdmin, self).__init__(*args, **kwargs)
 
     def menu(self):
         self.response.write(
@@ -95,30 +645,20 @@ class module_admin(PyLucidBaseModule):
         """
         Module/Plugins installieren
         """
-        self.installed_modules_info = self.get_installed_modules_info()
-        if debug:
-            self.page_msg(self.installed_modules_info)
+        moduleData = Modules(self.request, self.response)
+        moduleData.readAllModules()
+        #~ if debug:
+        moduleData.debug()
 
-        data = self._read_packages()
-        data = self._filter_cfg(data)
-        data = self._read_all_moduledata(data)
+        moduleData = moduleData.getModuleStatusList()
 
         context_dict = {
             "version"       : __version__,
-            "package_data"  : data,
-            "installed_data": self.installed_modules_info,
-            #~ "action_url"    : self.URLs["action"],
+            "moduleData"    : moduleData,
             "action_url"    : self.URLs.currentAction(),
         }
 
         if self.request.runlevel == "install":
-            # Wurde von install_PyLucid.py aufgerufen.
-            from PyLucid.simpleTAL import simpleTAL, simpleTALES
-
-            context = simpleTALES.Context(allowPythonPath=1)
-            #~ self.page_msg(context_dict)
-            context.globals.update(context_dict) # context.addGlobal()
-
             try:
                 f = file(internal_page_file,"rU")
                 install_template = f.read()
@@ -131,17 +671,48 @@ class module_admin(PyLucidBaseModule):
                 )
                 return
 
-            template = simpleTAL.compileHTMLTemplate(install_template, inputEncoding="UTF-8")
-            template.expand(context, self.response, outputEncoding="UTF-8")
+            from PyLucid.system.template_engines import render_jinja
+            content = render_jinja(install_template, context_dict)
+            self.response.write(content)
+
+            # CSS Daten einfach rein schreiben:
+            try:
+                f = file(internal_page_css, "rU")
+                cssData = f.read()
+                f.close()
+            except:
+                pass
+            else:
+                self.response.write('<style type="text/css">')
+                self.response.write(cssData)
+                self.response.write('</style>')
+
         else:
             # Normal als Modul aufgerufen
-            self.db.print_internal_TAL_page("module_admin_administation_menu", context_dict)
+            self.db.print_internal_TAL_page(
+                "module_admin_administation_menu", context_dict
+            )
             self.link("menu")
 
-    #~ def print_tags_information(self):
+    #_________________________________________________________________________
+    # install
 
+    def install(self, package_name, module_name):
+        """
+        Modul in die DB eintragen
+        """
+        data = Modules(self.request, self.response)
 
-    #________________________________________________________________________________________
+        self.response.write(
+            "<h3>Install %s.<strong>%s</strong></h3>" % (
+                package_name, module_name
+            )
+        )
+
+        self.response.write("<pre>")
+        data.installModule(module_name, package_name)
+        self.response.write("</pre>")
+        return
 
     def first_time_install(self, simulation=True):
         """
@@ -151,6 +722,17 @@ class module_admin(PyLucidBaseModule):
         """
         self.response.write("<h2>First time install:</h2>\n")
         self.response.write("<pre>\n")
+
+        self._truncateTables()
+
+        data = Modules(self.request, self.response)
+        data.read_packages() # Nur die Plugins von Platte laden
+        if debug:
+            data.debug()
+
+        data.first_time_install()
+
+    def _truncateTables(self):
         self.response.write("<strong>truncate tables:</strong>\n")
         tables = (
             "plugins", "plugindata", "pages_internal",
@@ -158,10 +740,6 @@ class module_admin(PyLucidBaseModule):
         )
         for table in tables:
             self.response.write("\t* truncate table %s..." % table)
-
-            if simulation:
-                self.response.write("\n")
-                continue
 
             try:
                 self.db.cursor.execute("TRUNCATE TABLE $$%s" % table)
@@ -172,46 +750,19 @@ class module_admin(PyLucidBaseModule):
             else:
                 self.response.write("OK\n")
 
-        # Wir tun mal so, als wenn es keine installierten Module gibt:
-        self.installed_modules_info = []
-        data = self._read_packages()
-        data = self._filter_cfg(data)
-        data = self._read_all_moduledata(data)
+        self.response.write("<strong>Cleanup Stylesheet table:</strong>\n")
+        self.db.delete_all_plugin_styles()
 
-        sorted_data = []
-        for module in data:
-            if (module["essential_buildin"] != True) and \
-                                    (module["important_buildin"] != True):
-                continue
 
-            try:
-                self.install(
-                    module['package_name'], module['module_name'],
-                    simulation
-                )
-            except IntegrityError, e:
-                self.response.write("*** Error: '%s'" % e)
-                self.response.write("make a db rollback!")
-                self.db.rollback()
-                break
 
-            # essential_buildin werden automatisch aktiviert mit active = -1
-            # important_buildin müßen normal aktiviert werden (active = 1)
-            if module["important_buildin"] == True:
-                self.response.write(
-                    "Activate plugin with ID: %s\n" % self.registered_plugin_id
-                )
-                if simulation:
-                    continue
-                self.activate(self.registered_plugin_id, print_info=False)
 
-        self.db.commit()
-        self.response.write("</pre>")
 
+
+class muell:
 
     #_________________________________________________________________________
 
-    def register_methods(self, package, module_name, module_data, simulation):
+    def register_methods(self, package, module_name, moduleData, simulation):
         """
         Das module_manager_data Dict aufbereitet in die DB schreiben
         """
@@ -230,9 +781,9 @@ class module_admin(PyLucidBaseModule):
 
         # module_manager_data in Tabelle "plugindata" eintragen
         self.response.write("register methods:\n")
-        for method_name in module_data["module_manager_data"]:
+        for method_name in moduleData["module_manager_data"]:
             self.response.write("\t* %s " % method_name)
-            method_cfg = module_data["module_manager_data"][method_name]
+            method_cfg = moduleData["module_manager_data"][method_name]
 
             if type(method_cfg) != dict:
                 self.response.write(
@@ -255,8 +806,8 @@ class module_admin(PyLucidBaseModule):
             else:
                 self.response.write("OK\n")
 
-        #~ for parent_method in module_data["module_manager_data"]:
-            #~ method_cfg = module_data["module_manager_data"][parent_method]
+        #~ for parent_method in moduleData["module_manager_data"]:
+            #~ method_cfg = moduleData["module_manager_data"][parent_method]
 
             #~ if type(method_cfg) != dict:
                 #~ self.response.write("Error in data!!!")
@@ -301,46 +852,53 @@ class module_admin(PyLucidBaseModule):
     #________________________________________________________________________________________
     # install
 
-    def install(self, package, module_name, simulation=False):
+    def install(self, package_name, module_name):
         """
         Modul in die DB eintragen
         """
-        self.link("administation_menu")
+        data = Modules(self.request, self.response)
+
         self.response.write(
             "<h3>Install %s.<strong>%s</strong></h3>" % (
-                package, module_name
+                package_name, module_name
             )
         )
+
         self.response.write("<pre>")
+        data.installModule(module_name, package_name)
+        self.response.write("</pre>")
+        return
 
-        module_data = self._get_module_data(package, module_name)
+        print module_name
+        self.link("administation_menu")
+        package = moduleData["packagePath"]
 
-        if self.check_module_data(module_data) == True:
+
+        if self.check_moduleData(moduleData) == True:
             self.response.write("<h3>Error</h3>")
             self.response.write(
                 "<h4>module config data failed. Module was not installed!!!</h4>"
             )
-            self.debug_package_data([module_data])
+            self.debug_package_data([moduleData])
             return
 
-        #~ self.debug_package_data([module_data])
+        #~ self.debug_package_data([moduleData])
 
         ##_____________________________________________
         # In Tabelle "plugins" eintragen
         self.response.write("register plugin %s.%s..." % (package, module_name),)
         #~ self.response.write(package, module_name)
-        #~ self.response.write(module_data)
+        #~ self.response.write(moduleData)
         #~ try:
-        if not simulation:
-            self.registered_plugin_id = self.db.install_plugin(
-                module_data, simulation
-            )
+        self.registered_plugin_id = self.db.install_plugin(
+            moduleData, simulation
+        )
         #~ except Exception, e:
             #~ self.response.write("%s: %s\n" % (sys.exc_info()[0], e))
             #~ # Evtl. ist das Plugin schon installiert.
             #~ try:
                 #~ self.registered_plugin_id = self.db.get_plugin_id(
-                    #~ module_data['package_name'], module_data['module_name']
+                    #~ moduleData['package_name'], moduleData['module_name']
                 #~ )
             #~ except Exception, e:
                 #~ raise IntegrityError("Can't get Module/Plugin ID: %s\n" % e)
@@ -349,13 +907,13 @@ class module_admin(PyLucidBaseModule):
 
         ##_____________________________________________
         # Stylesheets
-        if module_data["styles"] != None:
+        if moduleData["styles"] != None:
             self.response.write("install stylesheet:\n")
-            for style in module_data["styles"]:
+            for style in moduleData["styles"]:
                 self.response.write("\t* %-25s" % style["name"])
                 css_filename = os.path.join(
-                    module_data['package_name'],
-                    "%s_%s.css" % (module_data['module_name'], style["name"])
+                    moduleData['package_name'],
+                    "%s_%s.css" % (moduleData['module_name'], style["name"])
                 )
                 self.response.write("%s...\n" % css_filename,)
                 try:
@@ -382,23 +940,13 @@ class module_admin(PyLucidBaseModule):
                     self.response.write("OK\n")
 
         ##_____________________________________________
-        # internal_pages
-        self.response.write("install internal_page:\n")
-        data = module_data["module_manager_data"]
-        for method_name, method_data in data.iteritems():
-            self._install_internal_page(
-                method_data, package, module_name, method_name,
-                simulation
-            )
-
-        ##_____________________________________________
         # SQL Kommandos ausführen
-        if module_data["SQL_install_commands"] != None:
+        if moduleData["SQL_install_commands"] != None:
             self.execute_SQL_commands(
-                module_data["SQL_install_commands"], simulation
+                moduleData["SQL_install_commands"], simulation
             )
 
-        self.register_methods(package, module_name, module_data, simulation)
+        self.register_methods(package, module_name, moduleData, simulation)
 
         self.response.write("</pre>")
         #~ self.response.write(
@@ -408,65 +956,10 @@ class module_admin(PyLucidBaseModule):
         #~ )
         self.link("administation_menu")
 
-    def _install_internal_page(self, method_data, package, module_name,
-                                                    method_name, simulation):
-        """
-        Eintragen der internal_page
-        Wird von self.install() benutzt
-        """
-        if type(method_data) != dict or \
-                            method_data.has_key("internal_page_info") != True:
-            return
-
-        data = method_data["internal_page_info"]
-
-        # Hinweis: template_engine und markup werden von self.db umgewandelt in IDs!
-        name = "%s_%s" % (module_name, data.get("name",method_name))
-        internal_page = {
-            "name"              : name,
-            "plugin_id"         : self.registered_plugin_id,
-            "category"          : module_name,
-            "description"       : data["description"],
-            "template_engine"   : data["template_engine"],
-            "markup"            : data["markup"],
-        }
-
-        self.response.write("\t* %-25s " % internal_page["name"])
-
-        # .replace(".","/")
-        internal_page_filename = os.path.join(
-            package, "%s.html" % internal_page["name"]
-        )
-        self.response.write("%s..." % internal_page_filename)
-        try:
-            lastupdatetime = os.stat(internal_page_filename).st_mtime
-        except:
-            lastupdatetime = None
-
-        try:
-            f = file(internal_page_filename, "rU")
-            internal_page["content"] = f.read()
-            f.close()
-        except Exception, e:
-            self.response.write("Error reading Template-File: %s\n" % e)
-            return
-
-        if simulation:
-            self.response.write("\n")
-            return
-
-        try:
-            self.db.new_internal_page(internal_page, lastupdatetime)
-        except Exception, e:
-            raise IntegrityError("Can't save new internal page to DB: %s - %s" % (
-                    sys.exc_info()[0], e
-                )
-            )
-        else:
-            self.response.write("OK\n")
 
 
-    def check_module_data(self, data):
+
+    def check_moduleData(self, data):
 
         def check_dict_list(dict_list, type, must_have_keys):
             errors = False
@@ -638,191 +1131,75 @@ class module_admin(PyLucidBaseModule):
     #________________________________________________________________________________________
     # Information über nicht installierte Module / Plugins
 
-    def _read_one_package(self, package_name):
-        """
-        Dateiliste eines packages erstellen.
-        """
-        filelist = []
-        #~ self.page_msg("%s/*.py" % package_name)
-        for module_path in glob.glob("%s/*.py" % package_name):
-            filename = os.path.split( module_path )[1]
-            if filename[0] == "_": # Dateien wie z.B. __ini__.py auslassen
-                continue
-            module_name = os.path.splitext( filename )[0]
-            filelist.append(module_name)
-        return filelist
-
-    def _read_packages(self):
-        """
-        Alle verfügbaren packages durch scannen.
-        """
-        data = {}
-        for package in available_packages:
-            filelist = self._read_one_package(package)
-            for filename in filelist:
-                if data.has_key(filename):
-                    self.page_msg("Error: duplicate Module/Pluginname '%s'!" % filename)
-                data[filename] = {"package": package}
-        return data
-
     def is_installed(self, package, module):
         for line in self.installed_modules_info:
             if line["package_name"] == package and line["module_name"] == module:
                 return True
         return False
 
-    def _filter_cfg(self, package_data):
-        """
-        Nur Module/Plugins herrausfiltern zu denen es auch Konfiguration-Daten gibt.
-        """
-        not_installed_data = {}
-        installed_data = []
-        filelist = package_data.keys()
-        for module_name, module_data in package_data.iteritems():
-            if not module_name.endswith("_cfg"):
-                continue
+    #~ def _filter_cfg(self, package_data):
+        #~ """
+        #~ Nur Module/Plugins herrausfiltern zu denen es auch Konfiguration-Daten gibt.
+        #~ """
+        #~ not_installed_data = {}
+        #~ installed_data = []
+        #~ filelist = package_data.keys()
+        #~ for module_name, moduleData in package_data.iteritems():
+            #~ if not module_name.endswith("_cfg"):
+                #~ continue
 
-            clean_module_name = module_name[:-4]
-            if not clean_module_name in filelist:
-                # Zur Config-Datei gibt's kein Module?!? -> Wird ausgelassen
-                continue
+            #~ clean_module_name = module_name[:-4]
+            #~ if not clean_module_name in filelist:
+                #~ # Zur Config-Datei gibt's kein Module?!? -> Wird ausgelassen
+                #~ continue
 
-            if self.is_installed(module_data["package"], clean_module_name):
-                # Schon installierte Module auslassen
-                continue
+            #~ if self.is_installed(moduleData["package"], clean_module_name):
+                #~ # Schon installierte Module auslassen
+                #~ continue
 
-            # Das Modul ist noch nicht installiert!
-            not_installed_data[clean_module_name] = module_data
-            not_installed_data[clean_module_name]["cfg_file"] = module_name
+            #~ # Das Modul ist noch nicht installiert!
+            #~ not_installed_data[clean_module_name] = moduleData
+            #~ not_installed_data[clean_module_name]["cfg_file"] = module_name
 
-        return not_installed_data
-
-    def _get_module_data(self, package, module_name):
-        """
-        Liefert alle Daten zu einem Modul, aus der zugehörigen config-Datei.
-        """
-        def _import(package_name, module_name):
-            #~ package_name = package_name.replace("_",".") #FIXME
-            package_name = package_name.replace("/",".") #FIXME
-            full_modulename = "%s.%s" % (package_name, module_name)
-            #~ self.page_msg("full_modulename:", full_modulename)
-            return __import__(
-                full_modulename,
-                globals(), locals(),
-                [module_name]
-            )
-
-        try:
-            module_cfg_object = _import(package, module_name+"_cfg")
-        except SyntaxError, e:
-            raise SyntaxError("Can't import %s.%s: %s" % (package, module_name, e))
-
-        result = {
-            "package_name"  : package,
-            "module_name"   : module_name,
-        }
-
-        try:
-            result["module_manager_data"] = getattr(
-                module_cfg_object, "module_manager_data"
-            )
-        except AttributeError, e:
-            self.page_msg(
-                "Can't get module_manager_data from %s: %s" % (
-                    module_name+"_cfg",e
-                )
-            )
-            # Die ModuleManager-Daten _müßen_ vorhanden sein, deswegen wird jetzt das
-            # ganze Module ausgelassen
-            return
-
-        def get_striped_attr(object, attr):
-            result = getattr(object, attr, None)
-            if type(result) == str:
-                return result.strip()
-            return result
-
-        result["module_manager_debug"] = getattr(
-            module_cfg_object, "module_manager_debug", False
-        )
-
-        # Normale Attribute holen
-        items = (
-            "SQL_install_commands", "SQL_deinstall_commands",
-            "styles", "internal_pages"
-        )
-        for attr in items:
-            result[attr] = get_striped_attr(module_cfg_object, attr)
-
-        # meta Attribute holen
-        items = (
-            "author", "url", "description", "long_description",
-            "essential_buildin", "important_buildin"
-        )
-        for attr in items:
-            result[attr] = get_striped_attr(
-                module_cfg_object, "__%s__" % attr
-            )
-
-        # Versions-Information aus dem eigentlichen Module holen
-        module_cfg_object = _import(package, module_name)
-        result["version"] = get_striped_attr(
-            module_cfg_object, "__version__"
-        )
-
-        result = self._prepare_module_data(result)
-
-        return result
+        #~ return not_installed_data
 
     def _read_all_moduledata(self, package_data):
         """
         Einlesen der Einstellungsdaten aus allen Konfigurationsdateien
         """
         result = []
-        for module_name, module_data in package_data.iteritems():
+        for module_name, moduleData in package_data.iteritems():
             #~ self.response.write(module_name)
             try:
-                module_data.update(
-                    self._get_module_data(module_data["package"], module_name)
+                moduleData.update(
+                    self._get_moduleData(moduleData["package"], module_name)
                 )
             except Exception, e:
                 self.page_msg(
                     "Can't get Data for %s.%s: %s" % (
-                        module_data["package"], module_name, e
+                        moduleData["package"], module_name, e
                     )
                 )
                 continue
 
-            module_data["module_name"] = module_name
-            result.append(module_data)
+            moduleData["module_name"] = module_name
+            result.append(moduleData)
         return result
 
-    def _prepare_module_data(self, module_data):
+    def _prepare_moduleData(self, moduleData):
         """
         Aufbereiten der Daten für die installation:
             - Deinstallationsdaten serialisieren
         """
         # Deinstallationsdaten serialisieren
-        if module_data["SQL_deinstall_commands"] != None:
-            module_data["SQL_deinstall_commands"] = pickle.dumps(
-                module_data["SQL_deinstall_commands"]
+        if moduleData["SQL_deinstall_commands"] != None:
+            moduleData["SQL_deinstall_commands"] = pickle.dumps(
+                moduleData["SQL_deinstall_commands"]
             )
 
-        return module_data
+        return moduleData
 
-    #________________________________________________________________________________________
-    # Informationen über in der DB installierte Module / Plugins
 
-    def get_installed_modules_info(self):
-        try:
-            installed_modules_info = self.db.get_installed_modules_info()
-        except Exception, e:
-            self.response.write("<h1>Can't get installed module data from DB:</h1>")
-            self.response.write("<h4>%s</h4>" % e)
-            self.response.write("<h3>Did you run install_PyLucid.py ???</h3>")
-            return None
-        else:
-            return installed_modules_info
 
     #________________________________________________________________________________________
     # Hilfs methoden
@@ -917,13 +1294,13 @@ class module_admin(PyLucidBaseModule):
 
     def debug_package_data(self, data):
         self.response.write("<h3>Debug package data:</h3>")
-        for module_data in data:
-            keys = module_data.keys()
+        for moduleData in data:
+            keys = moduleData.keys()
             keys.sort()
-            self.response.write("<h3>%s</h3>" % module_data["module_name"])
+            self.response.write("<h3>%s</h3>" % moduleData["module_name"])
             self.response.write("<pre>")
             for key in keys:
-                value = module_data[key]
+                value = moduleData[key]
                 if type(value) == dict: # module_manager_data
                     self.response.write(" -"*40)
                     self.response.write("%22s :" % key)
