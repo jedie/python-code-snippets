@@ -10,9 +10,6 @@ CREATE TABLE `lucid_plugindata` (
   `id` int(11) NOT NULL auto_increment,
   `plugin_id` int(11) NOT NULL default '0',
   `method_name` varchar(50) NOT NULL default '',
-  `parent_method_id` int(11) default NULL,
-  `CGI_laws` varchar(255) default NULL,
-  `get_CGI_data` varchar(255) default NULL,
   `internal_page_info` varchar(255) default NULL,
   `menu_section` varchar(128) default NULL,
   `menu_description` varchar(255) default NULL,
@@ -42,9 +39,11 @@ CREATE TABLE `lucid_plugins` (
 );
 """
 
-__version__="0.2"
+__version__="0.3"
 
 __history__="""
+v0.3
+    - Anpassung an PyLucid v0.7
 v0.2
     - NEU: debug_installed_modules_info() - Für einen besseren Überblick, welche Methoden
         in der DB registriert sind.
@@ -59,7 +58,6 @@ __todo__="""
     - Fehlerausgabe bei check_module_data
 """
 
-#~ self.response.write("Content-type: text/html; charset=utf-8\r\n\r\nDEBUG!" # Debugging)
 
 import sys, os, glob, imp, cgi, urllib, pickle
 
@@ -67,7 +65,9 @@ import sys, os, glob, imp, cgi, urllib, pickle
 debug = False
 #~ debug = True
 error_handling = False
-available_packages = ("PyLucid/modules","PyLucid/buildin_plugins","PyLucid/plugins")
+available_packages = (
+    "PyLucid/modules","PyLucid/buildin_plugins","PyLucid/plugins"
+)
 internal_page_file = "PyLucid/modules/module_admin_administation_menu.html"
 
 from PyLucid.system.exceptions import *
@@ -76,22 +76,20 @@ from PyLucid.system.BaseModule import PyLucidBaseModule
 
 class module_admin(PyLucidBaseModule):
 
-    #~ def __init__(self, request, response, call_from_install_PyLucid=False):
-        #~ super(module_admin, self).__init__(request, response)
-
-        #~ if debug == True: self.db.debug = True
-
-        #~ self.call_from_install_PyLucid = call_from_install_PyLucid
-
-
     def menu(self):
-        self.response.write("<h4>Module/Plugin Administration v%s</h4>" % __version__)
-        self.module_manager.build_menu()#self.module_manager_data, self.URLs["action"] )
+        self.response.write(
+            "<h4>Module/Plugin Administration v%s</h4>" % __version__
+        )
+        self.module_manager.build_menu()
 
     def link(self, action):
         if self.request.runlevel != "install":
             # Nur wenn nicht im "install" Bereich
-            self.response.write('<p><a href="%s%s">%s</a></p>' % (self.URLs["action"], action, action))
+            self.response.write(
+                '<p><a href="%s%s">%s</a></p>' % (
+                    self.URLs["action"], action, action
+                )
+            )
 
     def administation_menu(self, print_link=True):
         """
@@ -110,7 +108,7 @@ class module_admin(PyLucidBaseModule):
             "package_data"  : data,
             "installed_data": self.installed_modules_info,
             #~ "action_url"    : self.URLs["action"],
-            "action_url"    : self.URLs["current_action"],
+            "action_url"    : self.URLs.currentAction(),
         }
 
         if self.request.runlevel == "install":
@@ -126,7 +124,11 @@ class module_admin(PyLucidBaseModule):
                 install_template = f.read()
                 f.close()
             except Exception, e:
-                self.response.write("Can't read internal_page file '%s': %s" % (internal_page_file, e))
+                self.response.write(
+                    "Can't read internal_page file '%s': %s" % (
+                        internal_page_file, e
+                    )
+                )
                 return
 
             template = simpleTAL.compileHTMLTemplate(install_template, inputEncoding="UTF-8")
@@ -141,61 +143,75 @@ class module_admin(PyLucidBaseModule):
 
     #________________________________________________________________________________________
 
-    def first_time_install(self):
+    def first_time_install(self, simulation=True):
         """
-        Abfrage ob wirklich installiert werden soll
+        Installiert alle wichtigen Module/Plugins
         Das sind alle Module, bei denen:
         "essential_buildin" == True oder "important_buildin" == True
         """
-        self.response.write("<h2>First time install</h2>")
-        self.response.write("<p><strong>Note:</strong> All plugin-config and all internal pages would reseted!</p>")
-        self.response.write('<a href="%s&amp;confirm=yes">confirm</a>' % self.URLs['current_action'])
+        self.response.write("<h2>First time install:</h2>\n")
+        self.response.write("<pre>\n")
+        self.response.write("<strong>truncate tables:</strong>\n")
+        tables = (
+            "plugins", "plugindata", "pages_internal",
+            "pages_internal_category"
+        )
+        for table in tables:
+            self.response.write("\t* truncate table %s..." % table)
 
-    def first_time_install_confirmed(self):
-        """
-        Installiert alle wichtigen Module/Plugins
-        """
-        self.response.write("<h2>First time install:</h2>")
-        self.response.write("<pre>")
-        for table in ("plugins", "plugindata", "pages_internal", "pages_internal_category"):
-            tablename = self.db.tableprefix + table
-            self.response.write("truncate table %s..." % tablename,)
+            if simulation:
+                self.response.write("\n")
+                continue
+
             try:
-                self.db.cursor.execute("TRUNCATE TABLE %s" % tablename)
+                self.db.cursor.execute("TRUNCATE TABLE $$%s" % table)
             except Exception, e:
                 self.response.write(sys.exc_info()[0],":", e)
                 self.response.write("(Have you first init the tables?)")
                 return
             else:
-                self.response.write("OK")
+                self.response.write("OK\n")
 
-        self.installed_modules_info = [] # Wir tun mal so, als wenn es keine installierten Module gibt
+        # Wir tun mal so, als wenn es keine installierten Module gibt:
+        self.installed_modules_info = []
         data = self._read_packages()
         data = self._filter_cfg(data)
         data = self._read_all_moduledata(data)
 
         sorted_data = []
         for module in data:
-            if (module["essential_buildin"] != True) and (module["important_buildin"] != True):
+            if (module["essential_buildin"] != True) and \
+                                    (module["important_buildin"] != True):
                 continue
 
             try:
-                self.install(module['package_name'], module['module_name'], print_info=False)
-            except Exception, e:
-                self.response.write("*** Error:", e)
+                self.install(
+                    module['package_name'], module['module_name'],
+                    simulation
+                )
+            except IntegrityError, e:
+                self.response.write("*** Error: '%s'" % e)
+                self.response.write("make a db rollback!")
+                self.db.rollback()
+                break
 
             # essential_buildin werden automatisch aktiviert mit active = -1
             # important_buildin müßen normal aktiviert werden (active = 1)
             if module["important_buildin"] == True:
-                self.response.write("Activate plugin with ID:",self.registered_plugin_id)
+                self.response.write(
+                    "Activate plugin with ID: %s\n" % self.registered_plugin_id
+                )
+                if simulation:
+                    continue
                 self.activate(self.registered_plugin_id, print_info=False)
 
+        self.db.commit()
         self.response.write("</pre>")
 
 
-    #________________________________________________________________________________________
+    #_________________________________________________________________________
 
-    def register_methods(self, package, module_name, module_data):
+    def register_methods(self, package, module_name, module_data, simulation):
         """
         Das module_manager_data Dict aufbereitet in die DB schreiben
         """
@@ -224,63 +240,68 @@ class module_admin(PyLucidBaseModule):
                 )
                 continue
 
-            method_cfg = method_cfg.copy()
+            #~ method_cfg = method_cfg.copy()
 
-            if method_cfg.has_key('CGI_dependent_actions'):
-                del method_cfg['CGI_dependent_actions']
-
-            #~ try:
-            self.db.register_plugin_method(plugin_id, method_name, method_cfg)
-            #~ except Exception, e:
-                #~ self.response.write(sys.exc_info()[0],":", e)
-            #~ else:
-            self.response.write("OK\n")
-
-        for parent_method in module_data["module_manager_data"]:
-            method_cfg = module_data["module_manager_data"][parent_method]
-
-            if type(method_cfg) != dict:
-                self.response.write("Error in data!!!")
-                continue
-
-            if not method_cfg.has_key('CGI_dependent_actions'):
-                continue
-
-            dependent_cfg = method_cfg['CGI_dependent_actions']
-
-            parent_cfg = method_cfg
-            del parent_cfg['CGI_dependent_actions']
+            #~ if method_cfg.has_key('CGI_dependent_actions'):
+                #~ del method_cfg['CGI_dependent_actions']
 
             try:
-                parent_method_id = self.db.get_method_id(plugin_id, parent_method)
+                self.db.register_plugin_method(
+                    plugin_id, method_name, method_cfg, simulation
+                )
             except Exception, e:
-                self.response.write(
-                    "ERROR: Can't get parent method ID for plugin_id '%s' and method_name '%s'" % (
-                        plugin_id, parent_method
-                    )
-                )
-                continue
+                msg = "%s: '%s'\n" % (sys.exc_info()[0], e)
+                raise IntegrityError(msg)
+            else:
+                self.response.write("OK\n")
 
-            self.response.write(
-                "register CGI_dependent_actions for method '%s' with id '%s':" % (
-                    parent_method, parent_method_id
-                )
-            )
+        #~ for parent_method in module_data["module_manager_data"]:
+            #~ method_cfg = module_data["module_manager_data"][parent_method]
 
-            for method_name, cfg in dependent_cfg.iteritems():
-                self.response.write("\t* %s" % method_name)
+            #~ if type(method_cfg) != dict:
+                #~ self.response.write("Error in data!!!")
+                #~ continue
+
+            #~ if not method_cfg.has_key('CGI_dependent_actions'):
+                #~ continue
+
+            #~ dependent_cfg = method_cfg['CGI_dependent_actions']
+
+            #~ parent_cfg = method_cfg
+            #~ del parent_cfg['CGI_dependent_actions']
+
+            #~ try:
+                #~ parent_method_id = self.db.get_method_id(plugin_id, parent_method)
+            #~ except Exception, e:
+                #~ self.response.write(
+                    #~ "ERROR: Can't get parent method ID for plugin_id '%s' and method_name '%s'" % (
+                        #~ plugin_id, parent_method
+                    #~ )
+                #~ )
+                #~ continue
+
+            #~ self.response.write(
+                #~ "register CGI_dependent_actions for method '%s' with id '%s':" % (
+                    #~ parent_method, parent_method_id
+                #~ )
+            #~ )
+
+            #~ for method_name, cfg in dependent_cfg.iteritems():
+                #~ self.response.write("\t* %s" % method_name)
 
                 #~ try:
-                self.db.register_plugin_method(plugin_id, method_name, cfg, parent_method_id)
+                #~ self.db.register_plugin_method(
+                    #~ plugin_id, method_name, cfg, parent_method_id, simulation
+                #~ )
                 #~ except Exception, e:
                     #~ self.response.write(sys.exc_info()[0],":", e)
                 #~ else:
-                self.response.write("OK\n")
+                #~ self.response.write("OK\n")
 
     #________________________________________________________________________________________
     # install
 
-    def install(self, package, module_name):
+    def install(self, package, module_name, simulation=False):
         """
         Modul in die DB eintragen
         """
@@ -310,7 +331,10 @@ class module_admin(PyLucidBaseModule):
         #~ self.response.write(package, module_name)
         #~ self.response.write(module_data)
         #~ try:
-        self.registered_plugin_id = self.db.install_plugin(module_data)
+        if not simulation:
+            self.registered_plugin_id = self.db.install_plugin(
+                module_data, simulation
+            )
         #~ except Exception, e:
             #~ self.response.write("%s: %s\n" % (sys.exc_info()[0], e))
             #~ # Evtl. ist das Plugin schon installiert.
@@ -340,59 +364,66 @@ class module_admin(PyLucidBaseModule):
                     f.close()
                 except Exception, e:
                     raise IntegrityError("Error reading CSS-File: %s\n" % e)
-                else:
-                    try:
-                        style["plugin_id"] = self.registered_plugin_id
-                        self.db.new_style(style)
-                    except Exception, e:
-                        raise IntegrityError(
-                            "Can't save new Style to DB: %s - %s" % (
-                                sys.exc_info()[0], e
-                            )
+
+                if simulation:
+                    self.response.write("\n")
+                    continue
+
+                try:
+                    style["plugin_id"] = self.registered_plugin_id
+                    self.db.new_style(style)
+                except Exception, e:
+                    raise IntegrityError(
+                        "Can't save new Style to DB: %s - %s" % (
+                            sys.exc_info()[0], e
                         )
-                    else:
-                        self.response.write("OK\n")
+                    )
+                else:
+                    self.response.write("OK\n")
 
         ##_____________________________________________
         # internal_pages
         self.response.write("install internal_page:\n")
-        for method_name, method_data in module_data["module_manager_data"].iteritems():
-            self._install_internal_page(method_data, package, module_name, method_name)
-
-            if type(method_data) == dict and method_data.has_key("CGI_dependent_actions"):
-                for method_name, CGI_dependent_method_data in method_data["CGI_dependent_actions"].iteritems():
-                    self._install_internal_page(
-                        CGI_dependent_method_data, package, module_name, method_name
-                    )
+        data = module_data["module_manager_data"]
+        for method_name, method_data in data.iteritems():
+            self._install_internal_page(
+                method_data, package, module_name, method_name,
+                simulation
+            )
 
         ##_____________________________________________
         # SQL Kommandos ausführen
         if module_data["SQL_install_commands"] != None:
-            self.execute_SQL_commands(module_data["SQL_install_commands"])
+            self.execute_SQL_commands(
+                module_data["SQL_install_commands"], simulation
+            )
 
-        self.register_methods(package, module_name, module_data)
+        self.register_methods(package, module_name, module_data, simulation)
 
         self.response.write("</pre>")
-        self.response.write(
-            'activate this Module? <a href="%s/activate/%s">yes, enable it</a>' % (
-                self.URLs["action"], self.registered_plugin_id
-            )
-        )
+        #~ self.response.write(
+            #~ 'activate this Module? <a href="%s/activate/%s">yes, enable it</a>' % (
+                #~ self.URLs["action"], self.registered_plugin_id
+            #~ )
+        #~ )
         self.link("administation_menu")
 
-    def _install_internal_page(self, method_data, package, module_name, method_name):
+    def _install_internal_page(self, method_data, package, module_name,
+                                                    method_name, simulation):
         """
         Eintragen der internal_page
         Wird von self.install() benutzt
         """
-        if type(method_data) != dict or method_data.has_key("internal_page_info") != True:
+        if type(method_data) != dict or \
+                            method_data.has_key("internal_page_info") != True:
             return
 
         data = method_data["internal_page_info"]
 
         # Hinweis: template_engine und markup werden von self.db umgewandelt in IDs!
+        name = "%s_%s" % (module_name, data.get("name",method_name))
         internal_page = {
-            "name"              : "%s_%s" % (module_name, data.get("name",method_name)),
+            "name"              : name,
             "plugin_id"         : self.registered_plugin_id,
             "category"          : module_name,
             "description"       : data["description"],
@@ -402,8 +433,9 @@ class module_admin(PyLucidBaseModule):
 
         self.response.write("\t* %-25s " % internal_page["name"])
 
+        # .replace(".","/")
         internal_page_filename = os.path.join(
-            package.replace(".","/"), "%s.html" % internal_page["name"] #FIXME replace
+            package, "%s.html" % internal_page["name"]
         )
         self.response.write("%s..." % internal_page_filename)
         try:
@@ -417,6 +449,10 @@ class module_admin(PyLucidBaseModule):
             f.close()
         except Exception, e:
             self.response.write("Error reading Template-File: %s\n" % e)
+            return
+
+        if simulation:
+            self.response.write("\n")
             return
 
         try:

@@ -113,8 +113,11 @@ class TemplateEngines(PyLucidBaseModule):
         import jinja
 
         template = internal_page_data["content"]
-        #~ if type(template) == unicode:
-            #~ template = str(template)
+
+        # FIXME: jinja.loader.load() wandelt immer selber in unicode um und
+        # mag deswegen kein unicode, also wandeln wir es in einen normale
+        # String :(
+        template = str(template)
 
         t = jinja.Template(template, jinja.StringLoader())#, trim=True)
         c = jinja.Context(context)

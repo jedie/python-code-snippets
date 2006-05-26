@@ -29,12 +29,12 @@ class ObjectApp_Base(object):
         return module_admin
 
 
-    def _execute(self, title, SQLcommand):
+    def _execute(self, title, SQLcommand, args=()):
         self.response.write("<h4>%s:</h4>\n" % title)
         self.response.write("<pre>\n")
 
         try:
-            self._db.cursor.execute(SQLcommand)
+            self._db.cursor.execute(SQLcommand, args)
         except Exception, e:
             self.response.write("ERROR: %s" % e)
         else:
@@ -60,27 +60,43 @@ class ObjectApp_Base(object):
         self._write_backlink()
 
     def _write_backlink(self):
-        url = posixpath.join(
-            self._environ["SCRIPT_ROOT"], self._preferences["installURLprefix"]
-        )
+        url = self._URLs.installBaseLink()
         self.response.write('<p><a href="%s">menu</a></p>' % url)
 
-    def _confirm(self, txt, formAdd=""):
+    def _confirm(self, txt, simulationCheckbox=False):
         """
         Automatische Bestätigung
         """
+        if "simulation" in self.request.form:
+            # Ist ja nur als String enthalten, wir wandeln das in
+            # ein echtes True:
+            self.request.form["simulation"] = True
+
         if self.request.form.has_key("confirm"):
             # confirm-POST-Form wurde schon bestätigt
             return True
 
         self.response.write("<h4>%s</h4>\n" % txt)
-        form = (
-            '<form name="confirm" method="post" action="%s">\n'
-            '%s'
+
+
+
+        url = self._URLs.currentAction()
+        self.response.write(
+            '<form name="confirm" method="post" action="%s">\n' % url
+        )
+
+        if simulationCheckbox:
+            self.response.write(
+                '\t<label for="simulation">Simulation only:</label>\n'
+                '\t<input id="simulation" name="simulation"'
+                ' type="checkbox" value="True" checked="checked" />\n'
+                '\t<br />\n'
+            )
+
+        self.response.write(
             '\t<input type="submit" value="confirm" name="confirm" />\n'
             '</form>\n'
-        ) % (self._URLs["current_action"], formAdd)
-        self.response.write(form)
+        )
 
         # Es soll erst weiter gehen, wenn das Formular bestätigt wurde:
         sys.exit(0)
@@ -111,15 +127,12 @@ class ObjectApp_Base(object):
                 continue
 
             name = self._niceActionName(action)
+            url = self._URLs.installSubAction(action)
             txt = (
                 '\t<li>'
-                '<a href="%(url)s/%(action)s">%(name)s</a>'
+                '<a href="%s">%s</a>'
                 '</li>\n'
-            ) % {
-                "url": self._URLs["current_action"],
-                "action": action,
-                "name": name,
-            }
+            ) % (url, name)
             self.response.write(txt)
         self.response.write("</ul>\n")
 
@@ -129,6 +142,8 @@ class ObjectApp_Base(object):
         return actionName
 
 
+    def _currentActionLink(self):
+        return self._URLs["action"]
 
 
 

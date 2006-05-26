@@ -50,3 +50,8 @@ class PyLucidBaseModule(object):
 
         self.environ        = request.environ
 
+    def debug(self):
+        """
+        Aktiviert colobrid's debug-Ausgabe in die page_msg rein.
+        """
+        self.request.debug()

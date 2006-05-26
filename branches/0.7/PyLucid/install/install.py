@@ -181,7 +181,12 @@ class InstallApp:
 
     def prepareInstallPathInfo(self):
         path = self.environ["PATH_INFO"]
+        #~ self.page_msg(path)
         parts = path.split('/')
+
+        parts = [i for i in parts if i!=""]
+
+        #~ self.page_msg(parts)
 
         LockCodeURL = parts[0]
         PathInfo = parts[1:]
@@ -243,13 +248,12 @@ class InstallApp:
             self.page_msg("Wrong install lock code!")
             raise WrongInstallLockCode()
 
-        self.page_msg(self.LockCodeURL)
-
     #_________________________________________________________________________
 
     def setup_ObjectApp_Base(self):
         """
-        Bereitet die ObjectApp_Base-Klasse vor (von dieser erben alle ObjApp-Module)
+        Bereitet die ObjectApp_Base-Klasse vor
+        (von dieser erben alle ObjApp-Module)
         """
 
         # Menügenerator "einpflanzen"
@@ -271,20 +275,7 @@ class InstallApp:
         ObjectApp_Base._URLs            = self.URLs
         ObjectApp_Base._tools           = self.tools
 
-        #~ self.URLs["base"] = self.URLs["base"].strip("/")
-        #~ self.URLs["base"] = self.URLs["base"].split("/")
-        #~ self.URLs["base"] = self.URLs["base"][:3]
-        #~ self.URLs["base"] = "/%s" % "/".join(self.URLs["base"])
-
-        currentAction = self.environ["PATH_INFO"].split("/")
-        currentAction = currentAction[:3]
-        self.URLs["action"] = "/".join(
-            [self.URLs["real_self_url"]] + currentAction
-        )
-
-
-        self.page_msg(self.environ["PATH_INFO"])
-        self.URLs.debug()
+        #~ self.URLs.debug()
 
     #_________________________________________________________________________
 
@@ -308,7 +299,6 @@ class InstallApp:
         """
         # Resolve the path
         handler = self.root
-        args = []
         for part in self.PathInfo:
             node = getattr(handler, part, None)
             if node is None:
@@ -317,7 +307,6 @@ class InstallApp:
                         part = int(part)
                     except ValueError:
                         pass
-                    args.append(part)
             else:
                 handler = node
 
@@ -350,7 +339,7 @@ class InstallApp:
         parent = handler.im_class()
         parent.request = self.request
         try:
-            handler(parent, *args)
+            handler(parent)
         except SystemExit, e:
             # sys.exit() wird immer bei einem totalabbruch gemacht ;)
             self.response.write('<small style="color:grey">(exit %s)</small>' % e)

@@ -227,7 +227,7 @@ class passive_statements(SQL_wrapper):
                 where           = ("id",page_id)
             )[0]["title"]
 
-    def side_style_by_id(self, page_id):
+    def side_style_by_id(self, page_id, getItems):
         "Liefert die CSS-ID und CSS für die Seite mit der >page_id< zurück"
         def get_id(page_id):
             return self.select(
@@ -255,13 +255,13 @@ class passive_statements(SQL_wrapper):
                     "Use the styles from the first page!"
                 )
 
-        CSS_content = self.select(
-                select_items    = ["content"],
+        data = self.select(
+                select_items    = getItems,
                 from_table      = "styles",
                 where           = ("id",CSS_id)
-            )[0]["content"]
+            )[0]
 
-        return CSS_content
+        return data
 
     def get_page_data_by_id(self, page_id):
         "Liefert die Daten zum Rendern der Seite zurück"
@@ -298,26 +298,6 @@ class passive_statements(SQL_wrapper):
             from_table      = "preferences",
         )
 
-    def get_page_link_by_id(self, page_id):
-        """ Generiert den absolut-Link zur Seite """
-        data = []
-
-        while page_id != 0:
-            result = self.select(
-                    select_items    = ["shortcut","parent"],
-                    from_table      = "pages",
-                    where           = ("id",page_id)
-                )[0]
-            page_id  = result["parent"]
-            data.append(result["shortcut"])
-
-        # Liste umdrehen
-        data.reverse()
-
-        #~ data = [urllib.quote_plus(i) for i in data]
-
-        return "/" + "/".join(data)
-
     def get_sitemap_data(self):
         """ Alle Daten die für`s Sitemap benötigt werden """
         return self.select(
@@ -340,12 +320,12 @@ class passive_statements(SQL_wrapper):
     #_____________________________________________________________________________
     ## Funktionen für Styles, Templates usw.
 
-    def get_style_list(self):
+    def get_style_list(self, getItems = ("id","name","description")):
         return self.select(
-                select_items    = ["id","name","description"],
-                from_table      = "styles",
-                order           = ("name","ASC"),
-            )
+            select_items    = getItems,
+            from_table      = "styles",
+            order           = ("name","ASC"),
+        )
 
     def get_stylenames(self):
         stylenames = self.select(

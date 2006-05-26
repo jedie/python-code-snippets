@@ -11,8 +11,11 @@ import time, re
 
 init_clock = time.clock()
 
-page_msg_tag = "<lucidTag:page_msg/>"
+page_msg_tag        = "<lucidTag:page_msg/>"
 script_duration_tag = "<lucidTag:script_duration/>"
+# Fängt an mit PyLucid und nicht mit lucid, weil der Tag ansonsten durch
+# RE im PyLucid-Response-Objekt ersetzt wird!
+add_code_tag        = "<PyLucidInternal:addCode/>"
 
 
 
@@ -38,6 +41,15 @@ class Replacer(object):
         line = line.replace(page_msg_tag, page_msg.get())
         return line
 
+    def addCode(self, line, environ):
+        code = environ['PyLucid.addCode']
+        if code==[]:
+            return ""
+        code = "\n".join(code)
+        print line
+        line = line.replace(add_code_tag, code)
+        return line
+
     def __call__(self, environ, start_response):
         result = iter(self.app(environ, start_response))
 
@@ -48,13 +60,27 @@ class Replacer(object):
             if page_msg_tag in line:
                 line = self.replace_page_msg(line, environ)
 
+            if add_code_tag in line:
+                line = self.addCode(line, environ)
+
             yield line
 
         if hasattr(result, 'close'):
             result.close()
 
 
+class AddCode(list):
 
+    def __init__(self, app):
+        list.__init__(self)
+
+        self.tag = add_code_tag
+
+        self.app = app
+
+    def __call__(self, environ, start_response):
+        environ['PyLucid.addCode'] = self
+        return self.app(environ, start_response)
 
 
 

@@ -212,16 +212,17 @@ class pageadmin(PyLucidBaseModule):
         context = {
             # hidden Felder
             "page_id"                   : edit_page_data["page_id"],
+            # URls
+            "url"                       : self.URLs.actionLink("edit_page"),
+            "abort_url"                 : self.URLs["scriptRoot"],
             # Textfelder
-            "url"                       : self.URLs.make_action_link("edit_page"),
-            "abort_url"                 : self.URLs["base"],
             "summary"                   : edit_page_data["summary"],
-            "name"                      : cgi.escape( edit_page_data["name"] ),
+            "name"                      : cgi.escape(edit_page_data["name"]),
             "shortcut"                  : edit_page_data["shortcut"],
-            "title"                     : cgi.escape( edit_page_data["title"] ),
+            "title"                     : cgi.escape(edit_page_data["title"]),
             "keywords"                  : edit_page_data["keywords"],
             "description"               : edit_page_data["description"],
-            "content"                   : cgi.escape( edit_page_data["content"] ),
+            "content"                   : cgi.escape(edit_page_data["content"]),
             # Checkboxen
             "showlinks"                 : showlinks,
             "permitViewPublic"          : permitViewPublic,
@@ -245,8 +246,9 @@ class pageadmin(PyLucidBaseModule):
         # CGI-Daten holen und leere Form-Felder "einfügen"
         edit_page_data = self._set_default(self.request.form )
 
-        # CGI daten sind immer vom type str, die parent ID muß allerdings eine Zahl sein.
-        # Ansonsten wird in MyOptionMaker.build_html_option() kein 'selected'-Eintrag gesetzt :(
+        # CGI daten sind immer vom type str, die parent ID muß allerdings eine
+        # Zahl sein. Ansonsten wird in MyOptionMaker.build_html_option() kein
+        # 'selected'-Eintrag gesetzt :(
         edit_page_data["parent"] = int(edit_page_data["parent"])
 
         # Preview der Seite erstellen
@@ -488,7 +490,7 @@ class pageadmin(PyLucidBaseModule):
                 page_data[k] = int(v)
 
         # Daten ergänzen
-        page_data["lastupdateby"]   = self.session["user_id"]
+        page_data["lastupdateby"] = self.session["user_id"]
 
         # Letzte Änderungszeit
         page_data["lastupdatetime"] = \

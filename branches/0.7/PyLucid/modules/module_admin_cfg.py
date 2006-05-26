@@ -50,40 +50,30 @@ module_manager_data = {
         "must_admin"        : True,
         "menu_section"      : "misc",
         "menu_description"  : "first time install (deletes existing tables!)",
-        "CGI_dependent_actions": {
-            "first_time_install_confirmed": {
-                "CGI_laws"      : {"confirm": "yes"},
-            },
-        },
     },
 
     "install" : {
         "must_login"    : True,
         "must_admin"    : True,
-        "get_CGI_data"  : {"package": str, "module_name": str},
     },
 
     "deinstall" : {
         "must_login"    : True,
         "must_admin"    : True,
-        "get_CGI_data"  : {"id": int},
     },
 
     "reinit" : {
         "must_login"    : True,
         "must_admin"    : True,
-        "get_CGI_data"  : {"id": int},
     },
 
     "activate" : {
         "must_login"    : True,
         "must_admin"    : True,
-        "get_CGI_data"  : {"id": int},
     },
 
     "deactivate" : {
         "must_login"    : True,
         "must_admin"    : True,
-        "get_CGI_data"  : {"id": int},
     },
 }

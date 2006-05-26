@@ -39,12 +39,12 @@ class search(PyLucidBaseModule):
     def lucidTag(self, search_string=""):
         search_string = cgi.escape(search_string).replace('"',"'")
         context = {
-            "url"               : self.URLs.make_action_link("do_search"),
+            "url"               : self.URLs.actionLink("do_search"),
             "old_search_string" : search_string
         }
         self.templates.write("search_input_form", context)
 
-    def do_search(self, search_string=""):
+    def do_search(self):
         start_time = time.time()
         self.response.write(
             "<h2>search v%s</h2>" % __version__
@@ -52,10 +52,17 @@ class search(PyLucidBaseModule):
 
         self.print_last_search_words()
 
+        search_string = self.request.form.get("search_string","")
+
+        #~ self.debug()
+
         if search_string == "":
-            self.page_msg("No search string found.")
-            self.lucidTag()
-            return
+            # Evtl. in den GET durch den Link von einer alten Suche:
+            search_string = self.request.args.get("search_string","")
+            if search_string == "":
+                self.page_msg("No search string found.")
+                self.lucidTag()
+                return
 
         search_words = self.filter_search_string(search_string)
         if not search_words:
@@ -108,7 +115,7 @@ class search(PyLucidBaseModule):
             count = message.split(":")[-1]
             search_words = message.split("]")[0][1:]
 
-            url = '%s&search_string=%s' % (
+            url = '%s?search_string=%s' % (
                 self.URLs.make_command_link("search", "do_search"),
                 urllib.quote_plus(search_words)
             )
@@ -210,8 +217,8 @@ class search(PyLucidBaseModule):
         self.response.write("<ol>\n")
         for hit in result:
             self.response.write("<li>\n")
-            self.response.write('<p><a href="%s%s"><strong>%s</strong>\n' % (
-                    self.URLs["link"], self.db.get_page_link_by_id(hit["id"]),
+            self.response.write('<p><a href="%s"><strong>%s</strong>\n' % (
+                    self.db.get_page_link_by_id(hit["id"]),
                     cgi.escape(hit["name"])
                 )
             )

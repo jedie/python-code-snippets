@@ -53,11 +53,10 @@ class back_links(PyLucidBaseModule):
         super(back_links, self).__init__(*args, **kwargs)
 
         self.indexlink = '<a href="%s">Index</a>' % (
-            self.URLs["link"]
+            self.URLs.pageLink("/")
         )
 
-        self.backlink  = '<a href="%s' % self.URLs["link"]
-        self.backlink += '%(url)s">%(title)s</a>'
+        self.backlink  = '<a href="%(url)s">%(title)s</a>'
 
         self.current_page_id  = self.request.session["page_id"]
 
@@ -107,8 +106,9 @@ class back_links(PyLucidBaseModule):
 
         oldurl = ""
         for link_data in data:
-            url = oldurl + "/" + urllib.quote_plus( link_data["name"] )
+            url = oldurl + "/" + urllib.quote_plus(link_data["name"])
             oldurl = url
+            url = self.URLs.pageLink(url)
 
             title = link_data["title"]
             if (title == None) or (title == ""):

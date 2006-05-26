@@ -64,7 +64,7 @@ class tests(ObjectApp_Base):
 
     #_________________________________________________________________________
 
-    def table_info(self, sub_action=None, item=None):
+    def table_info(self):
         "DB Table info"
         self._write_info()
 
@@ -76,30 +76,36 @@ class tests(ObjectApp_Base):
         self.response.write("<ul>")
         tableNameList = self._db.get_tables()
         for tableName in tableNameList:
+            url = self._URLs.installSubAction(tableName)
             line = (
-                '<li><a href="%(url)s/columns/%(name)s">%(name)s</a></li>'
+                '<li><a href="%(url)s">%(name)s</a></li>'
             ) % {
-                "url": self._URLs["current_action"],
+                "url": url,
                 "name": tableName
             }
             self.response.write(line)
 
         self.response.write("</ul>")
 
-        if sub_action == "columns":
-            if item not in tableNameList:
-                self.response.write("Error! '%s' not exists!" % item)
-                return
+        try:
+            item = self._URLs["actionArgs"][0]
+        except IndexError:
+            # Keine Tabelle wurde ausgewählt
+            return
 
-            #~ self._execute_verbose("SHOW FULL TABLES;")
-            #~ self._execute_verbose("SHOW TABLE STATUS FROM %s;" % item)
-            self._execute_verbose("CHECK TABLE %s;" % item)
-            self._execute_verbose("ANALYZE TABLE %s;" % item)
-            self._execute_verbose("SHOW FULL COLUMNS FROM %s;" % item)
-            self._execute_verbose("SHOW INDEX FROM %s;" % item)
+        if item not in tableNameList:
+            self.response.write("Error! '%s' not exists!" % item)
+            return
 
-            #~ SQLcommand = "DESCRIBE %s" % item
-            #~ self._execute_verbose(SQLcommand)
+        #~ self._execute_verbose("SHOW FULL TABLES;")
+        #~ self._execute_verbose("SHOW TABLE STATUS FROM %s;" % item)
+        self._execute_verbose("CHECK TABLE %s;" % item)
+        self._execute_verbose("ANALYZE TABLE %s;" % item)
+        self._execute_verbose("SHOW FULL COLUMNS FROM %s;" % item)
+        self._execute_verbose("SHOW INDEX FROM %s;" % item)
+
+        #~ SQLcommand = "DESCRIBE %s" % item
+        #~ self._execute_verbose(SQLcommand)
 
 
     def module_admin_info(self, module_id=None):

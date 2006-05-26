@@ -30,7 +30,29 @@ class active_statements(passive_statements):
     #~ def __init__(self, *args, **kwargs):
         #~ super(active_statements, self).__init__(*args, **kwargs)
 
-    #_____________________________________________________________________________
+    def get_page_link_by_id(self, page_id):
+        """ Generiert den absolut-Link zur Seite """
+        data = []
+
+        while page_id != 0:
+            result = self.select(
+                    select_items    = ["shortcut","parent"],
+                    from_table      = "pages",
+                    where           = ("id",page_id)
+                )[0]
+            page_id  = result["parent"]
+            data.append(result["shortcut"])
+
+        # Liste umdrehen
+        data.reverse()
+
+        #~ data = [urllib.quote_plus(i) for i in data]
+
+        link = "/".join(data)
+        link = self.URLs.pageLink(link)
+        return link
+
+    #_________________________________________________________________________
     ## Funktionen für das ändern der Seiten
 
     def delete_page(self, page_id_to_del):
@@ -57,10 +79,13 @@ class active_statements(passive_statements):
 
         return uniqueShortcut
 
-    #_____________________________________________________________________________
+    #_________________________________________________________________________
     ## Funktionen für das ändern des Looks (Styles, Templates usw.)
 
     def update_style(self, style_id, style_data):
+        lastupdatetime = self.tools.convert_time_to_sql(time.time())
+        style_data["lastupdatetime"] = lastupdatetime
+        style_data["lastupdateby"] = self.session['user_id']
         self.update(
             table   = "styles",
             data    = style_data,
@@ -139,7 +164,7 @@ class active_statements(passive_statements):
             limit   = 1
         )
 
-    #_____________________________________________________________________________
+    #_________________________________________________________________________
     ## InterneSeiten
 
     def update_internal_page(self, internal_page_name, page_data):
@@ -242,7 +267,7 @@ class active_statements(passive_statements):
         page_names = [i["name"] for i in page_names]
         return page_names
 
-    #_____________________________________________________________________________
+    #_________________________________________________________________________
     ## Userverwaltung
 
     def add_md5_User(self, name, realname, email, pass1, pass2, admin):
@@ -276,7 +301,7 @@ class active_statements(passive_statements):
             limit   = 1
         )
 
-    #_____________________________________________________________________________
+    #_________________________________________________________________________
     ## Module / Plugins
 
     def activate_module(self, id):
@@ -295,40 +320,41 @@ class active_statements(passive_statements):
             limit   = 1
         )
 
-    def install_plugin(self, module_data):
+    def install_plugin(self, module_data, simulation):
         """
         Installiert ein neues Plugin/Modul.
         Wichtig: Es wird extra jeder Wert herraus gepickt, weil in module_data
             mehr Keys sind, als in diese Tabelle gehören!!!
         """
-        if module_data.has_key("essential_buildin") and module_data["essential_buildin"] == True:
+        if module_data.has_key("essential_buildin") and \
+                                    module_data["essential_buildin"] == True:
             active = -1
         else:
             active = 0
 
-        self.insert(
-            table = "plugins",
-            data  = {
-                "package_name"              : module_data["package_name"],
-                "module_name"               : module_data["module_name"],
-                "version"                   : module_data["version"],
-                "author"                    : module_data["author"],
-                "url"                       : module_data["url"],
-                "description"               : module_data["description"],
-                "long_description"          : module_data["long_description"],
-                "active"                    : active,
-                "debug"                     : module_data["module_manager_debug"],
-                "SQL_deinstall_commands"    : module_data["SQL_deinstall_commands"],
-            },
-        )
+        data  = {
+            "package_name"              : module_data["package_name"],
+            "module_name"               : module_data["module_name"],
+            "version"                   : module_data["version"],
+            "author"                    : module_data["author"],
+            "url"                       : module_data["url"],
+            "description"               : module_data["description"],
+            "long_description"          : module_data["long_description"],
+            "active"                    : active,
+            "debug"                     : module_data["module_manager_debug"],
+            "SQL_deinstall_commands"    : module_data["SQL_deinstall_commands"],
+        }
+
+        if simulation:
+            return
+
+        self.insert("plugins", data)
         return self.cursor.lastrowid
 
-    def register_plugin_method(self, plugin_id, method_name, method_cfg, parent_method_id=None):
+    def register_plugin_method(self, plugin_id, method_name, method_cfg, \
+                                                                simulation):
 
         where= [("plugin_id", plugin_id), ("method_name", method_name)]
-
-        if parent_method_id != None:
-            where.append(("parent_method_id", parent_method_id))
 
         if self.select(["id"], "plugindata", where):
             raise IntegrityError(
@@ -350,8 +376,8 @@ class active_statements(passive_statements):
             "method_name"   : method_name,
         })
 
-        if parent_method_id != None:
-            method_cfg["parent_method_id"] = parent_method_id
+        if simulation:
+            return
 
         self.insert(
             table = "plugindata",

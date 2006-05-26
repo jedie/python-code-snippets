@@ -26,7 +26,6 @@ module_manager_data = {
     "download" : {
         "must_login"    : False,
         "must_admin"    : False,
-        "get_CGI_data"  : {"file": str},
         "direct_out"    : True,
     },
 }

@@ -5,7 +5,7 @@
 Information und Tests
 """
 
-import cgi
+import cgi, time
 
 from PyLucid.install.ObjectApp_Base import ObjectApp_Base
 
@@ -25,10 +25,10 @@ class update(ObjectApp_Base):
 
         # shortcut Spalte hinzufügen
         SQLcommand = (
-            "ALTER TABLE $$pages "
-            "ADD shortcut "
-            "VARCHAR(50) NOT NULL "
-            "AFTER name"
+            "ALTER TABLE $$pages"
+            " ADD shortcut"
+            " VARCHAR(50) NOT NULL"
+            " AFTER name;"
         )
         self._execute("Add 'shortcut' to pages table", SQLcommand)
 
@@ -41,12 +41,14 @@ class update(ObjectApp_Base):
                 SQLcommand
             )
 
+        self._updateStyleTable()
+
         # plugindata Aufräumen
         SQLcommand = (
-            "ALTER TABLE $$plugindata "
-            "DROP parent_method_id, "
-            "DROP CGI_laws, "
-            "DROP get_CGI_data; "
+            "ALTER TABLE $$plugindata"
+            " DROP parent_method_id,"
+            " DROP CGI_laws,"
+            " DROP get_CGI_data;"
         )
         self._execute(
             "Remove obsolete column in table plugindata",
@@ -75,6 +77,61 @@ class update(ObjectApp_Base):
         else:
             self.response.write("OK")
         self.response.write("</pre>\n")
+
+        self._db.commit()
+
+    def _updateStyleTable(self):
+        "Stylesheet-Tabelle mit Datumsfeldern versehen (PyLucid v0.6.x -> 0.7)"
+        SQLcommand = (
+            "ALTER TABLE $$styles"
+            " ADD datetime DATETIME NOT NULL AFTER id,"
+            " ADD lastupdatetime DATETIME NOT NULL AFTER datetime,"
+            " ADD lastupdateby INT(11) NOT NULL AFTER lastupdatetime;"
+        )
+        self._execute("Add date-fields to stylesheets table", SQLcommand)
+
+        defaultTime = self._tools.convert_time_to_sql(time.time())
+
+        self.response.write("<h4>Update timestamps:</h4>")
+        self.response.write("<pre>")
+        styleList = self._db.get_style_list(["id","name"])
+        for style in styleList:
+            styleId = style["id"]
+            styleName = style["name"]
+            self.response.write(
+                "update timestamp for '<strong>%s</strong>' ID:%s..." % (
+                    styleName, styleId
+                )
+            )
+            data = {
+                "datetime": defaultTime,
+                "lastupdatetime": defaultTime,
+            }
+            try:
+                self._db.update_style(styleId, data)
+            except Exception, e:
+                self.response.write("Error: %s\n" % e)
+            else:
+                self.response.write("OK\n")
+
+        self.response.write("</pre>")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
