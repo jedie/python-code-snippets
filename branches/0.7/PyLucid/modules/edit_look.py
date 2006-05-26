@@ -18,9 +18,10 @@ __history__="""
 v0.3
     - Anpassung an PyLucid v0.7
 v0.2
-    - Bug 1308063: Umstellung von <button> auf <input>, weil's der IE nicht kann
-        s. http://www.python-forum.de/viewtopic.php?t=4180
-    - NEU: Styles und Template könnne nur dann gelöscht werden, wenn keine Seite diese noch benutzten
+    - Bug 1308063: Umstellung von <button> auf <input>, weil's der IE nicht
+        kann s. http://www.python-forum.de/viewtopic.php?t=4180
+    - NEU: Styles und Template könnne nur dann gelöscht werden, wenn keine
+        Seite diese noch benutzten
 v0.1.1
     - edit_internal_page_form: markups sind nun IDs aus der Tabelle markups
 v0.1.0
@@ -28,7 +29,8 @@ v0.1.0
 v0.0.4
     - Bug: Internal-Page Edit geht nun wieder
 v0.0.3
-    - Bug: Edit Template: http://sourceforge.net/tracker/index.php?func=detail&aid=1273348&group_id=146328&atid=764837
+    - Bug: Edit Template:
+        http://sourceforge.net/tracker/index.php?func=detail&aid=1273348&group_id=146328&atid=764837
 v0.0.2
     - NEU: Clonen von Stylesheets und Templates nun möglich
     - NEU: Löschen von Stylesheets und Templates geht nun
@@ -237,7 +239,7 @@ class edit_look(PyLucidBaseModule):
         clone_select = self.tools.html_option_maker().build_from_list(nameList)
 
         context = {
-            "url": self.URLs["current_action"],
+            "url": self.URLs.currentAction(),
             "nameList": table_data,
         }
         internalPageName = "edit_look_select_%s" % type
@@ -267,7 +269,7 @@ class edit_look(PyLucidBaseModule):
                         printed_head=True
                     select_table += "<tr>\n"
                     select_table += '  <form name="internal_page" method="post" action="%s">\n' % \
-                                                        self.URLs.make_action_link("edit_internal_page")
+                                    self.URLs.actionLink("edit_internal_page")
                     select_table += '  <input name="internal_page_name" type="hidden" value="%s" />\n' % page_name
                     select_table += '  <td><input type="submit" value="edit" name="edit" /></td>\n'
 
@@ -289,7 +291,7 @@ class edit_look(PyLucidBaseModule):
             for page_name, page in page_dict.iteritems():
                 select_table += "<tr>\n"
                 select_table += '  <form name="internal_page" method="post" action="%s">\n' % \
-                                                        self.URLs.make_action_link("edit_internal_page")
+                                                        self.URLs.actionLink("edit_internal_page")
                 select_table += '  <input name="internal_page_name" type="hidden" value="%s" />\n' % page_name
                 select_table += '  <td><input type="submit" value="edit" name="edit" /></td>\n'
                 select_table += '  <td class="name">%s</td>\n' % page["name"]
@@ -333,7 +335,7 @@ class edit_look(PyLucidBaseModule):
 
         context = {
             "name"                      : internal_page_name,
-            "url"                       : self.URLs.make_action_link("save_internal_page"),
+            "url"                       : self.URLs.actionLink("save_internal_page"),
             "content"                   : cgi.escape( edit_data["content"] ),
             "description"               : cgi.escape( edit_data["description"] ),
             "template_engine_option"    : template_engine_option,

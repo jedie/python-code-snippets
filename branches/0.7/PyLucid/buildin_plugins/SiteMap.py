@@ -44,7 +44,7 @@ class SiteMap(PyLucidBaseModule):
         #~ return str( self.parent_l    ist )
 
         self.link  = '<a href="'
-        self.link += self.URLs["link"]
+        self.link += self.URLs["base"]
         self.link += '%(link)s">%(name)s</a>'
 
         self.response.write('<div id="SiteMap">\n')

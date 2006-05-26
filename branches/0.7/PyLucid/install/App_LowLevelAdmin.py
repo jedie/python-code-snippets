@@ -62,8 +62,12 @@ class LowLevelAdmin(ObjectApp_Base):
         #~ self._write_info()
         self._write_backlink()
 
+        if self._URLs["actionArgs"] != []:
+            sub_action = self._URLs["actionArgs"][0]
+            info = self._URLs["actionArgs"][1:]
+
         self.response.write("sub_action: %s\n" % sub_action)
-        self.response.write("sinfo: %s\n" % str(info))
+        self.response.write("info: %s\n" % str(info))
 
         #~ sub_action = ""
 

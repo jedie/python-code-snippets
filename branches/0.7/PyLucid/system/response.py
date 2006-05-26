@@ -93,9 +93,16 @@ class HttpResponse(HttpResponse):
 
     def get(self):
         "zurückliefern der bisher geschriebene Daten"
-        content = "".join(self.response)
+        content = self.response
+        # FIXME: unicode-Fehler sollten irgendwie angezeigt werden!
+        result = ""
+        for line in content:
+            if type(line)!=unicode:
+                line = unicode(line, errors="replace")
+            result += line
+
         self.response = []
-        return content
+        return result
 
 
 
@@ -125,12 +132,12 @@ class staticTags(dict):
 
         self["powered_by"]  = __info__
         if self.session["user"] != False:
-            link = self.URLs.make_command_link("auth", "logout")
+            link = self.URLs.commandLink("auth", "logout")
             self["script_login"] = '<a href="%s">logout [%s]</a>' % (
                 link, self.session["user"]
             )
         else:
-            link = self.URLs.make_command_link("auth", "login")
+            link = self.URLs.commandLink("auth", "login")
             self["script_login"] = '<a href="%s">login</a>' % (link)
 
         if self.request.runlevel == "command":

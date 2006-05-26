@@ -18,13 +18,7 @@ class install(ObjectApp_Base):
         "1. init Database tables"
         self._write_info()
 
-        formAdd = (
-            '\t<label for="simulation">Simulation only:</label>\n'
-            '\t<input id="simulation" name="simulation"'
-            ' type="checkbox" value="yes" checked="checked" />\n'
-            '\t<br />\n'
-        )
-        self._confirm("Init Database tables?", formAdd)
+        self._confirm("Init Database tables?", simulationCheckbox=True)
 
         simulation = self.request.form.get("simulation",False)
 
@@ -47,12 +41,14 @@ class install(ObjectApp_Base):
         """
         self._write_info()
 
-        #~ if not self._confirm("Init basic Modules?"):
-            #~ # Abfrage wurde nicht bestätigt
-            #~ return
+        self._confirm("Init all basic modules?", simulationCheckbox=True)
+
+        simulation = self.request.form.get("simulation",False)
+
+        self._page_msg(simulation)
 
         module_admin = self._get_module_admin()
-        module_admin.first_time_install()
+        module_admin.first_time_install(simulation)
 
     #~ #_________________________________________________________________________
 

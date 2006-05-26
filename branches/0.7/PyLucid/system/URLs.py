@@ -19,13 +19,21 @@ import os, posixpath, urllib
 
 
 
+
 class URLs(dict):
     """
-    Passt die verwendeten Pfade an.
-    Ist ausgelagert, weil hier und auch gleichzeitig von install_PyLucid verwendet wird.
+    Stellt Pfad-Informationen zu verfügung. Bietet Methoden zum zusammenbauen
+    von URLs an.
+    -verwaltet als Dict nur statische Pfade, die sich innerhalb eines
+        Requests nicht verändern
+    -Pfad-Methoden für dynamische Pfade!
     """
     def __init__(self, request):
         dict.__init__(self)
+        self.lock = False
+
+        self["command"] = None # Wird vom Module-Manager festgelegt
+        self["action"] = None # Wird vom Module-Manager festgelegt
 
         # shorthands
         self.request        = request
@@ -33,14 +41,33 @@ class URLs(dict):
         self.page_msg       = request.page_msg
         self.preferences    = request.preferences
 
-        self.setup_path_info()
+        self._setup_pathInfo()
+
+        # Alle "eigenen" URLs generieren
         self.setup_URLs()
 
+        self.lock = True
 
-    def setup_path_info(self):
-        pathInfo = self.request.environ.get('PATH_INFO', '/')
-        #~ self.response.write("OK: %s" % pathInfo)
-        #~ return self.response
+    def _setup_pathInfo(self):
+        """
+        Liefert eine bearbeitete Version von environ['PATH_INFO'] zurück:
+            - Ohne sub-Action-Parameter
+            - Keine URL-GET-Parameter
+            - als unicode
+        """
+
+        if "PATH_INFO" in self.environ:
+            pathInfo = self.environ["PATH_INFO"]
+        else:
+            pathInfo = ""
+            self.environ["PATH_INFO"] = ""
+
+        if "?" in pathInfo:
+            pathInfo, self["queryString"] = pathInfo.split("?",1)
+        else:
+            self["queryString"] = None
+
+        pathInfo = pathInfo.strip("/")
 
         pathInfo = urllib.unquote(pathInfo)
         try:
@@ -48,9 +75,20 @@ class URLs(dict):
         except:
             pass
 
-        pathInfo = pathInfo.strip("/")
-        pathInfo = pathInfo + "/"
-        self.request.environ["PATH_INFO"] = pathInfo
+        #~ self.environ['PATH_INFO'] = pathInfo
+        self["pathInfo"] = pathInfo
+
+    def addSlash(self, path):
+        """
+        >>> addSlash("/noSlash")
+        '/noSlash/'
+        >>> addSlash("/hasSlash/")
+        '/hasSlash/'
+        """
+        if path[-1]=="/":
+            return path
+        else:
+            return path+"/"
 
     def setup_URLs(self):
         """
@@ -59,55 +97,68 @@ class URLs(dict):
         Als Regeln gilt:
             - Alle Pfade ohne Slash am Ende
         """
-
-        self["command"] = None # Wird vom Module-Manager festgelegt
-        self["action"] = None # Wird vom Module-Manager festgelegt
-
-        #~ self["real_self_url"] = self.environ["APPLICATION_REQUEST"]
-
-        self["real_self_url"] = "%s://%s%s" % (
+        self["hostname"] = "%s://%s" % (
             self.environ.get('wsgi.url_scheme', "http"),
             self.environ['HTTP_HOST'],
-            self.environ['SCRIPT_ROOT'].rstrip("/"),
         )
 
-        preferences = self.preferences
-        if preferences["poormans_modrewrite"] == True:
-        #~ if self.preferences["poormans_modrewrite"] == True:
-            self.preferences["page_ident"] = ""
+        self["scriptRoot"] = self.environ.get("SCRIPT_ROOT", "/")
 
-        self["link"] = self["base"] = self.environ.get('SCRIPT_NAME')
+    def setup_runlevel(self):
+        """
+        Bei _command oder _install wird path_info aufgeteilt.
 
-        #~ self["poormans_url"] = self["real_self_url"]
+        Statt /_install/tests/table_info/columns/lucid_pages
+        ----> self["pathInfo"] = /_install/tests/table_info
+        ----> self["actionArgs"] = ["columns", "lucid_pages"]
+        """
+        self.lock = False
+        self["commandBase"] = posixpath.join(
+            self["scriptRoot"], self.preferences["commandURLprefix"]
+        )
 
-        pathInfo = self.environ["PATH_INFO"].split("&")[0]
-        pathInfo = pathInfo.rstrip("/")
+        if self.request.runlevel == "normal":
+            self.lock = True
+            return
 
-        if self.request.runlevel != "normal":
-            # Bei _command oder _install soll current_action nur aus
-            # der Basis bestehen.
-            # Statt /_install/tests/table_info/columns/lucid_pages
-            # ----> /_install/tests/table_info
-            # Also ohne "sub-Action-Parameter"
-            pathInfo = pathInfo.split("/")
-            pathInfo = pathInfo[:3]
-            pathInfo = "/".join(pathInfo)
+        path = self["pathInfo"].split("/")
 
-        if self["base"] == "":
-            self["current_action"] = "/%s" % pathInfo
-        else:
-            self["current_action"] = "/".join(
-                (self["base"], pathInfo)
+        if self.request.runlevel == "install":
+            self["commandBase"] = posixpath.join(
+                self["scriptRoot"], path[0]
             )
+            try:
+                self["command"] = path[1]
+            except IndexError:
+                self["command"] = None
+            else:
+                try:
+                    self["action"] = path[2]
+                except IndexError:
+                    self["action"] = None
 
-        # Absolut-Link als Basis für _command-Links
-        self["base_command"] = posixpath.join(
-            "/", self["base"], self.preferences["commandURLprefix"]
-        )
+        self["pathInfo"] = "/".join(path[:3])
+        self["actionArgs"] = path[3:]
+
+        self.lock = True
+
+
+    def handle404errors(self, correctShortcuts, wrongShortcuts):
+        """
+        Wurde beim Aufruf eine teilweise falsche URL benutzt, werden zumindest
+        die richtigen Teile verwendet.
+        (wird von detect_page aufgerufen)
+        """
+        self.lock = False
+        self["pathInfo"] = "/".join(correctShortcuts)
+        self.lock = True
+        return
 
 
     def items(self):
-        """ Überschreibt das items() von dict, um eine Reihenfolge zu erwirken """
+        """
+        Überschreibt das items() von dict, um eine Reihenfolge zu erwirken
+        """
         temp = []
         for k,v in self.iteritems():
             try:
@@ -125,6 +176,26 @@ class URLs(dict):
         return result
 
     #_________________________________________________________________________
+
+    def __setitem__(self, item, value):
+        """ Nur für Debuging!!! """
+        if self.lock == False:
+            dict.__setitem__(self, item, value)
+            return
+
+        msg = ""
+        try:
+            import inspect
+            # Angaben zur Datei, Zeilennummer, aus dem die Nachricht stammt
+            filename = inspect.stack()[1][1].split("/")[-1][-20:]
+            msg += "%s, line %3s" % (filename, inspect.stack()[1][2])
+        except Exception, e:
+            msg += "<small>(inspect Error: %s)</small> " % e
+
+        raise SystemError, (
+            "URLs.__setitem__ forbidden!"
+            " --- from '%s' --- item:'%s', value:'%s'"
+        ) % (msg, item, value)
 
     #~ def __setitem__(self, item, value):
         #~ """ Nur für Debuging!!! """
@@ -145,44 +216,111 @@ class URLs(dict):
 
     #_________________________________________________________________________
 
-    def make_command_link(self, modulename, methodname):
-        command_link = posixpath.join(
-            self["base_command"], modulename, methodname
-        )
-        return command_link
+    def pageLink(self, url):
+        url = url.lstrip("/")
+        link = posixpath.join(self["scriptRoot"], url)
+        link = self.addSlash(link)
+        return link
 
-        #~ return "/".join(
-            #~ (
-                #~ self["base"],
-                #~ self.preferences["commandURLprefix"],
-                #~ modulename,
-                #~ methodname
+    def commandLink(self, modulename, methodname=""):
+        #~ if self.request.runlevel == "install":
+            #~ link = posixpath.join(
+                #~ self["scriptRoot"], self["commandBase"],
+                #~ modulename, methodname
             #~ )
-        #~ ) + "/"
+        #~ else:
+            #~ link = posixpath.join(
+                #~ self["commandBase"], modulename, methodname
+            #~ )
 
-    def make_action_link(self, methodname):
-        return "%s%s/" % (
-            self["command"], methodname
+        link = posixpath.join(
+            self["commandBase"], modulename, methodname
         )
 
-    def make_current_action_link(self, info):
-        return "%s/%s/" % (
-            self['current_action'], info
+        link = self.addSlash(link)
+        return link
+
+    def actionLink(self, methodname):
+        if self.request.runlevel == "command":
+            link = posixpath.join(
+                self["scriptRoot"], self.preferences["commandURLprefix"],
+                self["command"], methodname
+            )
+        elif self.request.runlevel == "install":
+            if self["command"] == None:
+                # Wir sind im root also /_install/ ohne Kommando
+                self.actionLinkRuntimeError("actionLink()")
+            link = posixpath.join(
+                self["scriptRoot"], self["commandBase"], self["command"],
+                methodname
+            )
+        else:
+            self.actionLinkRuntimeError("actionLink() wrong runlevel!")
+
+        link = self.addSlash(link)
+        return link
+
+    def currentAction(self):
+        if self.request.runlevel == "command":
+            link = posixpath.join(
+                self["scriptRoot"], self.preferences["commandURLprefix"],
+                self["command"], self['action']
+            )
+        elif self.request.runlevel == "install":
+            if self["command"] == None:
+                # Wir sind im root also /_install/ ohne Kommando
+                self.actionLinkRuntimeError("currentAction()")
+            link = posixpath.join(
+                self["scriptRoot"], self["pathInfo"]
+            )
+        else:
+            self.actionLinkRuntimeError("currentAction() wrong runlevel!")
+
+        link = self.addSlash(link)
+        return link
+
+    def actionLinkRuntimeError(self, e):
+        msg = (
+            "Action link is only available if there is a action"
+            ", but there is nothing! "
+            "command: '%s', action: '%s' (Error: %s)"
+        ) % (self["command"], self['action'], e)
+        raise RuntimeError, msg
+
+    #_________________________________________________________________________
+    # install Links
+
+    def installSubAction(self, action):
+        url = posixpath.join(
+            self["scriptRoot"], self["pathInfo"], action
         )
+        return url
 
-    #~ def get_commandURLPrefix(self):
-        #~ base = self["base"]
-        #~ prefix = self.request.staticTags['commandURLprefix']
-
-        #~ commandURLPrefix = posixpath.join("/", base, prefix)
-
-        #~ return commandURLPrefix
+    def installBaseLink(self):
+        print self["scriptRoot"], self["commandBase"]
+        url = posixpath.join(
+            self["scriptRoot"], self["commandBase"]
+        )
+        return url
 
     #_________________________________________________________________________
 
     def debug(self):
-        self.page_msg("path debug:")
-        self.page_msg('RAW environ["PATH_INFO"]:', self.environ["PATH_INFO"])
+
+        #~ self.request.debug()
+
+        try:
+            import inspect
+            # Angaben zur Datei, Zeilennummer, aus dem die Nachricht stammt
+            filename = inspect.stack()[1][1].split("/")[-1][-20:]
+            fileinfo = "%s, line %3s" % (filename, inspect.stack()[1][2])
+        except Exception, e:
+            fileinfo = "(inspect error: '%s')" % e
+
+        self.page_msg("path debug [%s]:" % fileinfo)
+        self.page_msg('request.runlevel:', self.request.runlevel)
+        self.page_msg('environ["PATH_INFO"]:', self.environ["PATH_INFO"])
+        self.page_msg('environ["SCRIPT_ROOT"]:', self.environ["SCRIPT_ROOT"])
         #~ for k,v in self.iteritems():
             #~ self.page_msg(k,v)
         #~ self.page_msg(self)
@@ -197,13 +335,30 @@ class URLs(dict):
         try:
             return dict.__getitem__(self, key)
         except KeyError, e:
+
+            try:
+                import inspect
+                # Angaben zur Datei, Zeilennummer, aus dem die Nachricht stammt
+                frameInfo = inspect.stack()[1]
+                fileinfo = "...%s, line %3s" % (
+                    frameInfo[1][-30:], frameInfo[2]
+                )
+            except Exception, e:
+                fileinfo = "(inspect error: '%s')" % e
             msg = (
-                "Key %s not exists in URLs!"
+                "Key %s not exists in URLs (from %s)!"
                 " --- Here the URLs dict: %s"
             ) % (
-                e, self
+                e, fileinfo, self
             )
             raise KeyError, msg
+
+
+
+
+
+
+
 
 
 

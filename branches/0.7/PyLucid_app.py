@@ -81,18 +81,20 @@ class PyLucidApp(BaseApplication):
         self.request.module_manager = None
         self.request.templates      = None
 
-        # Verwaltung für Einstellungen aus der Datenbank (Objekt aus der Middleware)
+        # Verwaltung für Einstellungen aus der DB (Objekt aus der Middleware)
         self.request.preferences = environ['PyLucid.preferences']
 
         # Speichert Nachrichten die in der Seite angezeigt werden sollen
         self.request.page_msg = environ['PyLucid.page_msg']
 
+        self.response.addCode = environ["PyLucid.addCode"]
+
         # Passt die verwendeten Pfade an.
         self.request.URLs = URLs.URLs(self.request)
 
         # Tools
-        tools.request       = self.request  # Request Objekt an tools übergeben
-        tools.response      = self.response # Response Objekt an tools übergeben
+        tools.request       = self.request  # Objekt übergeben
+        tools.response      = self.response # Objekt übergeben
         self.request.tools  = tools         # Tools an Request Objekt anhängen
 
         self.response.echo = tools.echo() # Echo Methode an response anhängen
@@ -110,6 +112,7 @@ class PyLucidApp(BaseApplication):
 
         # FIXME - Auch in der DB-Klasse wird tools benötigt
         self.request.db.tools = self.request.tools
+        self.request.db.URLs = self.request.URLs
 
         # Shorthands
         self.page_msg       = self.request.page_msg
@@ -125,7 +128,8 @@ class PyLucidApp(BaseApplication):
 
     def setup_runlevel(self):
 
-        pathInfo = self.request.environ["PATH_INFO"]
+        pathInfo = self.URLs["pathInfo"]
+        #~ self.page_msg(">>>", pathInfo)
 
         if pathInfo.startswith(self.preferences["installURLprefix"]):
             self.request.runlevel = "install"
@@ -133,6 +137,9 @@ class PyLucidApp(BaseApplication):
             self.request.runlevel = "command"
         else:
             self.request.runlevel = "normal"
+
+        # Pfade anhand des Runlevel anpassen.
+        self.URLs.setup_runlevel()
 
     def init2(self):
         """
@@ -153,7 +160,9 @@ class PyLucidApp(BaseApplication):
             self.request, self.response, page_msg_debug=False
         )
 
-        self.request.staticTags = response.staticTags(self.request, self.response)
+        self.request.staticTags = response.staticTags(
+            self.request, self.response
+        )
 
         self.request.render = page_parser.render(self.request, self.response)
 
@@ -171,7 +180,9 @@ class PyLucidApp(BaseApplication):
         #~ self.verify_page()
 
         # Einheitliche Schnittstelle zu den Templates Engines
-        self.request.templates = template_engines.TemplateEngines(self.request, self.response)
+        self.request.templates = template_engines.TemplateEngines(
+            self.request, self.response
+        )
 
         #Shorthands
         self.render         = self.request.render
@@ -191,8 +202,6 @@ class PyLucidApp(BaseApplication):
 
 
     def process_request(self):
-
-        #~ self.URLs.debug()
 
         self.environ["request_start"] = time.time()
 
@@ -300,8 +309,9 @@ from PyLucid.middlewares.page_msg import page_msg
 app = page_msg(app)
 
 # Middleware, die die Tags "script_duration" und "page_msg" ersetzt
-from PyLucid.middlewares.replacer import Replacer
-app = Replacer(app)
+from PyLucid.middlewares import replacer
+app = replacer.AddCode(app) # Middleware, für addCode
+app = replacer.Replacer(app)
 
 
 

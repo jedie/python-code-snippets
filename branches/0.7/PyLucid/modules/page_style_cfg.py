@@ -21,10 +21,8 @@ module_manager_data = {
         "must_login"    : False,
         "must_admin"    : False,
     },
-    "embed" : {
+    "sendStyle" : {
         "must_login"    : False,
         "must_admin"    : False,
-        "get_CGI_data"  : {"page_id": int},
-        #~ "direct_out"    : True,
     },
 }

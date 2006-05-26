@@ -18,28 +18,33 @@ v0.3.1
 v0.3
     - Anpassung an neuen ModuleManager, auslagern der Config.
 v0.2.2
-    - Nutzt die module_manager Einstelung "sys_exit", damit der Dumpdownload richtig beendet wird
-    - In additional_dump_info ist in sys.version ein \n Zeichen, welches nun rausfliegt.
+    - Nutzt die module_manager Einstelung "sys_exit", damit der Dumpdownload
+        richtig beendet wird
+    - In additional_dump_info ist in sys.version ein \n Zeichen, welches nun
+        rausfliegt.
 v0.2.1
     - Anpassung an self.db.print_internal_page()
 v0.2.0
     - HTML-Ausgaben nun über interne Seite
 v0.1.2
     - Umbenennung in MySQLdump, weil's ja nur für MySQL geht...
-    - NEU: Nun kann man auch den Pfad zu mysqldump angeben. Standard ist "." (aktuelles Verzeichnis)
-        damit wird mysqldump im Pfad gesucht. Das klappt nun auch unter Windows
+    - NEU: Nun kann man auch den Pfad zu mysqldump angeben.
+        Standard ist "." (aktuelles Verzeichnis) damit wird mysqldump im Pfad
+        gesucht. Das klappt nun auch unter Windows
 v0.1.1
     - NEU: Man kann nun genau auswählen was von welcher Tabelle man haben will
 v0.1.0
     - Anpassung an Module-Manager
     - Umau an einigen Stellen
 v0.0.4
-    - Es ist nun möglich kein "--compatible=" Parameter zu benutzen (wichtig bei MySQL server <v4.1.0)
+    - Es ist nun möglich kein "--compatible=" Parameter zu benutzen
+        (wichtig bei MySQL server <v4.1.0)
 v0.0.3
     - Module-Manager Angabe "direct_out" hinzugefügt, damit der Download des
       Dumps auch funktioniert.
 v0.0.2
-    - Großer Umbau: Anderes Menü, anderer Aufruf von mysqldump, Möglichkeiten Dump-Parameter anzugeben
+    - Großer Umbau: Anderes Menü, anderer Aufruf von mysqldump, Möglichkeiten
+        Dump-Parameter anzugeben
 v0.0.1
     - Erste Version
 """
@@ -83,7 +88,9 @@ class MySQLdump(PyLucidBaseModule):
                 return response
 
         default_no_data = ["log", "session_data"]
-        default_no_data = [self.preferences["dbTablePrefix"] + i for i in default_no_data]
+        default_no_data = [
+            self.preferences["dbTablePrefix"] + i for i in default_no_data
+        ]
 
         table_data = ""
         for name in self.db.get_tables():

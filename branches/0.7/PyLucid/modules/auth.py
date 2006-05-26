@@ -9,15 +9,18 @@ __version__ = "0.2"
 
 __history__ = """
 v0.2
-    - Security-Fix: Die Zufallszahl zur MD5 Bildung, wird nun in den Sessiondaten in der Datenbank
-        zwischengespeichert und nicht mehr aus den zurück geschickten Formulardaten genommen. Somit
-        wird abgesichert, das die Login-Anfrage von einem gleichen Client kommt.
+    - Security-Fix: Die Zufallszahl zur MD5 Bildung, wird nun in den
+        Sessiondaten in der Datenbank zwischengespeichert und nicht mehr aus
+        den zurück geschickten Formulardaten genommen. Somit wird abgesichert,
+        das die Login-Anfrage von einem gleichen Client kommt.
 v0.1.2
     - Verbesserungen:
         - Für Rückmeldungen wird nun page_msg benutzt
-        - Nach einem Fehlgeschlagenen Login, wird das login Form mit dem alten Usernamen angezeigt
+        - Nach einem Fehlgeschlagenen Login, wird das login Form mit dem alten
+            Usernamen angezeigt
 v0.1.1
-    - logout benötigt auch "direct_out": True, damit der Cookie auch gelöscht wird ;)
+    - logout benötigt auch "direct_out": True, damit der Cookie auch gelöscht
+        wird ;)
 v0.1.0
     - Anpassung an neuen Module-Manager
 v0.0.2
@@ -67,13 +70,12 @@ class auth(PyLucidBaseModule):
         Der User will einloggen.
         Holt das LogIn-Formular aus der DB und stellt es zusammen
         """
-        #~ self.response.write("HAU!")
-        #~ return
+        self.URLs.debug()
 
         import random
         rnd_login = random.randint(10000,99999)
 
-        url = self.URLs.make_command_link("auth", "check_login")
+        url = self.URLs.commandLink("auth", "check_login")
 
         try:
             # Alten Usernamen, nach einem Fehlgeschlagenen Login, wieder anzeigen

@@ -16,7 +16,7 @@ v0.1
 """
 
 
-import urllib
+import urllib, cgi
 
 
 from PyLucid.system.BaseModule import PyLucidBaseModule
@@ -24,7 +24,8 @@ from PyLucid.system.BaseModule import PyLucidBaseModule
 class detect_page(PyLucidBaseModule):
     """
     Legt die page ID der aktuellen Seite fest.
-    Speichert die ID als "page_id"-Key in den Session-Daten, also: request.session["page_id"]
+    Speichert die ID als "page_id"-Key in den Session-Daten,
+    also: request.session["page_id"]
     """
     #~ def __init__(self, *args, **kwargs):
         #~ super(detect_page, self).__init__(*args, **kwargs)
@@ -45,37 +46,10 @@ class detect_page(PyLucidBaseModule):
                 self.set_history_page()
             return
 
-        if self.preferences["poormans_modrewrite"] == True:
-            # Auswerten von os.environ-Eintrag "REQUEST_URI"
-            try:
-                request_uri = self.environ["REQUEST_URI"]
-            except KeyError:
-                raise KeyError(
-                    "Can't use 'poormans_modrewrite':",
-                    "There is no REQUEST_URI in Environment!"
-                )
-
-            # Scheidet das evtl. vorhandene Verzeichnis ab, in dem sich PyLucid
-            # befindet. Denn das gehˆrt nicht zum Seitennamen den der User sehen will.
-            if request_uri.startswith(self.URLs["poormans_url"]):
-                request_uri = request_uri[len(self.URLs["poormans_url"]):]
-
-            #~ self.page_msg("request_uri:", request_uri)
-
-            self.check_page_name(request_uri)
-            return
-
 
         pathInfo = self.environ.get("PATH_INFO","/")
         self.check_page_name(pathInfo)
         return
-
-        #~ pageIdent = self.preferences["page_ident"]
-        #~ if self.request.args.has_key(pageIdent):
-            #~ page_name = self.request.args[pageIdent]
-            #~ self.check_page_name(page_name)
-            #~ return
-
 
         # Es konnte keine Seite in URL-Parametern gefunden werden, also
         # wird die Standart-Seite genommen
@@ -121,28 +95,38 @@ class detect_page(PyLucidBaseModule):
         # bsp/und%2Foder -> ['bsp', 'und%2Foder']
         page_name_split = page_name.split("/")
 
+        correctShortcuts=[]
         page_id = 0
-        for shortcut in page_name_split:
+        for no, shortcut in enumerate(page_name_split):
             try:
                 page_id = self.db.select(
                     select_items    = ["id","parent"],
                     from_table      = "pages",
-                    where           = [("shortcut",shortcut), ("parent",page_id)]
+                    where           = [
+                        ("shortcut",shortcut), ("parent",page_id)
+                    ]
                 )[0]["id"]
             except Exception,e:
-                if self.URLs["real_self_url"] == self.environ["APPLICATION_REQUEST"]:
-                    # Aufruf der eigenen index.py Datei
+                wrongShortcuts = page_name_split[no:]
+                msg = (
+                    "404 Not Found."
+                    " The requested URL '%s' was not found on this server."
+                ) % cgi.escape("/".join(wrongShortcuts))
+                self.page_msg(msg)
+
+                if no == 0:
+                    # Kein Teil der URL ist richtig
                     self.set_default_page()
                     return
                 else:
-                    self.page_msg(
-                        "404 Not Found. The requested URL '%s' was not found on this server." % shortcut
-                    )
-                    #~ self.page_msg( page_name_split )
-                    if page_id == 0:
-                        # Nur wenn nicht ein Teil der URL stimmt, wird auf die Hauptseite gesprunngen
-                        self.set_default_page()
-                        return
+                    # Die ersten Teile der URL sind richtig, also werden diese
+                    # ber√ºcksichtig
+                    # URLs richtig setzten, damit die generierung von Links
+                    # auch die richtige Grundlage haben:
+                    self.URLs.handle404errors(correctShortcuts, wrongShortcuts)
+                    break
+            else:
+                correctShortcuts.append(shortcut)
 
         self.session["page_id"] = int(page_id)
 

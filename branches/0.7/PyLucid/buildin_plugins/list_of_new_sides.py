@@ -59,7 +59,7 @@ class list_of_new_sides(PyLucidBaseModule):
         self.response.write('<ul id="ListOfNewSides">\n')
 
         url_entry  = '<li>%(date)s - <a href="'
-        url_entry += self.URLs["link"]
+        url_entry += self.URLs["base"]
         url_entry += '%(link)s">%(title)s</a></li>\n'
 
         for item in SQLresult:

@@ -14,42 +14,49 @@ v0.3
     - Anpassung an colubrid 1.0
     - Funktion "CGI_dependency Methoden" rausgeschmissen
 v0.2.6
-    - Andere Fehlerbehandlung, wenn noch nicht von v0.5 geupdated wurde bzw. wenn die Plugin-Tabellen
-        noch nicht (in der neuen Form) existieren.
+    - Andere Fehlerbehandlung, wenn noch nicht von v0.5 geupdated wurde bzw.
+        wenn die Plugin-Tabellen noch nicht (in der neuen Form) existieren.
 v0.2.5
     - ModuleManager_error_handling auch bei _get_module()
 v0.2.4
-    - ModuleManager_error_handling wird auch bei _make_class_instance() beachtet. Damit Fehler im
-        Module's __init__ auch als echter Traceback zu sehen ist
+    - ModuleManager_error_handling wird auch bei _make_class_instance()
+        beachtet. Damit Fehler im Module's __init__ auch als echter
+        Traceback zu sehen ist
 v0.2.3
-    - Anderer Aufruf des Module, wenn config.system.ModuleManager_error_handling damit Traceback
+    - Anderer Aufruf des Module, wenn
+        config.system.ModuleManager_error_handling damit Traceback
         Aussagekräftiger ist.
 v0.2.2
-    - Bessere Fehlerausgabe bei einem Fehler in der lucidFunction-Parameterübergabe
+    - Bessere Fehlerausgabe bei einem Fehler in der
+        lucidFunction-Parameterübergabe
 v0.2.1
-    - NEU: ModulManager config "sys_exit": Damit ein Modul auch wirklich einen sys.exit() ausführen kann.
+    - NEU: ModulManager config "sys_exit": Damit ein Modul auch wirklich einen
+        sys.exit() ausführen kann.
 v0.2
-    - NEU: ModulManager config "get_CGI_data": Zur direkten Übergabe von CGI-Daten an die
-        gestartete Methode.
+    - NEU: ModulManager config "get_CGI_data": Zur direkten Übergabe von
+        CGI-Daten an die gestartete Methode.
     - Bessere Fehlerausgabe bei _run_method() und _make_class_instance()
 v0.1.3
-    - Die Regel "must_login" wird nun anhand von self.session.has_key("user") ermittelt
+    - Die Regel "must_login" wird nun anhand von self.session.has_key("user")
+        ermittelt
 v0.1.2
     - Ein paar mehr debug Ausgaben
-    - CGI_dependency Methoden können nun anderen Einstellungen ("direct_out", "apply_markup" usw.) haben,
-        diese werden nun berücksichtigt
+    - CGI_dependency Methoden können nun anderen Einstellungen ("direct_out",
+        "apply_markup" usw.) haben, diese werden nun berücksichtigt
 v0.1.1
-    - Module können nun auch Seiten produzieren, die noch durch einen Parser laufen sollen.
+    - Module können nun auch Seiten produzieren, die noch durch einen Parser
+        laufen sollen.
 v0.1.0
     - Komplett neu Programmiert!
 v0.0.8
-    - Andere Handhabung von Modul-Ausgaben auf stderr. Diese sehen nur eingeloggte User als
-        page_msg.
+    - Andere Handhabung von Modul-Ausgaben auf stderr. Diese sehen nur
+        eingeloggte User als page_msg.
 v0.0.7
-    - NEU: Module können nun auch nur normale print Ausgaben machen, die dann in die
-        Seite "eingeblendet" werden sollen
-    - NEU: "direct_out"-Parameter, wird z.B. für das schreiben des Cookies in user_auth.py
-        verwendet. Dann werden print-Ausgaben nicht zwischengespeichert.
+    - NEU: Module können nun auch nur normale print Ausgaben machen, die dann
+        in die Seite "eingeblendet" werden sollen
+    - NEU: "direct_out"-Parameter, wird z.B. für das schreiben des Cookies in
+        user_auth.py verwendet. Dann werden print-Ausgaben nicht
+        zwischengespeichert.
 v0.0.6
     - Fehler beim import sehen nur Admins
 v0.0.5
@@ -169,24 +176,35 @@ class plugin_data:
         """
         URLs für Module vorbereiten
         """
+        # FIXME
         self.oldCommandURL = self.URLs["command"]
         self.oldActionURL = self.URLs["action"]
 
-        self.URLs["command"] = "/".join((
-            self.URLs["base"],
-            self.preferences["commandURLprefix"],
-            self.module_name
-        )) + "/"
+        self.URLs.lock = False
+        self.URLs["command"] = self.URLs.commandLink(self.module_name)
+        #~ self.URLs["command"] = "/".join((
+            #~ self.URLs["base"],
+            #~ self.preferences["commandURLprefix"],
+            #~ self.module_name
+        #~ )) + "/"
 
         self.URLs["action"] = self.URLs["command"]
+        self.URLs.lock = True
+
+        self.oldRunlevel = self.request.runlevel
+        self.request.runlevel = "command"
 
     def restore_URLs(self):
         """
         Nach dem das Modul ausgeführt wurde,
         werden die alten URLs wiederhergestellt.
         """
+        self.request.runlevel = self.oldRunlevel
+
+        self.URLs.lock = False
         self.URLs["command"] = self.oldCommandURL
         self.URLs["action"] = self.oldActionURL
+        self.URLs.lock = True
 
     def check_rights(self):
         """
@@ -197,16 +215,17 @@ class plugin_data:
         except Exception, e:
             must_login = True
             self.page_msg(
-                "must_login not defined (%s) in Module %s for method %s" % (e, self.module_name, self.method_name)
+                "must_login not defined (%s) in Module %s for method %s" % (
+                    e, self.module_name, self.method_name
+                )
             )
 
         if must_login == True:
             if self.session["user"] == False:
-                #~ raise run_module_error(
-                    #~ "[You must login to use %s for method %s]" % (self.module_name, method)
-                #~ )
                 raise rights_error(
-                    "[You must login to use %s.%s]" % (self.module_name, self.method_name)
+                    "[You must login to use %s.%s]" % (
+                        self.module_name, self.method_name
+                    )
                 )
 
             try:
@@ -214,12 +233,16 @@ class plugin_data:
             except Exception, e:
                 must_admin = True
                 self.page_msg(
-                    "must_admin not defined (%s) in %s for method %s" % (e, self.module_name, method)
+                    "must_admin not defined (%s) in %s for method %s" % (
+                        e, self.module_name, method
+                    )
                 )
 
             if (must_admin == True) and (self.session["isadmin"] == False):
                 raise rights_error(
-                    "You must be an admin to use method %s from module %s!" % (method, self.module_name)
+                    "You must be an admin to use method %s from module %s!" % (
+                        method, self.module_name
+                    )
                 )
 
     def get_menu_data(self):
@@ -234,7 +257,7 @@ class plugin_data:
                 result[item["menu_section"]].append(item)
         return result
 
-    #________________________________________________________________________________________
+    #_________________________________________________________________________
 
     def debug_data(self):
         self.page_msg(" -"*40)
@@ -399,9 +422,10 @@ class module_manager:
             )
 
         if self.plugin_data.plugin_debug():
-            self.page_msg(
-                "Import module mit error handling: %s" % self.preferences["ModuleManager_error_handling"]
-            )
+            msg = (
+                "Import module mit error handling: %s"
+            ) % self.preferences["ModuleManager_error_handling"]
+            self.page_msg(msg)
 
         if self.preferences["ModuleManager_error_handling"] == False:
             import_object = _import()
@@ -417,25 +441,31 @@ class module_manager:
             return getattr(import_object, self.module_name)
         except Exception, e:
             raise run_module_error(
-                "[Can't get class '%s' from module '%s': %s]" % ( self.module_name, self.module_name, e )
+                "[Can't get class '%s' from module '%s': %s]" % (
+                    self.module_name, self.module_name, e
+                )
             )
 
 
     def _run_with_error_handling(self, unbound_method, method_arguments):
         if self.plugin_data.plugin_debug == True:
-            self.page_msg("method_arguments for method '%s': %s" % (self.method_name, method_arguments))
+            self.page_msg(
+                "method_arguments for method '%s': %s" % (
+                    self.method_name, method_arguments
+                )
+            )
         try:
             # Dict-Argumente übergeben
             return unbound_method(**method_arguments)
         except TypeError, e:
-            sys.stdout = sys.__stdout__ # Evtl. redirectered stdout wiederherstellen
-
             if not str(e).startswith(unbound_method.__name__):
-                # Der Fehler ist nicht hier, bei der Dict übergabe zur unbound_method() aufgetretten, sondern
-                # irgendwo im Modul selber!
+                # Der Fehler ist nicht hier, bei der Dict übergabe zur
+                # unbound_method() aufgetretten, sondern irgendwo im
+                # Modul selber!
                 raise # Vollen Traceback ausführen
 
-            # Ermitteln der Argumente die wirklich von der unbound_method() verlangt werden
+            # Ermitteln der Argumente die wirklich von der unbound_method()
+            # verlangt werden
             import inspect
             args = inspect.getargspec(unbound_method)
             real_method_arguments = args[0][1:]
@@ -446,7 +476,9 @@ class module_manager:
             msg += "%s() takes exactly %s arguments %s, " % (
                 unbound_method.__name__, argcount, real_method_arguments
             )
-            msg += "and I have %s given the dict: %s " % (len(method_arguments), method_arguments)
+            msg += "and I have %s given the dict: %s " % (
+                len(method_arguments), method_arguments
+            )
 
             raise run_module_error(msg)
 
@@ -455,14 +487,19 @@ class module_manager:
         """
         Startet die Methode und verarbeitet die Ausgaben
         """
-        #~ self.page_msg("method_arguments:", method_arguments, "---", self.module_name, self.method_name)
+        #~ self.page_msg(
+            #~ "method_arguments:", method_arguments,
+            #~ "---", self.module_name, self.method_name
+        #~ )
 
         #~ if debug: self.page_msg("method_arguments:", method_arguments)
         def run_error(msg):
             if self.plugin_data["direct_out"] != True:
                 redirector.get() # stdout wiederherstellen
 
-            msg = "[Can't run '%s.%s': %s]" % (self.module_name, self.method_name, msg)
+            msg = "[Can't run '%s.%s': %s]" % (
+                self.module_name, self.method_name, msg
+            )
 
             if self.preferences["ModuleManager_error_handling"] == True:
                 raise run_module_error(msg)
@@ -518,27 +555,20 @@ class module_manager:
 
         # Methode "ausführen"
         if self.preferences["ModuleManager_error_handling"] == False:
-            moduleOutput = self._run_with_error_handling(unbound_method, method_arguments)
+            moduleOutput = self._run_with_error_handling(
+                unbound_method, method_arguments
+            )
         else:
             try:
-                moduleOutput = self._run_with_error_handling(unbound_method, method_arguments)
-            #~ except SystemExit, e:
-                #~ if self.plugin_data["sys_exit"] == True:
-                    #~ #
-
-                #~ # Beim z.B. page_style_link.print_current_style() wird ein sys.exit() ausgeführt
-                #~ self.page_msg(
-                    #~ "Error in Modul %s.%s: A Module can't use sys.exit()!" % (
-                        #~ self.module_name, self.method_name
-                    #~ )
-                #~ )
-                #~ moduleOutput = ""
+                moduleOutput = self._run_with_error_handling(
+                    unbound_method, method_arguments
+                )
             except KeyError, e:
                 run_error("KeyError: %s" % e)
             except Exception, e:
                 run_error(e)
 
-        ##________________________________________________________________________________________
+        ##____________________________________________________________________
         ## Ausgaben verarbeiten
 
         #~ if self.plugin_data["direct_out"] == True:
@@ -554,9 +584,11 @@ class module_manager:
                 markup  = moduleOutput["markup"]
             except KeyError, e:
                 if self.plugin_data.plugin_debug:
-                    self.page_msg(
-                        "Module-return is type dict, but there is no Key '%s'?!?" % e
-                    )
+                    msg = (
+                        "Module-return is type dict,"
+                        " but there is no Key '%s'?!?"
+                    ) % e
+                    self.page_msg(msg)
                 result = str( moduleOutput )
             else:
                 if self.plugin_data.plugin_debug == 1:
@@ -580,7 +612,7 @@ class module_manager:
 
         return moduleOutput
 
-    #________________________________________________________________________________________
+    #_________________________________________________________________________
     # Zusatz Methoden für die Module selber
 
     def build_menu(self):
@@ -597,7 +629,7 @@ class module_manager:
             result += "<li><h5>%s</h5><ul>" % menu_section
             for item in section_data:
                 result += '<li><a href="%s">%s</a></li>' % (
-                    self.URLs.make_command_link(self.module_name, item["method_name"]),
+                    self.URLs.commandLink(self.module_name, item["method_name"]),
                     item["menu_description"]
                 )
             result += "</ul>"
@@ -605,7 +637,7 @@ class module_manager:
 
         return result
 
-    #________________________________________________________________________________________
+    #_________________________________________________________________________
     # page_msg debug
 
     def debug(self):

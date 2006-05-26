@@ -41,15 +41,15 @@ class admin_menu(PyLucidBaseModule):
         """
         context = {
             "login"             : self.request.staticTags['script_login'],
-            "edit_page_link"    : self.URLs.make_command_link("pageadmin", "edit_page"),
-            "new_page_link"     : self.URLs.make_command_link("pageadmin", "new_page"),
-            "sub_menu_link"     : self.URLs.make_command_link("admin_menu", "sub_menu"),
+            "edit_page_link"    : self.URLs.commandLink("pageadmin", "edit_page"),
+            "new_page_link"     : self.URLs.commandLink("pageadmin", "new_page"),
+            "sub_menu_link"     : self.URLs.commandLink("admin_menu", "sub_menu"),
         }
         return self.templates.write("admin_menu_top_menu", context)
 
     def sub_menu( self ):
 
-        context = {"commandURLprefix": self.URLs["base_command"]}
+        context = {"commandURLprefix": self.URLs["commandBase"]}
         self.page_msg(context)
 
         return self.templates.write("admin_menu_sub_menu", context)
