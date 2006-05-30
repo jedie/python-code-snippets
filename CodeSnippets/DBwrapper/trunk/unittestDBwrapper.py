@@ -14,6 +14,7 @@ from DBwrapper import SQL_wrapper
 
 # Note: You must manually edit the Host-Adress of the MySQL-Server!
 MySQLserver = "localhost"
+MySQLserver = "192.168.6.2"
 
 
 #~ debug = debug
@@ -141,6 +142,20 @@ class testDBwrapper(unittest.TestCase):
         self.assertEqual(
             result,
             [{'data1': u'Value B 1', 'id': 2, 'data2': u'Value B 2'}]
+        )
+
+        print "tableDict"
+        result = self.db.get_tableDict(
+            select_items = ["data1","data2"],
+            index_key = "id",
+            table_name = "TestTable",
+        )
+        self.assertEqual(
+            result,
+            {
+                1L: {'data1': u'Value A 1', 'data2': u'Value A 2'},
+                2L: {'data1': u'Value B 1', 'data2': u'Value B 2'}
+            }
         )
 
         print "DELETE line 1"
