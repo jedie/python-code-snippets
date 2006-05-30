@@ -7,6 +7,9 @@
 __author__              = "Jens Diemer"
 __url__                 = "http://www.PyLucid.org"
 __description__         = "Makes a MySQL dump for a backup"
+__long_description__ = """
+You can make a SQL dump from you DB. Also you can make a install-dump.
+"""
 __important_buildin__   = True
 
 #___________________________________________________________________________________________________
