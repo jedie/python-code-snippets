@@ -96,7 +96,7 @@ class auth(PyLucidBaseModule):
             "url"           : url
         }
 
-        self.templates.write("auth_login", context)
+        self.templates.write("login", context)
 
     def check_login( self ):
         """
