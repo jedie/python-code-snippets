@@ -27,9 +27,12 @@ ToDo
     * Es wird immer das paramstyle 'format' benutzt. Also mit %s escaped
 """
 
-__version__="0.8.1"
+__version__="0.9"
 
 __history__="""
+v0.9
+    - NEU: get_tableDict()
+        Select-Abfrage mit Index-Basierende-Ergebniss-Dict
 v0.8.1
     - neu unittestDBwrapper.py ;)
 v0.8
@@ -640,6 +643,36 @@ class SQL_wrapper(Database):
             if not key in field_list:
                 del data[key]
             index += 1
+
+    #_________________________________________________________________________
+    # Spezial SELECT
+
+    def indexResult(self, selectDict, indexKey):
+        """
+        Wandelt ein select-Ergebnis-Liste in ein Dict um
+        """
+        result = {}
+        for line in selectDict:
+            index_value = line[indexKey]
+            del(line[indexKey])
+            result[index_value] = line
+        return result
+
+    def get_tableDict(self, select_items, index_key, table_name):
+        """
+            SELECT >select_items< FROM >table_name<
+
+        Liefert einen select aller angegebenen Spalten zurück. Dabei wird
+        das Ergebniss von einer Liste zu einem Dict umgeformt, sodas der
+        Tabellen-Index >index_key< als Dict-Key dient.
+        """
+        if (not "*" in select_items) and (not index_key in select_items):
+            # Der index muß immer mit abgefragt werden!
+            select_items.append(index_key)
+
+        data = self.select(select_items, table_name)
+        data = self.indexResult(data, index_key)
+        return data
 
     #_________________________________________________________________________
 
