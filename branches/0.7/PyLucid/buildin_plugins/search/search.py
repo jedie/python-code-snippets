@@ -42,7 +42,7 @@ class search(PyLucidBaseModule):
             "url"               : self.URLs.actionLink("do_search"),
             "old_search_string" : search_string
         }
-        self.templates.write("search_input_form", context)
+        self.templates.write("input_form", context)
 
     def do_search(self):
         start_time = time.time()
@@ -86,11 +86,14 @@ class search(PyLucidBaseModule):
             self.lucidTag(search_string)
             return
 
-        self.log("[%s] Count: %s" % (search_string,result_count), "search", "OK")
+        self.log(
+            "[%s] Count: %s" % (search_string,result_count), "search", "OK"
+        )
 
         self.response.write(
             "<h3>%s results for '%s' (%0.2fsec.):</h3>" % (
-                result_count, cgi.escape(" ".join(search_words)), time.time() - start_time
+                result_count, cgi.escape(" ".join(search_words)),
+                time.time() - start_time
             )
         )
         self.display_results( result, search_words )
@@ -116,7 +119,7 @@ class search(PyLucidBaseModule):
             search_words = message.split("]")[0][1:]
 
             url = '%s?search_string=%s' % (
-                self.URLs.make_command_link("search", "do_search"),
+                self.URLs.commandLink("search", "do_search"),
                 urllib.quote_plus(search_words)
             )
 
@@ -170,7 +173,9 @@ class search(PyLucidBaseModule):
 
         # ODER suche in Meta-Daten
         for column in ("keywords","description","name","title"):
-            where_string = " OR ".join( [column+" LIKE %s" for i in xrange(len(search_words))] )
+            where_string = " OR ".join(
+                [column+" LIKE %s" for i in xrange(len(search_words))]
+            )
             result = self.db.process_statement(
                 SQLcommand = "SELECT id FROM $$pages WHERE %s" % where_string,
                 SQL_values = tuple( ["%%%s%%" % i for i in search_words] )
@@ -182,8 +187,8 @@ class search(PyLucidBaseModule):
                 else:
                     partial_result[id] = 1
 
-        # Dict umkehren Key ist die Punkte-Zahl und value eine Liste mit den IDs der
-        # Seiten, die die Punkte Zahl haben
+        # Dict umkehren Key ist die Punkte-Zahl und value eine Liste mit den
+        # IDs der Seiten, die die Punkte Zahl haben
         result_IDs = {}
         for id,points in partial_result.iteritems():
             if result_IDs.has_key(points):
@@ -201,7 +206,10 @@ class search(PyLucidBaseModule):
         for points in point_list:
             for id in result_IDs[points]:
                 side_info = self.db.process_statement(
-                    SQLcommand = "SELECT id,name,title,content FROM $$pages WHERE id=%s",
+                    SQLcommand = (
+                        "SELECT id,name,title,content"
+                        " FROM $$pages WHERE id=%s"
+                    ),
                     SQL_values = (id,)
                 )[0]
                 side_info["points"] = points # Punkte hinzufügen
