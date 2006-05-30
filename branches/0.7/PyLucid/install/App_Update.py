@@ -23,6 +23,40 @@ class update(ObjectApp_Base):
             # Abfrage wurde nicht bestätigt
             return
 
+        # page_internals
+        SQLcommand = "DROP TABLE $$pages_internal_category;"
+        self._execute(
+            "Delete obsolete 'pages_internal_category' table", SQLcommand
+        )
+        SQLcommand = (
+            "CREATE TABLE $$pages_internal_css ("
+            " name varchar(50) NOT NULL default '',"
+            " plugin_id tinyint(4) default NULL,"
+            " lastupdatetime datetime NOT NULL default '0000-00-00 00:00:00',"
+            " lastupdateby int(11) NOT NULL default '0',"
+            " content text NOT NULL,"
+            " description text NOT NULL,"
+            " PRIMARY KEY (name)"
+            ") COMMENT='StyleSheets code storage for internal page';"
+        )
+        self._execute(
+            "Add 'pages_internal_css' table (for StyleSheet code)", SQLcommand
+        )
+        SQLcommand = (
+            "CREATE TABLE $$pages_internal_js ("
+            " name varchar(50) NOT NULL default '',"
+            " plugin_id tinyint(4) default NULL,"
+            " lastupdatetime datetime NOT NULL default '0000-00-00 00:00:00',"
+            " lastupdateby int(11) NOT NULL default '0',"
+            " content text NOT NULL,"
+            " description text NOT NULL,"
+            " PRIMARY KEY (name)"
+            ") COMMENT='JavaScript code storage for internal pages';"
+        )
+        self._execute(
+            "Add 'pages_internal_js' table (for JavaScript code)", SQLcommand
+        )
+
         # shortcut Spalte hinzufügen
         SQLcommand = (
             "ALTER TABLE $$pages"
@@ -52,6 +86,17 @@ class update(ObjectApp_Base):
         )
         self._execute(
             "Remove obsolete column in table plugindata",
+            SQLcommand
+        )
+
+        # plugins anpassen
+        SQLcommand = (
+            "ALTER TABLE $$plugins"
+            " CHANGE package_name package_name"
+            " VARCHAR( 128 ) NOT NULL;"
+        )
+        self._execute(
+            "change size of package_name column in plugins-table",
             SQLcommand
         )
 

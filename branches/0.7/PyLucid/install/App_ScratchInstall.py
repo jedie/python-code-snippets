@@ -41,7 +41,7 @@ class install(ObjectApp_Base):
         """
         self._write_info()
 
-        self._confirm("Init all basic modules?", simulationCheckbox=True)
+        self._confirm("Init all basic modules?")
 
         simulation = self.request.form.get("simulation",False)
 

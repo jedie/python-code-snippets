@@ -98,7 +98,6 @@ class active_statements(passive_statements):
             table   = "styles",
             data    = {
                 "name"          : style_data["name"],
-                "plugin_id"     : style_data.get("plugin_id", None),
                 "description"   : style_data.get("description", None),
                 "content"       : style_data["content"],
             },
@@ -135,15 +134,6 @@ class active_statements(passive_statements):
         style_names = [i["name"] for i in style_names]
         return style_names
 
-    def delete_all_plugin_styles(self):
-        """
-        Löscht alle Styles die einem Module/Plugin gehören
-        """
-        SQLcommand = (
-            "DELETE FROM $$styles WHERE plugin_id>0;"
-        )
-        self.cursor.execute(SQLcommand)
-
     def update_template(self, template_id, template_data):
         self.update(
             table   = "templates",
@@ -175,6 +165,55 @@ class active_statements(passive_statements):
 
     #_________________________________________________________________________
     ## InterneSeiten
+
+    def get_internal_page_addition_Data(self, internal_page_name):
+        """
+        Liefert eine Liste mit dem CSS und JS 'content' zurück.
+        """
+        def addCode(result, ext, tag):
+            table = "pages_internal_%s" % ext
+            code = self.select(
+                select_items    = ["content"],
+                from_table      = table,
+                where           = ("name", internal_page_name)
+            )
+            if code == []:
+                # Gibt kein zusätzliches CSS/JS für die interne Seite!
+                return
+
+            content = code[0]["content"]
+
+            try:
+                content = content.encode("utf8")
+            except UnicodeError, e:
+                self.page_msg(
+                    "Internal page %s add, UnicodeError: %s" % (
+                        ext, e
+                    )
+                )
+                content = content.encode("utf8", "replace")
+
+            content = tag % content
+            result.append(content)
+
+        result = []
+        #~ tag = (
+            #~ '<script type="text/css">\n/* <![CDATA[ */\n'
+            #~ '%s\n'
+            #~ '/* ]]> */\n</script>\n'
+        #~ )
+        tag = '<script type="text/css">\n%s\n</script>\n'
+        addCode(result, "css", tag)
+
+        #~ tag = (
+            #~ '<script type="text/javascript">\n/* <![CDATA[ */\n'
+            #~ '%s\n'
+            #~ '/* ]]> */\n</script>\n'
+        #~ )
+        tag = '<script type="text/javascript">\n%s\n</script>\n'
+        addCode(result, "js", tag)
+
+        return result
 
     def update_internal_page(self, internal_page_name, page_data):
         self.update(
@@ -228,22 +267,22 @@ class active_statements(passive_statements):
         """
 
         markup_id = self.get_markup_id(data["markup"])
-        category_id = self.get_internal_page_category_id(data["category"])
+        #~ category_id = self.get_internal_page_category_id(data["category"])
         template_engine_id = self.get_template_engine_id(data["template_engine"])
 
-        self.page_msg(
-            "new internal page '%s': markup_id: %s, \
-            category_id: %s, template_engine_id: %s" % (
-                data["name"], markup_id, category_id, template_engine_id
-            )
-        )
+        #~ self.page_msg(
+            #~ "new internal page '%s': markup_id: %s, \
+            #~ category_id: %s, template_engine_id: %s" % (
+                #~ data["name"], markup_id, category_id, template_engine_id
+            #~ )
+        #~ )
 
         self.insert(
             table = "pages_internal",
             data  = {
                 "name"              : data["name"],
                 "plugin_id"         : data["plugin_id"],
-                "category_id"       : category_id,
+                #~ "category_id"       : category_id,
                 "template_engine"   : template_engine_id,
                 "markup"            : markup_id,
                 "lastupdatetime"    : self.tools.convert_time_to_sql(lastupdatetime),
@@ -275,6 +314,36 @@ class active_statements(passive_statements):
         )
         page_names = [i["name"] for i in page_names]
         return page_names
+
+    def newStyleSheet(self, style_data):
+        "Stylesheet einer internen Seite eintragen"
+        lastupdatetime = style_data["lastupdatetime"]
+        lastupdatetime = self.tools.convert_time_to_sql(lastupdatetime)
+        self.insert(
+            table   = "pages_internal_css",
+            data    = {
+                "name"          : style_data["name"],
+                "plugin_id"     : style_data["plugin_id"],
+                "lastupdatetime": lastupdatetime,
+                "description"   : style_data.get("description", None),
+                "content"       : style_data["content"],
+            },
+        )
+
+    def newJavaScript(self, js_data):
+        "JavaScript einer internen Seite eintragen"
+        lastupdatetime = js_data["lastupdatetime"]
+        lastupdatetime = self.tools.convert_time_to_sql(lastupdatetime)
+        self.insert(
+            table   = "pages_internal_js",
+            data    = {
+                "name"          : js_data["name"],
+                "plugin_id"     : js_data["plugin_id"],
+                "lastupdatetime": lastupdatetime,
+                "description"   : js_data.get("description", None),
+                "content"       : js_data["content"],
+            },
+        )
 
     #_________________________________________________________________________
     ## Userverwaltung

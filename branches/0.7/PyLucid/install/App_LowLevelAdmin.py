@@ -57,28 +57,46 @@ class LowLevelAdmin(ObjectApp_Base):
 
     #_________________________________________________________________________
 
-    def module_admin(self, sub_action=None, *info):
+    def module_admin(self):
         "Module/Plugin Administration"
         #~ self._write_info()
         self._write_backlink()
 
-        if self._URLs["actionArgs"] != []:
-            sub_action = self._URLs["actionArgs"][0]
-            info = self._URLs["actionArgs"][1:]
-
-        self.response.write("sub_action: %s\n" % sub_action)
-        self.response.write("info: %s\n" % str(info))
-
-        #~ sub_action = ""
-
         module_admin = self._get_module_admin()
 
-        if sub_action == "install":
+        self.request.debug()
+        #~ return
+
+        if "install" in self.request.form:
             self.request.db.commit()
-            package_name = ".".join(info[:-1])
-            module_name = info[-1]
+            package_name = self.request.form["package_name"]
+            moduleName = self.request.form["module_name"]
+            #~ try:
+            module_admin.install(package_name, moduleName)
+            #~ except IntegrityError, e:
+                #~ self.response.write("DB Error: %s\n" % e)
+                #~ self.request.db.rollback()
+                #~ self.response.write("(execute DB rollback)")
+            #~ except KeyError, e:
+                #~ self.response.write("KeyError: %s" % e)
+            #~ else:
+                #~ self.request.db.commit()
+            #~ return
+        elif "deinstall" in self.request.form:
+            id = self.request.form["id"]
+            #~ try:
+            module_admin.deinstall(id)
+            #~ except IntegrityError, e:
+                #~ self.response.write("DB Error: %s\n" % e)
+                #~ self.request.db.rollback()
+                #~ self.response.write("(execute DB rollback)")
+            #~ else:
+                #~ self.request.db.commit()
+            #~ return
+        elif "reinit" in self.request.form:
+            id = self.request.form["id"]
             try:
-                module_admin.install(package_name, module_name)
+                module_admin.reinit(id)
             except IntegrityError, e:
                 self.response.write("DB Error: %s\n" % e)
                 self.request.db.rollback()
@@ -88,52 +106,30 @@ class LowLevelAdmin(ObjectApp_Base):
             else:
                 self.request.db.commit()
             return
-        elif sub_action == "deinstall":
+        elif "activate" in self.request.form:
+            id = self.request.form["id"]
             try:
-                module_admin.deinstall(info[0])
-            except IntegrityError, e:
-                self.response.write("DB Error: %s\n" % e)
-                self.request.db.rollback()
-                self.response.write("(execute DB rollback)")
+                module_admin.activate(id)
             except KeyError, e:
                 self.response.write("KeyError: %s" % e)
-            else:
-                self.request.db.commit()
-            return
-        elif sub_action == "reinit":
+        elif "deactivate" in self.request.form:
+            id = self.request.form["id"]
             try:
-                module_admin.reinit(info[0])
-            except IntegrityError, e:
-                self.response.write("DB Error: %s\n" % e)
-                self.request.db.rollback()
-                self.response.write("(execute DB rollback)")
+                module_admin.deactivate(id)
             except KeyError, e:
                 self.response.write("KeyError: %s" % e)
-            else:
-                self.request.db.commit()
-            return
-        elif sub_action == "activate":
-            try:
-                module_admin.activate(info[0])
-            except KeyError, e:
-                self.response.write("KeyError: %s" % e)
-        elif sub_action == "deactivate":
-            try:
-                module_admin.deactivate(info[0])
-            except KeyError, e:
-                self.response.write("KeyError: %s" % e)
-        elif sub_action == "module_admin_info":
-            self.module_admin_info()
-            return
-        elif sub_action == "administation_menu":
-            self._write_backlink()
-        elif sub_action == "init_modules":
-            self.print_backlink()
-            if self.CGIdata.get("confirm","no") == "yes":
-                module_admin = self._get_module_admin()
-                module_admin.first_time_install_confirmed()
-            self._write_backlink()
-            return
+        #~ elif sub_action == "module_admin_info":
+            #~ self.module_admin_info()
+            #~ return
+        #~ elif sub_action == "administation_menu":
+            #~ self._write_backlink()
+        #~ elif sub_action == "init_modules":
+            #~ self.print_backlink()
+            #~ if self.CGIdata.get("confirm","no") == "yes":
+                #~ module_admin = self._get_module_admin()
+                #~ module_admin.first_time_install_confirmed()
+            #~ self._write_backlink()
+            #~ return
 
         module_admin.administation_menu()
 

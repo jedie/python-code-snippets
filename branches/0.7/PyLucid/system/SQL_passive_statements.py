@@ -434,13 +434,17 @@ class passive_statements(SQL_wrapper):
                 where           = ("name", name)
             )[0]["id"]
         except IndexError:
-            self.page_msg("Warning: Can't get ID for template engine namend '%s'" % name)
+            self.page_msg(
+                "Warning: Can't get ID for template engine namend '%s'" % name
+            )
             return None
 
     def get_internal_page_data(self, internal_page_name, replace=True):
         try:
             data = self.select(
-                select_items    = ["template_engine","markup","content","description"],
+                select_items    = [
+                    "template_engine","markup","content","description"
+                ],
                 from_table      = "pages_internal",
                 where           = ("name", internal_page_name)
             )[0]
@@ -448,12 +452,15 @@ class passive_statements(SQL_wrapper):
             import inspect
             raise KeyError(
                 "Internal page '%s' not found (from '...%s' line %s): %s" % (
-                    internal_page_name, inspect.stack()[1][1][-20:], inspect.stack()[1][2], e
+                    internal_page_name, inspect.stack()[1][1][-20:],
+                        inspect.stack()[1][2], e
                 )
             )
 
         if replace==True:
-            data["template_engine"] = self.get_template_engine(data["template_engine"])
+            data["template_engine"] = self.get_template_engine(
+                data["template_engine"]
+            )
             data["markup"] = self.get_markup_id(data["markup"])
 
         try:
@@ -488,36 +495,24 @@ class passive_statements(SQL_wrapper):
         return internal_page
 
 
-    #~ def get_internal_group_id(self):
+    #~ def get_internal_page_category_id(self, category_name):
         #~ """
-        #~ Liefert die ID der internen PyLucid Gruppe zurück
-        #~ Wird verwendet für interne Seiten!
+        #~ Liefert die ID anhand des Kategorie-Namens zurück
+        #~ Existiert die Kategorie nicht, wird sie in die Tabelle eingefügt.
         #~ """
-        #~ internal_group_name = "PyLucid_internal"
-        #~ return self.select(
+        #~ try:
+            #~ return self.select(
                 #~ select_items    = ["id"],
-                #~ from_table      = "groups",
-                #~ where           = ("name", internal_group_name)
+                #~ from_table      = "pages_internal_category",
+                #~ where           = ("name", category_name)
             #~ )[0]["id"]
-
-    def get_internal_page_category_id(self, category_name):
-        """
-        Liefert die ID anhand des Kategorie-Namens zurück
-        Existiert die Kategorie nicht, wird sie in die Tabelle eingefügt.
-        """
-        try:
-            return self.select(
-                select_items    = ["id"],
-                from_table      = "pages_internal_category",
-                where           = ("name", category_name)
-            )[0]["id"]
-        except IndexError:
-            # Kategorier existiert noch nicht -> wird erstellt
-            self.insert(
-                table = "pages_internal_category",
-                data  = {"name": category_name}
-            )
-            return self.cursor.lastrowid
+        #~ except IndexError:
+            #~ # Kategorier existiert noch nicht -> wird erstellt
+            #~ self.insert(
+                #~ table = "pages_internal_category",
+                #~ data  = {"name": category_name}
+            #~ )
+            #~ return self.cursor.lastrowid
 
     #_____________________________________________________________________________
     ## Userverwaltung
@@ -640,18 +635,21 @@ class passive_statements(SQL_wrapper):
             where           = [("package_name", package), ("module_name", module)],
         )[0]["id"]
 
-    def get_plugin_info_by_id(self, plugin_id):
+    def get_plugin_data_by_id(self, plugin_id):
         result = self.select(
-            select_items    = ["package_name", "module_name"],
+            select_items    = [
+                "module_name", "package_name", "SQL_deinstall_commands"
+            ],
             from_table      = "plugins",
             where           = ("id", plugin_id),
         )[0]
-        return result["package_name"], result["module_name"]
+        return result
 
     def get_installed_modules_info(self):
         return self.select(
             select_items    = [
-                "module_name", "package_name", "id","version","author","url","description","active"
+                "module_name", "package_name", "id","version","author",
+                "url","description","active"
             ],
             from_table      = "plugins",
             #~ debug = True,

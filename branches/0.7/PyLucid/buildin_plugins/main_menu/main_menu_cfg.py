@@ -7,6 +7,7 @@
 __author__              = "Jens Diemer"
 __url__                 = "http://www.PyLucid.org"
 __description__         = "A tree main menu"
+__long_description__    = __description__
 __important_buildin__   = True
 
 #___________________________________________________________________________________________________

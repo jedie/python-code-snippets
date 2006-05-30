@@ -22,9 +22,9 @@ class ObjectApp_Base(object):
     """ Basisklasse von der jede ObjApp-Klasse ableitet """
 
     def _get_module_admin(self):
-        from PyLucid.modules import module_admin
+        from PyLucid.modules.module_admin.module_admin import ModuleAdmin
 
-        module_admin = module_admin.module_admin(self.request, self.response)
+        module_admin = ModuleAdmin(self.request, self.response)
 
         return module_admin
 
