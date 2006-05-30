@@ -21,6 +21,34 @@ debug = False
 import cgi, os, time
 import sys #Debug
 
+
+
+#~ class PrintLocator(object):
+    #~ def __init__(self):
+        #~ self.oldFileinfo = ""
+
+    #~ def write(self, *txt):
+        #~ # Angaben zur Datei, Zeilennummer, aus dem die Nachricht stammt
+        #~ stack = inspect.stack()[1]
+        #~ fileinfo = (stack[1].split("/")[-1][-40:], stack[2])
+
+        #~ if fileinfo != self.oldFileinfo:
+            #~ self.oldFileinfo = fileinfo
+
+            #~ sys.__stdout__.write("\n")
+            #~ sys.__stdout__.write("...%s, line %3s:\n" % fileinfo)
+
+        #~ txt = " ".join([str(i) for i in txt])
+        #~ sys.__stdout__.write(txt)
+
+#~ import inspect
+#~ sys.stdout = PrintLocator()
+
+
+
+
+
+
 from PyLucid.system.exceptions import *
 
 # Colubrid
@@ -88,6 +116,7 @@ class PyLucidApp(BaseApplication):
         self.request.page_msg = environ['PyLucid.page_msg']
 
         self.response.addCode = environ["PyLucid.addCode"]
+        #~ self.response.addCode = [] # Leeren (fastCGI und Co.)!
 
         # Passt die verwendeten Pfade an.
         self.request.URLs = URLs.URLs(self.request)

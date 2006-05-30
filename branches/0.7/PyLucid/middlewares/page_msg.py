@@ -18,13 +18,21 @@ class page_msg_Container(object):
     für Zeile Nachrichten eingefügt.
     Die Nachrichten werden ganz zum Schluß in der index.py in die
     generierten Seite eingeblendet. Dazu dient der Tag <lucidTag:page_msg/>
+
+    self.raw - Für Ausgaben ohne <br />
+
     """
     def __init__(self, debug = False):
+        self.raw = False
         self.debug = debug
         self.data = ""
 
     def __call__(self, *msg):
         """ Fügt eine neue Zeile mit einer Nachricht hinzu """
+        if self.raw:
+            self.data += "%s\n" % " ".join([str(i) for i in msg])
+            return
+
         if self.debug:
             try:
                 import inspect

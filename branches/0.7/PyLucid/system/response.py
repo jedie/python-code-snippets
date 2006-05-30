@@ -82,7 +82,6 @@ class HttpResponse(HttpResponse):
             else:
                 self.response.append(part)
 
-
     def handleTag(self, tag):
         if tag in ignore_tag:
             self.response.append("<lucidTag:%s/>" % tag)
@@ -176,3 +175,4 @@ class staticTags(dict):
         self["page_datetime"]        = self.tools.convert_date_from_sql(
             page_data["lastupdatetime"], format = "DCTERMS.W3CDTF"
         )
+

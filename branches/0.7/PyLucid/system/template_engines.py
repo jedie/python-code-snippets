@@ -52,8 +52,11 @@ class TemplateEngines(PyLucidBaseModule):
             content = render_jinja(content, context)
             self.response.write(content)
         else:
-            raise NotImplemented, "Template Engine \
-                        '%s' not implemented!" % engine
+            msg = "Template Engine '%s' not implemented!" % engine
+            raise NotImplemented, msg
+
+        addCode = self.db.get_internal_page_addition_Data(internalPageName)
+        self.response.addCode += addCode
 
 
     def render_stringFormatting(self, internalPageName, internal_page_data, context):
@@ -132,66 +135,3 @@ class TemplateEngines(PyLucidBaseModule):
 
 
 
-
-class OBSOLETE:
-    def get_rendered_internal_page(self, internal_page_name, context={}):
-        """
-        Interne Seite aufgeüllt mit Daten ausgeben. Diese Methode sollte immer
-        verwendet werden, weil sie eine gescheite Fehlermeldung anzeigt.
-
-        Wird für template-engine = "None" und = "string formatting" verwendet.
-        """
-
-        try:
-            internal_page_data = self.get_internal_page_data(internal_page_name)
-        except Exception, e:
-            import inspect
-            self.page_msg(
-                "[Can't print internal page '%s' (from '...%s' line %s): %s]" % (
-                    internal_page_name, inspect.stack()[1][1][-20:], inspect.stack()[1][2], e
-                )
-            )
-            if not self.config.system.ModuleManager_error_handling: raise
-            return
-
-        #~ raise str(internal_page_data)
-
-        if internal_page_data["template_engine"] != "string formatting":
-            msg = (
-                "Internal page '%s' is not marked as a '%s' page! "
-                "(Marked as:'%s')"
-            ) % (
-                internal_page_name, internal_page_data["template_engine"],
-                internal_page_data["template_engine"]
-            )
-            raise WrongTemplateEngine, msg
-
-
-
-    def print_internal_TAL_page(self, internal_page_name, context_dict):
-
-        internal_page_data = self.get_internal_page_data(internal_page_name)
-        internal_page_content = internal_page_data["content"]
-        if internal_page_data["template_engine"] != "TAL":
-            self.page_msg(
-                "Warning: Internal page '%s' is not marked as a TAL page! "
-                "(Marked as:'%s')" % (
-                    internal_page_name, internal_page_data["template_engine"]
-                )
-            )
-
-        if internal_page_data["markup"] != None:
-            self.page_msg(
-                "Warning: A TAL page should never have markup! "
-                "(internal page name: '%s', Markup:'%s')" % (
-                    internal_page_name, internal_page_data["markup"]
-                )
-            )
-
-        from PyLucid_simpleTAL import simpleTAL, simpleTALES
-
-        context = simpleTALES.Context(allowPythonPath=1)
-        context.globals.update(context_dict) # context.addGlobal()
-
-        template = simpleTAL.compileHTMLTemplate(internal_page_content, inputEncoding="UTF-8")
-        template.expand(context, self.request, outputEncoding="UTF-8")
