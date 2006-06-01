@@ -25,20 +25,24 @@ Anfragen hinweg pro User zu speichern.
 Damit ist es einfacher Web-Applikationen in Python-CGI zu schreiben, ohne Daten
 ständig per Formular weiter zu transportieren ;)
 
-Ein Besucher der Webseite wird mit einer eindeutigen Session-ID per Cookie gekennzeichnet.
-Variablen werden in ein Dictioary gespeichert. Dieses Dict wird mittelt pickle serialisiert
-und zusammen mit der Session-ID in die SQL-Datenbank gespeichert.
-Beim nächsten Aufruf stehen die speicherten Daten wieder zu verfügung.
+Ein Besucher der Webseite wird mit einer eindeutigen Session-ID per Cookie
+gekennzeichnet. Variablen werden in ein Dictioary gespeichert. Dieses Dict wird
+mittelt pickle serialisiert und zusammen mit der Session-ID in die
+SQL-Datenbank gespeichert. Beim nächsten Aufruf stehen die speicherten Daten
+wieder zu verfügung.
 
 Grober Ablauf:
 ==============
 
-session = sessionhandling.sessionhandler( mySQLdb.cursor, sql_tablename, file_like_log )
+session = sessionhandling.sessionhandler( mySQLdb.cursor, sql_tablename,
+file_like_log )
 # mySQLdb.cursor => Cursor-Objekt der Datenbank-API
-# sql_tablename  => Name der Tabelle, in der die Sessiondaten verwaltet werden soll (s.SQL-Dump oben)
+# sql_tablename  => Name der Tabelle, in der die Sessiondaten verwaltet werden
+                        soll (s.SQL-Dump oben)
 # file_like_log  => Ein LOG-Objekt, welches eine write()-Methode besitzt
 
-# Erst nach der Instanzierung kann der HTML-Header an den Client geschickt werden
+# Erst nach der Instanzierung kann der HTML-Header an den Client geschickt
+werden
 print "Content-type: text/html\n"
 
 if self.session["session_id"] == False:
@@ -63,8 +67,9 @@ else:
 Hinweis
 -------
 Da das Sessionhandling auf Cookies basiert, ist folgendes wichtig:
-For dem Instanzieren der sessionhandler-Klasse darf noch kein Header (print "Content-type: text/html\n") an
-den Client geschickt worden sein! Ansonsten zählt der Cookie-Print nicht mehr zum Header und wird im Browser
+For dem Instanzieren der sessionhandler-Klasse darf noch kein Header
+(print "Content-type: text/html\n") an den Client geschickt worden sein!
+Ansonsten zählt der Cookie-Print nicht mehr zum Header und wird im Browser
 einfach nur angezeigt ;)
 """
 
@@ -76,8 +81,8 @@ v0.2
 v0.1.1
     - Umstallung auf neue Art Log-Ausgaben zu machen
 v0.1.0
-    - Großer Umbau: Diese Klasse ist nun nicht mehr allgemein Nutzbar, sondern an PyLucid
-        angepasst, da es die PyLucid-Objekte direkt benutzt.
+    - Großer Umbau: Diese Klasse ist nun nicht mehr allgemein Nutzbar, sondern
+        an PyLucid angepasst, da es die PyLucid-Objekte direkt benutzt.
     - Umstellung bei den LOG-Ausgaben.
 v0.0.6
     - Optionales base64 encoding der Sessiondaten
@@ -251,10 +256,14 @@ class cookieHandler:
 
     def deleteCookie(self, CookieName):
         if self.page_msg_debug == True:
-            self.page_msg( "delete_cookie '%s'" % CookieName)
+            self.page_msg("delete_cookie '%s'" % CookieName)
 
         if CookieName in self.request.cookies:
-            self.response.delete_cookie(CookieName)
+            # FIXME: Bug in colubrid: http://trac.pocoo.org/ticket/34
+            # Normalerweise sollte es mit response.delete_cookie() gehen!
+            #~ self.response.delete_cookie(CookieName)
+            # Work-a-round:
+            self.response.set_cookie(CookieName, max_age=0)
 
 
 #_____________________________________________________________________________
@@ -329,7 +338,14 @@ class sessionhandler(dict):
 
 
     def read_session(self):
-        "Liest Session-Daten aus der DB"
+        """
+        Liest Session-Daten aus der DB
+        FIXME: z.Z. wird eine Session erstellt, wenn der User einloggen möchte.
+            Das ist auch korrekt so, weil die RND-Nummer in der DB gespeichert
+            werden muß. Nur: Wenn der User doch nicht einloggt, dann bleibt
+            die Session aber bestehen. Somit haben Suchmaschinen-Bots eine
+            Session, wenn sie einmal auf Login kommen :(
+        """
         isLogin = self.cookie.get_dataCookie("is_login")
         if isLogin != "true":
             # Kein Cookie, dann brauchen wir erst garnicht nachzusehen ;)
@@ -339,16 +355,15 @@ class sessionhandler(dict):
                 )
             return
 
-
         DB_data = self.read_from_DB(self["session_id"])
         if DB_data == False:
             # Keine Daten in DB
+            self.cookie.del_dataCookie("is_login")
             if self.page_msg_debug == True:
                 self.page_msg(
                     "No Session data for id %s in DB" % self["session_id"]
                 )
             return
-
 
         def checkSessiondata(DB_data):
             if DB_data["ip"] != self["client_IP"]:

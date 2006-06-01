@@ -53,7 +53,7 @@ module_manager_data = {
         "internal_page_info" : {
             "name"              : "select_template",
             "description"       : "select a template to edit it",
-            "template_engine"   : "string formatting",
+            "template_engine"   : "jinja",
             "markup"            : None
         },
     },
@@ -76,7 +76,7 @@ module_manager_data = {
         "internal_page_info" : {
             "name"              : "select_internal_page",
             "description"       : "select a internal page to edit it",
-            "template_engine"   : "string formatting",
+            "template_engine"   : "jinja",
             "markup"            : None
         },
     },

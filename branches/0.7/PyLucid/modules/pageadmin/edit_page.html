@@ -1,27 +1,3 @@
-<script type="text/javascript">
-/* <![CDATA[ */
-page_content_changed = 0;
-
-// resize the textarea
-textarea = document.getElementById("page_content");
-function resize_big()   { textarea.rows = textarea.rows*1.2; }
-function resize_small() { textarea.rows = textarea.rows/1.2; }
-
-// tinyTextile help in a window
-function OpenInWindow(URL) {
-  win1 = window.open(URL, "", "width=1000, height=600, dependent=yes, resizable=yes, scrollbars=yes, location=no, menubar=no, status=no, toolbar=no");
-  win1.focus();
-}
-
-// encode from db warning
-function encoding_warning() {
-  if (page_content_changed == 1) {
-    return confirm('Made changes are lost! Continue?');
-  }
-}
-/* ]]> */
-</script>
-
 <form class="internalpage" name="edit_page" method="post" action="%(url)s">
   <p>Page <strong>&quot;%(name)s&quot;</strong>:<br />
     <textarea id="page_content" name="content" rows="25" onchange="page_content_changed=1;">%(content)s</textarea>
@@ -110,49 +86,3 @@ function encoding_warning() {
   <input type="submit" value="encode" name="encode" onclick="return encoding_warning();" />
 </fieldset>
 </form>
-
-<style type="text/css">
-/* <![CDATA[ */
-label, input, select, textarea {
-  vertical-align: middle;
-  margin-top, margin-bottom: 5px;
-}
-label.left {
-  float: left;
-  text-align: right;
-
-  width: 10em;
-  margin-right: .3em;
-  padding: 0px;
-}
-.rightonly {
-  /* Eingabefelder mit Text dahinter */
-  margin-left: 10.3em;
-  padding: 0px;
-}
-
-form br {
-  /*  floats nach dem Forumlar aufheben */
-  clear: both;
-}
-
-label, select, input {
-  cursor: pointer;
-}
-.internalpage input[type=text] {
-  width: 75%%;
-  cursor: text;
-}
-
-.internalpage input, .internalpage select, .internalpage textarea {
-  margin: 2px;
-  border: 1px solid grey;
-  color: #000;
-  background: #fafafa;
-}
-.internalpage input:focus, .internalpage select:focus, .internalpage textarea:focus {
-  border: 1px solid back;
-  background: #fff;
-}
-/* ]]> */
-</style>

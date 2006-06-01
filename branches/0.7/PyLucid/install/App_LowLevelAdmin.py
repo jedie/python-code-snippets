@@ -12,7 +12,7 @@ from PyLucid.system.exceptions import *
 
 
 from PyLucid.install.ObjectApp_Base import ObjectApp_Base
-from PyLucid.install.ObjectApp_Base import SQL_dump
+from PyLucid.install.SQLdump import SQLdump
 
 
 class LowLevelAdmin(ObjectApp_Base):
@@ -140,7 +140,7 @@ class LowLevelAdmin(ObjectApp_Base):
         self._write_info()
 
         simulation = self.request.form.get("simulation",False)
-        d = SQL_dump(self.request, self.response, simulation)
+        d = SQLdump(self.request, self.response, simulation)
 
         selectedTables = self.request.form.getlist("tablename")
         if selectedTables!=[]:
@@ -151,7 +151,7 @@ class LowLevelAdmin(ObjectApp_Base):
         txt = (
             '<form action="%s" method="post">\n'
             '<p>Which tables reset to defaults:</p>\n'
-        ) % self._URLs["current_action"]
+        ) % self._URLs.currentAction()
         self.response.write(txt)
 
         for name in d.get_table_names():

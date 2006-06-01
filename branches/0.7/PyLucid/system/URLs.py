@@ -261,6 +261,7 @@ class URLs(dict):
         return link
 
     def currentAction(self):
+        print self["command"], self['action']
         if self.request.runlevel == "command":
             link = posixpath.join(
                 self["scriptRoot"], self.preferences["commandURLprefix"],

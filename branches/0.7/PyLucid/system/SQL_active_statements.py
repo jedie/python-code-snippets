@@ -15,7 +15,7 @@ v0.1
     - erste Release
 """
 
-import pickle, sys
+import pickle, sys, time
 
 from PyLucid.system.SQL_passive_statements import passive_statements
 from PyLucid.system.exceptions import *
@@ -29,6 +29,10 @@ class active_statements(passive_statements):
     """
     #~ def __init__(self, *args, **kwargs):
         #~ super(active_statements, self).__init__(*args, **kwargs)
+
+
+
+    #_________________________________________________________________________
 
     def get_page_link_by_id(self, page_id):
         """ Generiert den absolut-Link zur Seite """
@@ -85,7 +89,13 @@ class active_statements(passive_statements):
     def update_style(self, style_id, style_data):
         lastupdatetime = self.tools.convert_time_to_sql(time.time())
         style_data["lastupdatetime"] = lastupdatetime
-        style_data["lastupdateby"] = self.session['user_id']
+        try:
+            style_data["lastupdateby"] = self.session['user_id']
+        except AttributeError:
+            # Wärend der installation gibt es kein session-Objekt!
+            #~ style_data["lastupdateby"] = 0
+            pass
+
         self.update(
             table   = "styles",
             data    = style_data,
@@ -166,108 +176,81 @@ class active_statements(passive_statements):
     #_________________________________________________________________________
     ## InterneSeiten
 
-    def get_internal_page_addition_Data(self, internal_page_name):
+    def get_internal_page_addition_CSS(self, internal_page_name):
         """
-        Liefert eine Liste mit dem CSS und JS 'content' zurück.
+        Liefert das passende Stylesheet zur internen Seite zurück
         """
-        def addCode(result, ext, tag):
-            table = "pages_internal_%s" % ext
-            code = self.select(
-                select_items    = ["content"],
-                from_table      = table,
-                where           = ("name", internal_page_name)
-            )
-            if code == []:
-                # Gibt kein zusätzliches CSS/JS für die interne Seite!
-                return
-
+        code = self.select(
+            select_items    = ["content"],
+            from_table      = "pages_internal_css",
+            where           = ("name", internal_page_name)
+        )
+        if code == []:
+            # Gibt kein zusätzliches CSS für die interne Seite!
+            return None
+        else:
             content = code[0]["content"]
+            return content
 
-            try:
-                content = content.encode("utf8")
-            except UnicodeError, e:
-                self.page_msg(
-                    "Internal page %s add, UnicodeError: %s" % (
-                        ext, e
-                    )
-                )
-                content = content.encode("utf8", "replace")
+    def get_internal_page_addition_JS(self, internal_page_name):
+        """
+        Liefert das passende JS Script zur internen Seite zurück
+        """
+        code = self.select(
+            select_items    = ["content"],
+            from_table      = "pages_internal_js",
+            where           = ("name", internal_page_name)
+        )
+        if code == []:
+            # Gibt kein zusätzliches JS für die interne Seite!
+            return None
+        else:
+            content = code[0]["content"]
+            return content
 
-            content = tag % content
-            result.append(content)
-
-        result = []
-        #~ tag = (
-            #~ '<script type="text/css">\n/* <![CDATA[ */\n'
-            #~ '%s\n'
-            #~ '/* ]]> */\n</script>\n'
-        #~ )
-        tag = '<script type="text/css">\n%s\n</script>\n'
-        addCode(result, "css", tag)
-
-        #~ tag = (
-            #~ '<script type="text/javascript">\n/* <![CDATA[ */\n'
-            #~ '%s\n'
-            #~ '/* ]]> */\n</script>\n'
-        #~ )
-        tag = '<script type="text/javascript">\n%s\n</script>\n'
-        addCode(result, "js", tag)
-
-        return result
-
-    def update_internal_page(self, internal_page_name, page_data):
+    def update_internal_page(self, internal_page_name, type, page_data):
+        tables = {
+            "html": "pages_internal",
+            "css": "pages_internal_css",
+            "js": "pages_internal_js",
+        }
+        table_name = tables[type]
         self.update(
-            table   = "pages_internal",
+            table   = table_name,
             data    = page_data,
             where   = ("name",internal_page_name),
             limit   = 1
         )
 
-    def delete_blank_pages_internal_categories(self):
-        """
-        Löscht automatisch überflüssige Kategorieren.
-        d.h. wenn es keine interne Seite mehr gibt, die in
-        der Kategorie vorkommt, wird sie gelöscht
-        """
-        try:
-            used_categories = self.select(
-                select_items    = ["category_id"],
-                from_table      = "pages_internal",
-            )
-            used_categories = [i["category_id"] for i in used_categories]
-
-            existing_categories = self.select(
-                select_items    = ["id","name"],
-                from_table      = "pages_internal_category",
-            )
-        except Exception, e:
-            raise IntegrityError(
-                "Can't determine existing internal page categories: %s" % e
-            )
-
-        deleted_categories = []
-        for line in existing_categories:
-            if not line["id"] in used_categories:
-                try:
-                    self.delete(
-                        table           = "pages_internal_category",
-                        where           = ("id", line["id"]),
-                        limit           = 99,
-                    )
-                except Exception, e:
-                    raise IntegrityError(
-                        "Can't delete internal page categorie with ID %s!" % line["id"]
-                    )
-                deleted_categories.append(line["name"])
-        return deleted_categories
+    def delete_internal_page_addition(self, internal_page_name, typ):
+        tables = {
+            "css": "pages_internal_css",
+            "js": "pages_internal_js",
+        }
+        table_name = tables[type]
+        test = self.select(
+            table = table_name,
+            where = ("name", internal_page_name),
+            limit = 1,
+        )
+        if test == []:
+            # Es gibt keinen Tabelleneintrag!
+            return None
+        self.delete(
+            table = table_name,
+            where = ("name", internal_page_name),
+            limit = 1,
+        )
+        return True
 
     def new_internal_page(self, data, lastupdatetime=None):
         """
         Erstellt eine neue interne Seite.
+        (installation!)
         """
 
         markup_id = self.get_markup_id(data["markup"])
-        #~ category_id = self.get_internal_page_category_id(data["category"])
+
         template_engine_id = self.get_template_engine_id(data["template_engine"])
 
         #~ self.page_msg(
@@ -286,7 +269,9 @@ class active_statements(passive_statements):
                 "template_engine"   : template_engine_id,
                 "markup"            : markup_id,
                 "lastupdatetime"    : self.tools.convert_time_to_sql(lastupdatetime),
-                "content"           : data["content"],
+                "content_html"      : data["content_html"],
+                "content_css"       : data["content_css"],
+                "content_js"        : data["content_js"],
                 "description"       : data["description"],
             },
         )

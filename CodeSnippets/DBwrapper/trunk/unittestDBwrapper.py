@@ -153,8 +153,8 @@ class testDBwrapper(unittest.TestCase):
         self.assertEqual(
             result,
             {
-                1L: {'data1': u'Value A 1', 'data2': u'Value A 2'},
-                2L: {'data1': u'Value B 1', 'data2': u'Value B 2'}
+                1L: {'data1': u'Value A 1', 'id': 1L, 'data2': u'Value A 2'},
+                2L: {'data1': u'Value B 1', 'id': 2L, 'data2': u'Value B 2'}
             }
         )
 

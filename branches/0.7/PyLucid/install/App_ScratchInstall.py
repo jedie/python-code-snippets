@@ -9,7 +9,7 @@ Installation von PyLucid
 
 
 from PyLucid.install.ObjectApp_Base import ObjectApp_Base
-from PyLucid.install.ObjectApp_Base import SQL_dump
+from PyLucid.install.SQLdump import SQLdump
 
 
 class install(ObjectApp_Base):
@@ -22,7 +22,7 @@ class install(ObjectApp_Base):
 
         simulation = self.request.form.get("simulation",False)
 
-        d = SQL_dump(self.request, self.response, simulation)
+        d = SQLdump(self.request, self.response, simulation)
 
         d.import_dump()
         #~ d.dump_data()

@@ -29,32 +29,33 @@ class update(ObjectApp_Base):
             "Delete obsolete 'pages_internal_category' table", SQLcommand
         )
         SQLcommand = (
-            "CREATE TABLE $$pages_internal_css ("
-            " name varchar(50) NOT NULL default '',"
-            " plugin_id tinyint(4) default NULL,"
-            " lastupdatetime datetime NOT NULL default '0000-00-00 00:00:00',"
-            " lastupdateby int(11) NOT NULL default '0',"
-            " content text NOT NULL,"
-            " description text NOT NULL,"
-            " PRIMARY KEY (name)"
-            ") COMMENT='StyleSheets code storage for internal page';"
+            "ALTER TABLE $$pages_internal"
+            " DROP category_id;"
         )
         self._execute(
-            "Add 'pages_internal_css' table (for StyleSheet code)", SQLcommand
+            "delete 'category_id' column in pages_internal table", SQLcommand
         )
         SQLcommand = (
-            "CREATE TABLE $$pages_internal_js ("
-            " name varchar(50) NOT NULL default '',"
-            " plugin_id tinyint(4) default NULL,"
-            " lastupdatetime datetime NOT NULL default '0000-00-00 00:00:00',"
-            " lastupdateby int(11) NOT NULL default '0',"
-            " content text NOT NULL,"
-            " description text NOT NULL,"
-            " PRIMARY KEY (name)"
-            ") COMMENT='JavaScript code storage for internal pages';"
+            "ALTER TABLE $$pages_internal"
+            " CHANGE content content_html TEXT NOT NULL;"
         )
         self._execute(
-            "Add 'pages_internal_js' table (for JavaScript code)", SQLcommand
+            "rename content to content_html in pages_internal table",
+            SQLcommand
+        )
+        SQLcommand = (
+            "ALTER TABLE $$pages_internal"
+            " ADD content_css TEXT NOT NULL AFTER content_html;"
+        )
+        self._execute(
+            "add 'content_css' column in pages_internal table", SQLcommand
+        )
+        SQLcommand = (
+            "ALTER TABLE $$pages_internal"
+            " ADD content_js TEXT NOT NULL AFTER content_html;"
+        )
+        self._execute(
+            "add 'content_js' column in pages_internal table", SQLcommand
         )
 
         # shortcut Spalte hinzufügen

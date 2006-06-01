@@ -41,26 +41,90 @@ def render_jinja(template, context):
 
 class TemplateEngines(PyLucidBaseModule):
 
-    def write(self, internalPageName, context):
-        internal_page_data = self.db.get_internal_page_data(internalPageName)
+    def write(self, internal_page_name, context):
+        try:
+            internal_page_data = self.db.get_internal_page_data(
+                internal_page_name
+            )
+        except IndexError, e:
+            import inspect
+            stack = inspect.stack()[1]
+            raise KeyError(
+                "Internal page '%s' not found (from '...%s' line %s): %s" % (
+                    internal_page_name, stack[1][-30:], stack[2], e
+                )
+            )
 
         engine = internal_page_data["template_engine"]
         if engine == "string formatting":
-            self.render_stringFormatting(internalPageName, internal_page_data, context)
+            self.render_stringFormatting(
+                internal_page_name, internal_page_data, context
+            )
         elif engine == "jinja":
-            content = internal_page_data["content"]
+            content = internal_page_data["content_html"]
             content = render_jinja(content, context)
             self.response.write(content)
         else:
             msg = "Template Engine '%s' not implemented!" % engine
             raise NotImplemented, msg
 
-        addCode = self.db.get_internal_page_addition_Data(internalPageName)
-        self.response.addCode += addCode
+        # CSS/JS behandeln:
+        self.addCSS(internal_page_data["content_css"])
+        self.addJS(internal_page_data["content_js"])
+
+    def addCSS(self, content_css):
+        """
+        Zusätzlicher Stylesheet Code für interne Seite behandeln
+        """
+        if content_css=="":
+            return
+
+        #~ tag = '<style type="text/css">\n%s\n</style>\n'
+        tag = (
+            '<style type="text/css">\n/* <![CDATA[ */\n'
+            '%s\n'
+            '/* ]]> */\n</style>'
+        )
+        content_type = "Stylesheet"
+        self.addCode(content_css, tag, content_type, internal_page_name)
+
+    def addJS(self, content_js):
+        """
+        Zusätzlicher JavaScript Code für interne Seite behandeln
+        """
+        if content_js=="":
+            return
+
+        #~ tag = '<script type="text/javascript">\n%s\n</script>\n'
+        tag = (
+            '<script type="text/javascript">\n/* <![CDATA[ */\n'
+            '%s\n'
+            '/* ]]> */\n</script>'
+        )
+        content_type = "JavaScript"
+        self.addCode(content_js, tag, content_type, internal_page_name)
+
+    def addCode(self, code, tag, content_type, internal_page_name):
+        """
+        Fügt den Code an response.addCode an
+        """
+        try:
+            code = code.encode("utf8")
+        except UnicodeError, e:
+            msg = (
+                "UnicodeError in %s add data for internal page '%s'"
+                " (Error: %s)"
+            ) % (content_type, internal_page_name, e)
+            self.page_msg(msg)
+            code = code.encode("utf8", "replace")
+
+        # Tag anwenden
+        code = tag % code
+        self.response.addCode.add(code)
 
 
-    def render_stringFormatting(self, internalPageName, internal_page_data, context):
-        content = internal_page_data["content"]
+    def render_stringFormatting(self, internal_page_name, internal_page_data, context):
+        content = internal_page_data["content_html"]
 
         content = content % context
 
@@ -124,7 +188,7 @@ class TemplateEngines(PyLucidBaseModule):
             raise Exception(
                 "%s: '%s': Can't fill internal page '%s'. \
                 *** More information above in page message ***" % (
-                    sys.exc_info()[0], e, internalPageName,
+                    sys.exc_info()[0], e, internal_page_name,
                 )
             )
 

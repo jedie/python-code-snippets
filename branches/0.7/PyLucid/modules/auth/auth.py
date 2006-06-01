@@ -70,8 +70,6 @@ class auth(PyLucidBaseModule):
         Der User will einloggen.
         Holt das LogIn-Formular aus der DB und stellt es zusammen
         """
-        self.URLs.debug()
-
         import random
         rnd_login = random.randint(10000,99999)
 
@@ -108,18 +106,18 @@ class auth(PyLucidBaseModule):
             form_pass2  = self.request.form["md5pass2"]
         except KeyError, e:
             # Formulardaten nicht vollständig
-            msg  = "<h1>Login Error:</h1>"
-            msg += "<h3>Form data not complete: '%s'</h3>" %e
-            msg += "<p>Have you enabled JavaScript?</p>"
-            msg += "<p>Did you run 'install_PyLucid.py'? Check login form in SQL table 'pages_internal'.</p>"
+            msg = (
+                "<h1>Login Error:</h1>"
+                "<h3>Form data not complete: '%s'</h3>"
+                "<p>Have you enabled JavaScript?</p>"
+                "<p>Did you run 'install_PyLucid.py'?"
+                " Check login form in SQL table 'pages_internal'.</p>"
+            ) % e
             if Debug: msg += "CGI-Keys: " + str(self.request.form.keys())
-            return msg
+            self.response.write(msg)
+            return
 
-        self.check_md5_login( username, form_pass1, form_pass2 )
-
-        # Nach dem Ausführen durch den ModuleManager, soll die aktuelle CMS
-        # Seite angezeigt werden, ansonsten wäre die Seite leer.
-        self.session["render follow"] = True
+        self.check_md5_login(username, form_pass1, form_pass2)
 
     def _error( self, log_msg, public_msg ):
         """Fehler werden abhängig vom Debug-Status angezeigt/gespeichert"""
@@ -132,7 +130,7 @@ class auth(PyLucidBaseModule):
             self.page_msg( "Debug:",log_msg )
 
         # Login-Form wieder anzeigen
-        return self.login()
+        self.login()
 
     def check_md5_login( self, username, form_pass1, form_pass2 ):
         """
@@ -140,59 +138,66 @@ class auth(PyLucidBaseModule):
         """
         self.session.debug()
         try:
-            # Die Zufallszahl beim login, wird aus der Datenbank geholt, nicht aus
-            # den zurück geschickten Formular-Daten
+            # Die Zufallszahl beim login, wird aus der Datenbank geholt, nicht
+            # aus den zurück geschickten Formular-Daten
             rnd_login = self.session["rnd_login"]
         except KeyError:
-            return self._error(
+            self._error(
                 "Error-0: Can't get rnd_login number from session",
                 "LogIn Error! (error:0)"
             )
+            return
 
         if (len( form_pass1 ) != 32) or (len( form_pass2 ) != 32):
-            return self._error(
+            self._error(
                 "Error-1: len( form_pass ) != 32",
                 "LogIn Error! (error:1)"
             )
+            return
 
         try:
             # Daten zum User aus der DB holen
             db_userdata = self.db.md5_login_userdata( username )
         except Exception, e:
             # User exisiert nicht.
-            return self._error(
+            self._error(
                 "Error: User '%s' unknown %s" % (username,e) ,
                 "User '%s' unknown!" % username
             )
+            return
 
         # Ersten MD5 Summen vergleichen
         if form_pass1 != db_userdata["pass1"]:
-            return self._error(
+            self._error(
                 'Error-2: form_pass1 != db_userdata["pass1"]',
                 "LogIn Error: Wrong Password! (error:2)"
             )
+            return
 
         try:
             # Mit erster MD5 Summe den zweiten Teil des Passworts aus
             # der DB entschlüsseln
             db_pass2 = crypt.decrypt( db_userdata["pass2"], form_pass1 )
         except Exception, e:
-            return self._error(
+            self._error(
                 "Error-3: decrypt db_pass2 failt: %s" % e ,
                 "LogIn Error: Wrong Password! (error:3)"
             )
+            return
 
-        # An den entschlüßelten, zweiten Teil des Passwortes, die Zufallszahl dranhängen...
+        # An den entschlüßelten, zweiten Teil des Passwortes, die Zufallszahl
+        # dranhängen...
         db_pass2 += str( rnd_login )
         # ...daraus die zweite MD5 Summe bilden
         db_pass2md5 = md5.new( db_pass2 ).hexdigest()
 
         # Vergleichen der zweiten MD5 Summen
         if db_pass2md5 != form_pass2:
-            return self._error(
+            self._error(
                 'Error-4: db_pass2md5 != form_pass2 |%s|' % db_pass2 ,
                 "LogIn Error: Wrong Password! (error:4)"
             )
+            return
 
         # Alles in Ordnung, User wird nun eingeloggt:
 
@@ -213,6 +218,10 @@ class auth(PyLucidBaseModule):
             )
         )
         self.page_msg( "You are logged in." )
+
+        # Nach dem Ausführen durch den ModuleManager, soll die aktuelle CMS
+        # Seite angezeigt werden, ansonsten wäre die Seite leer.
+        self.session["render follow"] = True
 
     def logout( self ):
         self.session.delete_session()

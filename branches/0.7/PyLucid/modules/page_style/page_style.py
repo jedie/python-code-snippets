@@ -93,16 +93,16 @@ class page_style(PyLucidBaseModule):
         response.headers['Etag'] = eTag
 
         # Chaching im Browser überprüfen:
-        #~ if "HTTP_IF_MODIFIED_SINCE" in self.environ and \
-                                        #~ "HTTP_IF_NONE_MATCH" in self.environ:
-            #~ # Der Browser fragt nach, ob es die Daten aus seinem Chache nehmen
-            #~ # soll.
-            #~ send_modified = self.environ["HTTP_IF_MODIFIED_SINCE"]
-            #~ send_eTag = self.environ["HTTP_IF_NONE_MATCH"]
-            #~ if send_eTag == eTag and send_modified == lastModified:
-                #~ # CSS Daten haben sich nicht geändert!
-                #~ response.status = 304 # HTTP/1.x 304 Not Modified
-                #~ return response
+        if "HTTP_IF_MODIFIED_SINCE" in self.environ and \
+                                        "HTTP_IF_NONE_MATCH" in self.environ:
+            # Der Browser fragt nach, ob es die Daten aus seinem Chache nehmen
+            # soll.
+            send_modified = self.environ["HTTP_IF_MODIFIED_SINCE"]
+            send_eTag = self.environ["HTTP_IF_NONE_MATCH"]
+            if send_eTag == eTag and send_modified == lastModified:
+                # CSS Daten haben sich nicht geändert!
+                response.status = 304 # HTTP/1.x 304 Not Modified
+                return response
 
         # Die CSS Daten werden zum ersten mal gesendet oder diese haben
         # sich seit dem letzten Aufruf geändert.

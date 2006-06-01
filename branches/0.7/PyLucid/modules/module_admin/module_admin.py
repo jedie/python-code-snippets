@@ -67,7 +67,6 @@ class InternalPage(object):
         self.basePath = os.sep.join(self.package_dir_list)
 
         self.name = data["name"]
-        del(data["name"])
 
         self.data = data
 
@@ -79,30 +78,38 @@ class InternalPage(object):
         """
         self.plugin_id = plugin_id
 
+        msg = (
+            "<li>install internal page '<strong>%s</strong>'...<ul>\n"
+        ) % self.name
+        self.response.write(msg)
+
+        lastupdatetime_list = []
+
+        html, lastupdatetime = self._getAdditionFiles("html", "HTML")
+        lastupdatetime_list.append(lastupdatetime)
+
+        css, lastupdatetime = self._getAdditionFiles("css", "StyleSheet")
+        lastupdatetime_list.append(lastupdatetime)
+
+        js, lastupdatetime = self._getAdditionFiles("js", "JavaScript")
+        lastupdatetime_list.append(lastupdatetime)
+
+        # Als Grundlage dient das neuste Datum
+        lastupdatetime = max(lastupdatetime_list)
+
         # Hinweis: template_engine und markup werden von self.db umgewandelt
         # in IDs!
-        self.response.write("\t\tinstall internal page '%s'..." % self.name)
         internal_page = {
             "name"              : self.name,
             "plugin_id"         : self.plugin_id,
             "category"          : self.module_name,
             "description"       : self.data["description"],
+            "content_html"      : html,
+            "content_css"       : css,
+            "content_js"        : js,
             "template_engine"   : self.data["template_engine"],
             "markup"            : self.data["markup"],
         }
-
-        internal_page_filename = "%s/%s.html" % (self.basePath, self.name)
-        print internal_page_filename
-
-
-        self.response.write("%s..." % internal_page_filename)
-        try:
-            lastupdatetime, content = self._getFiledata(internal_page_filename)
-        except Exception, e:
-            self.response.write("Error reading Template-File: %s\n" % e)
-            return
-
-        internal_page["content"] = content
 
         try:
             self.db.new_internal_page(internal_page, lastupdatetime)
@@ -113,51 +120,28 @@ class InternalPage(object):
                 )
             )
         else:
-            self.response.write("OK\n")
-            print "OK"
+            self.response.write("</ul><li>internal page saved! OK</li>\n")
 
-        # Evtl. vorhandene CSS Datei auch in die DB bringen
-        self.installAdditionFiles("css", "StyleSheet", self.db.newStyleSheet)
-        self.installAdditionFiles("js", "JavaScript", self.db.newJavaScript)
-
-    def installAdditionFiles(self, ext, name, dbMethod):
+    def _getAdditionFiles(self, ext, name):
         filename = "%s/%s.%s" % (self.basePath, self.name, ext)
         if not os.path.isfile(filename):
             # Es gibt keine zusätzliche Datei ;)
-            return
+            return "", 0
 
-        msg = "\t\tinstall %s '%s'..." % (name, filename)
+        msg = "<li>read %s '%s'..." % (name, filename)
         self.response.write(msg)
         try:
             lastupdatetime, content = self._getFiledata(filename)
         except Exception, e:
             self.response.write(
-                "Error reading %s-File: %s\n" % (
+                "Error reading %s-File: %s</li>\n" % (
                     name, e
                 )
             )
-            return
-
-        print filename, lastupdatetime
-
-        data = {
-            "name"          : self.name,
-            "plugin_id"     : self.plugin_id,
-            "lastupdatetime": lastupdatetime,
-            "description"   : "module/plugin %s" % name,
-            "content"       : content,
-        }
-
-        try:
-            dbMethod(data)
-        except Exception, e:
-            raise IntegrityError(
-                "Can't save new %s to DB: %s - %s" % (
-                    name, sys.exc_info()[0], e
-                )
-            )
+            return "", 0
         else:
-            self.response.write("OK\n")
+            self.response.write("OK</li>\n")
+            return content, lastupdatetime
 
     def _getFiledata(self, filename):
         try:
@@ -168,6 +152,14 @@ class InternalPage(object):
         f = file(filename, "rU")
         content = f.read()
         f.close()
+
+        try:
+            content = unicode(content, "utf8")
+        except UnicodeError, e:
+            self.response.write(
+                "UnicodeError: Use 'replace' error handling..."
+            )
+            content = unicode(content, "utf8", errors='replace')
 
         return lastupdatetime, content
 
@@ -189,7 +181,7 @@ class Method(object):
     """
     Daten einer Methode von einem Module/Plugin
     """
-    def __init__(self, request, response, package_dir_list, module_name, name):
+    def __init__(self, request, response):
         self.request = request
         self.response = response
 
@@ -197,6 +189,7 @@ class Method(object):
         self.db             = request.db
         self.page_msg       = request.page_msg
 
+    def add(self, package_dir_list, module_name, name):
         self.package_dir_list = package_dir_list
         self.module_name = module_name
         self.name = name
@@ -222,7 +215,6 @@ class Method(object):
                 self.request, self.response,
                 self.package_dir_list, self.name, internal_page_info
             )
-            del(config['internal_page_info'])
 
         self.data.update(config)
 
@@ -232,14 +224,20 @@ class Method(object):
         """
         Installiert Methode in die DB
         """
-        self.response.write("\tinstall method '%s'..." % self.name)
+        msg = (
+            "<li>install method '<strong>%s</strong>'..."
+        ) % self.name
+        self.response.write(msg)
+
         # methode in DB eintragen
         self.db.register_plugin_method(moduleID, self.name, self.data)
-        self.response.write("OK\n")
+        self.response.write("OK</li>\n")
 
         if self.internalPage != None:
             # zugehörige interne Seite in DB eintragen
+            self.response.write('<li><ul class="install_ipages">\n')
             self.internalPage.install(moduleID)
+            self.response.write("</ul></li>\n")
 
     #_________________________________________________________________________
 
@@ -253,11 +251,17 @@ class Method(object):
         self.page_msg("</ul>")
 
 
+
+
+
+
+
+
 class Module(object):
     """
     Daten eines Modules
     """
-    def __init__(self, request, response, name):
+    def __init__(self, request, response):
         self.request = request
         self.response = response
 
@@ -265,6 +269,7 @@ class Module(object):
         self.db             = request.db
         self.page_msg       = request.page_msg
 
+    def add(self, name):
         self.name = name
 
         # defaults setzten:
@@ -335,6 +340,7 @@ class Module(object):
             )
             raise SyntaxError, msg
         else:
+            #~ cfg = module_cfg_object
             return module_cfg_object
 
     def _getVersionInfo(self):
@@ -396,10 +402,8 @@ class Module(object):
     def _setupMethods(self, configObject):
         module_manager_data = configObject.module_manager_data
         for methodName, methodData in module_manager_data.iteritems():
-            method = Method(
-                self.request, self.response,
-                self.data["package_dir_list"], self.name, methodName
-            )
+            method = Method(self.request, self.response)
+            method.add(self.data["package_dir_list"], self.name, methodName)
             method.assimilateConfig(methodData)
             self.methods.append(method)
 
@@ -409,8 +413,9 @@ class Module(object):
         """
         Installiert das Modul und all seine Methoden
         """
+        self.response.write("<h4>%s</h4>\n" % self.name)
         self.response.write(
-            "\nregister Module '<strong>%s</strong>'..." % self.name
+            "\t<li>register Module '<strong>%s</strong>'..." % self.name
         )
 
         if autoActivate:
@@ -418,12 +423,17 @@ class Module(object):
 
         # Modul in DB eintragen
         id = self.db.install_plugin(self.data)
-        self.response.write("OK\n")
+        self.response.write("OK</li>\n")
 
-        self.response.write("register all Methodes:\n")
+        self.response.write(
+            '\t<li>register all Methodes:</li>\n'
+            '\t<li><ul class="reg_methodes">\n'
+        )
         # Alle Methoden in die DB eintragen
         for method in self.methods:
             method.install(id)
+
+        self.response.write("\t</ul></li>\n")
 
     def first_time_install(self):
         """
@@ -488,7 +498,8 @@ class Modules(object):
             # Daten sind schon aus der DB da.
             return
 
-        module = Module(self.request, self.response, module_name)
+        module = Module(self.request, self.response)
+        module.add(module_name)
         module.add_fromDisk(package_dir_list)
         self.data[module_name] = module
 
@@ -563,9 +574,14 @@ class Modules(object):
         """
         Alle wichtigen Module installieren
         """
+        self.response.write(
+            "<h3>install all essential and important buildin plugins</h3>"
+        )
         try:
             for module_name, module in self.data.iteritems():
+                self.response.write('<ul class="module_install">\n')
                 module.first_time_install()
+                self.response.write('</ul>\n')
         except IntegrityError, e:
             msg = (
                 "install all modules failed!"
@@ -712,18 +728,13 @@ class ModuleAdmin(PyLucidBaseModule):
         """
         Modul in die DB eintragen
         """
-        data = Modules(self.request, self.response)
-
         self.response.write(
             "<h3>Install %s.<strong>%s</strong></h3>" % (
                 package_name, module_name
             )
         )
-
-        self.response.write("<pre>")
+        data = Modules(self.request, self.response)
         data.installModule(module_name, package_name)
-        self.response.write("</pre>")
-        return
 
     def first_time_install(self, simulation=True):
         """
@@ -732,7 +743,6 @@ class ModuleAdmin(PyLucidBaseModule):
         "essential_buildin" == True oder "important_buildin" == True
         """
         self.response.write("<h2>First time install:</h2>\n")
-        self.response.write("<pre>\n")
 
         self._truncateTables()
 
@@ -744,23 +754,29 @@ class ModuleAdmin(PyLucidBaseModule):
         data.first_time_install()
 
     def _truncateTables(self):
-        self.response.write("<strong>truncate tables:</strong>\n")
-        tables = (
-            "plugins", "plugindata",
-            "pages_internal",
-            "pages_internal_css", "pages_internal_js"
+        self.response.write("<hr />\n")
+        self.response.write(
+            "<h4>truncate tables:</h4>\n"
+            "<ul>\n"
         )
+        tables = ("plugins", "plugindata", "pages_internal")
         for table in tables:
-            self.response.write("\t* truncate table %s..." % table)
+            self.response.write("\t<li>truncate table %s..." % table)
 
             try:
                 self.db.cursor.execute("TRUNCATE TABLE $$%s" % table)
             except Exception, e:
-                self.response.write("%s: %s" % (sys.exc_info()[0], e))
-                self.response.write("(Have you first init the tables?)")
+                msg = (
+                    "<h4>%s: %s</h4>"
+                    "<h5>(Have you first init the tables?)</h5>"
+                    "</li></ul>"
+                ) % (sys.exc_info()[0], e)
+                self.response.write(msg)
                 return
             else:
-                self.response.write("OK\n")
+                self.response.write("OK</li>\n")
+        self.response.write("</ul>\n")
+        self.response.write("<hr />\n")
 
     #_________________________________________________________________________
     # DEinstall
@@ -781,6 +797,8 @@ class ModuleAdmin(PyLucidBaseModule):
         data.deinstallModule(id)
         self.response.write("</pre>")
         return
+
+
 
 
 

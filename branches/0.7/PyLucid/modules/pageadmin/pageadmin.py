@@ -122,13 +122,13 @@ class pageadmin(PyLucidBaseModule):
             return
 
         context = {
-            "url": self.URLs.make_action_link("select_edit_page"),
+            "url": self.URLs.actionLink("select_edit_page"),
             "page_option": self.tools.forms().siteOptionList(
                 with_id = True, select = self.session["page_id"]
             )
         }
 
-        self.templates.write("pageadmin_select_edit_page", context)
+        self.templates.write("select_edit_page", context)
 
     def editor_page(self, edit_page_data):
         """
@@ -238,7 +238,7 @@ class pageadmin(PyLucidBaseModule):
             "permitViewGroupID_option"  : permitViewGroupID_option,
         }
 
-        self.templates.write("pageadmin_edit_page", context)
+        self.templates.write("edit_page", context)
 
     def preview(self):
         "Preview einer editierten Seite"
@@ -516,7 +516,7 @@ class pageadmin(PyLucidBaseModule):
             )
         }
 
-        self.templates.write("pageadmin_select_del_page", context)
+        self.templates.write("select_del_page", context)
 
 
     def delete_page(self, page_id_to_del):
@@ -627,7 +627,7 @@ class pageadmin(PyLucidBaseModule):
             "table_data" : table,
         }
 
-        self.templates.write("pageadmin_sequencing", context)
+        self.templates.write("sequencing", context)
 
     def save_positions(self):
         """

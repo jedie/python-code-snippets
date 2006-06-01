@@ -181,14 +181,10 @@ class plugin_data:
         self.oldActionURL = self.URLs["action"]
 
         self.URLs.lock = False
-        self.URLs["command"] = self.URLs.commandLink(self.module_name)
-        #~ self.URLs["command"] = "/".join((
-            #~ self.URLs["base"],
-            #~ self.preferences["commandURLprefix"],
-            #~ self.module_name
-        #~ )) + "/"
 
-        self.URLs["action"] = self.URLs["command"]
+        self.URLs["command"] = self.module_name
+        self.URLs["action"] = self.method_name
+
         self.URLs.lock = True
 
         self.oldRunlevel = self.request.runlevel
