@@ -46,7 +46,31 @@ class passive_statements(SQL_wrapper):
             "It's %s<br/>Check SQL-Table settings!" % cgi.escape( str( type(item) ) )
         )
 
-    #_____________________________________________________________________________
+    #_________________________________________________________________________
+    ## Direktzugriff auf Tabelleninhalte über db.get_tableDict()
+
+    def internalPageList(self, select_items=None):
+        return self.get_tableDict(
+            select_items,
+            index_key = "name",
+            table_name = "pages_internal"
+        )
+
+    def pluginsList(self, select_items=["*"]):
+        return self.get_tableDict(
+            select_items,
+            index_key = "id",
+            table_name = "plugins"
+        )
+
+    def userList(self, select_items=["*"]):
+        return self.get_tableDict(
+            select_items,
+            index_key = "id",
+            table_name = "md5users"
+        )
+
+    #_________________________________________________________________________
     # Spezielle lucidCMS Funktionen, die von Modulen gebraucht werden
 
     def get_first_page_id(self):
@@ -378,27 +402,28 @@ class passive_statements(SQL_wrapper):
     #_____________________________________________________________________________
     ## InterneSeiten
 
-    def get_internal_page_list(self):
-        return self.select(
-                select_items    = [
-                    "name","plugin_id","description",
-                    "markup","template_engine","markup"
-                ],
-                from_table      = "pages_internal",
-            )
 
-    def get_internal_page_dict(self):
-        page_dict = {}
-        for page in self.get_internal_page_list():
-            page_dict[page["name"]] = page
-        return page_dict
+    #~ def get_internal_page_list(self):
+        #~ return self.select(
+            #~ select_items    = [
+                #~ "name","plugin_id","description",
+                #~ "markup","template_engine","markup"
+            #~ ],
+            #~ from_table      = "pages_internal",
+        #~ )
 
-    def get_internal_category(self):
-        return self.select(
-                select_items    = ["id","module_name"],
-                from_table      = "plugins",
-                order           = ("module_name","ASC"),
-            )
+    #~ def get_internal_page_dict(self):
+        #~ page_dict = {}
+        #~ for page in self.get_internal_page_list():
+            #~ page_dict[page["name"]] = page
+        #~ return page_dict
+
+    #~ def get_internal_category(self):
+        #~ return self.select(
+                #~ select_items    = ["id","module_name"],
+                #~ from_table      = "plugins",
+                #~ order           = ("module_name","ASC"),
+            #~ )
 
     def get_template_engine(self, id):
         """ Liefert den template_engine-Namen anhand der ID """
@@ -440,22 +465,14 @@ class passive_statements(SQL_wrapper):
             return None
 
     def get_internal_page_data(self, internal_page_name, replace=True):
-        try:
-            data = self.select(
-                select_items    = [
-                    "template_engine","markup","content","description"
-                ],
-                from_table      = "pages_internal",
-                where           = ("name", internal_page_name)
-            )[0]
-        except Exception, e:
-            import inspect
-            raise KeyError(
-                "Internal page '%s' not found (from '...%s' line %s): %s" % (
-                    internal_page_name, inspect.stack()[1][1][-20:],
-                        inspect.stack()[1][2], e
-                )
-            )
+        data = self.select(
+            select_items    = [
+                "content_html", "content_css", "content_js",
+                "template_engine","markup","description"
+            ],
+            from_table      = "pages_internal",
+            where           = ("name", internal_page_name)
+        )[0]
 
         if replace==True:
             data["template_engine"] = self.get_template_engine(
@@ -463,14 +480,16 @@ class passive_statements(SQL_wrapper):
             )
             data["markup"] = self.get_markup_id(data["markup"])
 
-        try:
-            data["content"] = data["content"].decode("utf_8")
-        except UnicodeError, e:
-            self.page_msg("Can't decode internal page content: %s" % e)
+        content_keys = ("content_html", "content_css", "content_js")
+        for key in content_keys:
             try:
-                data["content"] = data["content"].decode("utf_8", 'replace')
+                data[key] = data[key].decode("utf_8")
             except UnicodeError, e:
-                pass
+                self.page_msg("Can't decode internal page content: %s" % e)
+                try:
+                    data[key] = data[key].decode("utf_8", 'replace')
+                except UnicodeError, e:
+                    data[key] = ""
 
         return data
 

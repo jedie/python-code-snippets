@@ -6,7 +6,7 @@
 <form name="edit_style" method="post" action="{{ url }}">
     Duplicate <select name="clone_name">
     {% for item in nameList %}
-        <option value="{{ item.name }}">{{ item.name }}</option>
+        <option value="{{ item }}">{{ item }}</option>
     {% endfor %}
 
     </select> to a new named: <input name="new_name" value="" size="20" maxlength="50" type="text">
@@ -15,6 +15,11 @@
 
 <span class="select">
 <table>
+    <tr>
+        <th>name</th>
+        <th>description</th>
+        <th colspan="2">action</th>
+    </tr>
 {% for item in itemsDict %}
     {% cycle rowclass through "odd", "even" %}
 
@@ -30,12 +35,3 @@
 {% endfor %}
 </table>
 </span>
-
-<style type="text/css">
-.select table td {
-  padding: 0.2em;
-}
-.select table td.name {
-  font-weight:bold;
-}
-</style>

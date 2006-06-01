@@ -116,7 +116,6 @@ class PyLucidApp(BaseApplication):
         self.request.page_msg = environ['PyLucid.page_msg']
 
         self.response.addCode = environ["PyLucid.addCode"]
-        #~ self.response.addCode = [] # Leeren (fastCGI und Co.)!
 
         # Passt die verwendeten Pfade an.
         self.request.URLs = URLs.URLs(self.request)
@@ -139,7 +138,7 @@ class PyLucidApp(BaseApplication):
         #~ self.request.db = db.db(self.request, self.response)
         self.request.db.page_msg = self.request.page_msg
 
-        # FIXME - Auch in der DB-Klasse wird tools benötigt
+        # FIXME:
         self.request.db.tools = self.request.tools
         self.request.db.URLs = self.request.URLs
 

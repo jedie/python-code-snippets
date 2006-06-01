@@ -654,7 +654,6 @@ class SQL_wrapper(Database):
         result = {}
         for line in selectDict:
             index_value = line[indexKey]
-            del(line[indexKey])
             result[index_value] = line
         return result
 
@@ -666,6 +665,7 @@ class SQL_wrapper(Database):
         das Ergebniss von einer Liste zu einem Dict umgeformt, sodas der
         Tabellen-Index >index_key< als Dict-Key dient.
         """
+
         if (not "*" in select_items) and (not index_key in select_items):
             # Der index muß immer mit abgefragt werden!
             select_items.append(index_key)

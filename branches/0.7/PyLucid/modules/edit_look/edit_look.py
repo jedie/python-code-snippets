@@ -236,13 +236,18 @@ class edit_look(PyLucidBaseModule):
         """ Erstellt die Tabelle zum auswählen eines Style/Templates """
 
         nameList = [i["name"] for i in table_data]
-        clone_select = self.tools.html_option_maker().build_from_list(nameList)
+
+        #~ option_maker = self.tools.html_option_maker()
+        #~ clone_select = option_maker.build_from_list(itemsDict)
 
         context = {
             "url": self.URLs.currentAction(),
-            "nameList": table_data,
+            "nameList": nameList,
+            "itemsDict": table_data,
         }
-        internalPageName = "edit_look_select_%s" % type
+        internalPageName = "select_%s" % type
+
+        #~ self.page_msg(context)
 
         # Seite anzeigen
         self.templates.write(internalPageName, context)
@@ -251,71 +256,131 @@ class edit_look(PyLucidBaseModule):
     ## Interne Seiten editieren
 
     def internal_page(self):
-        """ Tabelle zum auswählen einer Internen-Seite zum editieren """
-        #~ from colubrid.debug import debug_info
-        #~ self.page_msg(debug_info(self.request))
+        """
+        Tabelle zum auswählen einer Internen-Seite zum editieren
 
-        category_list   = self.db.get_internal_category()
-        page_dict       = self.db.get_internal_page_dict()
+        jinja context:
 
-        select_table = ""
-        for category in category_list:
-            printed_head = False
-            for page_name, page in dict(page_dict).iteritems():
-                if page["plugin_id"] == category["id"]:
-                    if printed_head==False:
-                        select_table += "<h3>%s</h3>\n" % category["module_name"].replace("_"," ")
-                        select_table += '<table id="edit_internal_pages_select">\n'
-                        printed_head=True
-                    select_table += "<tr>\n"
-                    select_table += '  <form name="internal_page" method="post" action="%s">\n' % \
-                                    self.URLs.actionLink("edit_internal_page")
-                    select_table += '  <input name="internal_page_name" type="hidden" value="%s" />\n' % page_name
-                    select_table += '  <td><input type="submit" value="edit" name="edit" /></td>\n'
+        context = [
+            {
+                "package":"buildin_plugins",
+                "data": [
+                    {
+                        "module_name":"plugin1",
+                        "data": [
+                            {"name": "internal page1",
+                            ...},
+                            {"name": "internal page2",
+                            ...},
+                        ],
+                    {
+                        "module_name":"plugin2",
+                        "data": [...]
+                    },
+                ]
+            },
+            {
+                "package":"modules",
+                "data": [...]
+            }
+        ]
+        """
+        if "save" in self.request.form:
+            # Zuvor editierte interne Seite speichern
+            self.save_internal_page()
 
-                    short_page_name = page_name
-                    if short_page_name.startswith("%s_" % category['module_name']):
-                        short_page_name = short_page_name[len(category['module_name'])+1:]
-                    select_table += '  <td class="name">%s</td>\n' % short_page_name
+        select_items = [
+            "name","plugin_id","description","lastupdatetime","lastupdateby"
+        ]
+        internal_pages = self.db.internalPageList(select_items)
 
-                    select_table += '  <td>%s</td>\n' % page["description"]
-                    select_table += '  </form>\n'
-                    select_table += "</tr>\n"
-                    del page_dict[page_name]
-            select_table += "</table>\n"
+        select_items = ["id", "package_name", "module_name"]
+        plugin_data = self.db.pluginsList(select_items)
 
-        if len(page_dict)>0:
-            select_table += "<hr>"
-            select_table += "<h3>in no category!</h3>\n"
-            select_table += '<table id="edit_internal_pages_select">\n'
-            for page_name, page in page_dict.iteritems():
-                select_table += "<tr>\n"
-                select_table += '  <form name="internal_page" method="post" action="%s">\n' % \
-                                                        self.URLs.actionLink("edit_internal_page")
-                select_table += '  <input name="internal_page_name" type="hidden" value="%s" />\n' % page_name
-                select_table += '  <td><input type="submit" value="edit" name="edit" /></td>\n'
-                select_table += '  <td class="name">%s</td>\n' % page["name"]
-                select_table += '  <td class="name">%s</td>\n' % page["plugin_id"]
-                select_table += '  <td>%s</td>\n' % page["description"]
-                select_table += '  </form>\n'
-                select_table += "</tr>\n"
-            select_table += "</table>\n"
+        users = self.db.userList(select_items=["id", "name"])
 
-        self.response.write(
-            "<p><small>(edit_look v%s)</small></p>" % __version__
-        )
+        # Den ID Benzug auflösen und Daten zusammenfügen
+        for page_name, data in internal_pages.iteritems():
+            # Username ersetzten. Wenn die Daten noch nie editiert wurden,
+            # dann ist die ID=0 und der user existiert nicht in der DB!
+            lastupdateby = data["lastupdateby"]
+            user = users.get(lastupdateby, {"name":"<em>[nobody]</em>"})
+            data["lastupdateby"] = user["name"]
+
+            # Plugindaten
+            plugin_id = data["plugin_id"]
+            plugin = plugin_data[plugin_id]
+
+            data.update(plugin)
+
+        # Baut ein Dict zusammen um an alle Daten über die Keys zu kommen
+        contextDict = {}
+        for page_name, data in internal_pages.iteritems():
+            package_name = data["package_name"]
+            package_name = package_name.split(".")
+            package_name = package_name[1]
+            data["package_name"] = package_name
+            module_name = data["module_name"]
+
+            if not package_name in contextDict:
+                contextDict[package_name] = {}
+
+            if not module_name in contextDict[package_name]:
+                contextDict[package_name][module_name] = []
+
+            contextDict[package_name][module_name].append(data)
+
+        # Baut eine Liste für jinja zusammen
+        context_list = []
+        package_list = contextDict.keys()
+        package_list.sort()
+        for package_name in package_list:
+            package_data = contextDict[package_name]
+
+            plugins_keys = package_data.keys()
+            plugins_keys.sort()
+
+            plugin_list = []
+            for plugin_name in plugins_keys:
+                plugin_data = package_data[plugin_name]
+
+                internal_page_list = []
+                for internal_page in plugin_data:
+                    module_name = internal_page["module_name"]
+                    del(internal_page["module_name"])
+                    del(internal_page["package_name"])
+                    del(internal_page["plugin_id"])
+                    del(internal_page["id"])
+                    internal_page_list.append(internal_page)
+
+                internal_page = {
+                    "module_name": module_name,
+                    "data": internal_page_list
+                }
+                plugin_list.append(internal_page)
+
+            context_list.append({
+                "package_name": package_name,
+                "data": plugin_list
+            })
 
         context = {
-            "select_table" : select_table,
+            "version": __version__,
+            "itemsList": context_list,
+            #~ "url": self.URLs.currentAction(),
+            "url": self.URLs.actionLink("edit_internal_page"),
         }
 
-        self.templates.write("edit_look_select_internal_page", context)
+        # Seite anzeigen
+        self.templates.write("select_internal_page", context)
 
-    def edit_internal_page(self):
+    def edit_internal_page(self, function_info):
         """ Formular zum editieren einer internen Seite """
         #~ from colubrid.debug import debug_info
         #~ self.page_msg(debug_info(self.request))
-        internal_page_name = self.request.form['internal_page_name']
+
+        #~ internal_page_name = self.request.form['internal_page_name']
+        internal_page_name = function_info[0]
 
         try:
             # Daten der internen Seite, die editiert werden soll
@@ -324,6 +389,11 @@ class edit_look(PyLucidBaseModule):
             self.page_msg( "bad internal-page name: '%s' !" % cgi.escape(internal_page_name) )
             self.internal_page() # Auswahl wieder anzeigen lassen
             return
+
+        css = self.db.get_internal_page_addition_CSS(internal_page_name)
+        if css == None: css = ""
+        js = self.db.get_internal_page_addition_JS(internal_page_name)
+        if js == None: js = ""
 
         OptionMaker = self.tools.html_option_maker()
         markup_option = OptionMaker.build_from_list(
@@ -334,37 +404,100 @@ class edit_look(PyLucidBaseModule):
         )
 
         context = {
-            "name"                      : internal_page_name,
-            "url"                       : self.URLs.actionLink("save_internal_page"),
-            "content"                   : cgi.escape( edit_data["content"] ),
-            "description"               : cgi.escape( edit_data["description"] ),
-            "template_engine_option"    : template_engine_option,
-            "markup_option"             : markup_option,
-            "back"                      : "%sedit_internal_page" % self.URLs["action"],
+            "name"          : internal_page_name,
+            "back_url"      : self.URLs.actionLink("internal_page"),
+            "url"           : self.URLs.actionLink("internal_page"),
+            "content_html"  : cgi.escape(edit_data["content"]),
+            "content_css"   : cgi.escape(css),
+            "content_js"    : cgi.escape(js),
+            #FIXME description von CSS und JS werden ignoriert. Oder sollten
+            # die auch keine Beschreibung haben???
+            "description"            : cgi.escape(edit_data["description"]),
+            "template_engine_option" : template_engine_option,
+            "markup_option"          : markup_option,
         }
 
-        self.templates.write("edit_look_edit_internal_page", context)
+        self.templates.write("edit_internal_page", context)
 
     def save_internal_page(self):
         """ Speichert einen editierte interne Seite """
-        #~ from colubrid.debug import debug_info
-        #~ self.page_msg(debug_info(self.request))
+        from colubrid.debug import debug_info
+        self.page_msg(debug_info(self.request))
 
         internal_page_name = self.request.form['internal_page_name']
 
         page_data = self.get_filteredFormDict(
-            strings = ("content", "description"),
-            numbers = ("markup", "template_engine")
+            strings = (
+                "content_html", "content_css", "content_js", "description"
+            ),
+            numbers = ("markup", "template_engine"),
+            default = ""
         )
 
-        try:
-            self.db.update_internal_page(internal_page_name, page_data)
-        except Exception, e:
-            self.page_msg("Error saving internal page '%s': %s" % (cgi.escape(internal_page_name), e))
-        else:
-            self.page_msg("internal page '%s' saved!" % cgi.escape(internal_page_name))
+        # HTML abspeichern
+        html_dict = {
+            "content"           : page_data["content_html"],
+            "description"       : page_data["description"],
+            "markup"            : page_data["markup"],
+            "template_engine"   : page_data["template_engine"],
+        }
+        self._save_internal_page_data(
+            internal_page_name, "html", html_dict
+        )
 
-        self.internal_page() # Auswahl wieder anzeigen lassen
+        # CSS abspeichern
+        css_dict = { "content": page_data["content_css"]}
+        self._save_internal_page_data(
+            internal_page_name, "css", css_dict
+        )
+
+        # JS abspeichern
+        js_dict = { "content": page_data["content_js"]}
+        self._save_internal_page_data(
+            internal_page_name, "js", js_dict
+        )
+
+    def _save_internal_page_data(self, internal_page_name, typ, data):
+        escaped_name = cgi.escape(internal_page_name)
+        if typ in ("css","js") and data["content"] == "":
+            # Keine css/js Daten -> Kann in db gelöscht werden!
+            #~ try:
+            status = self.db.delete_internal_page_addition(
+                internal_page_name, typ
+            )
+            #~ except Exception, e:
+                #~ self.page_msg(
+                    #~ "Delete error '%s'-%s-code from db: %s" % (
+                        #~ typ, escaped_name, e
+                    #~ )
+                #~ )
+            #~ else:
+                #~ if status != True:
+                    #~ # Es gab keinen Tabelleneintrag ;)
+                    #~ return
+                #~ self.page_msg(
+                    #~ "Clean %s-code for internal page '%s' in db" % (
+                        #~ typ, escaped_name
+                    #~ )
+                #~ )
+        else:
+            # HTML-Daten speichern
+            try:
+                self.db.update_internal_page(
+                    internal_page_name, typ, data
+                )
+            except Exception, e:
+                self.page_msg(
+                    "Error saving %s-code from internal page '%s': %s" % (
+                        typ, escaped_name, e
+                    )
+                )
+            else:
+                self.page_msg(
+                    "%s-code for internal page '%s' saved!" % (
+                        typ, escaped_name
+                    )
+                )
 
     #_______________________________________________________________________
     ## Allgemeine Funktionen
@@ -374,10 +507,13 @@ class edit_look(PyLucidBaseModule):
         page += "<p>%s</p>" % "<br/>".join( [str(i) for i in msg] )
         return page
 
-    def get_filteredFormDict(self, strings=None, numbers=None):
+    def get_filteredFormDict(self, strings=None, numbers=None, default=False):
         result = {}
         for name in strings:
-            result[name] = self.request.form[name]
+            if default!=False:
+                result[name] = self.request.form.get(name, default)
+            else:
+                result[name] = self.request.form[name]
         for name in numbers:
             result[name] = int(self.request.form[name])
 

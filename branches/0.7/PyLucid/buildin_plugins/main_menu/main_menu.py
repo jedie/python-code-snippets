@@ -73,7 +73,7 @@ class main_menu(PyLucidBaseModule):
         self.menudata = []
 
     def lucidTag(self):
-        self.URLs.debug()
+        #~ self.URLs.debug()
 
         # "Startpunkt" für die Menügenerierung feststellen
         parentID = self.db.select(

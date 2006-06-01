@@ -16,9 +16,9 @@
 //~ alert(document.cookie);
 if (!document.getElementById) {
   alert("Your Browser is not supported!");
-} else {
+} /*else {
   document.getElementById("user").focus();
-}
+}*/
 
 if (navigator.cookieEnabled) {
   if (navigator.cookieEnabled != true) {
