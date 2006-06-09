@@ -50,30 +50,16 @@ class install(ObjectApp_Base):
         module_admin = self._get_module_admin()
         module_admin.first_time_install(simulation)
 
-    #~ #_________________________________________________________________________
+    #_________________________________________________________________________
 
-    #~ def add_admin(self):
-        #~ "3. add a admin user"
-        #~ self._write_info()
+    def add_admin(self):
+        "3. add a admin user"
+        self._write_info()
 
-        #~ if not self._has_all_keys( self.CGIdata, ["username","email","pass1"] ):
-            #~ self.db.print_internal_page("userhandling_add_user", {"url":"?add_admin"})
-            #~ print "<strong>Note:</strong> Is admin checkbox ignored. Always create a admin account!"
-            #~ return
-
-        #~ if not self.CGIdata.has_key("realname"):
-            #~ self.CGIdata["realname"] = None
-
-        #~ usermanager = userhandling.userhandling(self.PyLucid)
-        #~ try:
-            #~ usermanager.add_user(
-                #~ username    = self.CGIdata["username"],
-                #~ email       = self.CGIdata["email"],
-                #~ realname    = self.CGIdata["realname"],
-                #~ admin       = 1
-            #~ )
-        #~ except KeyError, e:
-            #~ print "CGIdata KeyError: '%s' not found! No user is added!" % e
+        from PyLucid.modules.userhandling import userhandling
+        usermanager = userhandling.userhandling(self.request, self.response)
+        #~ usermanager.add_user()
+        usermanager.manage_user()
 
 
 

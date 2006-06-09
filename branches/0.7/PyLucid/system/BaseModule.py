@@ -35,18 +35,20 @@ class PyLucidBaseModule(object):
         self.response   = response
 
         # shorthands
+        self.runlevel       = request.runlevel
         self.db             = request.db
         self.session        = request.session
         self.preferences    = request.preferences
         self.URLs           = request.URLs
-        self.page_msg       = request.page_msg
         self.log            = request.log
         self.module_manager = request.module_manager
         self.tools          = request.tools
         self.render         = request.render
-        self.tag_parser     = request.tag_parser
-
+        #~ self.tag_parser     = request.tag_parser
+        self.staticTags     = request.staticTags
         self.templates      = request.templates
+
+        self.page_msg       = response.page_msg
 
         self.environ        = request.environ
 

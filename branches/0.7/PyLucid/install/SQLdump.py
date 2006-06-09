@@ -214,7 +214,12 @@ class SQLdump:
         return counter
 
     def execute(self, SQLcommand):
-        SQLcommand = SQLcommand % {"table_prefix":"$$"} #FIXME
+        if "%(table_prefix)s" in SQLcommand:
+            # für Dumps von PyLucid <v0.6
+            SQLcommand = SQLcommand % {"table_prefix":"$$"}
+
+        SQLcommand = SQLcommand.replace("$$", self.db.tableprefix)
+
         if self.simulation:
             SQLcommand = str(SQLcommand) # Unicode wandeln
             SQLcommand = SQLcommand.encode("String_Escape")
@@ -223,7 +228,8 @@ class SQLdump:
             return
 
         try:
-            self.db.cursor.execute(SQLcommand)
+            #~ self.db.cursor.execute(SQLcommand)
+            self.db.cursor.execute_unescaped(SQLcommand)
         except Exception, e:
             self.response.write(
                 "Error: '%s' in SQL-command:" % cgi.escape(str(e))

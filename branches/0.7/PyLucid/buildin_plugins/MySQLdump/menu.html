@@ -26,16 +26,16 @@ complete - table structure + all data saved in dump.</small></p>
 
 <p>character set:
 <select name="character-set" size="1">
-  <option value="latin1" selected="selected">latin1</option>
-  <option value="utf8">utf8</option>
+  <option value="utf8" selected="selected">utf8</option>
+  <option value="latin1">latin1</option>
 </select></p>
 
 <p>compatible:
 <select name="compatible" size="1">
-	<option value=""></option>
+	<option value="" selected="selected"></option>
 	<option value="ansi">ansi</option>
 	<option value="mysql323">mysql323</option>
-	<option value="mysql40" selected="selected">mysql40</option>
+	<option value="mysql40">mysql40</option>
 	<option value="postgresql">postgresql</option>
 	<option value="oracle">oracle</option>
 	<option value="mssql">mssql</option>
@@ -47,18 +47,8 @@ complete - table structure + all data saved in dump.</small></p>
 </select><br />
 <small>(Requires MySQL server v4.1.0 or higher, else use blank )</small></p>
 
-<p>additional parameters: <input name="options" value="--extended-insert --skip-opt --compact" size="60" maxlength="150" type="text"></p>
+<p>additional parameters: <input name="options" value="--compact" size="60" maxlength="150" type="text"><br />
+<small>(example: --extended-insert --skip-opt)</small></p>
 
 <p>%(buttons)s</p>
 </form>
-
-<script>
-function set_all( value ) {
-    form = document.getElementById("sqldump_form");
-    for (i = 0; i < form.length; i++) {
-        if (form[i].value == value) {
-            form[i].checked = true;
-        }
-    }
-}
-</script>

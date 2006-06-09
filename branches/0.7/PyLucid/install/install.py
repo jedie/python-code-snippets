@@ -123,6 +123,7 @@ a:hover {
     background-color: #F4F4D2;
 }
 </style>
+%(addCodeTag)s
 </head>
 <body>
 <h3>%(info)s - Setup</h3>
@@ -169,11 +170,11 @@ class InstallApp:
 
         # Shorthands
         self.environ        = self.request.environ
-        self.page_msg       = self.request.page_msg
         self.db             = self.request.db
         self.preferences    = self.request.preferences
         self.URLs           = self.request.URLs
         self.tools          = self.request.tools
+        self.page_msg       = self.response.page_msg
 
         self.LockCodeURL, self.PathInfo = self.prepareInstallPathInfo()
 
@@ -281,9 +282,14 @@ class InstallApp:
 
     def writeHTMLhead(self):
         """ HTML Kopf schreiben """
-        self.response.write(
-            HTML_head % {"info": self.__info__}
-        )
+        head = HTML_head % {
+            "info": self.__info__,
+
+            # Schreibt den addCode-Tag, damit am Ende noch die CSS/JS Daten
+            # von Modulen eingefügt werden können
+            "addCodeTag": self.response.addCode.tag,
+        }
+        self.response.write(head)
 
     def writeHTMLfoot(self):
         """ HTML Fuss schreiben """
@@ -299,6 +305,7 @@ class InstallApp:
         """
         # Resolve the path
         handler = self.root
+        args = []
         for part in self.PathInfo:
             node = getattr(handler, part, None)
             if node is None:
@@ -307,6 +314,7 @@ class InstallApp:
                         part = int(part)
                     except ValueError:
                         pass
+                    args.append(part)
             else:
                 handler = node
 
@@ -339,7 +347,7 @@ class InstallApp:
         parent = handler.im_class()
         parent.request = self.request
         try:
-            handler(parent)
+            handler(parent, *args)
         except SystemExit, e:
             # sys.exit() wird immer bei einem totalabbruch gemacht ;)
             self.response.write('<small style="color:grey">(exit %s)</small>' % e)

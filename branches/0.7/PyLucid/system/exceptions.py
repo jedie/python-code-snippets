@@ -6,6 +6,11 @@
 """
 
 
+#~ class ConnectionError(Exception):
+    #~ def __repr__(self):
+        #~ return 'Connect Error!'
+    #~ pass
+
 class IntegrityError(Exception):
     """
     Fehler bei einer DB-Transaktion

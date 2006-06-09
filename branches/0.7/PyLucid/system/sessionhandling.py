@@ -121,9 +121,9 @@ class cookieHandler:
         self.page_msg_debug = page_msg_debug
 
         # shorthands
-        self.URLs            = request.URLs
+        self.URLs           = request.URLs
         self.log            = request.log
-        self.page_msg       = request.page_msg
+        self.page_msg       = response.page_msg
         self.preferences    = request.preferences
 
         self.CookieName     = "PyLucid_id"
@@ -286,8 +286,8 @@ class sessionhandler(dict):
     http://www.python-forum.de/viewtopic.php?p=19523#19523
     """
 
-    def __init__ (self, request, response, page_msg_debug):
-        dict.__init__(self)
+    def init2(self, request, response, page_msg_debug):
+        #~ dict.__init__(self)
 
         self.request        = request
         self.response       = response
@@ -296,7 +296,7 @@ class sessionhandler(dict):
         # shorthands
         self.db             = request.db
         self.log            = request.log
-        self.page_msg       = request.page_msg
+        self.page_msg       = response.page_msg
         self.preferences    = request.preferences
 
         self.sql_tablename  = "session_data"

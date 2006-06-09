@@ -48,11 +48,47 @@ Anmerkung zur User-Verwaltung von lucidCMS
         - Beschreibung
 
 
+
+
+Auth.Verfahren - User erstellen:
+================================
+1. Client:
+    1.1. User füllt Formular mit Name und Passwort aus.
+    1.2. per JS: bilden aus ersten vier Zeichen eine MD5 Summe
+    1.3. MD5 Summe + rechlichen Zeichen des Passworts zum Server schicken
+2. Server:
+    2.1. restliche Zeichen des Passworts mit geschickter MD5 Summe verschlüsseln
+    2.2. verschlüßeltes Passwort und sonstige Userdaten in DB eintragen
+
+
+Auth.Verfahren - Client Login:
+==============================
+1. Client: schickt login-Anfrage
+2. Server:
+    2.1. setzt SessionID per Cookie
+    2.2. generiert Random-Zahl
+    2.3. speichert Random-Zahl mit SessionID in DB
+    2.4. schickt LogIn-Form mit Random-Zahl zum Client
+3. Client:
+    3.1. eingetipptes Passwort wird aufgeteilt ersten vier
+        Zeichen | rechtlichen zeichen
+    3.2. erstellung der MD5 Summen:
+        - MD5( ersten vier Zeichen )
+        - MD5( rechlichen Zeichen + die Random-Zahl vom Server )
+    3.3. senden des Usernamens (Klartext) + beide MD5-Summen
+4. Server:
+    4.1. mit der ersten MD5 Summe wird das Passwort aus der DB entschlüsselt
+    4.2. Random-Zahl per SessionID aus der DB holen
+    4.3. mit dem entschlüsselten Klartext-Passwort und der Random-Zahl wird
+        eine MD5 Summe gebildet
+    4.4. vergleichen der zweiten MD5 summe vom Client und der gebilteten
 """
 
-__version__ = "0.0.2"
+__version__ = "0.1"
 
 __history__ = """
+v0.1
+    - Anpassung an PyLucid v0.7
 v0.0.2
     - auth-Klasse nach PyLucid_modules.user_auth ausgelagert
 v0.0.1
@@ -68,167 +104,148 @@ import os, sys, cgi, md5
 # eigene Module
 from PyLucid.system import crypt
 
+from PyLucid.system.exceptions import *
+from PyLucid.system.BaseModule import PyLucidBaseModule
 
 
 
 
-
-class userhandling:
+class userhandling(PyLucidBaseModule):
     """
     Verwaltung von Userdaten in der DB
-
-
-    Auth.Verfahren - User erstellen:
-    ================================
-    1. Client:
-        1.1. User füllt Formular mit Name und Passwort aus.
-        1.2. per JS: bilden aus ersten vier Zeichen eine MD5 Summe
-        1.3. MD5 Summe + rechlichen Zeichen des Passworts zum Server schicken
-    2. Server:
-        2.1. restliche Zeichen des Passworts mit geschickter MD5 Summe verschlüsseln
-        2.2. verschlüßeltes Passwort und sonstige Userdaten in DB eintragen
-
-
-    Auth.Verfahren - Client Login:
-    ==============================
-    1. Client: schickt login-Anfrage
-    2. Server:
-        2.1. setzt SessionID per Cookie
-        2.2. generiert Random-Zahl
-        2.3. speichert Random-Zahl mit SessionID in DB
-        2.4. schickt LogIn-Form mit Random-Zahl zum Client
-    3. Client:
-        3.1. eingetipptes Passwort wird aufgeteilt ersten vier Zeichen | rechtlichen zeichen
-        3.2. erstellung der MD5 Summen:
-            - MD5( ersten vier Zeichen )
-            - MD5( rechlichen Zeichen + die Random-Zahl vom Server )
-        3.3. senden des Usernamens (Klartext) + beide MD5-Summen
-    4. Server:
-        4.1. mit der ersten MD5 Summe wird das Passwort aus der DB entschlüsselt
-        4.2. Random-Zahl per SessionID aus der DB holen
-        4.3. mit dem entschlüsselten Klartext-Passwort und der Random-Zahl wird eine MD5 Summe gebildet
-        4.4. vergleichen der zweiten MD5 summe vom Client und der gebilteten
     """
+    def __init__(self, *args, **kwargs):
+        super(userhandling, self).__init__(*args, **kwargs)
 
-    def __init__( self, PyLucid ):
-        self.db         = PyLucid["db"]
-        self.CGIdata    = PyLucid["CGIdata"]
-        self.page_msg   = PyLucid["page_msg"]
-        self.tools      = PyLucid["tools"]
-        self.URLs       = PyLucid["URLs"]
+        # Damit beim installieren internal_pages direkt von Platte gelesen
+        # werden können, muß der Pfad angegeben werden:
+        self.templates.template_path = ["PyLucid","modules","userhandling"]
 
     def manage_user(self):
         """ Verwaltung von Usern """
+        if self.request.form.has_key("add user"):
+            # Es wurde das Formular abgeschickt
+            self.add_user_action()
+        elif self.request.form.has_key("save"):
+            self.save_changes()
+        elif self.request.form.has_key("delete"):
+            self.delete_user()
 
-        # Eingabemaske für einen neuen user
-        add_user_form = self.db.get_internal_page(
-            internal_page_name = "userhandling_add_user",
-            page_dict = {
-                "url": self.URLs["main_action"],
-            }
-        )["content"]
+        self.user_table()
 
-        # Interne Seite anzeigen
-        self.db.print_internal_page(
-            internal_page_name = "userhandling_manage_user",
-            page_dict = {
-                "user_table"    : self.get_user_table(),
-                "add_user_form" : add_user_form,
-            }
-        )
+        context = {"url": self.URLs.currentAction()}
 
-    def get_user_table(self):
-        table  = "<table>\n"
-        table += "<tr>\n"
-        table += "<th>name</th>\n"
-        table += "<th>realname</th>\n"
-        table += "<th>email</th>\n"
-        table += "<th>admin</th>\n"
-        table += "</tr>\n"
-        table_data = self.db.user_table_data()
-        user_count = len(table_data)
-        for user in table_data:
-            table += "<tr>\n"
-
-            table += '\t<form method="post" action="%s">\n' % self.URLs["main_action"]
-            table += '\t<input name="id" type="hidden" value="%s" />\n' % user["id"]
-            table += '\t<td><input name="name" type="text" value="%s" size="15" maxlength="50" /></td>\n' % user["name"]
-            table += '\t<td><input name="realname" type="text" value="%s" size="20" maxlength="50" /></td>\n' % user["realname"]
-            table += '\t<td><input name="email" type="text" value="%s" size="30" maxlength="50" /></td>\n' % user["email"]
-
-            if user["admin"]==1:
-                checked = ' checked="checked"'
-            else:
-                checked = ""
-            table += '\t<td><input type="checkbox" name="admin" value="1"%s /></td>\n' % checked
-
-            table += '\t<td><input type="submit" value="save" name="save" /></td>\n'
-            if user_count > 1:
-                # Den letzten User kann man nicht löschen ;)
-                table += '\t<td><input type="submit" value="del" name="del" /></td>\n'
-            table += "\t</form>\n"
-            table += "</tr>\n"
-
-        table += "</table>\n"
-        return table
-
-
-    def save_changes(self, id, name, email, realname="", admin=0):
-        try:
-            self.db.update_userdata(id, user_data={"name": name, "realname": realname, "email": email, "admin": admin})
-        except Exception, e:
-            self.page_msg("Error saving user data (id: %s): %s" % (id, e))
+        # Bei _install wird immer ein admin erstellt, deswegen soll da auch
+        # kein Admin-Button zu sehen sein ;)
+        if self.runlevel.is_install():
+            context["admin_button"] = False
         else:
-            self.page_msg( "User data saved!" )
+            context["admin_button"] = True
 
-        self.manage_user() # "Menü" wieder anzeigen
+        self.templates.write("add_user", context)
 
+    def user_table(self):
+        user_list = self.db.userList()
+        context = {
+            "url" : self.URLs.currentAction(),
+            "user_list": user_list,
+        }
+        self.templates.write("user_table", context)
 
-    def add_user(self, username, email, realname="", admin=0):
-        """legt einen neuen User in der DB an"""
+    def save_changes(self):
         try:
-            # Falls das Passwort nur aus Zahlen besteht, wurde es in CGIdata
-            # in eine echte Zahl umgewandelt, was hier aber nicht erwünscht war!
-            pass1 = str(self.CGIdata["pass1"])
-            pass2 = str(self.CGIdata["pass2"])
-        except Exception,e:
-            self.page_msg("Can't get password! No data where added!")
+            id = self.request.form["id"]
+            name = self.request.form["name"]
+            email = self.request.form["email"]
+        except KeyError, e:
+            msg = (
+                "Formular Error: Key '%s' not found!\n"
+                "No User added."
+            ) % e
+            self.page_msg(msg)
+            return
+
+        realname = self.request.form.get("realname","")
+        admin = self.request.form.get("admin", 0)
+
+        try:
+            self.db.update_userdata(id, name, realname, email, admin)
+        except Exception, e:
+            msg = "Error saving user data (id: %s): %s" % (id, e)
+        else:
+            msg = "Data from user '%s' saved!" % name
+
+        self.page_msg(msg)
+
+    def add_user_action(self):
+        """
+        Verarbeitet ein abgeschicktes "add_user" Formular
+        """
+        try:
+            username = self.request.form["username"]
+            email = self.request.form["email"]
+            pass1 = self.request.form["pass1"]
+            pass2 = self.request.form["pass2"]
+        except KeyError, e:
+            msg = (
+                "Formular Error: Key '%s' not found!\n"
+                "No User added."
+            ) % e
+            self.page_msg(msg)
             return
 
         if pass1!=pass2:
-            self.page_msg("Password verification failt! No data where added!")
+            msg = (
+                "Password 1 and password 2 are not the same!\n"
+                "No User added!"
+            )
+            self.page_msg(msg)
             return
 
         if len(pass1)<8:
-            self.page_msg("Password is too short (min 8 characters)! No data where added!")
+            msg = (
+                "Password is too short (min 8 characters)!\n"
+                "No User added!"
+            )
+            self.page_msg(msg)
             return
+
+        realname = self.request.form.get("realname","")
+        is_admin = self.request.form.get("is_admin", False)
+        if self.runlevel.is_install():
+            # Bei der Installation wird immer ein Admin erstellt!
+            is_admin = True
 
         # Das Klartext-Password verschlüsseln
         pass1, pass2 = self.create_md5_pass(pass1)
 
         try:
-            self.db.add_md5_User( username, realname, email, pass1, pass2, admin )
+            self.db.add_md5_User(
+                username, realname, email, pass1, pass2, is_admin
+            )
         except Exception, e:
-            self.page_msg("Can't insert! (%s)\n" % e)
+            self.page_msg("Can't insert user! (%s)\n" % e)
         else:
             self.page_msg("User '%s' added." % username)
 
-        if self.CGIdata.has_key("install_PyLucid"):
-            # wurde aus install_PyLucid aufgerufen, dann gibt es kein Menü!
+
+    def delete_user(self):
+        try:
+            id = self.request.form["id"]
+            id = int(id)
+        except Exception, e:
+            msg = "ID Error: %s" % e
+            self.page_msg(msg)
             return
 
-        self.manage_user() # "Menü" wieder anzeigen
-
-
-    def del_user(self, id):
         try:
             self.db.del_user(id)
         except Exception, e:
-            self.page_msg( "Can't delete user wirth id '%s': %s" % (id, e) )
+            msg = "Can't delete user wirth id '%s': %s" % (id, e)
         else:
-            self.page_msg( "User with id '%s' deleted." % id )
+            msg = "User with id '%s' deleted." % id
 
-        self.manage_user() # "Menü" wieder anzeigen
+        self.page_msg(msg)
 
 
     def create_md5_pass( self, password ):

@@ -82,7 +82,7 @@ class echo:
 
 def page_msg_debug(obj):
     try:
-        request.page_msg("Debug:", obj.__name__)
+        response.page_msg("Debug:", obj.__name__)
     except AttributeError:
         pass
     result = []
@@ -92,40 +92,41 @@ def page_msg_debug(obj):
         for key in keys:
             result.append("%-25s: '%s'" % (key,obj[key]))
     result = "\n".join(result)
-    request.page_msg("<pre>%s</pre>" % result)
+    response.page_msg("<pre>%s</pre>" % result)
 
 #_____________________________________________________________________________
 
-def getUniqueShortcut(pageName, nameList):
+def getUniqueShortcut(item_name, nameList, strip=True):
     """
     Liefert einen eindeutige Abkürzung von pageName zurück.
     pageName wird von Sonderzeichen gesäubert und evtl. eine
     Zahl angehanden, wenn der Kurzname schon in nameList vorkommt.
     """
-    import string
-    ascii = string.ascii_letters + string.ascii_letters
+    if strip:
+        import string
+        ascii = string.ascii_letters + string.ascii_letters
 
-    # Nur ASCII Zeichen erlauben und gleichzeitig trennen
-    parts = [""]
-    for char in pageName:
-        if not char in ascii:
-            parts.append("")
-        else:
-            parts[-1] += char
+        # Nur ASCII Zeichen erlauben und gleichzeitig trennen
+        parts = [""]
+        for char in item_name:
+            if not char in ascii:
+                parts.append("")
+            else:
+                parts[-1] += char
 
-    # Erster Buchstabe immer groß geschrieben
-    parts = [i[0].upper() + i[1:] for i in parts if i!=""]
-    shortcut = "".join(parts)
+        # Erster Buchstabe immer groß geschrieben
+        parts = [i[0].upper() + i[1:] for i in parts if i!=""]
+        item_name = "".join(parts)
 
     # doppelte Namen mit Zahlen eindeutig machen
-    if shortcut in nameList:
+    if item_name in nameList:
         for i in xrange(1, 1000):
-            testname = "%s%i" % (shortcut, i)
+            testname = "%s%i" % (item_name, i)
             if testname not in nameList:
-                shortcut = testname
+                item_name = testname
                 break
 
-    return shortcut
+    return item_name
 
 #~ nameList = ["GibtsSchon","UndAuchDas","UndAuchDas1","UndAuchDas2"]
 
@@ -140,11 +141,12 @@ def convert_date_from_sql( RAWsqlDate, format="preferences" ):
     Wandelt ein Datum aus der SQL-Datenbank in ein Format, welches
     in den preferences festgelegt wurde.
     """
+    preferences = request.preferences
 
     date = str( RAWsqlDate )
     try:
         # SQL Datum in das Python time-Format wandeln
-        date = time.strptime( date, request.preferences["dbdatetime_format"] )
+        date = time.strptime( date, preferences["dbdatetime_format"] )
     except ValueError:
         # Datumsformat stimmt nicht, aber besser das was schon da
         # ist, mit einem Hinweis, zurück liefern, als garnichts ;)
@@ -152,7 +154,7 @@ def convert_date_from_sql( RAWsqlDate, format="preferences" ):
 
     if format == "preferences":
         # Python-time-Format zu einem String laut preferences wandeln
-        return time.strftime( request.preferences["core"]["formatDateTime"], date )
+        return time.strftime( preferences["core"]["formatDateTime"], date )
     elif format == "DCTERMS.W3CDTF":
         return time.strftime( "%Y-%m-%d", date )
     else:
@@ -168,7 +170,9 @@ def convert_time_to_sql( time_value ):
         except:
             return "ERROR: convert '%s'" % time_value
 
-    return time.strftime(request.preferences["dbdatetime_format"], time_value)
+    return time.strftime(
+        request.preferences["dbdatetime_format"], time_value
+    )
 
 #_____________________________________________________________________________
 

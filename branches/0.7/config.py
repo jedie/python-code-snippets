@@ -51,7 +51,7 @@ config = {
     "dbUserName"        : 'UserName',
     "dbPassword"        : 'Password',
     # der Tabellen-Prefix darf keine Leer-/Sonderzeichen erhalten.
-    "dbTablePrefix"     : 'lucid_',
+    "dbTablePrefix"     : 'lucid2_',
     "dbdatetime_format" : '%Y-%m-%d %H:%M:%S', # SQL-Datetime-String-Format
 
     # Zeigt zusätzlich an, in welchem Modul eine Page-Massage erzeugt wurde

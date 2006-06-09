@@ -64,7 +64,7 @@ class LowLevelAdmin(ObjectApp_Base):
 
         module_admin = self._get_module_admin()
 
-        self.request.debug()
+        self.response.debug()
         #~ return
 
         if "install" in self.request.form:
