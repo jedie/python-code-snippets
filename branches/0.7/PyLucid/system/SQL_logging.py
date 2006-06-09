@@ -38,20 +38,23 @@ class log:
     """
     PyLucid SQL-Logging Klasse
     """
-    def __init__ (self, request):
-
-        # shorthands
-        self.request    = request
-        self.db         = request.db
-        self.tools      = request.tools
-        self.page_msg   = request.page_msg
-
+    def __init__ (self):
         # auf Default-Werte setzten
         # Nachdem eine Session erstellt wurde, werden diese Werte von index.py gesetzt
         self.client_sID         = "unknown"
         self.client_user_name   = "unknown"
-        self.client_ip = self.request.environ.get("REMOTE_ADDR","unknown")
+        self.client_ip          = "unknown"
         self.client_domain_name = "unknown"
+
+    def init2(self, request, response):
+        # shorthands
+        self.request    = request
+        self.db         = request.db
+        self.tools      = request.tools
+        self.page_msg   = response.page_msg
+
+        self.client_ip = request.environ.get("REMOTE_ADDR","unknown")
+
 
     def check_type(self, type):
         if type != False:

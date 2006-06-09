@@ -160,9 +160,9 @@ class Database(object):
                     msg += ", probably the server '%s' is wrong!" % host
             except IndexError:
                 pass
-            msg += " [%s]\n - " % e
-            msg += "connect method args...: %s\n - " % str(args)
-            msg += "connect method kwargs.: %s" % str(kwargs)
+            msg += " [%s]\n" % e
+            #~ msg += " - connect method args...: %s\n - " % str(args)
+            #~ msg += "connect method kwargs.: %s" % str(kwargs)
             raise ConnectionError(msg)
 
         self.cursor = self.conn.cursor()

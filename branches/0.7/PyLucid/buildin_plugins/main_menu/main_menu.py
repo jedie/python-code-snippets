@@ -67,7 +67,7 @@ class main_menu(PyLucidBaseModule):
 
         #~ print self.menulink
 
-        self.current_page_id  = self.request.session["page_id"]
+        self.current_page_id  = self.session["page_id"]
 
         # Wird von self.create_menudata() "befüllt"
         self.menudata = []

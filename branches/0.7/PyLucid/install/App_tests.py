@@ -20,6 +20,7 @@ class tests(ObjectApp_Base):
         ]
         self._write_subactionmenu(subactions)
 
+        self._page_msg(currentAction)
         self._autoSubAction(currentAction)
 
     def _connect_information(self):

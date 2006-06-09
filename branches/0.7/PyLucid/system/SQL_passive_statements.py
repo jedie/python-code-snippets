@@ -41,9 +41,10 @@ class passive_statements(SQL_wrapper):
 
     def _type_error(self, itemname, item):
         import cgi
+        item_type = cgi.escape(str(type(item)))
         self._error(
             "%s is not String!" % itemname,
-            "It's %s<br/>Check SQL-Table settings!" % cgi.escape( str( type(item) ) )
+            "It's %s<br/>Check SQL-Table settings!" % item_type
         )
 
     #_________________________________________________________________________
@@ -141,11 +142,14 @@ class passive_statements(SQL_wrapper):
         return shortcutList
 
     def get_content_and_markup(self, page_id):
-        return self.select(
+        data = self.select(
             select_items    = ["content", "markup"],
             from_table      = "pages",
             where           = ("id", page_id)
-        )[0]
+        )
+        data = data[0]
+        data["markup"] = self.get_markup_name(data["markup"])
+        return data
 
     def side_template_by_id(self, page_id):
         "Liefert den Inhalt des Template-ID und Templates für die Seite mit der >page_id< zurück"
@@ -361,7 +365,9 @@ class passive_statements(SQL_wrapper):
 
     def get_UniqueStylename(self, styleName):
         styleNameList = self.get_stylenames()
-        uniqueStyleName = self.tools.getUniqueShortcut(styleName, styleNameList)
+        uniqueStyleName = self.tools.getUniqueShortcut(
+            styleName, styleNameList, strip=False
+        )
         return uniqueStyleName
 
     def get_style_data(self, style_id):
@@ -386,18 +392,40 @@ class passive_statements(SQL_wrapper):
             )
 
     def get_template_data(self, template_id):
+        try:
+            template_id = int(template_id)
+        except:
+            raise IndexError, "Template ID is not a number!"
+
         return self.select(
-                select_items    = ["name","description","content"],
-                from_table      = "templates",
-                where           = ("id", template_id)
-            )[0]
+            select_items    = ["name","description","content"],
+            from_table      = "templates",
+            where           = ("id", template_id)
+        )[0]
 
     def get_template_data_by_name(self, template_name):
-        return self.select(
-                select_items    = ["description","content"],
-                from_table      = "templates",
-                where           = ("name", template_name)
-            )[0]
+        data = self.select(
+            select_items    = ["description","content"],
+            from_table      = "templates",
+            where           = ("name", template_name)
+        )
+        data = data[0]
+        return data
+
+    def get_templatenames(self):
+        names = self.select(
+            select_items    = ["name"],
+            from_table      = "templates",
+        )
+        result = [i["name"] for i in names]
+        return result
+
+    def get_UniqueTemplatename(self, templateName):
+        templateNameList = self.get_templatenames()
+        uniqueName = self.tools.getUniqueShortcut(
+            templateName, templateNameList, strip=False
+        )
+        return uniqueName
 
     #_____________________________________________________________________________
     ## InterneSeiten
@@ -472,46 +500,40 @@ class passive_statements(SQL_wrapper):
             ],
             from_table      = "pages_internal",
             where           = ("name", internal_page_name)
-        )[0]
+        )
+        try:
+            data = data[0]
+        except IndexError:
+            msg = "Internal page %s not found in db!" % internal_page_name
+            raise IndexError, msg
 
         if replace==True:
             data["template_engine"] = self.get_template_engine(
                 data["template_engine"]
             )
-            data["markup"] = self.get_markup_id(data["markup"])
-
-        content_keys = ("content_html", "content_css", "content_js")
-        for key in content_keys:
-            try:
-                data[key] = data[key].decode("utf_8")
-            except UnicodeError, e:
-                self.page_msg("Can't decode internal page content: %s" % e)
-                try:
-                    data[key] = data[key].decode("utf_8", 'replace')
-                except UnicodeError, e:
-                    data[key] = ""
+            data["markup"] = self.get_markup_name(data["markup"])
 
         return data
 
-    def get_internal_page(self, internal_page_name, page_dict={}):
-        """
-        Interne Seite aufgeüllt mit Daten ausgeben. Diese Methode sollte immer
-        verwendet werden, weil sie eine gescheite Fehlermeldung anzeigt.
-        """
-        internal_page = self.get_internal_page_data(internal_page_name)
+    #~ def get_internal_page(self, internal_page_name, page_dict={}):
+        #~ """
+        #~ Interne Seite aufgeüllt mit Daten ausgeben. Diese Methode sollte immer
+        #~ verwendet werden, weil sie eine gescheite Fehlermeldung anzeigt.
+        #~ """
+        #~ internal_page = self.get_internal_page_data(internal_page_name)
 
-        try:
-            internal_page["content"] = internal_page["content"] % page_dict
-        except KeyError, e:
-            import re
-            placeholder = re.findall(r"%\((.*?)\)s", internal_page["content"])
-            raise KeyError(
-                "KeyError %s: Can't fill internal page '%s'. \
-                placeholder in internal page: %s given placeholder for that page: %s" % (
-                    e, internal_page_name, placeholder, page_dict.keys()
-                )
-            )
-        return internal_page
+        #~ try:
+            #~ internal_page["content"] = internal_page["content"] % page_dict
+        #~ except KeyError, e:
+            #~ import re
+            #~ placeholder = re.findall(r"%\((.*?)\)s", internal_page["content"])
+            #~ raise KeyError(
+                #~ "KeyError %s: Can't fill internal page '%s'. \
+                #~ placeholder in internal page: %s given placeholder for that page: %s" % (
+                    #~ e, internal_page_name, placeholder, page_dict.keys()
+                #~ )
+            #~ )
+        #~ return internal_page
 
 
     #~ def get_internal_page_category_id(self, category_name):
@@ -573,7 +595,7 @@ class passive_statements(SQL_wrapper):
         else:
             return False
 
-    def user_table_data(self):
+    def userList(self):
         """ wird in userhandling verwendet """
         return self.select(
             select_items    = ["id","name","realname","email","admin"],

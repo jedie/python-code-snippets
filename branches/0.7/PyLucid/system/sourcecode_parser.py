@@ -29,7 +29,7 @@ token.KEYWORD = token.NT_OFFSET + 1
 class python_source_parser:
 
     def __init__(self, request):
-        self.page_msg = request.page_msg
+        self.page_msg = response.page_msg
 
     def parse(self, raw_txt):
         """

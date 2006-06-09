@@ -16,7 +16,7 @@ class jinjaRenderer:
         self.suffix         = suffix
 
         # Shorthands
-        self.page_msg   = self.request.page_msg
+        self.page_msg   = self.response.page_msg
 
     def render(self, templatename, context):
         #~ try:

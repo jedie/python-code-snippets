@@ -12,7 +12,8 @@ __version__="0.1"
 __history__="""
 v0.1
     - Ausgekoppelt aus der index.py
-    - Speichert die aktuelle Seite nicht mehr in CGIdata["page_id"] sondern in session["page_id"]
+    - Speichert die aktuelle Seite nicht mehr in CGIdata["page_id"] sondern in
+        session["page_id"]
 """
 
 
@@ -38,7 +39,7 @@ class detect_page(PyLucidBaseModule):
             self.check_page_id(self.request.args["page_id"])
             return
 
-        if self.request.runlevel == "command":
+        if self.runlevel.is_command():
             # Ein internes Kommando (LogIn, EditPage ect.) wurde ausgeführt
             if self.session.has_key("page_id"):
                 self.check_page_id(self.session["page_id"])

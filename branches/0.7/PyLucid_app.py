@@ -10,7 +10,7 @@ __url__     = "http://www.PyLucid.org"
 
 __info__ = """<a href="%s" title="\
 PyLucid - A OpenSource CMS in pure Python CGI by Jens Diemer">PyLucid</a> \
-v0.7.0preAlpha""" % __url__
+v0.7.0Alpha""" % __url__
 
 
 #~ debug = True
@@ -54,7 +54,7 @@ from PyLucid.system.exceptions import *
 # Colubrid
 from colubrid import BaseApplication
 
-WSGIrequestKey = "colubrid.request"
+WSGIrequestKey = "colubrid.request."
 
 
 import config # PyLucid Grundconfiguration
@@ -64,6 +64,9 @@ from PyLucid.system import response
 from PyLucid.system import tools
 from PyLucid.system import URLs
 from PyLucid.system import jinjaRenderer
+
+#~ from PyLucid.middlewares.database import DatabaseMiddleware
+from PyLucid.middlewares import database
 
 # init2
 #~ from PyLucid.system import staticTags
@@ -80,6 +83,51 @@ response.__info__ = __info__ # Übertragen
 
 
 
+
+class runlevel(object):
+    state = "init"
+
+    def set_install(self):
+        self.state = "install"
+    def set_command(self):
+        self.state = "command"
+    def set_normal(self):
+        self.state = "normal"
+
+    def is_install(self):
+        return self.state == "install"
+    def is_command(self):
+        return self.state == "command"
+    def is_normal(self):
+        return self.state == "normal"
+
+    def save(self):
+        """Save the current runlevel for a later restore"""
+        self.saved_state = self.state
+    def restore(self):
+        """Set the state to the old prior saved state"""
+        self.state = self.saved_state
+
+    def __cmp__(self, _):
+        raise RuntimeError, "Old access to runlevel!"
+
+    def __repr__(self):
+        return "<runlevel object with state = '%s'>" % self.state
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 class PyLucidApp(BaseApplication):
     """
     Klasse die die Programmlogik zusammenstellt
@@ -91,39 +139,49 @@ class PyLucidApp(BaseApplication):
     def __init__(self, environ, start_response):
         super(PyLucidApp, self).__init__(environ, start_response)
 
+        self.environ = environ
+
         # Eigenes response-Objekt. Eigentlich genau wie das
         # original von colubrid, nur mit einer kleinen Erweiterung
         self.response = response.HttpResponse()
 
-        self.environ        = environ
+        # Damit man von überall einen Debug einleiten kann
+        self.response.debug = self.request_debug
 
-        self.request.runlevel = "init"
-
-        self.request.debug = self.request_debug
-
-        # Für _install:
-        self.request.log            = None
-        self.request.render         = None
-        self.request.tag_parser     = None
-        self.request.session        = None
-        self.request.module_manager = None
-        self.request.templates      = None
+        self.runlevel = self.request.runlevel = runlevel()
 
         # Verwaltung für Einstellungen aus der DB (Objekt aus der Middleware)
-        self.request.preferences = environ['PyLucid.preferences']
+        self.preferences = self.request.preferences = \
+                                                environ['PyLucid.preferences']
 
-        # Speichert Nachrichten die in der Seite angezeigt werden sollen
-        self.request.page_msg = environ['PyLucid.page_msg']
-
+        # 'Speicher' für CSS/JS Daten, die erst am Ende in die CMS Seite
+        # eingefügt wird
         self.response.addCode = environ["PyLucid.addCode"]
 
-        # Passt die verwendeten Pfade an.
-        self.request.URLs = URLs.URLs(self.request)
+        # Speichert Nachrichten die in der Seite angezeigt werden sollen
+        self.page_msg = self.response.page_msg = environ['PyLucid.page_msg']
 
-        # Tools
+        # Allgemeiner CGI Sessionhandler auf mySQL-Basis
+        self.session = self.request.session = sessionhandling.sessionhandler()
+
+        # Log-Ausgaben in SQL-DB
+        self.log = self.request.log = SQL_logging.log()
+
+        # Verwaltung von erweiterungs Modulen/Plugins
+        self.module_manager = self.request.module_manager = \
+                                                module_manager.module_manager()
+
+        self.render = self.request.render = page_parser.render()
+
+        self.staticTags = self.request.staticTags = response.staticTags()
+
+        # Passt die verwendeten Pfade an.
+        self.URLs = self.request.URLs = URLs.URLs(self.request, self.response)
+
+        # Tools an Request Objekt anhängen
         tools.request       = self.request  # Objekt übergeben
         tools.response      = self.response # Objekt übergeben
-        self.request.tools  = tools         # Tools an Request Objekt anhängen
+        self.tools = self.request.tools = tools
 
         self.response.echo = tools.echo() # Echo Methode an response anhängen
 
@@ -133,21 +191,17 @@ class PyLucidApp(BaseApplication):
         #~ self.request.jinjaRenderer = jinjaRenderer.jinjaRenderer(self.request)
 
         # Anbindung an die SQL-Datenbank, mit speziellen PyLucid Methoden
-        self.request.db = environ['PyLucid.database']
-        self.request.db.connect(self.request.preferences)
-        #~ self.request.db = db.db(self.request, self.response)
-        self.request.db.page_msg = self.request.page_msg
+        self.db = self.request.db = environ['PyLucid.database']
+
+        # Einheitliche Schnittstelle zu den Templates Engines
+        self.request.templates = template_engines.TemplateEngines(
+            self.request, self.response
+        )
 
         # FIXME:
-        self.request.db.tools = self.request.tools
-        self.request.db.URLs = self.request.URLs
-
-        # Shorthands
-        self.page_msg       = self.request.page_msg
-        self.db             = self.request.db
-        self.preferences    = self.request.preferences
-        self.tools          = self.request.tools
-        self.URLs           = self.request.URLs
+        self.db.page_msg    = self.page_msg
+        self.db.tools       = self.tools
+        self.db.URLs        = self.URLs
 
     def request_debug(self):
         from colubrid.debug import debug_info
@@ -160,11 +214,11 @@ class PyLucidApp(BaseApplication):
         #~ self.page_msg(">>>", pathInfo)
 
         if pathInfo.startswith(self.preferences["installURLprefix"]):
-            self.request.runlevel = "install"
+            self.runlevel.set_install()
         elif pathInfo.startswith(self.preferences["commandURLprefix"]):
-            self.request.runlevel = "command"
+            self.runlevel.set_command()
         else:
-            self.request.runlevel = "normal"
+            self.runlevel.set_normal()
 
         # Pfade anhand des Runlevel anpassen.
         self.URLs.setup_runlevel()
@@ -176,48 +230,28 @@ class PyLucidApp(BaseApplication):
         Dazu sind die restilichen Objekte garnicht nötig.
         """
         # Preferences aus der DB lesen
-        self.request.preferences.update_from_sql(self.db)
+        self.preferences.update_from_sql(self.db)
 
         # Log-Ausgaben in SQL-DB
-        self.request.log    = SQL_logging.log(self.request)
+        self.log.init2(self.request, self.response)
         #~ self.request.log.debug_last()
 
-        # Allgemeiner CGI Sessionhandler auf mySQL-Basis
-        self.request.session = sessionhandling.sessionhandler(
+        self.session.init2(
             #~ self.request, self.response, page_msg_debug=True
             self.request, self.response, page_msg_debug=False
         )
 
-        self.request.staticTags = response.staticTags(
-            self.request, self.response
-        )
+        self.staticTags.init2(self.request, self.response)
 
-        self.request.render = page_parser.render(self.request, self.response)
+        self.render.init2(self.request, self.response)
 
-        # Verwaltung von erweiterungs Modulen/Plugins
-        self.request.module_manager = module_manager.module_manager(
-            self.request, self.response
-        )
+        self.module_manager.init2(self.request, self.response)
         #~ self.request.module_manager.debug()
-
-        #~ self.request.tag_parser = page_parser.tag_parser(self.request, self.response)
 
         # Aktuelle Seite ermitteln und festlegen
         detect_page.detect_page(self.request, self.response).detect_page()
         # Überprüfe Rechte der Seite
         #~ self.verify_page()
-
-        # Einheitliche Schnittstelle zu den Templates Engines
-        self.request.templates = template_engines.TemplateEngines(
-            self.request, self.response
-        )
-
-        #Shorthands
-        self.render         = self.request.render
-        #~ self.tag_parser     = self.request.tag_parser
-        self.session        = self.request.session
-        self.module_manager = self.request.module_manager
-        self.staticTags     = self.request.staticTags
 
         # Übertragen von Objekten
         self.db.render = self.render
@@ -228,31 +262,44 @@ class PyLucidApp(BaseApplication):
         # Statische-Tag-Informationen setzten:
         self.staticTags.setup()
 
+        #~ self.page_msg("addCode.tag:", self.response.addCode.tag)
+
 
     def process_request(self):
+
+        try:
+            self.db.connect(self.preferences)
+        except database.ConnectionError, e:
+            msg = (
+                "<h1>DB Error:</h1>\n"
+                "<p>%s</p>\n"
+                "<em>%s</em>\n"
+            ) % (e, __info__)
+            self.response.write(msg)
+            return self.response
 
         self.environ["request_start"] = time.time()
 
         self.setup_runlevel()
 
-        if self.request.runlevel == "install":
+        if self.runlevel.is_install():
             try:
                 self.installPyLucid()
             except WrongInstallLockCode:
                 # Der Zugang zum Install wurde verweigert, also
                 # zeigen wir die normale CMS-Seite
-                self.request.runlevel = "normal"
+                self.runlevel = "normal"
             else:
                 return self.response
 
         # init der Objekte für einen normalen Request:
         self.init2()
 
-        if self.request.runlevel == "normal":
+        if self.runlevel.is_normal():
             # Normale CMS Seite ausgeben
             self.normalRequest()
 
-        elif self.request.runlevel == "command":
+        elif self.runlevel.is_command():
             # Ein Kommando soll ausgeführt werden
             moduleOutput = self.module_manager.run_command()
             if callable(moduleOutput):
@@ -280,13 +327,14 @@ class PyLucidApp(BaseApplication):
                 self.render.write_command_template()
 
         else:
-            raise RuntimeError # Kann eigentlich nie passieren ;)
+            # Kann eigentlich nie passieren ;)
+            raise RuntimeError, "unknown runlevel!!!"
 
         # Evtl. vorhandene Sessiondaten in DB schreiben
         self.session.commit()
 
         if debug:
-            self.request.debug()
+            self.response.debug()
 
         return self.response
 
@@ -297,7 +345,6 @@ class PyLucidApp(BaseApplication):
         # Schreib das Template mit dem page_body-Tag ins
         # response Objekt.
         self.render.write_page_template()
-
 
 
     def debug(self, *txt):
@@ -329,8 +376,8 @@ from PyLucid.middlewares.preferences import preferencesMiddleware
 app = preferencesMiddleware(app)
 
 # database
-from PyLucid.middlewares.database import DatabaseMiddleware
-app = DatabaseMiddleware(app)
+#~ from PyLucid.middlewares.database import DatabaseMiddleware
+app = database.DatabaseMiddleware(app)
 
 # Middleware Page-Message-Object
 from PyLucid.middlewares.page_msg import page_msg

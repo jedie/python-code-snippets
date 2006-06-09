@@ -33,7 +33,7 @@ class preferences(dict):
 
         self.request    = request
 
-        #~ self.request.page_msg(self)
+        #~ self.response.page_msg(self)
 
     def update_from_sql( self ):
         """ Preferences aus der DB lesen und in self speichern """
@@ -77,7 +77,7 @@ class URLs(dict):
         # shorthands
         self.request        = request
         self.environ        = request.environ
-        self.page_msg       = request.page_msg
+        self.page_msg       = response.page_msg
         self.preferences    = request.preferences
 
         self.setup()

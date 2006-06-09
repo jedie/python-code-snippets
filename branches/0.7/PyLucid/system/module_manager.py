@@ -85,11 +85,12 @@ debug = False
 
 
 class plugin_data:
-    def __init__(self, request):
+    def __init__(self, request, response):
         self.request        = request
 
         # shorthands
-        self.page_msg       = request.page_msg
+        self.runlevel       = request.runlevel
+        self.page_msg       = response.page_msg
         self.db             = request.db
         self.session        = request.session
         self.URLs           = request.URLs
@@ -122,7 +123,7 @@ class plugin_data:
             self.module_id = self.plugins[module_name]["id"]
         except KeyError:
             msg = "[Module/Plugin unknown or not installed/activated: %s]" % module_name
-            if self.request.runlevel == "command":
+            if self.runlevel.is_command():
                 msg = "<!-- %s -->" % msg
 
             raise run_module_error(msg)
@@ -187,15 +188,15 @@ class plugin_data:
 
         self.URLs.lock = True
 
-        self.oldRunlevel = self.request.runlevel
-        self.request.runlevel = "command"
+        self.runlevel.save()
+        self.runlevel.set_command()
 
     def restore_URLs(self):
         """
         Nach dem das Modul ausgeführt wurde,
         werden die alten URLs wiederhergestellt.
         """
-        self.request.runlevel = self.oldRunlevel
+        self.runlevel.restore()
 
         self.URLs.lock = False
         self.URLs["command"] = self.oldCommandURL
@@ -230,14 +231,14 @@ class plugin_data:
                 must_admin = True
                 self.page_msg(
                     "must_admin not defined (%s) in %s for method %s" % (
-                        e, self.module_name, method
+                        e, self.module_name, self.method_name
                     )
                 )
 
             if (must_admin == True) and (self.session["isadmin"] == False):
                 raise rights_error(
                     "You must be an admin to use method %s from module %s!" % (
-                        method, self.module_name
+                        self.method_name, self.module_name
                     )
                 )
 
@@ -276,26 +277,32 @@ class plugin_data:
 
 
 class module_manager:
-    def __init__(self, request, response):
+    def __init__(self):
+        # Alle Angaben werden bei run_tag oder run_function ausgefüllt...
+        self.module_name    = "undefined"
+        self.method_name    = "undefined"
+
+    def init2(self, request, response):
         self.request        = request
         self.response       = response
 
         # shorthands
-        self.page_msg       = request.page_msg
+        self.environ        = request.environ
+        self.staticTags     = request.staticTags
         self.db             = request.db
         self.session        = request.session
         self.preferences    = request.preferences
-        self.environ        = request.environ
         self.URLs           = request.URLs
-        self.render         = request.render
+        self.log            = request.log
+        self.module_manager = request.module_manager
         self.tools          = request.tools
-        self.staticTags = self.request.staticTags
+        self.render         = request.render
+        self.templates      = request.templates
 
-        self.plugin_data = plugin_data(request)
+        self.page_msg       = response.page_msg
 
-        # Alle Angaben werden bei run_tag oder run_function ausgefüllt...
-        self.module_name    = "undefined"
-        self.method_name    = "undefined"
+        self.plugin_data = plugin_data(request, response)
+
 
     def run_tag(self, tag):
         """
@@ -566,49 +573,8 @@ class module_manager:
             except Exception, e:
                 run_error(e)
 
-        ##____________________________________________________________________
-        ## Ausgaben verarbeiten
-
-        #~ if self.plugin_data["direct_out"] == True:
-            # Das Modul hat direkt zum globalen response Objekt geschrieben
-            #~ return
         return moduleOutput
-        #~ responseOutput = self.response.get()
-        #~ self.response = old_responseObject
 
-        if type(moduleOutput) == dict:
-            try:
-                content = moduleOutput["content"]
-                markup  = moduleOutput["markup"]
-            except KeyError, e:
-                if self.plugin_data.plugin_debug:
-                    msg = (
-                        "Module-return is type dict,"
-                        " but there is no Key '%s'?!?"
-                    ) % e
-                    self.page_msg(msg)
-                result = str( moduleOutput )
-            else:
-                if self.plugin_data.plugin_debug == 1:
-                    self.page_msg( "Apply markup '%s'." % markup )
-
-                # Evtl. vorhandene stdout Ausgaben mit verarbeiten
-                content = responseOutput + content
-
-                # Markup anwenden
-                moduleOutput = self.render.apply_markup( content, markup )
-        elif moduleOutput == None:
-            # Das Modul hat keine return-Daten, also hat es wohl in's response
-            # Objekt geschrieben
-            moduleOutput = responseOutput
-
-        if self.plugin_data["has_Tags"] == True:
-            # Die Ausgaben des Modules haben Tags, die aufgelöst werden sollen.
-            if self.plugin_data.plugin_debug == True:
-                self.page_msg( "Parse Tags." )
-            return self.request.tag_parser.rewrite_String(moduleOutput)
-
-        return moduleOutput
 
     #_________________________________________________________________________
     # Zusatz Methoden für die Module selber

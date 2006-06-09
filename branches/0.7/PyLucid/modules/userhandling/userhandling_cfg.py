@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 
-#___________________________________________________________________________________________________
+#_____________________________________________________________________________
 # Meta-Angaben
 
 __author__              = "Jens Diemer"
@@ -10,7 +10,7 @@ __description__         = "User Handling"
 __long_description__    = """User data administration"""
 __essential_buildin__   = True
 
-#___________________________________________________________________________________________________
+#_____________________________________________________________________________
 # Module-Manager Daten
 
 #~ module_manager_debug = True
@@ -20,9 +20,13 @@ module_manager_data = {
     "manage_user": {
         "must_login"    : True,
         "must_admin"    : True,
+    },
+    "user_table": {
+        "must_login"    : True,
+        "must_admin"    : True,
         "internal_page_info" : {
-            "description"       : "Manage user page",
-            "template_engine"   : "string formatting",
+            "description"       : "Edit user table",
+            "template_engine"   : "jinja",
             "markup"            : None,
         },
     },
@@ -31,7 +35,7 @@ module_manager_data = {
         "must_admin"    : True,
         "internal_page_info" : {
             "description"       : "HTML Form to add a new User",
-            "template_engine"   : "string formatting",
+            "template_engine"   : "jinja",
             "markup"            : None,
         },
     },

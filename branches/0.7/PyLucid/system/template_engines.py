@@ -12,11 +12,10 @@ v0.1
     - erste Version
 """
 
-import sys
+import sys, os
 
 
 from PyLucid.system.exceptions import *
-from PyLucid.system.BaseModule import PyLucidBaseModule
 
 
 def render_jinja(template, context):
@@ -39,21 +38,25 @@ def render_jinja(template, context):
 
 
 
-class TemplateEngines(PyLucidBaseModule):
+class TemplateEngines(object):
+
+    # Pfad zum aktuellen Template auf der Platte, für Module, die bei der
+    # installation interne Seiten nutzten wollen:
+    template_path = None
+
+    def __init__(self, request, response):
+        self.response = response
+
+        # Shorthands
+        self.environ    = request.environ
+        self.db         = request.db
+        self.runlevel   = request.runlevel
+        self.render     = request.render
+        self.page_msg   = response.page_msg
+        self.addCode    = response.addCode
 
     def write(self, internal_page_name, context):
-        try:
-            internal_page_data = self.db.get_internal_page_data(
-                internal_page_name
-            )
-        except IndexError, e:
-            import inspect
-            stack = inspect.stack()[1]
-            raise KeyError(
-                "Internal page '%s' not found (from '...%s' line %s): %s" % (
-                    internal_page_name, stack[1][-30:], stack[2], e
-                )
-            )
+        internal_page_data = self.get_internal_page_data(internal_page_name)
 
         engine = internal_page_data["template_engine"]
         if engine == "string formatting":
@@ -69,10 +72,91 @@ class TemplateEngines(PyLucidBaseModule):
             raise NotImplemented, msg
 
         # CSS/JS behandeln:
-        self.addCSS(internal_page_data["content_css"])
-        self.addJS(internal_page_data["content_js"])
+        self.addCSS(internal_page_data["content_css"], internal_page_name)
+        self.addJS(internal_page_data["content_js"], internal_page_name)
 
-    def addCSS(self, content_css):
+
+    def get_internal_page_data(self, internal_page_name):
+        if self.runlevel.is_install():
+            # Beim installieren holen wir uns die Daten direkt von der Platte
+            return self.get_internal_page_data_from_disk(internal_page_name)
+        else:
+            return self.get_internal_page_data_from_db(internal_page_name)
+            # Der Normalfall, die Daten werden aus der DB geholt
+
+
+    def get_internal_page_data_from_db(self, internal_page_name):
+        try:
+            return self.db.get_internal_page_data(internal_page_name)
+        except IndexError, e:
+            import inspect
+            stack = inspect.stack()[1]
+            msg = (
+                "Internal page '%s' not found (from '...%s' line %s): %s"
+            ) % (internal_page_name, stack[1][-30:], stack[2], e)
+            raise KeyError(msg)
+
+
+    def get_internal_page_data_from_disk(self, internal_page_name):
+        if self.template_path == None:
+            msg = (
+                "template_path for internal page '%s' not set by module!"
+            ) % internal_page_name
+            raise RuntimeError, msg
+
+        cfg_package = self.template_path[:]
+        module_name = "%s_cfg" % self.template_path[-1]
+        cfg_package = ".".join(cfg_package)
+
+        cfg_module = __import__(
+            "%s.%s" % (cfg_package, module_name),
+            {}, {}, [module_name]
+        )
+        module_manager_data = cfg_module.module_manager_data
+
+        method_cfg = module_manager_data[internal_page_name]
+        internal_page_info = method_cfg["internal_page_info"]
+
+        internal_page_data = {
+            "template_engine": internal_page_info["template_engine"],
+            "markup": internal_page_info["markup"],
+        }
+
+        html_content = self.readContentFile(internal_page_name, "html")
+        if html_content == "":
+            raise FileNotFound, (
+                "html file '%s' not found!"
+            ) % internal_page_name
+
+        internal_page_data["content_html"] = html_content
+
+        internal_page_data["content_css"] = \
+                            self.readContentFile(internal_page_name, "css")
+        internal_page_data["content_js"] = \
+                            self.readContentFile(internal_page_name, "js")
+
+        return internal_page_data
+
+
+    def readContentFile(self, internal_page_name, ext):
+        def get_path(internal_page_name, ext):
+            template_path = self.template_path[:] # Kopie der Liste
+            #~ template_path.insert(0, self.environ["DOCUMENT_ROOT"])
+            template_path.append("%s.%s" % (internal_page_name, ext))
+            template_path = os.sep.join(template_path)
+            return template_path
+
+        file_path = get_path(internal_page_name, ext)
+        if not os.path.isfile(file_path):
+            return ""
+
+        f = file(file_path, "rU")
+        content = f.read()
+        f.close()
+
+        return content
+
+    def addCSS(self, content_css, internal_page_name):
         """
         Zusätzlicher Stylesheet Code für interne Seite behandeln
         """
@@ -81,14 +165,16 @@ class TemplateEngines(PyLucidBaseModule):
 
         #~ tag = '<style type="text/css">\n%s\n</style>\n'
         tag = (
-            '<style type="text/css">\n/* <![CDATA[ */\n'
+            '<style type="text/css">\n'
+            '/* <![CDATA[ */\n'
+            '/* additional stylesheets from internal page "%s" */\n'
             '%s\n'
-            '/* ]]> */\n</style>'
+            '/* ]]> */\n</style>\n'
         )
         content_type = "Stylesheet"
-        self.addCode(content_css, tag, content_type, internal_page_name)
+        self.add(content_css, tag, content_type, internal_page_name)
 
-    def addJS(self, content_js):
+    def addJS(self, content_js, internal_page_name):
         """
         Zusätzlicher JavaScript Code für interne Seite behandeln
         """
@@ -97,14 +183,16 @@ class TemplateEngines(PyLucidBaseModule):
 
         #~ tag = '<script type="text/javascript">\n%s\n</script>\n'
         tag = (
-            '<script type="text/javascript">\n/* <![CDATA[ */\n'
+            '<script type="text/javascript">\n'
+            '/* <![CDATA[ */\n'
+            '/* additional javascript from internal page "%s" */\n'
             '%s\n'
-            '/* ]]> */\n</script>'
+            '/* ]]> */\n</script>\n'
         )
         content_type = "JavaScript"
-        self.addCode(content_js, tag, content_type, internal_page_name)
+        self.add(content_js, tag, content_type, internal_page_name)
 
-    def addCode(self, code, tag, content_type, internal_page_name):
+    def add(self, code, tag, content_type, internal_page_name):
         """
         Fügt den Code an response.addCode an
         """
@@ -119,8 +207,9 @@ class TemplateEngines(PyLucidBaseModule):
             code = code.encode("utf8", "replace")
 
         # Tag anwenden
-        code = tag % code
-        self.response.addCode.add(code)
+        code = tag % (internal_page_name, code)
+
+        self.addCode.add(code)
 
 
     def render_stringFormatting(self, internal_page_name, internal_page_data, context):
@@ -192,7 +281,9 @@ class TemplateEngines(PyLucidBaseModule):
                 )
             )
 
-        content = self.render.apply_markup(content, internal_page_data["markup"])
+        content = self.render.apply_markup(
+            content, internal_page_data["markup"]
+        )
 
         self.response.write(content)
 

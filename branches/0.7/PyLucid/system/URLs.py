@@ -28,7 +28,7 @@ class URLs(dict):
         Requests nicht verändern
     -Pfad-Methoden für dynamische Pfade!
     """
-    def __init__(self, request):
+    def __init__(self, request, response):
         dict.__init__(self)
         self.lock = False
 
@@ -38,8 +38,9 @@ class URLs(dict):
         # shorthands
         self.request        = request
         self.environ        = request.environ
-        self.page_msg       = request.page_msg
+        self.runlevel       = request.runlevel
         self.preferences    = request.preferences
+        self.page_msg       = response.page_msg
 
         self._setup_pathInfo()
 
@@ -117,13 +118,13 @@ class URLs(dict):
             self["scriptRoot"], self.preferences["commandURLprefix"]
         )
 
-        if self.request.runlevel == "normal":
+        if self.runlevel.is_normal():
             self.lock = True
             return
 
         path = self["pathInfo"].split("/")
 
-        if self.request.runlevel == "install":
+        if self.runlevel.is_install():
             self["commandBase"] = posixpath.join(
                 self["scriptRoot"], path[0]
             )
@@ -223,7 +224,7 @@ class URLs(dict):
         return link
 
     def commandLink(self, modulename, methodname=""):
-        #~ if self.request.runlevel == "install":
+        #~ if self.runlevel.is_install():
             #~ link = posixpath.join(
                 #~ self["scriptRoot"], self["commandBase"],
                 #~ modulename, methodname
@@ -241,12 +242,12 @@ class URLs(dict):
         return link
 
     def actionLink(self, methodname):
-        if self.request.runlevel == "command":
+        if self.runlevel.is_command():
             link = posixpath.join(
                 self["scriptRoot"], self.preferences["commandURLprefix"],
                 self["command"], methodname
             )
-        elif self.request.runlevel == "install":
+        elif self.runlevel.is_install():
             if self["command"] == None:
                 # Wir sind im root also /_install/ ohne Kommando
                 self.actionLinkRuntimeError("actionLink()")
@@ -261,13 +262,12 @@ class URLs(dict):
         return link
 
     def currentAction(self):
-        print self["command"], self['action']
-        if self.request.runlevel == "command":
+        if self.runlevel.is_command():
             link = posixpath.join(
                 self["scriptRoot"], self.preferences["commandURLprefix"],
                 self["command"], self['action']
             )
-        elif self.request.runlevel == "install":
+        elif self.runlevel.is_install():
             if self["command"] == None:
                 # Wir sind im root also /_install/ ohne Kommando
                 self.actionLinkRuntimeError("currentAction()")
@@ -284,8 +284,8 @@ class URLs(dict):
         msg = (
             "Action link is only available if there is a action"
             ", but there is nothing! "
-            "command: '%s', action: '%s' (Error: %s)"
-        ) % (self["command"], self['action'], e)
+            "command: '%s', action: '%s' (runlevel: '%s', Error: %s)"
+        ) % (self["command"], self['action'], self.runlevel.state, e)
         raise RuntimeError, msg
 
     #_________________________________________________________________________
@@ -307,7 +307,7 @@ class URLs(dict):
 
     def debug(self):
 
-        #~ self.request.debug()
+        #~ self.response.debug()
 
         try:
             import inspect
@@ -318,7 +318,7 @@ class URLs(dict):
             fileinfo = "(inspect error: '%s')" % e
 
         self.page_msg("path debug [%s]:" % fileinfo)
-        self.page_msg('request.runlevel:', self.request.runlevel)
+        self.page_msg('request.runlevel:', self.runlevel)
         self.page_msg('environ["PATH_INFO"]:', self.environ["PATH_INFO"])
         self.page_msg('environ["SCRIPT_ROOT"]:', self.environ["SCRIPT_ROOT"])
         #~ for k,v in self.iteritems():

@@ -57,7 +57,7 @@ class InternalPage(object):
 
         # shorthands
         self.db             = request.db
-        self.page_msg       = request.page_msg
+        self.page_msg       = response.page_msg
 
         self.plugin_id = None
 
@@ -128,7 +128,7 @@ class InternalPage(object):
             # Es gibt keine zusätzliche Datei ;)
             return "", 0
 
-        msg = "<li>read %s '%s'..." % (name, filename)
+        msg = "<li>read '%s' %s..." % (filename, name)
         self.response.write(msg)
         try:
             lastupdatetime, content = self._getFiledata(filename)
@@ -187,7 +187,7 @@ class Method(object):
 
         # shorthands
         self.db             = request.db
-        self.page_msg       = request.page_msg
+        self.page_msg       = response.page_msg
 
     def add(self, package_dir_list, module_name, name):
         self.package_dir_list = package_dir_list
@@ -267,7 +267,7 @@ class Module(object):
 
         # shorthands
         self.db             = request.db
-        self.page_msg       = request.page_msg
+        self.page_msg       = response.page_msg
 
     def add(self, name):
         self.name = name
@@ -293,7 +293,6 @@ class Module(object):
         self.data["version"] = self._getVersionInfo()
 
     def add_fromDB(self, RAWdict):
-        #~ print RAWdict
         package_dir_list = RAWdict['package_name']
         package_dir_list = package_dir_list.split("/")
 
@@ -304,10 +303,8 @@ class Module(object):
             "url", "SQL_deinstall_commands"
         )
         for key in keys:
+            # FIXME: must change in DB?!?!?
             self.data[key] = RAWdict.get(key, None)
-
-        # FIXME: must change in DB?!?!?
-        self.data["module_name"] = RAWdict["module_name"]
 
         self.data["builtin"] = False
 
@@ -485,7 +482,7 @@ class Modules(object):
 
         # shorthands
         self.db             = request.db
-        self.page_msg       = request.page_msg
+        self.page_msg       = response.page_msg
 
         self.data = {}
 
@@ -504,8 +501,9 @@ class Modules(object):
         self.data[module_name] = module
 
     def addModule_fromDB(self, moduledata):
-        module_name = moduledata['module_name']
-        module = Module(self.request, self.response, module_name)
+        module_name = moduledata["module_name"]
+        module = Module(self.request, self.response)
+        module.add(module_name)
         module.add_fromDB(moduledata)
         self.data[module_name] = module
 
@@ -649,7 +647,7 @@ class Modules(object):
 
 
 
-class ModuleAdmin(PyLucidBaseModule):
+class module_admin(PyLucidBaseModule):
     #~ def __init__(self, *args, **kwargs):
         #~ super(ModuleAdmin, self).__init__(*args, **kwargs)
 
@@ -657,7 +655,8 @@ class ModuleAdmin(PyLucidBaseModule):
         self.response.write(
             "<h4>Module/Plugin Administration v%s</h4>" % __version__
         )
-        self.module_manager.build_menu()
+        #~ self.module_manager.build_menu()
+        self.administation_menu()
 
     def link(self, action):
         if self.request.runlevel != "install":
@@ -685,7 +684,7 @@ class ModuleAdmin(PyLucidBaseModule):
             "action_url"    : self.URLs.currentAction(),
         }
 
-        if self.request.runlevel == "install":
+        if self.runlevel.is_install():
             try:
                 f = file(internal_page_file,"rU")
                 install_template = f.read()
@@ -716,10 +715,8 @@ class ModuleAdmin(PyLucidBaseModule):
 
         else:
             # Normal als Modul aufgerufen
-            self.db.print_internal_TAL_page(
-                "module_admin_administation_menu", context_dict
-            )
-            self.link("menu")
+            self.response.write("<h1>Alpha-Version: Not working now!</h1>")
+            self.templates.write("administation_menu", context_dict)
 
     #_________________________________________________________________________
     # install

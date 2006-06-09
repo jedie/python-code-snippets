@@ -41,7 +41,7 @@ module_manager_data = {
     "sub_menu_link"     : global_rights,
     "sub_menu"          : {
         "must_login"    : True,
-        "must_admin"    : True,
+        "must_admin"    : False,
         "has_Tags"      : True,
         "internal_page_info" : {
             "name"              : "sub_menu",

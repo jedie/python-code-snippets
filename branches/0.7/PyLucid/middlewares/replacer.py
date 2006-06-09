@@ -44,9 +44,6 @@ class Replacer(object):
     def addCode(self, line, environ):
         code = environ['PyLucid.addCode']
         code = code.get()
-        if code=="":
-            # Gibt keinen Add-Code
-            return ""
 
         line = line.replace(add_code_tag, code)
         return line
@@ -73,6 +70,7 @@ class Replacer(object):
 
 
 class AddCode(object):
+    tag = add_code_tag
 
     def __init__(self, app):
         self.app = app

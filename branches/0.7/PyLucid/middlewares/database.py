@@ -87,6 +87,7 @@ v0.0.1
 
 
 from PyLucid.system.SQL_active_statements import active_statements
+from PyLucid.system.DBwrapper.DBwrapper import ConnectionError
 
 class db(active_statements):
     def connect(self, preferences):

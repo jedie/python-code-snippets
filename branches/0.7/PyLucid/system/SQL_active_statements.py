@@ -176,72 +176,13 @@ class active_statements(passive_statements):
     #_________________________________________________________________________
     ## InterneSeiten
 
-    def get_internal_page_addition_CSS(self, internal_page_name):
-        """
-        Liefert das passende Stylesheet zur internen Seite zurück
-        """
-        code = self.select(
-            select_items    = ["content"],
-            from_table      = "pages_internal_css",
-            where           = ("name", internal_page_name)
-        )
-        if code == []:
-            # Gibt kein zusätzliches CSS für die interne Seite!
-            return None
-        else:
-            content = code[0]["content"]
-            return content
-
-    def get_internal_page_addition_JS(self, internal_page_name):
-        """
-        Liefert das passende JS Script zur internen Seite zurück
-        """
-        code = self.select(
-            select_items    = ["content"],
-            from_table      = "pages_internal_js",
-            where           = ("name", internal_page_name)
-        )
-        if code == []:
-            # Gibt kein zusätzliches JS für die interne Seite!
-            return None
-        else:
-            content = code[0]["content"]
-            return content
-
-    def update_internal_page(self, internal_page_name, type, page_data):
-        tables = {
-            "html": "pages_internal",
-            "css": "pages_internal_css",
-            "js": "pages_internal_js",
-        }
-        table_name = tables[type]
+    def update_internal_page(self, internal_page_name, page_data):
         self.update(
-            table   = table_name,
+            table   = "pages_internal",
             data    = page_data,
             where   = ("name",internal_page_name),
             limit   = 1
         )
-
-    def delete_internal_page_addition(self, internal_page_name, typ):
-        tables = {
-            "css": "pages_internal_css",
-            "js": "pages_internal_js",
-        }
-        table_name = tables[type]
-        test = self.select(
-            table = table_name,
-            where = ("name", internal_page_name),
-            limit = 1,
-        )
-        if test == []:
-            # Es gibt keinen Tabelleneintrag!
-            return None
-        self.delete(
-            table = table_name,
-            where = ("name", internal_page_name),
-            limit = 1,
-        )
-        return True
 
     def new_internal_page(self, data, lastupdatetime=None):
         """
@@ -300,36 +241,6 @@ class active_statements(passive_statements):
         page_names = [i["name"] for i in page_names]
         return page_names
 
-    def newStyleSheet(self, style_data):
-        "Stylesheet einer internen Seite eintragen"
-        lastupdatetime = style_data["lastupdatetime"]
-        lastupdatetime = self.tools.convert_time_to_sql(lastupdatetime)
-        self.insert(
-            table   = "pages_internal_css",
-            data    = {
-                "name"          : style_data["name"],
-                "plugin_id"     : style_data["plugin_id"],
-                "lastupdatetime": lastupdatetime,
-                "description"   : style_data.get("description", None),
-                "content"       : style_data["content"],
-            },
-        )
-
-    def newJavaScript(self, js_data):
-        "JavaScript einer internen Seite eintragen"
-        lastupdatetime = js_data["lastupdatetime"]
-        lastupdatetime = self.tools.convert_time_to_sql(lastupdatetime)
-        self.insert(
-            table   = "pages_internal_js",
-            data    = {
-                "name"          : js_data["name"],
-                "plugin_id"     : js_data["plugin_id"],
-                "lastupdatetime": lastupdatetime,
-                "description"   : js_data.get("description", None),
-                "content"       : js_data["content"],
-            },
-        )
-
     #_________________________________________________________________________
     ## Userverwaltung
 
@@ -347,8 +258,12 @@ class active_statements(passive_statements):
                 }
             )
 
-    def update_userdata(self, id, user_data):
+    def update_userdata(self, id, name, realname, email, admin):
         """ Editierte Userdaten wieder speichern """
+        user_data={
+            "name": name, "realname": realname, "email": email, "admin": admin
+        }
+
         self.update(
             table   = "md5users",
             data    = user_data,

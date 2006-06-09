@@ -27,11 +27,8 @@ from PyLucid.system.BaseModule import PyLucidBaseModule
 
 class page_style(PyLucidBaseModule):
 
-    def __init__(self, *args, **kwargs):
-        super(page_style, self).__init__(*args, **kwargs)
-
-        from PyLucid.middlewares.replacer import add_code_tag
-        self.add_code_tag = add_code_tag
+    #~ def __init__(self, *args, **kwargs):
+        #~ super(page_style, self).__init__(*args, **kwargs)
 
     def lucidTag(self):
         cssTag = (
@@ -40,7 +37,9 @@ class page_style(PyLucidBaseModule):
         ) % self.URLs.actionLink("sendStyle")
         self.response.write(cssTag)
 
-        self.response.write(self.add_code_tag)
+        # Schreibt den addCode-Tag, damit am Ende noch die CSS/JS Daten
+        # von Modulen eingefügt werden können
+        self.response.write(self.response.addCode.tag)
 
     def print_current_style(self):
         """
@@ -56,6 +55,8 @@ class page_style(PyLucidBaseModule):
 
         self.response.write('</style>')
 
+        # Schreibt den addCode-Tag, damit am Ende noch die CSS/JS Daten
+        # von Modulen eingefügt werden können
         self.response.write(self.response.addCode.tag)
 
     def sendStyle(self, function_info):

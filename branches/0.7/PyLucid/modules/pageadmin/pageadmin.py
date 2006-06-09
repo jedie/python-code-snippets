@@ -623,7 +623,7 @@ class pageadmin(PyLucidBaseModule):
         table += "</table>\n"
 
         context = {
-            "url"       : self.URLs["current_action"],
+            "url"       : self.URLs.currentAction(),
             "table_data" : table,
         }
 

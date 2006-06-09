@@ -111,12 +111,12 @@ class staticTags(dict):
     Dict zum speichern der statischen Tag-Informationen
     """
 
-    def __init__(self, request, response):
-        dict.__init__(self)
-
-        self.request = request
+    def init2(self, request, response):
+        #~ dict.__init__(self)
 
         # Shorthands
+        self.environ        = request.environ
+        self.runlevel       = request.runlevel
         self.preferences    = request.preferences
         self.URLs           = request.URLs
         self.session        = request.session
@@ -130,7 +130,8 @@ class staticTags(dict):
         self["installURLprefix"] = self.preferences["installURLprefix"]
 
         self["powered_by"]  = __info__
-        if self.session["user"] != False:
+        #~ if self.session.has_key("user") and self.session["user"] != False:
+        if self.session != None and self.session["user"] != False:
             link = self.URLs.commandLink("auth", "logout")
             self["script_login"] = '<a href="%s">logout [%s]</a>' % (
                 link, self.session["user"]
@@ -139,7 +140,7 @@ class staticTags(dict):
             link = self.URLs.commandLink("auth", "login")
             self["script_login"] = '<a href="%s">login</a>' % (link)
 
-        if self.request.runlevel == "command":
+        if self.runlevel.is_command():
             # Ein Kommando soll ausgeführt werden
             self.setup_command_tags()
 
@@ -150,7 +151,7 @@ class staticTags(dict):
         self["page_description"] = ""
 
         #FIXME:
-        self["page_name"] = self["page_title"] = self.request.environ["PATH_INFO"]
+        self["page_name"] = self["page_title"] = self.environ["PATH_INFO"]
         self["page_last_modified"] = ""
         self["page_datetime"] = ""
 

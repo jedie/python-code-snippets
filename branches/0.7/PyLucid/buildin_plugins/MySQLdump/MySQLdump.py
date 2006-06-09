@@ -65,10 +65,11 @@ class MySQLdump(PyLucidBaseModule):
     def menu(self):
         """ Menü für Aktionen generieren """
         #~ self.URLs.debug()
-        self.request.debug()
+        self.response.debug()
 
         if self.request.form.get("action", False):
             actions = {
+                "display_help": self.display_help,
                 "display_dump": self.display_dump,
                 "display_command": self.display_command,
                 "install_dump": self.PyLucid_install_dump,
@@ -135,11 +136,11 @@ class MySQLdump(PyLucidBaseModule):
         context = {
             "version"       : __version__,
             "tables"        : table_data,
-            "url"           : self.URLs["current_action"],
+            "url"           : self.URLs.currentAction(),
             "buttons"       : buttons
         }
 
-        self.templates.write("MySQLdump_Menu", context)
+        self.templates.write("Menu", context)
 
     #_______________________________________________________________________
 
@@ -201,22 +202,19 @@ class MySQLdump(PyLucidBaseModule):
         dbTablePrefix = self.preferences["dbTablePrefix"]
         dump = universalize_dump(self.response, dbTablePrefix).process(dump)
 
-        self.response.write("Keys: %s<br />\n" % dump.keys())
-        for k,v in dump.iteritems():
-            self.response.write(
-                "<strong>%s</strong> - %s<br />\n" % (k, cgi.escape(v))
-            )
+        # Debug:
+        #~ self.response.write("<pre>\n")
+        #~ self.response.write("Keys: %s\n" % dump.keys())
+        #~ for k,v in dump.iteritems():
+            #~ self.response.write("<strong>%s</strong>\n" % k)
+            #~ self.response.write("%s\n" % cgi.escape(v))
+        #~ self.response.write("</pre>\n")
+        #~ return
 
         buffer = StringIO.StringIO()
         z = zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED)
 
         for filename,data in dump.iteritems():
-            #~ if debug:
-                #~ self.response.write("\n","-"*80)
-                #~ self.response.write(filename)
-                #~ self.response.write("- "*40)
-                #~ self.response.write(data)
-                #~ self.response.write("-"*80)
             z.writestr(filename,data)
         z.close()
 
@@ -438,8 +436,10 @@ filter_startswith = (
     "INSERT INTO `$$archive`",
     "INSERT INTO `$$log`",
     "INSERT INTO `$$md5users`",
+    "INSERT INTO `$$pages_internal`",
+    "INSERT INTO `$$plugindata`",
+    "INSERT INTO `$$plugins`",
     "INSERT INTO `$$session_data`",
-    "INSERT INTO `$$users`",
     "INSERT INTO `$$user_group`",
 
     "LOCK TABLES",
@@ -454,7 +454,7 @@ crate_table_filters = (
     "COLLATE=%s" % pattern,
     "character set %s" % pattern,
     "DEFAULT CHARSET=%s" % pattern,
-    " TYPE=MyISAM(?<! COMMENT)" # (?<!\))
+    "TYPE=MyISAM(?<! COMMENT)" # (?<!\))
 )
 
 cleaning_filters = (
@@ -497,12 +497,14 @@ class universalize_dump:
 
             if line=="": continue # Leere Zeilen brauchen wir nicht
 
-            outdata[category] += line+"\n"
+            outdata[category] += line
 
         return outdata
 
         if self.found_dbprefix == False:
-            self.response.write("ERROR: No table prefix '%s' found!!!" % self.dbTablePrefix)
+            self.response.write(
+                "ERROR: No table prefix '%s' found!!!" % self.dbTablePrefix
+            )
 
 
     def preprocess( self, line ):
@@ -534,13 +536,16 @@ class universalize_dump:
         if self.in_create_table == True:
             #~ self.response.write(line[:-1])
             for filter in crate_table_filters:
-                line = re.sub( filter, "", line )
+                line = re.sub(filter, "", line)
             #~ self.response.write(">",line)
+        else:
+            line += "\n"
 
         if line.endswith( ";" ):
+            line += "\n"
             self.in_create_table = False
 
         for filter in cleaning_filters:
-            line = re.sub( filter, "", line )
+            line = re.sub(filter, "", line)
 
         return line
