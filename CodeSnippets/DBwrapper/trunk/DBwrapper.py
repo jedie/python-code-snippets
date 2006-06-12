@@ -653,7 +653,13 @@ class SQL_wrapper(Database):
         """
         result = {}
         for line in selectDict:
-            index_value = line[indexKey]
+            try:
+                index_value = line[indexKey]
+            except KeyError, e:
+                msg = "Key %s not in dict. Available Keys: %s" % (
+                    e, line.keys()
+                )
+                raise KeyError, msg
             result[index_value] = line
         return result
 

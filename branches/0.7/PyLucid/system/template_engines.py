@@ -56,7 +56,17 @@ class TemplateEngines(object):
         self.addCode    = response.addCode
 
     def write(self, internal_page_name, context):
-        internal_page_data = self.get_internal_page_data(internal_page_name)
+        try:
+            internal_page_data = self.get_internal_page_data(
+                internal_page_name
+            )
+        except InternalPageNotFound, e:
+            import inspect
+            stack = inspect.stack()[1]
+            msg = (
+                "Internal page '%s' not found (from '...%s' line %s): %s"
+            ) % (internal_page_name, stack[1][-30:], stack[2], e)
+            raise KeyError(msg)
 
         engine = internal_page_data["template_engine"]
         if engine == "string formatting":
@@ -89,13 +99,7 @@ class TemplateEngines(object):
         try:
             return self.db.get_internal_page_data(internal_page_name)
         except IndexError, e:
-            import inspect
-            stack = inspect.stack()[1]
-            msg = (
-                "Internal page '%s' not found (from '...%s' line %s): %s"
-            ) % (internal_page_name, stack[1][-30:], stack[2], e)
-            raise KeyError(msg)
-
+            raise InternalPageNotFound, e
 
     def get_internal_page_data_from_disk(self, internal_page_name):
         if self.template_path == None:
@@ -115,7 +119,12 @@ class TemplateEngines(object):
         module_manager_data = cfg_module.module_manager_data
 
         method_cfg = module_manager_data[internal_page_name]
+        #~ try:
         internal_page_info = method_cfg["internal_page_info"]
+        #~ except KeyError:
+            #~ print "No internal_page_info found for module_name"
+            #~ self.page_msg("No internal_page_info found for module_name")
+            #~ return
 
         internal_page_data = {
             "template_engine": internal_page_info["template_engine"],
@@ -289,4 +298,6 @@ class TemplateEngines(object):
 
 
 
-
+class InternalPageNotFound(Exception):
+    """ Die Interne Seite wurde in der DB nicht gefunden """
+    pass

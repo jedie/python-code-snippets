@@ -64,7 +64,7 @@ class LowLevelAdmin(ObjectApp_Base):
 
         module_admin = self._get_module_admin()
 
-        self.response.debug()
+        #~ self.response.debug()
         #~ return
 
         if "install" in self.request.form:
@@ -105,7 +105,6 @@ class LowLevelAdmin(ObjectApp_Base):
                 self.response.write("KeyError: %s" % e)
             else:
                 self.request.db.commit()
-            return
         elif "activate" in self.request.form:
             id = self.request.form["id"]
             try:

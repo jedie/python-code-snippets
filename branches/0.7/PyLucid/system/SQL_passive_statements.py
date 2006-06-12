@@ -679,7 +679,8 @@ class passive_statements(SQL_wrapper):
     def get_plugin_data_by_id(self, plugin_id):
         result = self.select(
             select_items    = [
-                "module_name", "package_name", "SQL_deinstall_commands"
+                "id", "module_name", "package_name", "SQL_deinstall_commands",
+                "active"
             ],
             from_table      = "plugins",
             where           = ("id", plugin_id),
@@ -736,7 +737,7 @@ class passive_statements(SQL_wrapper):
         """
         pages_info = self.select(
             select_items    = [
-                "name", "template_engine", "markup",
+                "plugin_id", "name", "template_engine", "markup",
                 "lastupdatetime", "lastupdateby", "description"
             ],
             from_table      = "pages_internal",

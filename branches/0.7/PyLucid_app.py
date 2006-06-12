@@ -24,6 +24,9 @@ import sys #Debug
 
 
 #~ class PrintLocator(object):
+    #~ """
+    #~ Very slow! But in some case very helpfully ;)
+    #~ """
     #~ def __init__(self):
         #~ self.oldFileinfo = ""
 
@@ -204,9 +207,17 @@ class PyLucidApp(BaseApplication):
         self.db.URLs        = self.URLs
 
     def request_debug(self):
+        try:
+            import inspect
+            # Angaben zur Datei, Zeilennummer, aus dem die Nachricht stammt
+            stack = inspect.stack()[1]
+            filename = stack[1].split("/")[-1][-20:]
+            fileinfo = "%-20s line %3s: " % (filename, stack[2])
+            self.page_msg(fileinfo.replace(" ","&nbsp;"))
+        except Exception, e:
+            self.page_msg("<small>(inspect Error: %s)</small> " % e)
         from colubrid.debug import debug_info
         self.page_msg(debug_info(self.request))
-
 
     def setup_runlevel(self):
 

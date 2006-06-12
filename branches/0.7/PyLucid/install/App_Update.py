@@ -37,6 +37,22 @@ class update(ObjectApp_Base):
         )
         SQLcommand = (
             "ALTER TABLE $$pages_internal"
+            " ADD method_id TINYINT(4) UNSIGNED NOT NULL AFTER plugin_id;"
+        )
+        self._execute(
+            "add 'method_id' column in pages_internal table", SQLcommand
+        )
+        SQLcommand = (
+            "ALTER TABLE $$pages_internal"
+            " CHANGE plugin_id plugin_id TINYINT(4) UNSIGNED NOT NULL,"
+            " CHANGE template_engine template_engine TINYINT(4) UNSIGNED NULL,"
+            " CHANGE markup markup TINYINT(4) UNSIGNED NULL;"
+        )
+        self._execute(
+            "change id columns in pages_internal table", SQLcommand
+        )
+        SQLcommand = (
+            "ALTER TABLE $$pages_internal"
             " CHANGE content content_html TEXT NOT NULL;"
         )
         self._execute(
@@ -81,6 +97,7 @@ class update(ObjectApp_Base):
         # plugindata Aufräumen
         SQLcommand = (
             "ALTER TABLE $$plugindata"
+            " DROP internal_page_info,"
             " DROP parent_method_id,"
             " DROP CGI_laws,"
             " DROP get_CGI_data;"
