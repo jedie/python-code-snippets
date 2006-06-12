@@ -206,7 +206,7 @@ class active_statements(passive_statements):
             data  = {
                 "name"              : data["name"],
                 "plugin_id"         : data["plugin_id"],
-                #~ "category_id"       : category_id,
+                "method_id"         : data["method_id"],
                 "template_engine"   : template_engine_id,
                 "markup"            : markup_id,
                 "lastupdatetime"    : self.tools.convert_time_to_sql(lastupdatetime),
@@ -291,6 +291,7 @@ class active_statements(passive_statements):
         )
 
     def deactivate_module(self, id):
+        print "deact", id
         self.update(
             table   = "plugins",
             data    = {"active": 0},
@@ -344,8 +345,6 @@ class active_statements(passive_statements):
                 method_cfg[k] = 1
             elif v == False:
                 method_cfg[k] = 0
-            elif type(v) in (dict, list, tuple):
-                method_cfg[k] = pickle.dumps(v)
 
         # Daten vervollständigen
         method_cfg.update({
@@ -357,6 +356,7 @@ class active_statements(passive_statements):
             table = "plugindata",
             data  = method_cfg,
         )
+        return self.cursor.lastrowid
 
     def delete_plugin(self, id):
         try:

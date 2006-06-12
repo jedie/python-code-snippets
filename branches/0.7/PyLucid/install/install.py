@@ -224,7 +224,7 @@ class InstallApp:
         """
         try:
             f = file(installLockFilename, "rU")
-            lockCodeFile = f.readline()
+            lockCode = f.readline()
             f.close()
         except IOError, e:
             self.writeHTMLhead()
@@ -241,11 +241,11 @@ class InstallApp:
             #~ "Debug: |%s| <-> |%s|" % (self.LockCodeURL, lockCodeFile)
         #~ )
 
-        if len(lockCodeFile)<8:
+        if len(lockCode)<8:
             self.page_msg("Install lock code to short! (len min. 8 chars!)")
             raise WrongInstallLockCode()
 
-        if not self.LockCodeURL.endswith(lockCodeFile):
+        if not self.LockCodeURL.endswith(lockCode):
             self.page_msg("Wrong install lock code!")
             raise WrongInstallLockCode()
 
@@ -348,6 +348,17 @@ class InstallApp:
         parent.request = self.request
         try:
             handler(parent, *args)
+        except TypeError, e:
+            try:
+                import inspect
+                # Angaben zur Datei, Zeilennummer, aus dem die Nachricht stammt
+                stack = inspect.stack()[1]
+                filename = stack[1].split("/")[-1][-30:]
+                fileinfo = "%-20s line %3s: " % (filename, stack[2])
+            except Exception, e:
+                fileinfo = "(inspect Error: %s)" % e
+
+            raise TypeError, "From %s: %s" % (fileinfo, e)
         except SystemExit, e:
             # sys.exit() wird immer bei einem totalabbruch gemacht ;)
             self.response.write('<small style="color:grey">(exit %s)</small>' % e)

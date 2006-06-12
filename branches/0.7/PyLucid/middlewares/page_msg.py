@@ -37,8 +37,9 @@ class page_msg_Container(object):
             try:
                 import inspect
                 # Angaben zur Datei, Zeilennummer, aus dem die Nachricht stammt
-                filename = inspect.stack()[1][1].split("/")[-1][-20:]
-                fileinfo = "%-20s line %3s: " % (filename, inspect.stack()[1][2])
+                stack = inspect.stack()[1]
+                filename = stack[1].split("/")[-1][-20:]
+                fileinfo = "%-20s line %3s: " % (filename, stack[2])
                 self.data += fileinfo.replace(" ","&nbsp;")
             except Exception, e:
                 self.data += "<small>(inspect Error: %s)</small> " % e

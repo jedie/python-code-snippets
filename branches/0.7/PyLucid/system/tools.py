@@ -47,6 +47,17 @@ request = None
 
 
 #_____________________________________________________________________________
+def filterDict(source_dict, strKeys=[], intKeys=[], defaults={}):
+    result = {}
+    for key in strKeys:
+        result[key] = str(source_dict[key])
+    for key in intKeys:
+        result[key] = int(source_dict[key])
+    for key, default in defaults.iteritems():
+        result[key] = source_dict.get(key, default)
+    return result
+
+#_____________________________________________________________________________
 def writeDictListTable(dictlist, outobj, keyfilter=[]):
     """
     Erstellt aus einer dict-cursor-SQL-Abfrage eine einfache Tabelle und
@@ -104,7 +115,7 @@ def getUniqueShortcut(item_name, nameList, strip=True):
     """
     if strip:
         import string
-        ascii = string.ascii_letters + string.ascii_letters
+        ascii = string.ascii_letters + string.digits
 
         # Nur ASCII Zeichen erlauben und gleichzeitig trennen
         parts = [""]

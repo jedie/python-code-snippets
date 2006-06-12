@@ -65,7 +65,7 @@ class tests(ObjectApp_Base):
 
     #_________________________________________________________________________
 
-    def table_info(self):
+    def table_info(self, table_name=None):
         "DB Table info"
         self._write_info()
 
@@ -88,24 +88,22 @@ class tests(ObjectApp_Base):
 
         self.response.write("</ul>")
 
-        try:
-            item = self._URLs["actionArgs"][0]
-        except IndexError:
-            # Keine Tabelle wurde ausgewählt
-            return
 
-        if item not in tableNameList:
-            self.response.write("Error! '%s' not exists!" % item)
+        if table_name == None:
+            # Noch keine Tabelle ausgewählt
+            return
+        elif table_name not in tableNameList:
+            self.response.write("Error! '%s' not exists!" % table_name)
             return
 
         #~ self._execute_verbose("SHOW FULL TABLES;")
-        #~ self._execute_verbose("SHOW TABLE STATUS FROM %s;" % item)
-        self._execute_verbose("CHECK TABLE %s;" % item)
-        self._execute_verbose("ANALYZE TABLE %s;" % item)
-        self._execute_verbose("SHOW FULL COLUMNS FROM %s;" % item)
-        self._execute_verbose("SHOW INDEX FROM %s;" % item)
+        #~ self._execute_verbose("SHOW TABLE STATUS FROM %s;" % table_name)
+        self._execute_verbose("CHECK TABLE %s;" % table_name)
+        self._execute_verbose("ANALYZE TABLE %s;" % table_name)
+        self._execute_verbose("SHOW FULL COLUMNS FROM %s;" % table_name)
+        self._execute_verbose("SHOW INDEX FROM %s;" % table_name)
 
-        #~ SQLcommand = "DESCRIBE %s" % item
+        #~ SQLcommand = "DESCRIBE %s" % table_name
         #~ self._execute_verbose(SQLcommand)
 
 

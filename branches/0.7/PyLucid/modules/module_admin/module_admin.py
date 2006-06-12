@@ -60,6 +60,7 @@ class InternalPage(object):
         self.page_msg       = response.page_msg
 
         self.plugin_id = None
+        self.method_id = None
 
         self.package_dir_list = package_dir_list
         self.module_name = module_name
@@ -72,11 +73,12 @@ class InternalPage(object):
 
     #_________________________________________________________________________
 
-    def install(self, plugin_id):
+    def install(self, plugin_id, method_id):
         """
         Installiert die interne Seite mit zugehörigen CSS und JS Daten
         """
         self.plugin_id = plugin_id
+        self.method_id = method_id
 
         msg = (
             "<li>install internal page '<strong>%s</strong>'...<ul>\n"
@@ -102,6 +104,7 @@ class InternalPage(object):
         internal_page = {
             "name"              : self.name,
             "plugin_id"         : self.plugin_id,
+            "method_id"         : self.method_id,
             "category"          : self.module_name,
             "description"       : self.data["description"],
             "content_html"      : html,
@@ -189,6 +192,9 @@ class Method(object):
         self.db             = request.db
         self.page_msg       = response.page_msg
 
+        self.id = None # Method-ID
+        self.plugin_id = None
+
     def add(self, package_dir_list, module_name, name):
         self.package_dir_list = package_dir_list
         self.module_name = module_name
@@ -201,9 +207,21 @@ class Method(object):
         self.data["must_login"] = True
         self.data["must_admin"] = True
 
+    def add_from_DB(self, config):
+        """
+        Verarbeiten der Config beim einlesen des Plugins aus der DB
+        """
+        self.id = config["id"]
+        self.plugin_id = config["plugin_id"]
+        self.data.update(config)
+
     def assimilateConfig(self, config):
+        """
+        Verarbeiten der Config beim einlesen der Plugins von Platte
+        """
         if 'internal_page_info' in config:
             internal_page_info = config['internal_page_info']
+            del(config['internal_page_info'])
 
             # Eine interne Seite muß keinen speziellen Namen haben, dann nehmen
             # wir einfach den Namen der Methode:
@@ -220,7 +238,7 @@ class Method(object):
 
     #_________________________________________________________________________
 
-    def install(self, moduleID):
+    def install(self, module_id):
         """
         Installiert Methode in die DB
         """
@@ -230,14 +248,19 @@ class Method(object):
         self.response.write(msg)
 
         # methode in DB eintragen
-        self.db.register_plugin_method(moduleID, self.name, self.data)
+        method_id = self.db.register_plugin_method(
+            module_id, self.name, self.data
+        )
         self.response.write("OK</li>\n")
 
         if self.internalPage != None:
             # zugehörige interne Seite in DB eintragen
             self.response.write('<li><ul class="install_ipages">\n')
-            self.internalPage.install(moduleID)
+            self.internalPage.install(module_id, method_id)
             self.response.write("</ul></li>\n")
+
+    def deinstall(self):
+        print "deinstall!"
 
     #_________________________________________________________________________
 
@@ -266,6 +289,7 @@ class Module(object):
         self.response = response
 
         # shorthands
+        self.tools          = request.tools
         self.db             = request.db
         self.page_msg       = response.page_msg
 
@@ -293,28 +317,56 @@ class Module(object):
         self.data["version"] = self._getVersionInfo()
 
     def add_fromDB(self, RAWdict):
-        package_dir_list = RAWdict['package_name']
+        self.data['package_name'] = package_dir_list = RAWdict['package_name']
         package_dir_list = package_dir_list.split("/")
 
         self.data["installed"] = True
 
-        keys = (
-            "id", "version", "author", "description",
-            "url", "SQL_deinstall_commands"
-        )
-        for key in keys:
-            # FIXME: must change in DB?!?!?
-            self.data[key] = RAWdict.get(key, None)
+        try:
+            RAWdict = self.tools.filterDict(
+                RAWdict,
+                strKeys=[],
+                intKeys=["id", "active"],
+                defaults={
+                    "version":"undefined",
+                    "author":"undefined",
+                    "description":"",
+                    "url":"",
+                    "SQL_deinstall_commands":None,
+                }
+            )
+        except KeyError, e:
+            raise KeyError, "Key %s not found in Module-RAWdict!" % e
+        self.data.update(RAWdict)
 
         self.data["builtin"] = False
 
-        if RAWdict.get("active",0) == 0:
+        if RAWdict["active"] == 0:
             self.data["active"] = False
         elif RAWdict["active"] == -1:
             self.data["builtin"] = True
             self.data["active"] = True
         elif RAWdict["active"] == 1:
             self.data["active"] = True
+
+        module_id = self.data["id"]
+
+        #~ RAW_data = self.db.get_internal_pages_info_by_module(
+            #~ module_id
+        #~ )
+        #~ internal_page_data = self.db.indexResult(RAW_data, "plugin_id")
+        #~ print "XXX:", internal_page_data
+
+        plugindata = self.db.get_plugindata(module_id)
+        for method_data in plugindata:
+            print method_data
+            method = Method(self.request, self.response)
+            method.add(
+                self.data['package_name'], self.name,
+                method_data["method_name"]
+            )
+            method.add_from_DB(method_data)
+            self.methods.append(method)
 
     #_________________________________________________________________________
     # Config-Daten von Platte lesen
@@ -420,6 +472,7 @@ class Module(object):
 
         # Modul in DB eintragen
         id = self.db.install_plugin(self.data)
+        self.data["id"] = id
         self.response.write("OK</li>\n")
 
         self.response.write(
@@ -442,20 +495,32 @@ class Module(object):
     #_________________________________________________________________________
 
     def deinstall(self):
-        self.response.write(
-            "delete Module '<strong>%s</strong>' in database..." % self.name
-        )
+        self.page_msg("delete Module '%s' in database." % self.name)
         # Alle Methoden aus der DB löschen
         for method in self.methods:
             method.deinstall()
 
         self.db.delete_plugin(self.data["id"])
 
+    def activate(self):
+        self.page_msg("activate Module '%s' in database..." % self.name)
+        self.db.activate_module(self.data["id"])
+
+    def deactivate(self):
+        self.page_msg("deactivate Module '%s' in database..." % self.name)
+        self.db.deactivate_module(self.data["id"])
+
     #_________________________________________________________________________
 
     def getData(self):
         return self.data
 
+    #_________________________________________________________________________
+
+    def __repr__(self):
+        return "<...module_admin.Module '%s' object, \nData: %s\n>" % (
+            self.name, self.data
+        )
     #_________________________________________________________________________
 
     def debug(self):
@@ -592,19 +657,55 @@ class Modules(object):
             self.db.commit()
 
     #_________________________________________________________________________
-    # DEinstall
 
     def deinstallModule(self, id):
         """
         Löscht das Module/Plugin mit der angegebenen ID
         """
-        self.page_msg("Deinstall", id)
+        #~ self.page_msg("Deinstall module with id:", id)
+        module = self.getModule(id)
+        module.deinstall()
 
+    #_________________________________________________________________________
+
+    def reinit(self, id):
+        module = self.getModule(id)
+        module_name = module.data["module_name"]
+        package_name = module.data["package_name"]
+
+        print module
+
+        #~ module.deinstall()
+        #~ del(self.data[module_name])
+
+        #~ self.installModule(module_name, package_name)
+
+        #~ module = self.data[module_name]
+        #~ id = module.data["id"]
+
+        #~ self.activateModule(id)
+
+    #_________________________________________________________________________
+
+    def getModule(self, id):
+        # FIXME: sollte Prüfen ob das Modul nicht schon von der DB geladen ist!
         RAWdict = self.db.get_plugin_data_by_id(id)
         self.addModule_fromDB(RAWdict)
 
-        module = self.data[module_name]
-        module.deinstall()
+        module = self.data[RAWdict["module_name"]]
+        return module
+
+    #_________________________________________________________________________
+
+    def activateModule(self, id):
+        #~ self.page_msg("activate module with id:", id)
+        module = self.getModule(id)
+        module.activate()
+
+    def deactivateModule(self, id):
+        #~ self.page_msg("deactivate module with id:", id)
+        module = self.getModule(id)
+        module.deactivate()
 
     #_________________________________________________________________________
     # Informationen über in der DB installierte Module / Plugins
@@ -784,20 +885,45 @@ class module_admin(PyLucidBaseModule):
         """
         data = Modules(self.request, self.response)
 
-        #~ self.response.write(
-            #~ "<h3>Deinstall %s.<strong>%s</strong></h3>" % (
-                #~ package_name, module_name
-            #~ )
-        #~ )
-
         self.response.write("<pre>")
         data.deinstallModule(id)
         self.response.write("</pre>")
-        return
 
+    #_________________________________________________________________________
+    # reinit
 
+    def reinit(self, id):
+        """
+        Modul wird deinstalliert und wieder installiert
+        """
+        data = Modules(self.request, self.response)
+        data.reinit(id)
 
+    #_________________________________________________________________________
 
+    def activate(self, id):
+        """
+        Modul soll deaktiviert werden
+        """
+        data = Modules(self.request, self.response)
+        data.activateModule(id)
+
+    #_________________________________________________________________________
+
+    def deactivate(self, id):
+        """
+        Modul soll deaktiviert werden
+        """
+        data = Modules(self.request, self.response)
+        data.deactivateModule(id)
+
+    #_________________________________________________________________________
+
+    def debug_installed_modules_info(self, module_id):
+        moduleData = Modules(self.request, self.response)
+        moduleData.readAllModules()
+
+        moduleData.debug()
 
 
 
