@@ -2,6 +2,10 @@
 # Authors: Baxter, Wouters and Warsaw
 # Contact: email-sig@python.org
 
+# Automatic inserted import:
+from __future__ import generators
+
+
 """FeedParser - An email feed parser.
 
 The feed parser implements an interface for incrementally parsing an email

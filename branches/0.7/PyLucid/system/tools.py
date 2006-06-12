@@ -9,15 +9,16 @@ __version__="0.2.1"
 
 __history__ = """
 v0.2.1
-    - html_option_maker.build_from_list hat nun den zusätzlichen Parameter "select_value", damit
-        kann entweder "value" oder "txt" für selected-Item herrangezogen werden. (s. Beispiel)
+    - html_option_maker.build_from_list hat nun den zusätzlichen Parameter
+        "select_value", damit kann entweder "value" oder "txt" für
+        selected-Item herrangezogen werden. (s. Beispiel)
 v0.2
     - NEU: Find_StringOperators
 v0.1
     - NEU: make_table_from_sql_select()
 v0.0.6
-    - subprocess2(): Feststellen des self.killed (Ob der Timeout erreicht wurde) über den
-        vergleich der Ausführungszeit mit der Timeout-Zeit
+    - subprocess2(): Feststellen des self.killed (Ob der Timeout erreicht
+        wurde) über den vergleich der Ausführungszeit mit der Timeout-Zeit
 v0.0.5
     - Änderungen an subprocess2(): zusätzliche Exception's abgefangen
     - out_buffer() fügt kein sep mehr ein
@@ -162,6 +163,9 @@ def convert_date_from_sql( RAWsqlDate, format="preferences" ):
         # Datumsformat stimmt nicht, aber besser das was schon da
         # ist, mit einem Hinweis, zurück liefern, als garnichts ;)
         return "ERROR: convert '%s'" % date
+    except AttributeError:
+        # FIXME: Python 2.2 sollte das aber eigentlich haben!!!
+        return date
 
     if format == "preferences":
         # Python-time-Format zu einem String laut preferences wandeln

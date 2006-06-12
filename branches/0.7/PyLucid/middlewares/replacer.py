@@ -1,6 +1,10 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 
+# for Python 2.2:
+from __future__ import generators
+
+
 """
 Einfache Middelware um Tags in den
 Ausgaben zu ersetzten.
@@ -53,13 +57,13 @@ class Replacer(object):
         result = iter(self.app(environ, start_response))
 
         for line in result:
-            if script_duration_tag in line:
+            if line.find(script_duration_tag):
                 line = self.replace_script_duration(line, environ)
 
-            if page_msg_tag in line:
+            if line.find(page_msg_tag):
                 line = self.replace_page_msg(line, environ)
 
-            if add_code_tag in line:
+            if line.find(add_code_tag):
                 line = self.addCode(line, environ)
 
             yield line
