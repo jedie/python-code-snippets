@@ -10,7 +10,13 @@ install_zipfileName = "PyLucid/PyLucid_SQL_install_data.zip"
 
 
 
-import os, sys, cgi, time, datetime, zipfile
+import os, sys, cgi, time, zipfile
+
+try:
+    import datetime
+except ImportError:
+    #FIXME: Besser time nehmen! datetime gibt es erst ab Python 2.3
+    from PyLucid.python_backports import datetime
 
 
 

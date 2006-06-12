@@ -151,7 +151,7 @@ from PyLucid.install.App_ScratchInstall import install
 
 
 
-class InstallApp:
+class InstallApp(object):
     """
     Klasse die die Programmlogik zusammenstellt
     """
@@ -293,6 +293,8 @@ class InstallApp:
 
     def writeHTMLfoot(self):
         """ HTML Fuss schreiben """
+        self.response.write("<dt>sys.version:</dt>")
+        self.response.write("<dd>Python v%s</dd>" % sys.version)
         self.response.write(HTML_bottom)
 
     #_________________________________________________________________________
@@ -341,7 +343,11 @@ class InstallApp:
             container = handler.container
 
         # Check for handler arguments and update container
-        handler_args, varargs, _, defaults = inspect.getargspec(handler)
+        if inspect.ismethod(handler):
+            func = handler.im_func
+        else:
+            func = handler
+        handler_args, varargs, _, defaults = inspect.getargspec(func)
 
         # call handler
         parent = handler.im_class()
