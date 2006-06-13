@@ -283,11 +283,7 @@ class passive_statements(SQL_wrapper):
                     "Use the styles from the first page!"
                 )
 
-        data = self.select(
-                select_items    = getItems,
-                from_table      = "styles",
-                where           = ("id",CSS_id)
-            )[0]
+        data = self.get_style_data(CSS_id, getItems)
 
         return data
 
@@ -370,19 +366,23 @@ class passive_statements(SQL_wrapper):
         )
         return uniqueStyleName
 
-    def get_style_data(self, style_id):
-        return self.select(
-            select_items    = ["name","description","content"],
+    def get_style_data(
+        self, style_id,
+        getItems = ("name","description","content")
+    ):
+        data = self.select(
+            select_items    = getItems,
             from_table      = "styles",
             where           = ("id", style_id)
         )[0]
+        return data
 
     def get_style_data_by_name(self, style_name):
         return self.select(
-                select_items    = ["description","content"],
-                from_table      = "styles",
-                where           = ("name", style_name)
-            )[0]
+            select_items    = ["description","content"],
+            from_table      = "styles",
+            where           = ("name", style_name)
+        )[0]
 
     def get_template_list(self):
         return self.select(
@@ -595,11 +595,11 @@ class passive_statements(SQL_wrapper):
         else:
             return False
 
-    def userList(self):
+    def user_data_list(self):
         """ wird in userhandling verwendet """
         return self.select(
-            select_items    = ["id","name","realname","email","admin"],
-            from_table      = "md5users",
+            select_items = ["id","name","realname","email","admin"],
+            from_table = "md5users"
         )
 
     def user_info_by_id(self, id):

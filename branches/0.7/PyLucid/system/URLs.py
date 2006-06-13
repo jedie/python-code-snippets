@@ -56,7 +56,6 @@ class URLs(dict):
             - Keine URL-GET-Parameter
             - als unicode
         """
-
         if "PATH_INFO" in self.environ:
             pathInfo = self.environ["PATH_INFO"]
         else:
@@ -282,8 +281,8 @@ class URLs(dict):
 
     def actionLinkRuntimeError(self, e):
         msg = (
-            "Action link is only available if there is a action"
-            ", but there is nothing! "
+            "Action link is only available if there is a action\n"
+            ", but there is nothing! \n"
             "command: '%s', action: '%s' (runlevel: '%s', Error: %s)"
         ) % (self["command"], self['action'], self.runlevel.state, e)
         raise RuntimeError, msg

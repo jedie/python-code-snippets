@@ -117,9 +117,14 @@ class pageadmin(PyLucidBaseModule):
         """
         if self.request.form.has_key("page_id"):
             page_id = int(self.request.form["page_id"])
-            page_data = self.get_page_data(page_id)
-            self.editor_page(page_data)
-            return
+            try:
+                page_data = self.get_page_data(page_id)
+            except IndexError:
+                # Die Seite gibt es nicht!
+                self.page_msg("Page '%s' unknown!" % cgi.escape(str(page_id)))
+            else:
+                self.editor_page(page_data)
+                return
 
         context = {
             "url": self.URLs.actionLink("select_edit_page"),
@@ -244,7 +249,7 @@ class pageadmin(PyLucidBaseModule):
         "Preview einer editierten Seite"
 
         # CGI-Daten holen und leere Form-Felder "einfügen"
-        edit_page_data = self._set_default(self.request.form )
+        edit_page_data = self._set_default(self.request.form)
 
         # CGI daten sind immer vom type str, die parent ID muß allerdings eine
         # Zahl sein. Ansonsten wird in MyOptionMaker.build_html_option() kein
@@ -255,10 +260,12 @@ class pageadmin(PyLucidBaseModule):
         self.response.write("\n<h3>edit preview:</h3>\n")
         self.response.write('<div id="page_edit_preview">\n')
 
+        content = edit_page_data["content"]
+        markup = edit_page_data["markup"]
+        markup = self.db.get_markup_name(markup)
+
         # Alle Tags ausfüllen und Markup anwenden
         try:
-            content = edit_page_data["content"]
-            markup = edit_page_data["markup"]
             content = self.render.apply_markup(content, markup)
         except Exception, e:
             self.response.write("<h4>Can't render preview: %s</h4>" % e)
@@ -276,6 +283,8 @@ class pageadmin(PyLucidBaseModule):
 
     def encode_from_db(self, page_id, decode_from=False, encode_to=False):
         """
+        FIXME: Obsolete???
+
         Encodiert den content, nach den aufgewählten Codecs
         """
         def decode_encode(content, codec, method):
@@ -304,9 +313,13 @@ class pageadmin(PyLucidBaseModule):
         page_data["page_id"] = page_id
 
         # decode
-        page_data["content"] = decode_encode(page_data["content"], decode_from, "decode")
+        page_data["content"] = decode_encode(
+            page_data["content"], decode_from, "decode"
+        )
         # encode
-        page_data["content"] = decode_encode(page_data["content"], encode_to, "encode")
+        page_data["content"] = decode_encode(
+            page_data["content"], encode_to, "encode"
+        )
 
         self.editor_page(page_data)
 
@@ -335,7 +348,9 @@ class pageadmin(PyLucidBaseModule):
 
         # Archivieren der alten Daten
         if self.request.form.has_key("trivial"):
-            self.page_msg("trivial modifications selected. Old page is not archived.")
+            self.page_msg(
+                "trivial modifications selected. Old page is not archived."
+            )
         else:
             if self.request.form.has_key("summary"):
                 comment = self.request.form["summary"]
@@ -381,7 +396,11 @@ class pageadmin(PyLucidBaseModule):
                     data    = page_data,
                 )
         except Exception, e:
-            self.response.write("<h3>Error to insert new page:'%s'</h3><p>Use browser back botton!</p>" % e)
+            msg = (
+                "<h3>Error to insert new page:'%s'</h3>\n"
+                "<p>Use browser back botton!</p>"
+            ) % e
+            self.response.write(msg)
         else:
             self.db.commit()
             self.page_msg( "New page saved." )
@@ -398,7 +417,10 @@ class pageadmin(PyLucidBaseModule):
 
         page_data = {
             "parent"            : self.session["page_id"],
-            "page_id"           : "-1", # Damit man beim speichern weiß, das die Seite neu ist.
+
+            # Damit man beim speichern weiß, das die Seite neu ist:
+            "page_id"           : "-1",
+
             "name"              : "Newpage",
             "shortcut"          : "",
             "title"             : "Newpage",
@@ -465,7 +487,8 @@ class pageadmin(PyLucidBaseModule):
 
     def _get_edit_data(self):
         """
-        Liefert Daten für das speichern einer editierten und einer neu erstellen Seite.
+        Liefert Daten für das speichern einer editierten und einer neu
+        erstellen Seite.
         """
         # CGI-Daten holen und leere Form-Felder "einfügen"
         CGIdata = self.request.form
@@ -478,7 +501,8 @@ class pageadmin(PyLucidBaseModule):
         number_items = (
             "page_id", "parent", "parent", "template", "style",
             "markup", "showlinks",
-            "permitViewPublic", "permitViewGroupID", "ownerID", "permitEditGroupID"
+            "permitViewPublic", "permitViewGroupID", "ownerID",
+            "permitEditGroupID"
         )
         # CGI-Daten filtern -> nur Einträge die SeitenInformationen enthalten
         page_data = {}

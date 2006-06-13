@@ -20,11 +20,7 @@ v0.1.0
 
 import sys, os
 
-try:
-    import datetime
-except ImportError:
-    #FIXME: Besser time nehmen! datetime gibt es erst ab Python 2.3
-    from PyLucid.python_backports import datetime
+import datetime
 
 from colubrid import HttpResponse
 
@@ -80,12 +76,10 @@ class page_style(PyLucidBaseModule):
         response.headers['Connection'] = "Keep-Alive"
 
         page_id = self.session["page_id"]
-        getItems = ["id", "content","lastupdatetime"]
+        getItems = ["id", "content", "lastupdatetime"]
         cssData = self.db.side_style_by_id(page_id, getItems)
 
-        lastupdatetime = cssData["lastupdatetime"]
-        print lastupdatetime, type(lastupdatetime)
-
+        lastupdatetime = cssData["lastupdatetime"] # datetime-Object!
         lastModified = lastupdatetime.strftime(timeFormat)
         #~ print "lastModified:", lastModified
 

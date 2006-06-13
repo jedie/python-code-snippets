@@ -66,8 +66,6 @@ class page_msg(object):
         self.app = app
 
     def __call__(self, environ, start_response):
-
         environ['PyLucid.page_msg'] = page_msg_Container(debug=True)
-
         return self.app(environ, start_response)
 

@@ -331,6 +331,7 @@ class edit_look(PyLucidBaseModule):
         plugin_data = self.db.pluginsList(select_items)
 
         users = self.db.userList(select_items=["id", "name"])
+        print users
 
         # Den ID Benzug auflösen und Daten zusammenfügen
         for page_name, data in internal_pages.iteritems():

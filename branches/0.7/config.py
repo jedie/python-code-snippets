@@ -45,13 +45,16 @@ import os
 config = {
     ## Database connection settings
     "dbTyp"             : "MySQLdb", # "sqlite"
-    #~ "dbHost"            : 'localhost', # Evtl. muß hier die Domain rein
-    "dbHost"            : '192.168.6.2', # Evtl. muß hier die Domain rein
+    "dbHost"            : 'localhost', # Evtl. muß hier die Domain rein
+    #~ "dbHost"            : '192.168.6.2', # Evtl. muß hier die Domain rein
     "dbDatabaseName"    : 'DatabaseName',
     "dbUserName"        : 'UserName',
     "dbPassword"        : 'Password',
     # der Tabellen-Prefix darf keine Leer-/Sonderzeichen erhalten.
     "dbTablePrefix"     : 'lucid2_',
+
+    "db_encoding"       : "utf8",
+    #~ "db_encoding"       : "utf_16_be", # ;)
     "dbdatetime_format" : '%Y-%m-%d %H:%M:%S', # SQL-Datetime-String-Format
 
     # Zeigt zusätzlich an, in welchem Modul eine Page-Massage erzeugt wurde

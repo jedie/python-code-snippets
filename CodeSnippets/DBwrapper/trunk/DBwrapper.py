@@ -106,6 +106,7 @@ v0.0.1
 
 from __future__ import generators
 import sys, codecs
+import time, datetime
 
 
 debug = False
@@ -120,11 +121,18 @@ class Database(object):
         # Zum speichern der letzten SQL-Statements (evtl. für Fehlerausgabe)
         self.last_statement = None
 
-        self.encoding = encoding
-        self.unicode_decoder = codecs.getdecoder(encoding)
-        self.unicode_encoder = codecs.getencoder(encoding)
+        self.setup_codecs(encoding)
+
         self.dbtyp = None
         self.tableprefix = ""
+
+    def setup_codecs(self, encoding):
+        self.encoding = encoding
+        try:
+            self.unicode_decoder = codecs.getdecoder(encoding)
+            self.unicode_encoder = codecs.getencoder(encoding)
+        except LookupError, e:
+            raise LookupError, "%s! Please check the PyLucid config.py!" % e
 
     def connect_mysqldb(self, *args, **kwargs):
         self.dbtyp = "MySQLdb"
@@ -168,10 +176,21 @@ class Database(object):
         self.cursor = self.conn.cursor()
 
         # FIXME - Funktioniert das in allen Situationen???
-        #~ try:
-        self.cursor.execute('set character set ?;', (self.encoding,))
-        #~ except:
-            #~ pass
+        try:
+            self.cursor.execute('set character set ?;', (self.encoding,))
+        except Exception, e:
+            if str(e).find("Unknown character set") != -1:
+                # Der character Set wird nicht unterstützt!
+                msg = (
+                    "%s - Please check PyLucid's config.py and\n"
+                    " look at _install / tests / db_info / _show_characterset!"
+                ) % e
+                self.page_msg(msg)
+                # Versuchen wir es mit ascii
+                self.setup_codecs("ascii")
+            else:
+                raise ConnectionError(e)
+
         #~ self.cursor.execute('set names utf8;')
 
         try:
@@ -456,6 +475,10 @@ class SQL_wrapper(Database):
     Nutzt ein filelike request-Objekt (WSGI) für Debugausgaben.
     Es geht auch sys.stdout :)
     """
+    #~ datetimefix = False
+    datetimefix = True
+    db_date_format = "%Y-%m-%d %H:%M:%S"
+    fieldtype_cache = {}
 
     def __init__(self, outObject, *args, **kwargs):
         super(SQL_wrapper, self).__init__(*args, **kwargs)
@@ -527,8 +550,9 @@ class SQL_wrapper(Database):
         return result
 
 
-    def select(self, select_items, from_table, where=None, order=None, limit=None,
-            maxrows=0, how=1, debug=False):
+    def select(self, select_items, from_table, where=None, order=None,
+            limit=None, maxrows=0, how=1, debug=False
+        ):
         """
         Allgemeine SQL-SELECT Anweisung
         where, order und limit sind optional
@@ -571,6 +595,9 @@ class SQL_wrapper(Database):
 
         result = self.process_statement(SQLcommand, values)
         if debug: self.debug_command("select", result)
+
+        if self.datetimefix == True:
+            result = self.fixDatetimeFields(result, from_table)
         return result
 
     def delete(self, table, where, limit=1, debug=False):
@@ -643,6 +670,50 @@ class SQL_wrapper(Database):
             if not key in field_list:
                 del data[key]
             index += 1
+
+    #_________________________________________________________________________
+
+    def fixDatetimeFields(self, result, table_name):
+        """
+        Unter Python 2.2 gibt es normalerweise kein datetime. Deswegen liefert
+        MySQLdb auch keine datetime Objekte sondern ein String bei
+        datetime-Feldern zurück. Diese Methode wandelt die String zu datetime
+        Objekten.
+
+        Bei Python 2.2 ist die Methode strptime nicht fester Bestandteil vom
+        Module time!
+        siehe: http://www.python.org/doc/2.2/lib/module-time.html#l2h-1379
+
+        Alternativ kann man _strptime.py von Python 2.3 benutzten:
+        http://svn.python.org/view/python/branches/release23-maint/Lib/_strptime.py
+
+        Für datetime kann man datetime.py von PyPy nutzten:
+        http://codespeak.net/svn/pypy/release/0.8.x/pypy/lib/datetime.py
+        """
+
+        if not table_name in self.fieldtype_cache:
+            self.fieldtype_cache[table_name] = []
+            #~ SHOW FULL COLUMNS FROM lucid_pages
+            for column in self.get_table_field_information(table_name):
+                if column["Type"] != "datetime":
+                    continue
+
+                self.fieldtype_cache[table_name].append(column["Field"])
+
+        datetime_fields = self.fieldtype_cache[table_name]
+        if datetime_fields == []:
+            # es gibt keine Felder vom Typ datetime in der aktuellen Tabelle
+            return result
+
+        for line in result:
+            for key in line.keys():
+                if not key in datetime_fields:
+                    continue
+
+                t = time.strptime(line[key], self.db_date_format)
+                line[key] = datetime.datetime(*t[:6])
+
+        return result
 
     #_________________________________________________________________________
     # Spezial SELECT

@@ -15,8 +15,8 @@ __history__="""
 v0.1.4
     - apply_markup kommt mit markup id oder richtigen namen klar
 v0.1.3
-    - textile Parser erhält nun auch die PyLucid-Objekt. page_msg ist hilfreich
-        zum debuggen des Parsers ;)
+    - textile Parser erhält nun auch die PyLucid-Objekt. page_msg ist
+        hilfreich zum debuggen des Parsers ;)
 v0.1.2
     - Bug 1297263:
         "Can't use textile-Markup (maximum recursion limit exceeded)":
@@ -59,7 +59,6 @@ class render(object):
     def write_page_template(self):
         """ Baut die Seite zusammen """
 
-        print "2:", self.session
         page_id = self.session["page_id"]
         page_data = self.db.get_side_data(page_id)
         self.staticTags.fill_with_page_data(page_data)
