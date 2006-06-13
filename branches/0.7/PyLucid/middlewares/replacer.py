@@ -57,13 +57,13 @@ class Replacer(object):
         result = iter(self.app(environ, start_response))
 
         for line in result:
-            if line.find(script_duration_tag):
+            if line.find(script_duration_tag)!=-1:
                 line = self.replace_script_duration(line, environ)
 
-            if line.find(page_msg_tag):
+            if line.find(page_msg_tag)!=-1:
                 line = self.replace_page_msg(line, environ)
 
-            if line.find(add_code_tag):
+            if line.find(add_code_tag)!=-1:
                 line = self.addCode(line, environ)
 
             yield line

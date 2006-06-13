@@ -858,9 +858,19 @@ def get_codecs():
     """
     Liefert eine Liste aller unterstützter Codecs zurück
     Wird im pageadmin verwendet, für "encode from db"
+
+    sorted and set not available in Python 2.2 ;)
     """
     from encodings import aliases
-    return sorted(set(aliases.aliases.values()))
+
+    codec_list = []
+    for codec in aliases.aliases.values():
+        if not codec in codec_list:
+            codec_list.append(codec)
+
+    codec_list.sort()
+
+    return codec_list
 
 #~ print get_codecs()
 

@@ -145,7 +145,7 @@ class userhandling(PyLucidBaseModule):
         self.templates.write("add_user", context)
 
     def user_table(self):
-        user_list = self.db.userList()
+        user_list = self.db.user_data_list()
         context = {
             "url" : self.URLs.currentAction(),
             "user_list": user_list,

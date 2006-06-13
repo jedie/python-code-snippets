@@ -110,13 +110,20 @@ class DatabaseMiddleware(object):
 
     def __call__(self, environ, start_response):
         self.environ = environ
+
         page_msg    = environ['PyLucid.page_msg']
+        preferences = environ['PyLucid.preferences']
+
+        db_encoding = preferences["db_encoding"]
 
         # Anbindung an die SQL-Datenbank, mit speziellen PyLucid Methoden
-        self.dbObj = db(page_msg)
+        self.dbObj = db(page_msg, db_encoding)
 
         environ['PyLucid.database'] = self.dbObj
 
         return self.app(environ, start_response)
+
+
+
 
 

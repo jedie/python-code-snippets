@@ -140,10 +140,11 @@ class detect_page(PyLucidBaseModule):
         try:
             self.session["page_id"] = self.preferences["core"]["defaultPageName"]
         except KeyError:
-            self.error(
+            self.page_msg(
                 "Can'r read preferences from DB.",
                 "(Did you install PyLucid correctly?)"
             )
+            self.session["page_id"] = 0
         try:
             self.db.select(
                 select_items    = ["id"],

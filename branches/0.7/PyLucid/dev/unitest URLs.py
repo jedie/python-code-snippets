@@ -10,8 +10,10 @@ import sys, unittest
 
 
 sys.path.insert(0, "../system")
-
 from URLs import URLs
+
+sys.path.insert(0, "../../") # PyLucid-Root
+from PyLucid_app import runlevel
 
 
 
@@ -24,6 +26,9 @@ class FakeRequest(object):
     runlevel = None
     environ = {}
     preferences = {}
+
+
+class FakeResponse(object):
     def write(self, txt):
         print txt
     def page_msg(self, *txt):
@@ -32,16 +37,15 @@ class FakeRequest(object):
 
 
 
-
-
 class testURLs(unittest.TestCase):
     def setUp(self):
         self.fake_requestObj = FakeRequest()
-        self.fake_requestObj.runlevel = "init"
+        self.fake_requestObj.runlevel = runlevel()
+        self.fake_responseObj = FakeResponse()
         self.fake_requestObj.preferences["commandURLprefix"] = "_command"
 
     def setURLclass(self):
-        self.url = URLs(self.fake_requestObj)
+        self.url = URLs(self.fake_requestObj, self.fake_responseObj)
         self.url.lock = False
 
         # Es ist kein Module gestartet!
@@ -57,7 +61,8 @@ class testURLs(unittest.TestCase):
             "SCRIPT_ROOT": "/",
         }
         self.setURLclass()
-        self.fake_requestObj.runlevel = "normal"
+        self.fake_requestObj.runlevel.set_normal()
+        self.fake_requestObj.runlevel.set_normal()
         self.url.setup_runlevel()
         #~ self.url.debug()
 
@@ -92,7 +97,7 @@ class testURLs(unittest.TestCase):
             "SCRIPT_ROOT": "/DocRoot/Handler.py",
         }
         self.setURLclass()
-        self.fake_requestObj.runlevel = "normal"
+        self.fake_requestObj.runlevel.set_normal()
         self.url.setup_runlevel()
 
         self.assertEqual(
@@ -126,7 +131,7 @@ class testURLs(unittest.TestCase):
             "SCRIPT_ROOT": "/DocRoot/Handler.py",
         }
         self.setURLclass()
-        self.fake_requestObj.runlevel = "normal"
+        self.fake_requestObj.runlevel.set_normal()
         self.url.setup_runlevel()
         #~ self.url.debug()
 
@@ -155,7 +160,7 @@ class testURLs(unittest.TestCase):
             "SCRIPT_ROOT": "/",
         }
         self.setURLclass()
-        self.fake_requestObj.runlevel = "command"
+        self.fake_requestObj.runlevel.set_command()
         self.url.setup_runlevel()
 
         # Wird vom Module-Manager festgelegt:
@@ -206,7 +211,7 @@ class testURLs(unittest.TestCase):
             "SCRIPT_ROOT": "/DocRoot/Handler.py",
         }
         self.setURLclass()
-        self.fake_requestObj.runlevel = "command"
+        self.fake_requestObj.runlevel.set_command()
         self.url.setup_runlevel()
 
         # Wird vom Module-Manager festgelegt:
@@ -258,7 +263,7 @@ class testURLs(unittest.TestCase):
             "SCRIPT_ROOT": "/",
         }
         self.setURLclass()
-        self.fake_requestObj.runlevel = "install"
+        self.fake_requestObj.runlevel.set_install()
         self.url.setup_runlevel()
 
         self.assertEqual(self.url["hostname"], 'http://domain.tld')
@@ -302,7 +307,7 @@ class testURLs(unittest.TestCase):
             "SCRIPT_ROOT": "/DocRoot/Handler.py",
         }
         self.setURLclass()
-        self.fake_requestObj.runlevel = "install"
+        self.fake_requestObj.runlevel.set_install()
         self.url.setup_runlevel()
 
         self.assertEqual(self.url["hostname"], 'http://domain.tld')
@@ -353,7 +358,7 @@ class testURLs(unittest.TestCase):
             "SCRIPT_ROOT": "/DocRoot/Handler.py",
         }
         self.setURLclass()
-        self.fake_requestObj.runlevel = "normal"
+        self.fake_requestObj.runlevel.set_normal()
         self.url.setup_runlevel()
 
         # Wird normalerweise von detect_page aufgerufen:
@@ -405,7 +410,7 @@ def suite():
 
 if __name__ == "__main__":
     print
-    print ">>> %s - Unitest:" % __file__
+    print ">>> %s - Unitest"
     print "_"*79
     unittest.main()
     sys.exit()

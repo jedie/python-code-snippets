@@ -10,19 +10,10 @@ Middelware
 
 import config # PyLucid Grundconfiguration
 
-
-class preferencesMiddleware(dict):
-    """
-    preferences Tabelle aus Datenbank lesen und als Dict zur verfügung stellen
-    """
-
-    def __init__(self, app):
+class Preferences(dict):
+    def __init__(self):
         dict.__init__(self)
-
-        self.app = app
-
         self.update(config.config) # Grundconfig in Dict aufnehmen
-
 
     def update_from_sql(self, db):
         """ Preferences aus der DB lesen und in self speichern """
@@ -52,8 +43,17 @@ class preferencesMiddleware(dict):
             self[line["section"]][line["varName"]] = line["value"]
 
 
+
+class preferencesMiddleware(object):
+    """
+    preferences Tabelle aus Datenbank lesen und als Dict zur verfügung stellen
+    """
+
+    def __init__(self, app):
+        self.app = app
+
     def __call__(self, environ, start_response):
-        environ['PyLucid.preferences'] = self
+        environ['PyLucid.preferences'] = Preferences()
         return self.app(environ, start_response)
 
 

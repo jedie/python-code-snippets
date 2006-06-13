@@ -60,16 +60,13 @@ from colubrid import BaseApplication
 WSGIrequestKey = "colubrid.request."
 
 
-import config # PyLucid Grundconfiguration
+#~ import config # PyLucid Grundconfiguration
 
 #__init__
 from PyLucid.system import response
 from PyLucid.system import tools
 from PyLucid.system import URLs
 from PyLucid.system import jinjaRenderer
-
-#~ from PyLucid.middlewares.database import DatabaseMiddleware
-from PyLucid.middlewares import database
 
 # init2
 #~ from PyLucid.system import staticTags
@@ -382,13 +379,14 @@ class PyLucidApp(BaseApplication):
 
 app = PyLucidApp
 
+# database
+#~ from PyLucid.middlewares.database import DatabaseMiddleware
+from PyLucid.middlewares import database
+app = database.DatabaseMiddleware(app)
+
 # preferences
 from PyLucid.middlewares.preferences import preferencesMiddleware
 app = preferencesMiddleware(app)
-
-# database
-#~ from PyLucid.middlewares.database import DatabaseMiddleware
-app = database.DatabaseMiddleware(app)
 
 # Middleware Page-Message-Object
 from PyLucid.middlewares.page_msg import page_msg
