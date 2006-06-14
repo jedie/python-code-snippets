@@ -112,6 +112,10 @@ import time, datetime
 debug = False
 #~ debug = True
 
+MySQL40_character_table = {
+    "german1": "latin1",
+}
+
 
 class Database(object):
     """
@@ -121,18 +125,105 @@ class Database(object):
         # Zum speichern der letzten SQL-Statements (evtl. für Fehlerausgabe)
         self.last_statement = None
 
-        self.setup_codecs(encoding)
+        self.encoding = encoding
 
         self.dbtyp = None
         self.tableprefix = ""
 
-    def setup_codecs(self, encoding):
+    def setup_MySQL_version(self):
+        """
+        3.23, 4.0, 4.1, 5.0, 5.1
+        """
+        SQLcommand = "SHOW VARIABLES LIKE 'version';"
+        version = self.cursor.raw_processone(SQLcommand)
+        # ->> ('version', '4.1.15-Debian_1ubuntu5-log')
+
+        version = version[1] # ->> '4.1.15-Debian_1ubuntu5-log'
+        self.RAWserver_version = version
+
+        version = version.split("-",1)[0]   # ->> '4.1.15'
+        version = version.split(".")        # ->> ["4", "1", "15"]
+        version = [int(i) for i in version] # ->> [4, 1, 15]
+        version = tuple(version)            # ->> (4, 1, 15)
+
+        self.server_version = version
+
+    def set_codec(self, encoding):
+        self.cursor.setup_encoding(encoding)
         self.encoding = encoding
+
+    def getMySQLcharacter(self):
+        if self.server_version < (4, 1): # älter als v4.1.0
+            SQLcommand = "SHOW VARIABLES LIKE 'character_set';"
+        else: # ab v4.1.0
+            SQLcommand = "SHOW VARIABLES LIKE 'character_set_server';"
+
+        character_set = self.cursor.raw_processone(SQLcommand)
+        character_set = character_set[1]
+
+        return character_set
+
+    def setup_mysql40(self):
+        character_set = self.getMySQLcharacter()
+        if not character_set in MySQL40_character_table:
+            # Das Encodning scheint unbekannt zu sein
+            try:
+                self.set_codec(character_set)
+            except LookupError, e:
+                # Python kennt das encoding auch nicht, als letzten
+                # Ausweg, ignorieren wir das Enconding :(
+                self._set_NoneCodec(encoding = None)
+        else:
+            encoding = MySQL40_character_table[character_set]
+            self.set_codec(encoding)
+
+    def set_mysql_encoding(self, encoding):
         try:
-            self.unicode_decoder = codecs.getdecoder(encoding)
-            self.unicode_encoder = codecs.getencoder(encoding)
-        except LookupError, e:
-            raise LookupError, "%s! Please check the PyLucid config.py!" % e
+            # Funktioniert erst mit MySQL =>v4.1
+            self.cursor.execute('set character set ?;', (self.encoding,))
+        except Exception, e:
+            if str(e).find("Unknown character set") != -1:
+                # Der character Set wird nicht unterstützt!
+                msg = (
+                    "%s - Please check PyLucid's config.py and\n"
+                    " look at _install / tests / db_info /"
+                    " _show_characterset!"
+                ) % e
+                self.page_msg(msg)
+
+                # Versuchen wir es mit dem default codec:
+                self.encoding = None
+                self.setup_mysql41()
+            else:
+                raise ConnectionError(e)
+
+    def setup_mysql41(self):
+        if self.encoding == None:
+            # Es soll das default encoding vom MySQL-Server genutzt werden
+            self.encoding = self.getMySQLcharacter()
+            try:
+                self.set_codec(self.encoding)
+            except LookupError, e:
+                # Python kennt das encoding nicht, als letzten
+                # Ausweg, ignorieren wir das Enconding :(
+                msg = (
+                    "Error: MySQL server use the codec '%s',"
+                    " but python doesn't know this codec!"
+                    " (try to use utf8, you should manually set a codec!)"
+                ) % character_set
+                self.page_msg(msg)
+                self.set_mysql_encoding("utf8")
+        else:
+            self.set_codec(self.encoding)
+            self.set_mysql_encoding(self.encoding)
+
+
+    def setup_mysql_character_set(self):
+        if self.server_version < (4, 1): # älter als v4.1.0
+            self.setup_mysql40()
+        else:
+            self.setup_mysql41()
+
 
     def connect_mysqldb(self, *args, **kwargs):
         self.dbtyp = "MySQLdb"
@@ -157,8 +248,6 @@ class Database(object):
                     #~ db      = self.databasename,
                 #~ ),
                 placeholder = self.placeholder,
-                unicode_decoder = self.unicode_decoder,
-                unicode_encoder = self.unicode_encoder,
                 prefix = self.tableprefix,
             )
         except Exception, e:
@@ -175,23 +264,11 @@ class Database(object):
 
         self.cursor = self.conn.cursor()
 
-        # FIXME - Funktioniert das in allen Situationen???
-        try:
-            self.cursor.execute('set character set ?;', (self.encoding,))
-        except Exception, e:
-            if str(e).find("Unknown character set") != -1:
-                # Der character Set wird nicht unterstützt!
-                msg = (
-                    "%s - Please check PyLucid's config.py and\n"
-                    " look at _install / tests / db_info / _show_characterset!"
-                ) % e
-                self.page_msg(msg)
-                # Versuchen wir es mit ascii
-                self.setup_codecs("ascii")
-            else:
-                raise ConnectionError(e)
+        # Version des Server feststellen
+        self.setup_MySQL_version()
 
-        #~ self.cursor.execute('set names utf8;')
+        # Encoding festlegen
+        self.setup_mysql_character_set()
 
         try:
             # Autocommit sollte immer aus sein!
@@ -218,8 +295,6 @@ class Database(object):
             self.conn = WrappedConnection(
                 dbapi.connect(*args, **kwargs),
                 placeholder = self.placeholder,
-                unicode_decoder = self.unicode_decoder,
-                unicode_encoder = self.unicode_encoder,
                 prefix = self.tableprefix,
             )
         except Exception, e:
@@ -314,21 +389,13 @@ class Database(object):
 #_____________________________________________________________________________
 class WrappedConnection(object):
 
-    def __init__(
-        self, cnx, placeholder, unicode_decoder, unicode_encoder, prefix=''
-        ):
-
+    def __init__(self, cnx, placeholder, prefix=''):
         self.cnx = cnx
         self.placeholder = placeholder
-        self._unicode_decoder = unicode_decoder
-        self._unicode_encoder = unicode_encoder
         self.prefix = prefix
 
     def cursor(self):
-        return IterableDictCursor(
-            self.cnx, self.placeholder, self._unicode_decoder,
-            self._unicode_encoder, self.prefix
-        )
+        return IterableDictCursor(self.cnx, self.placeholder, self.prefix)
 
     def __getattr__(self, attr):
         """
@@ -345,14 +412,9 @@ class IterableDictCursor(object):
     -curosr.last_statement beinhaltet immer den letzten execute
     """
 
-    def __init__(
-        self, cnx, placeholder, unicode_decoder, unicode_encoder, prefix
-        ):
-
+    def __init__(self, cnx, placeholder, prefix):
         self._cursor = cnx.cursor()
         self._placeholder = placeholder
-        self._unicode_decoder = unicode_decoder
-        self._unicode_encoder = unicode_encoder
         self._prefix = prefix
 
         if not hasattr(self._cursor, "lastrowid"):
@@ -367,6 +429,27 @@ class IterableDictCursor(object):
                 IterableDictCursor.lastrowid = property(
                     IterableDictCursor._manual_lastrowid
                 )
+
+    #_________________________________________________________________________
+
+    def setup_encoding(self, encoding):
+        """
+        Legt den decoder/encoder Methode fest, mit dem die Daten aus der DB in
+        unicode gewandelt werden können. Daten von App zur DB werden wieder
+        zurück von unicode in's DB-Encoding gewandelt
+        """
+        if encoding == None:
+            # Sollte nur im Fehlerfall genutzt werden!
+            self._unicode_decoder = self._unicode_encoder = self._NoneCodec
+            return
+
+        self._unicode_decoder = codecs.getdecoder(encoding)
+        self._unicode_encoder = codecs.getencoder(encoding)
+
+    def _NoneCodec(self, *txt):
+        return txt
+
+    #_________________________________________________________________________
 
     def _insert_id(self):
         return self._cursor.insert_id()
@@ -390,6 +473,7 @@ class IterableDictCursor(object):
             temp = []
             for item in values:
                 if type(item) == unicode:
+                    # Wandelt unicode in das DB-Encoding zurück
                     try:
                         item = self._unicode_encoder(item, 'strict')[0]
                     except UnicodeError:
@@ -436,6 +520,7 @@ class IterableDictCursor(object):
         for idx, col in enumerate(self._cursor.description):
             item = row[idx]
             if isinstance(item, str):
+                # Wandelt vom DB-Encoding in unicode um
                 try:
                     item = self._unicode_decoder(item, 'strict')[0]
                 except UnicodeError:
@@ -446,6 +531,10 @@ class IterableDictCursor(object):
 
     def raw_fetchall(self):
         return self._cursor.fetchall()
+
+    def raw_processone(self, SQLcommand):
+        self.execute_unescaped(SQLcommand)
+        return self._cursor.fetchone()
 
     def __iter__(self):
         while True:
@@ -710,8 +799,23 @@ class SQL_wrapper(Database):
                 if not key in datetime_fields:
                     continue
 
-                t = time.strptime(line[key], self.db_date_format)
-                line[key] = datetime.datetime(*t[:6])
+                value = line[key]
+
+                if isinstance(value, datetime.datetime):
+                    # Ist doch schon Datetime ?!?!?
+
+                    # Für weitere Select-Abfragen den Patch abstellen
+                    self.datetimefix = False
+
+                    return result
+
+                if isinstance(value, basestring):
+                    t = time.strptime(value, self.db_date_format)
+                    line[key] = datetime.datetime(*t[:6])
+
+                elif hasattr(value, "tuple"): # ist ein mxDateTime Objekt
+                    time_tuple = value.tuple()
+                    line[key] = datetime.datetime(*time_tuple[:6])
 
         return result
 
