@@ -217,7 +217,10 @@ class URLs(dict):
     #_________________________________________________________________________
 
     def pageLink(self, url):
-        url = url.lstrip("/")
+
+        if url[0] == "/": # .lstrip("/") gibt es in Python 2.2 so nicht
+            url = url[1:]
+
         link = posixpath.join(self["scriptRoot"], url)
         link = self.addSlash(link)
         return link

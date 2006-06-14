@@ -99,29 +99,34 @@ class ObjectApp_Base(object):
     #_________________________________________________________________________
     ## Sub-Action
 
-    def _autoSubAction(self, actionName):
-        if actionName == None:
+    def _autoSubAction(self, subactions, current_action):
+        self._write_subactionmenu(subactions, current_action)
+        if current_action == None:
             return
 
-        if not isinstance(actionName, basestring):
+        if not isinstance(current_action, basestring):
             self.response.write("TypeError!")
             return
 
-        if not hasattr(self, actionName):
-            self.response.write("Error: %s not exists!" % actionName)
+        if not hasattr(self, current_action):
+            self.response.write("Error: %s not exists!" % current_action)
             return
 
-        action = getattr(self, actionName)
+        action = getattr(self, current_action)
         action()
 
-    def _write_subactionmenu(self, subactions):
+    def _write_subactionmenu(self, subactions, current_action):
+        self.response.write("<p>Please select:</p>\n")
         self.response.write("<ul>\n")
         for action in subactions:
             if not hasattr(self, action):
                 self.response.write("Error: %s not exists!" % action)
                 continue
 
-            name = self._niceActionName(action)
+            name = self._nicecurrent_action(action)
+            if current_action == action:
+                name = "<strong>%s</strong>" % name
+
             url = self._URLs.installSubAction(action)
             txt = (
                 '\t<li>'
@@ -131,10 +136,10 @@ class ObjectApp_Base(object):
             self.response.write(txt)
         self.response.write("</ul>\n")
 
-    def _niceActionName(self, actionName):
-        actionName = actionName.strip("_")
-        actionName = actionName.replace("_", " ")
-        return actionName
+    def _nicecurrent_action(self, current_action):
+        current_action = current_action.strip("_")
+        current_action = current_action.replace("_", " ")
+        return current_action
 
 
     def _currentActionLink(self):

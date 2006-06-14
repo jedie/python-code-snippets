@@ -5,7 +5,8 @@ __version__="0.0.6"
 
 __history__="""
 v0.0.6
-    - Obsolete: "available_markups" wird unnötig, weil es in der Tabelle 'markups' steht.
+    - Obsolete: "available_markups" wird unnötig, weil es in der Tabelle
+        'markups' steht.
 v0.0.5
     - Änderung: Pfade müßen nun nicht mehr per Hand eingetragen werden!
 v0.0.4
@@ -44,17 +45,27 @@ import os
 
 config = {
     ## Database connection settings
+    # sqlite not supported yet!
     "dbTyp"             : "MySQLdb", # "sqlite"
-    "dbHost"            : 'localhost', # Evtl. muß hier die Domain rein
-    #~ "dbHost"            : '192.168.6.2', # Evtl. muß hier die Domain rein
+
+    # Instead of 'localhost' you must possibly use the domain name or IP
+    #~ "dbHost"            : 'localhost',
+    "dbHost"            : '192.168.6.2',
+
     "dbDatabaseName"    : 'DatabaseName',
     "dbUserName"        : 'UserName',
     "dbPassword"        : 'Password',
-    # der Tabellen-Prefix darf keine Leer-/Sonderzeichen erhalten.
-    "dbTablePrefix"     : 'lucid2_',
+    "dbTablePrefix"     : 'lucid_', # No blanks may contain!
 
+    # Encoding between SQL-Server and PyLucid
+    #   - only supported with MySQL-Server >=v4.1 with <v4.1 sould be 'None'!
+    #   - if it 'None', then PyLucid use the Server default encondig
     "db_encoding"       : "utf8",
-    #~ "db_encoding"       : "utf_16_be", # ;)
+    #~ "db_encoding"       : None,
+
+    # Only for testing! (MySQL can't use utf_16_be)
+    #~ "db_encoding"       : "utf_16_be",
+
     "dbdatetime_format" : '%Y-%m-%d %H:%M:%S', # SQL-Datetime-String-Format
 
     # Zeigt zusätzlich an, in welchem Modul eine Page-Massage erzeugt wurde
@@ -89,54 +100,7 @@ config = {
     # Keine änderung nötig
     "internal_group_id" : -1,
 
-    ## Path Information
-    # Für den richtigen "zusammenbau" der verschiedenen Link-URLs muß
-    # PyLucid wissen wo es auf dem Server zu finden ist. Dabei ist der
-    # script_filename die URL relativ zum Root-Verzeichnis.
-    # ="" -> wird automatisch ermittelt
-    # Es gibt allerdings auch den Fall das der document root nicht richtig
-    # gesetzt ist! z.B. kann es bei einer subdomain vorkommen.
-    # In dem Falle müssen die Angaben per Hand als String eingetragen werden!
-
-    # Apache
-    "script_filename"   : "",
-    "document_root"     : "",
-
-    # MS-IIS
-    #~ "script_filename"   : os.environ['PATH_INFO'],
-    #~ "document_root"     : os.path.split(os.environ['PATH_TRANSLATED'])[0],
-
-    ## page_ident
-    # URL-Paremter, der für Links genommen werden soll. Wird ignoriert, wenn
-    # poormans_modrewrite eingeschaltet ist.
-    # Standart: "p"
-    "page_ident" : "p",
-
-    ## poormans_modrewrite
-    # Um auch ohne apache's Modrewrite eine saubere URL *ohne* URL-Parameter
-    # zu erhalten kann man mittels "Customized error messages" in der
-    # .htaccess arbeiten. Dabei legt man für einen 404 Fehler (Seite nicht
-    # gefunden) das ErrorDocument auf die PyLucid's index.py Seite fest.
-    # Ausgewertet wird dabei der os.environ-Eintrag "REQUEST_URI"
-    # .htaccess Eintrag:
-    #   ErrorDocument 404 /index.py
-    #
-    # Wenn poormans_modrewrite verwendet werden soll, muß poormans_url leer oder am
-    # Ende kein "/" haben!
-    #~ "poormans_modrewrite" : True,
-    "poormans_modrewrite" : False,
-    #
-    # Für eine schnellere Abarbeitung echter "404 Not Found" Fehler
-    # beim "poormans_modrewrite = True" werden Requests auf Dateien
-    # mit den angegebenen Endungen direkt am Anfang abgehandelt.
-    "mod_rewrite_filter" : ("py","php","js","css","gif","png","jpg","jpeg"),
-    #
-    # Nur, wenn eines der Wörter im User-Agent vorkommt, wird poormans_modrewrite
-    # auch wirklich eingeschaltet. So sehen Suchmaschienen die Seiten und nicht
-    # nur 404-Fehlerseiten ;)
-    "mod_rewrite_user_agents" : ("Gecko","Mozilla","Opera"),
-
-
+    # Important URL prefix for special sections:
     "installURLprefix" : "_install",
     "commandURLprefix" : "_command",
 }

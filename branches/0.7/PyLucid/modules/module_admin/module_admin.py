@@ -359,7 +359,7 @@ class Module(object):
 
         plugindata = self.db.get_plugindata(module_id)
         for method_data in plugindata:
-            print method_data
+            #~ print method_data
             method = Method(self.request, self.response)
             method.add(
                 self.data['package_name'], self.name,
@@ -652,7 +652,10 @@ class Modules(object):
                 " Error: %s"
             ) % e
             self.response.write(msg)
-            self.db.rollback()
+            try:
+                self.db.rollback()
+            except Exception, e:
+                self.response.write("Can't make rollback: %s" % e)
         else:
             self.db.commit()
 
@@ -813,6 +816,8 @@ class module_admin(PyLucidBaseModule):
                 self.response.write('<style type="text/css">')
                 self.response.write(cssData)
                 self.response.write('</style>')
+
+            return
 
         else:
             # Normal als Modul aufgerufen

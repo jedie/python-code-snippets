@@ -59,17 +59,27 @@ def filterDict(source_dict, strKeys=[], intKeys=[], defaults={}):
     return result
 
 #_____________________________________________________________________________
-def writeDictListTable(dictlist, outobj, keyfilter=[]):
+def writeDictListTable(dictlist, outobj, primaryKey = None, keyfilter=[]):
     """
     Erstellt aus einer dict-cursor-SQL-Abfrage eine einfache Tabelle und
     schreibt direkt in's outobj, was ja gut "response" sein kann ;)
 
+    - primaryKey gibt die Spalte an, die als erstes angezeigt werden soll.
+
     - keyfilter ist eine liste mit keys die nicht angezeigt werden sollen
     """
     keys = dictlist[0].keys()
+    keys.sort()
 
     # keys die in keyfilter sind "löschen":
     keys = [i for i in keys if not i in keyfilter]
+
+    if primaryKey != None and primaryKey in keys:
+        # Den primaryKey als ersten key setzten
+        del(keys[keys.index(primaryKey)])   # key löschen
+        keys.insert(0, primaryKey)          # an erster Stelle einfügen
+
+    #~ db.indexResult()
 
     outobj.write("<table><tr>\n")
     for key in keys:
