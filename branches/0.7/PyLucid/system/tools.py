@@ -168,7 +168,7 @@ def convert_date_from_sql( RAWsqlDate, format="preferences" ):
     date = str( RAWsqlDate )
     try:
         # SQL Datum in das Python time-Format wandeln
-        date = time.strptime( date, preferences["dbdatetime_format"] )
+        date = time.strptime( date, preferences["dbDatetimeFormat"] )
     except ValueError:
         # Datumsformat stimmt nicht, aber besser das was schon da
         # ist, mit einem Hinweis, zurück liefern, als garnichts ;)
@@ -196,7 +196,7 @@ def convert_time_to_sql( time_value ):
             return "ERROR: convert '%s'" % time_value
 
     return time.strftime(
-        request.preferences["dbdatetime_format"], time_value
+        request.preferences["dbDatetimeFormat"], time_value
     )
 
 #_____________________________________________________________________________
