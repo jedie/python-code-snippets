@@ -49,8 +49,8 @@ config = {
     "dbTyp"             : "MySQLdb", # "sqlite"
 
     # Instead of 'localhost' you must possibly use the domain name or IP
-    #~ "dbHost"            : 'localhost',
-    "dbHost"            : '192.168.6.2',
+    "dbHost"            : 'localhost',
+    #~ "dbHost"            : '192.168.6.2',
 
     "dbDatabaseName"    : 'DatabaseName',
     "dbUserName"        : 'UserName',
@@ -66,7 +66,10 @@ config = {
     # Only for testing! (MySQL can't use utf_16_be)
     #~ "db_encoding"       : "utf_16_be",
 
-    "dbdatetime_format" : '%Y-%m-%d %H:%M:%S', # SQL-Datetime-String-Format
+    "dbDatetimeFormat" : '%Y-%m-%d %H:%M:%S', # SQL-Datetime-String-Format
+
+    # Der datetimefix ist nur für Python >v2.3 erforderlich.
+    "dbDatetimeFix": True,
 
     # Zeigt zusätzlich an, in welchem Modul eine Page-Massage erzeugt wurde
     "page_msg_debug"    : False,

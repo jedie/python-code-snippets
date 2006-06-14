@@ -27,9 +27,12 @@ ToDo
     * Es wird immer das paramstyle 'format' benutzt. Also mit %s escaped
 """
 
-__version__="0.9"
+__version__="0.10"
 
 __history__="""
+v0.10
+    - änderung im Encoding-Handling
+    - NEU: datetimefix (für Python >v2.3)
 v0.9
     - NEU: get_tableDict()
         Select-Abfrage mit Index-Basierende-Ergebniss-Dict
@@ -564,8 +567,9 @@ class SQL_wrapper(Database):
     Nutzt ein filelike request-Objekt (WSGI) für Debugausgaben.
     Es geht auch sys.stdout :)
     """
-    #~ datetimefix = False
-    datetimefix = True
+    # Sould be enabled with Python >v2.3 !
+    datetimefix = False
+
     db_date_format = "%Y-%m-%d %H:%M:%S"
     fieldtype_cache = {}
 

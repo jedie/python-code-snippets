@@ -92,7 +92,9 @@ from PyLucid.system.DBwrapper.DBwrapper import ConnectionError
 class db(active_statements):
     def connect(self, preferences):
 
-        self.tableprefix = preferences["dbTablePrefix"]
+        self.tableprefix    = preferences["dbTablePrefix"]
+        self.datetimefix    = preferences["dbDatetimeFix"]
+        self.db_date_format = preferences["dbDatetimeFormat"]
 
         self.connect_mysqldb(
             host    = preferences["dbHost"],

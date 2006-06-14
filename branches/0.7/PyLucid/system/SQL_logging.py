@@ -15,7 +15,8 @@ v0.0.6
 v0.0.5
     - Bug: Tabellenname (sql_tablename) war Hardcoded.
 v0.0.4
-    - Mittels *log_message bei put() werden nun auch Komma-getrennte Log's aufgenommen
+    - Mittels *log_message bei put() werden nun auch Komma-getrennte Log's
+        aufgenommen
 v0.0.3
     - DEL: Es gibt kein log_typ mehr
     - Nutzt Zeitumwandlung aus PyLucid["tools"]
@@ -40,7 +41,8 @@ class log:
     """
     def __init__ (self):
         # auf Default-Werte setzten
-        # Nachdem eine Session erstellt wurde, werden diese Werte von index.py gesetzt
+        # Nachdem eine Session erstellt wurde, werden diese Werte von index.py
+        # gesetzt
         self.client_sID         = "unknown"
         self.client_user_name   = "unknown"
         self.client_ip          = "unknown"
@@ -90,11 +92,13 @@ class log:
         # Alte Log-Einträge löschen
         self.delete_old_logs()
 
+        timestamp = self.tools.convert_time_to_sql(time.time())
+
         try:
             self.db.insert(
                 table = "log", # Prefix wird bei db.insert eingefügt
                 data  = {
-                    "timestamp" : self.tools.convert_time_to_sql(time.time()),
+                    "timestamp" : timestamp,
                     "sid"       : self.client_sID,
                     "user_name" : self.client_user_name,
                     "ip"        : self.client_ip,
