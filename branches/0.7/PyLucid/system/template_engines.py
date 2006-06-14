@@ -119,12 +119,12 @@ class TemplateEngines(object):
         module_manager_data = cfg_module.module_manager_data
 
         method_cfg = module_manager_data[internal_page_name]
-        #~ try:
-        internal_page_info = method_cfg["internal_page_info"]
-        #~ except KeyError:
-            #~ print "No internal_page_info found for module_name"
-            #~ self.page_msg("No internal_page_info found for module_name")
-            #~ return
+        try:
+            internal_page_info = method_cfg["internal_page_info"]
+        except KeyError, e:
+            raise KeyError, (
+                "No internal_page_info found for internal page %s"
+            ) % internal_page_name
 
         internal_page_data = {
             "template_engine": internal_page_info["template_engine"],
@@ -132,17 +132,20 @@ class TemplateEngines(object):
         }
 
         html_content = self.readContentFile(internal_page_name, "html")
-        if html_content == "":
-            raise FileNotFound, (
-                "html file '%s' not found!"
-            ) % internal_page_name
 
         internal_page_data["content_html"] = html_content
 
-        internal_page_data["content_css"] = \
-                            self.readContentFile(internal_page_name, "css")
-        internal_page_data["content_js"] = \
-                            self.readContentFile(internal_page_name, "js")
+        try:
+            content = self.readContentFile(internal_page_name, "css")
+        except InternalPageNotFound:
+            content = ""
+        internal_page_data["content_css"] = content
+
+        try:
+            content = self.readContentFile(internal_page_name, "js")
+        except InternalPageNotFound:
+            content = ""
+        internal_page_data["content_js"] = content
 
         return internal_page_data
 
@@ -157,7 +160,9 @@ class TemplateEngines(object):
 
         file_path = get_path(internal_page_name, ext)
         if not os.path.isfile(file_path):
-            return ""
+            raise InternalPageNotFound, (
+                "file '%s' not found!"
+            ) % file_path
 
         f = file(file_path, "rU")
         content = f.read()

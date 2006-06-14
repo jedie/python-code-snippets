@@ -5,7 +5,10 @@
 Information und Tests
 """
 
+import os, sys
+
 from PyLucid.install.ObjectApp_Base import ObjectApp_Base
+
 
 class tests(ObjectApp_Base):
     "4. info / tests"
@@ -18,50 +21,159 @@ class tests(ObjectApp_Base):
             "_show_variables",
             "_show_engines", "_show_characterset"
         ]
-        self._write_subactionmenu(subactions)
-
-        self._page_msg(currentAction)
-        self._autoSubAction(currentAction)
+        # Menü anzeigen und evtl. ausgewählte Methode aufrufen
+        self._autoSubAction(subactions, currentAction)
 
     def _connect_information(self):
-        self.response.write("<pre>")
+        #___________________________________
+        # db preferences
+
+        self.response.write('<fieldset><legend>db preferences</legend><pre>')
         for k,v in self.request.preferences.iteritems():
             if not k.startswith("db"):
                 continue
             if k == "dbPassword":
                 v = "***"
-            self.response.write("%-20s: %s\n" % (k,v))
+            self.response.write("%-25s: %s\n" % (k,v))
+        self.response.write("</pre></fieldset>")
 
-        self.response.write("</pre>")
-        self.response.write("<h3>db api info</h3>")
-        self.response.write("<pre>")
+        #___________________________________
+        # db info
 
-        self.response.write("dbapi.......: ")
+        self.response.write('<fieldset><legend>db info</legend><pre>')
+
+        self.response.write("%-25s: " % "dbapi module version")
         try:
             self.response.write(
-                "%s %s\n" % (self._db.dbapi.__name__, self._db.dbapi.__version__)
+                "%s %s\n" % (
+                    self._db.dbapi.__name__, self._db.dbapi.__version__
+                )
             )
         except Exception, e:
             self.response.write("(Error: %s)" % e)
 
-        self.response.write("paramstyle..: %s\n" % self._db.paramstyle)
-        self.response.write("placeholder.: %s\n" % self._db.placeholder)
+        self.response.write(
+            "%-25s: %s (raw version String: '%s')\n" % (
+                "SQL-Server version",
+                self._db.server_version, self._db.RAWserver_version
+            )
+        )
+        self.response.write(
+            "%-25s: %s\n" % ("paramstyle", self._db.paramstyle)
+        )
+        self.response.write(
+            "%-25s: %s\n" % ("placeholder", self._db.placeholder)
+        )
+        self.response.write(
+            "%-25s: %s\n" % ("used db encoding", self._db.encoding)
+        )
 
-        self.response.write("</pre>")
+        self.response.write("</pre></fieldset>")
 
-        #~ self._execute_verbose("SELECT @@character set;")
+        #___________________________________
+        # info
+        self.response.write('<fieldset><legend>info</legend><pre>')
+
+        sys_version = sys.version.replace("\n", " ")
+        self.response.write("%-25s: %s\n" % ("Python version",sys_version))
+
+        if hasattr(os,"uname"): # Nicht unter Windows verfügbar
+            self.response.write(
+                "%-25s: %s\n" % ("os.uname()", " - ".join(os.uname()))
+            )
+
+        self.response.write("</pre></fieldset>")
 
     def _show_variables(self):
-        self._execute_verbose("SHOW VARIABLES;")
+        """
+        http://dev.mysql.com/doc/refman/4.1/en/show-variables.html
+        """
+        self._execute_verbose(
+            "List of all SQL server variables",
+            "SHOW VARIABLES;", primaryKey="Variable_name"
+        )
 
     def _show_grants(self):
-        self._execute_verbose("Available db storage engines", "SHOW GRANTS;")
+        """
+        http://dev.mysql.com/doc/refman/4.1/en/show-grants.html
+
+        Rechte Anzeigen
+        Für MySQL 4.1 reicht "SHOW GRANTS;"
+        Für MySQL =>4.1 müßte eigentlich "SHOW GRANTS FOR CURRENT_USER;"
+        funktionieren. Geht aber bei meinen tests nicht wirklich.
+        Wenn allerdings der Username explizit angegeben wird, klappt es, nur
+        nicht, wenn über eine Remote-Verbindung mit dem SQL-Server kommuniziert
+        wird?!?!?
+        Also probieren wir einfach rum:
+        """
+        def print_result():
+            result = self._db.cursor.fetchall()
+            # Daten als HTML-Tabelle ins response Obj. schreiben lassen:
+            self._tools.writeDictListTable(result, self.response)
+
+        self.response.write("<h3>Database user rights:</h3>\n")
+        try:
+            self._db.cursor.execute("SHOW GRANTS;")
+        except Exception, e:
+            pass
+        else:
+            print_result()
+            return
+
+        try:
+            self._db.cursor.execute("SHOW GRANTS FOR CURRENT_USER;")
+        except Exception, e:
+            pass
+        else:
+            print_result()
+            return
+
+        SQLcommand = "SHOW GRANTS FOR %s;" % \
+                                        self.request.preferences["dbUserName"]
+        try:
+            self._db.cursor.execute(SQLcommand)
+        except Exception, e:
+            self.response.write("<pre>\n")
+            self.response.write("execude ERROR: %s\n" % e)
+            self.response.write("SQLcommand: %s\n" % SQLcommand)
+            self.response.write("</pre>\n")
+            return
+        else:
+            print_result()
 
     def _show_engines(self):
-        self._execute_verbose("Available db storage engines", "SHOW ENGINES")
+        """
+        http://dev.mysql.com/doc/refman/4.1/en/show-engines.html
+        """
+        if self._db.server_version < (4,1,2):
+            msg = (
+                "<p><strong>Note:</strong>"
+                " MySQL 4.1.2 required for 'SHOW ENGINE;'\n"
+                " (<small>Your SQL Version: %s)</small>"
+            ) % self._db.RAWserver_version
+            self.response.write(msg)
+
+        self._execute_verbose(
+            "Available db storage engines",
+            "SHOW ENGINES", primaryKey="Engine"
+        )
 
     def _show_characterset(self):
-        self._execute_verbose("Available character set", "SHOW CHARACTER SET")
+        """
+        http://dev.mysql.com/doc/refman/4.1/en/show-character-set.html
+        """
+        if self._db.server_version < (4,1,0):
+            msg = (
+                "<p><strong>Note:</strong>"
+                " MySQL 4.1.0 required for 'SHOW CHARACTER SET;'\n"
+                " (<small>Your SQL Version: %s)</small>"
+            ) % self._db.RAWserver_version
+            self.response.write(msg)
+
+        self._execute_verbose(
+            "Available character set",
+            "SHOW CHARACTER SET", primaryKey="Charset"
+        )
 
     #_________________________________________________________________________
 
@@ -129,7 +241,7 @@ class tests(ObjectApp_Base):
         self.response.write("<hr/>")
 
 
-    def _execute_verbose(self, title, SQLcommand=None):
+    def _execute_verbose(self, title, SQLcommand=None, primaryKey=""):
         if SQLcommand == None:
             SQLcommand = title
 
@@ -147,7 +259,7 @@ class tests(ObjectApp_Base):
         result = self._db.cursor.fetchall()
 
         # Daten als HTML-Tabelle ins response Obj. schreiben lassen:
-        self._tools.writeDictListTable(result, self.response)
+        self._tools.writeDictListTable(result, self.response, primaryKey)
 
 
 

@@ -213,6 +213,9 @@ class InstallApp(object):
         # Eigentliche Methode wird aufgerufen
         self.startObjectApp()
 
+        #~ self.response.write("TEST")
+        #~ return self.response
+
         self.writeHTMLfoot()
 
     #_________________________________________________________________________
@@ -293,8 +296,6 @@ class InstallApp(object):
 
     def writeHTMLfoot(self):
         """ HTML Fuss schreiben """
-        self.response.write("<dt>sys.version:</dt>")
-        self.response.write("<dd>Python v%s</dd>" % sys.version)
         self.response.write(HTML_bottom)
 
     #_________________________________________________________________________
@@ -312,10 +313,6 @@ class InstallApp(object):
             node = getattr(handler, part, None)
             if node is None:
                 if part:
-                    try:
-                        part = int(part)
-                    except ValueError:
-                        pass
                     args.append(part)
             else:
                 handler = node
@@ -338,16 +335,18 @@ class InstallApp(object):
             else:
                 raise #PageNotFound
 
-        # update with hardcoded container information
-        if container is None and hasattr(handler, 'container'):
-            container = handler.container
-
         # Check for handler arguments and update container
-        if inspect.ismethod(handler):
-            func = handler.im_func
-        else:
-            func = handler
-        handler_args, varargs, _, defaults = inspect.getargspec(func)
+        #~ if inspect.ismethod(handler):
+            #~ func = handler.im_func
+        #~ else:
+            #~ func = handler
+        #~ handler_args, varargs, _, defaults = inspect.getargspec(func)
+
+        for arg in args:
+            try:
+                arg = int(arg)
+            except ValueError:
+                continue
 
         # call handler
         parent = handler.im_class()

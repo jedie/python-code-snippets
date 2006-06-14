@@ -80,6 +80,9 @@ class page_style(PyLucidBaseModule):
         cssData = self.db.side_style_by_id(page_id, getItems)
 
         lastupdatetime = cssData["lastupdatetime"] # datetime-Object!
+
+        #~ raise str(repr(lastupdatetime))
+
         lastModified = lastupdatetime.strftime(timeFormat)
         #~ print "lastModified:", lastModified
 

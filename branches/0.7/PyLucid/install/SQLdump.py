@@ -56,7 +56,7 @@ class SQLdump:
             self.response.write(msg)
             sys.exit(1)
 
-    def import_dump( self ):
+    def import_dump(self):
         table_names = self.get_table_names()
         self.response.write("<pre>")
         for current_table in table_names:
@@ -220,7 +220,8 @@ class SQLdump:
         return counter
 
     def execute(self, SQLcommand):
-        if "%(table_prefix)s" in SQLcommand:
+
+        if SQLcommand.find("%(table_prefix)s") != -1:
             # für Dumps von PyLucid <v0.6
             SQLcommand = SQLcommand % {"table_prefix":"$$"}
 
@@ -228,7 +229,12 @@ class SQLdump:
 
         if self.simulation:
             SQLcommand = str(SQLcommand) # Unicode wandeln
-            SQLcommand = SQLcommand.encode("String_Escape")
+
+            try:
+                SQLcommand = SQLcommand.encode("String_Escape")
+            except LookupError: # Python 2.2 kennt kein String_Escape
+                SQLcommand = repr(SQLcommand)
+
             SQLcommand = cgi.escape(SQLcommand)
             self.response.write("%s\n" % SQLcommand)
             return
