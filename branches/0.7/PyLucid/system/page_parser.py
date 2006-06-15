@@ -88,9 +88,10 @@ class render(object):
             # textile Markup anwenden
             if self.preferences["ModuleManager_error_handling"] == True:
                 try:
-                    from PyLucid_system import tinyTextile
+                    from PyLucid.system import tinyTextile
                     out = self.tools.out_buffer()
-                    tinyTextile.parser( out, self.PyLucid ).parse( content )
+                    t = tinyTextile.parser(out, self.request, self.response)
+                    t.parse(content)
                     return out.get()
                 except Exception, e:
                     msg = "Can't use textile-Markup (%s)" % e

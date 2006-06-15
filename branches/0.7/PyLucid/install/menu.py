@@ -9,6 +9,13 @@ Menu Routinen für "install PyLucid"
 from PyLucid.install.ObjectApp_MenuGenerator import ObjectApp_MenuGenerator
 from PyLucid.install.ObjectApp_Base import ObjectApp_Base
 
+info_links = """
+<hr />
+<ul>
+<li><a href="http://pylucid.org/index.py?p=/Download/install+PyLucid">how to install PyLucid</a></li>
+<li><a href="http://pylucid.org/index.py?p=/Download/update+instructions">update instructions</a></li>
+</ul>
+"""
 
 class Install_MenuGenerator(ObjectApp_MenuGenerator):
     """
@@ -31,6 +38,8 @@ class menu(ObjectApp_Base):
         "Main Menu"
         self.response.write("Please select:")
         self.MenuGenerator.make_menu()
+
+        self.response.write(info_links)
 
     #~ def name(self, arg1="Default", arg2="Default"):
         #~ """Beispiel für eine Parameter übergabe"""

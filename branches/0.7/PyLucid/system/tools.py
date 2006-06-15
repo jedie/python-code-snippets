@@ -499,7 +499,7 @@ class subprocess2(threading.Thread):
         self.timeout    = timeout
 
         self.killed = False # Wird True, wenn der Process gekillt wurde
-        self.out_data = "" # Darin werden die Ausgaben gespeichert
+        self.out_data = ""  # Darin werden die Ausgaben gespeichert
 
         threading.Thread.__init__(self)
 
@@ -520,14 +520,33 @@ class subprocess2(threading.Thread):
         except:
             self.returncode = -1
 
+        # Ausgabe
+        self.out_data = self.process.stdout.read()
+        response.page_msg(self.out_data)
+
+        if hasattr(sys.stdin, "encoding"):
+            encoding = sys.stdin.encoding or sys.getdefaultencoding()
+        else:
+            encoding = sys.getdefaultencoding()
+
+        encodings = [encoding, "latin1", "utf8"]
+        for encodnig in encodings:
+            try:
+                self.out_data = unicode(
+                    self.out_data, encoding, errors="strict"
+                )
+            except UnicodeError:
+                pass
+            else:
+                response.page_msg("found: %s" % encoding)
+                return
+
+        response.page_msg("No encodning found!")
+        self.out_data = unicode(self.out_data, encoding, errors="replace")
+
     def run(self):
         "Führt per subprocess den Befehl 'self.command' aus."
-
-        try:
-            import subprocess
-        except ImportError:
-            # subprocess gibt's erst mit Python 2.4
-            from PyLucid.python_backports import subprocess
+        import subprocess
 
         self.process = subprocess.Popen(
                 self.command,
@@ -536,9 +555,6 @@ class subprocess2(threading.Thread):
                 stdout  = subprocess.PIPE,
                 stderr  = subprocess.STDOUT
             )
-
-        # Ausgaben speichern
-        self.out_data = self.process.stdout.read()
 
     def stop( self ):
         """
@@ -555,7 +571,7 @@ class subprocess2(threading.Thread):
         #~ self.killed = True
 
         try:
-            os.kill( self.process.pid, signal.SIGQUIT )
+            os.kill(self.process.pid, signal.SIGQUIT)
         except Exception:
             # Process war schon beendet, oder os.kill() ist nicht verfügbar
             pass

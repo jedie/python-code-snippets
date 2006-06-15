@@ -462,6 +462,9 @@ class module_manager:
         try:
             # Dict-Argumente übergeben
             return unbound_method(**method_arguments)
+        except SystemExit:
+            # Module dürfen zum Debugging auch einen sysexit machen...
+            pass
         except TypeError, e:
             if not str(e).startswith(unbound_method.__name__):
                 # Der Fehler ist nicht hier, bei der Dict übergabe zur
@@ -499,9 +502,6 @@ class module_manager:
 
         #~ if debug: self.page_msg("method_arguments:", method_arguments)
         def run_error(msg):
-            if self.plugin_data["direct_out"] != True:
-                redirector.get() # stdout wiederherstellen
-
             msg = "[Can't run '%s.%s': %s]" % (
                 self.module_name, self.method_name, msg
             )

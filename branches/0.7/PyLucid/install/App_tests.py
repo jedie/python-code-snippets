@@ -158,6 +158,11 @@ class tests(ObjectApp_Base):
             "SHOW ENGINES", primaryKey="Engine"
         )
 
+        self._execute_verbose(
+            "Available db storage engines",
+            "SHOW TABLE TYPES", primaryKey="Engine"
+        )
+
     def _show_characterset(self):
         """
         http://dev.mysql.com/doc/refman/4.1/en/show-character-set.html

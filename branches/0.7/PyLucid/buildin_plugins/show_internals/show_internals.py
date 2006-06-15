@@ -31,7 +31,8 @@ v0.0.5
 v0.0.4
     - Andere Handhabung von tools
 v0.0.3
-    - verweinfachung in SQL_table_status() und optimize_sql_table() durch MySQLdb.cursors.DictCursor
+    - verweinfachung in SQL_table_status() und optimize_sql_table() durch
+        MySQLdb.cursors.DictCursor
 v0.0.2
     - NEU SQL-Tabellen übersicht + Optimieren
 v0.0.1
@@ -52,8 +53,6 @@ import os, sys, cgi, imp, glob, time
 from PyLucid.system.BaseModule import PyLucidBaseModule
 
 class show_internals(PyLucidBaseModule):
-
-
     def link( self ):
         return '<a href="%smenu">show_internals</a>' % self.URLs["action"]
 
@@ -74,7 +73,9 @@ class show_internals(PyLucidBaseModule):
         modulelist = modules_info().modulelist
         duration_time = time.time() - start_time
 
-        self.response.write("%s Modules found in %.2fsec.:" % (len( modulelist ), duration_time ))
+        self.response.write(
+            "%s Modules found in %.2fsec.:" % (len(modulelist), duration_time)
+        )
         self.response.write('<table>')
         Link = '<a href="%s' % self.URLs["action"]
         Link += '%s">more Info</a>'
@@ -191,88 +192,8 @@ class show_internals(PyLucidBaseModule):
     def system_info( self ):
         """ Allgemeine System Informationen """
         self.menu()
-        self.response.write("<hr>")
-
-        self.response.write("<h3>PyLucid environ information</h3>")
-        self.response.write('<fieldset id="system_info"><legend>PyLucid["URLs"]:</legend>')
-        self.response.write("<pre>")
-        for k,v in self.URLs.items():
-            self.response.write("%15s: '%s'\n" % (k,v))
-        self.response.write("</pre>")
-        self.response.write("</fieldset>")
-
-        #_____________________________________________________________________
-
-        self.response.write("<h3>system info</h3>")
-
-        def cmd_info( info, command, cwd="/" ):
-            self.response.write(
-                '<fieldset id="system_info"><legend>%s:</legend>' % info
-            )
-            try:
-                process = self.tools.subprocess2(command, cwd, 1)
-            except Exception,e:
-                self.response.write("Can't get: %s" % e)
-            else:
-                self.response.write("<pre>%s</pre>" % process.out_data)
-            self.response.write("</fieldset>")
-
-        self.response.write('<dl id="system_info">')
-        if hasattr(os,"uname"): # Nicht unter Windows verfügbar
-            self.response.write("<dt>os.uname():</dt>")
-            self.response.write("<dd>%s</dd>" % " - ".join( os.uname() ))
-
-        self.response.write("<dt>sys.version:</dt>")
-        self.response.write("<dd>Python v%s</dd>" % sys.version)
-
-        self.response.write("<dt>sys.path:</dt>")
-        for i in sys.path:
-            self.response.write("<dd>%s</dd>" % i)
-
-        #~ self.response.write("<dt>config file:</dt>")
-        #~ self.response.write("<dd>%s</dd>" % self.config.__file__)
-
-        import locale
-
-        self.response.write("<dt>locale.getlocale():</dt>")
-        self.response.write("<dd>%s</dd>" % str( locale.getlocale() ))
-        self.response.write("<dt>locale.getdefaultlocale():</dt>")
-        self.response.write("<dd>%s</dd>" % str( locale.getdefaultlocale() ))
-        self.response.write("<dt>locale.getpreferredencoding():</dt>")
-        try:
-            self.response.write("<dd>%s</dd>" % str( locale.getpreferredencoding() ))
-        except Exception, e:
-            self.response.write("<dd>Error: %s</dd>" % e)
-
-        self.response.write("</dl>")
-
-        cmd_info( "uptime", "uptime" )
-        cmd_info( "lokal Angemeldete Benutzer", "who -H -u --lookup" )
-        cmd_info( "disk", "df -T -h" )
-        cmd_info( "RAM", "free -m" )
-
-        #_____________________________________________________________________
-
-        self.response.write("<h3>OS-Enviroment:</h3>")
-        self.response.write('<dl id="environment">')
-        keys = os.environ.keys()
-        keys.sort()
-        for key in keys:
-            value = os.environ[key]
-            self.response.write("<dt>%s</dt>" % key)
-            self.response.write("<dd>%s</dd>" % value)
-        self.response.write("</dl>")
-
-        #_____________________________________________________________________
-
-        self.response.write("<h3>Colubrid debug information</h3>")
-        self.response.write('<fieldset id="system_info"><legend>colubrid:</legend>')
-        try:
-            from colubrid.debug import debug_info
-            self.response.write(debug_info(self.request))
-        except Exception, e:
-            self.response.write("Error: %s" % e)
-        self.response.write("</fieldset>")
+        s = system_info(self.request, self.response)
+        s.display_all()
 
     #_______________________________________________________________________
 
@@ -495,4 +416,145 @@ class modules_info:
                 continue
             modulelist.append( filename )
         return modulelist
+
+
+
+
+class system_info(PyLucidBaseModule):
+    def display_all(self):
+        self.response.write("<hr>")
+
+        self.PyLucid_info()
+        self.system_info()
+        self.encoding_info()
+        self.envion_info()
+        self.colubird_debug()
+
+    #_________________________________________________________________________
+
+    def PyLucid_info(self):
+        self.response.write("<h3>PyLucid environ information</h3>")
+        self.response.write('<fieldset id="system_info"><legend>PyLucid["URLs"]:</legend>')
+        self.response.write("<pre>")
+        for k,v in self.URLs.items():
+            self.response.write("%15s: '%s'\n" % (k,v))
+        self.response.write("</pre>")
+        self.response.write("</fieldset>")
+
+    #_________________________________________________________________________
+
+    def system_info(self):
+        self.response.write("<h3>system info</h3>")
+
+        self.response.write('<dl id="system_info">')
+        if hasattr(os,"uname"): # Nicht unter Windows verfügbar
+            self.response.write("<dt>os.uname():</dt>")
+            self.response.write("<dd>%s</dd>" % " - ".join( os.uname() ))
+
+        self.response.write("<dt>sys.version:</dt>")
+        self.response.write("<dd>Python v%s</dd>" % sys.version)
+
+        self.response.write("<dt>sys.path:</dt>")
+        for i in sys.path:
+            self.response.write("<dd>%s</dd>" % i)
+
+        #~ self.response.write("<dt>config file:</dt>")
+        #~ self.response.write("<dd>%s</dd>" % self.config.__file__)
+
+        self.response.write("</dl>")
+
+        #_____________________________________________________________________
+
+        self.cmd_info( "uptime", "uptime" )
+        self.cmd_info( "lokal Angemeldete Benutzer", "who -H -u --lookup" )
+        self.cmd_info( "disk", "df -T -h" )
+        self.cmd_info( "RAM", "free -m" )
+
+    #_________________________________________________________________________
+
+    def envion_info(self):
+        self.response.write("<h3>OS-Enviroment:</h3>")
+        self.response.write('<dl id="environment">')
+        keys = os.environ.keys()
+        keys.sort()
+        for key in keys:
+            value = os.environ[key]
+            self.response.write("<dt>%s</dt>" % key)
+            self.response.write("<dd>%s</dd>" % value)
+        self.response.write("</dl>")
+
+    def colubird_debug(self):
+        self.response.write("<h3>Colubrid debug information</h3>")
+        self.response.write('<fieldset id="system_info"><legend>colubrid:</legend>')
+        from colubrid.debug import debug_info
+        self.response.write(debug_info(self.request))
+        self.response.write("</fieldset>")
+
+    #_________________________________________________________________________
+
+    def encoding_info(self):
+        self.response.write("<h3>encoding info</h3>")
+        import locale
+
+        self.response.write('<dl id="system_info">')
+
+        def get_file_encoding(f):
+            if hasattr(f, "encoding"):
+                return f.encoding
+            else:
+                return "Error: Object has no .encoding!"
+
+        self.response.write("<dt>sys.stdin.encoding:</dt>")
+        self.response.write("<dd>%s</dd>" % get_file_encoding(sys.stdin))
+
+        self.response.write("<dt>sys.stdout.encoding:</dt>")
+        self.response.write("<dd>%s</dd>" % get_file_encoding(sys.stdout))
+
+        self.response.write("<dt>sys.stderr.encoding:</dt>")
+        self.response.write("<dd>%s</dd>" % get_file_encoding(sys.stderr))
+
+
+        self.response.write("<dt>sys.getdefaultencoding():</dt>")
+        self.response.write("<dd>%s</dd>" % sys.getdefaultencoding())
+
+        self.response.write("<dt>sys.getfilesystemencoding():</dt>")
+        try:
+            self.response.write("<dd>%s</dd>" % sys.getfilesystemencoding())
+        except Exception, e:
+            self.response.write("<dd>Error: %s</dd>" % e)
+
+        self.response.write("<dt>locale.getlocale():</dt>")
+        self.response.write("<dd>%s</dd>" % str( locale.getlocale() ))
+
+        self.response.write("<dt>locale.getdefaultlocale():</dt>")
+        self.response.write("<dd>%s</dd>" % str( locale.getdefaultlocale() ))
+
+        self.response.write("<dt>locale.getpreferredencoding():</dt>")
+        try:
+            self.response.write("<dd>%s</dd>" % str( locale.getpreferredencoding() ))
+        except Exception, e:
+            self.response.write("<dd>Error: %s</dd>" % e)
+
+        self.response.write("</dl>")
+
+    #_________________________________________________________________________
+
+    def cmd_info(self, info, command, cwd="/"):
+        self.response.write(
+            '<fieldset id="system_info"><legend>%s:</legend>' % info
+        )
+        try:
+            process = self.tools.subprocess2(command, cwd, 5)
+        except Exception,e:
+            self.response.write("Can't get: %s" % e)
+        else:
+            self.response.write("<pre>%s</pre>" % process.out_data)
+        self.response.write("</fieldset>")
+
+
+
+
+
+
+
 

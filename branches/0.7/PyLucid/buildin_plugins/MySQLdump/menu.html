@@ -25,9 +25,7 @@ complete - table structure + all data saved in dump.</small></p>
 <small>(if mysqldump in path then use "." if not use "/usr/bin/" or else...)</small></p>
 
 <p>character set:
-<select name="character-set" size="1">
-  <option value="utf8" selected="selected">utf8</option>
-  <option value="latin1">latin1</option>
+<input name="character-set" value="%(character-set)s" size="30" maxlength="25" type="text"><br />
 </select></p>
 
 <p>compatible:

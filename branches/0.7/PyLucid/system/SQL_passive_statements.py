@@ -88,16 +88,30 @@ class passive_statements(SQL_wrapper):
     def get_side_data(self, page_id):
         "Holt die nötigen Informationen über die aktuelle Seite"
 
-        side_data = self.select(
+        try:
+            side_data = self.select(
                 select_items    = [
                         "markup", "name", "shortcut", "title",
                         "lastupdatetime","keywords","description"
                     ],
                 from_table      = "pages",
                 where           = ( "id", page_id )
-            )[0]
+            )
+        except Exception, e:
+            # Vielleicht existiert 'shortcut' noch nicht (Update von v0.6)
+            side_data = self.select(
+                    select_items    = [
+                            "markup", "name", "title",
+                            "lastupdatetime","keywords","description"
+                        ],
+                    from_table      = "pages",
+                    where           = ( "id", page_id )
+                )
+        
+        side_data = side_data[0]    
 
-        if side_data["shortcut"] == "" or side_data["shortcut"] == None:
+        if (not "shortcut" in side_data) or side_data["shortcut"] == "" or \
+                                                side_data["shortcut"] == None:
             self.page_msg(
                 "ERROR: shortcut for this page is not set!!! "
                 "Pages links may not worked! Use LowLevelAdmin to "
