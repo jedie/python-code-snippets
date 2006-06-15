@@ -18,12 +18,15 @@ v0.1
 v0.0.13
     - Änderung am Aufbau des HTML
 v0.0.12
-    - Bug in where_filter() behoben, sodas "permit view public" wirklich beachtet wird
+    - Bug in where_filter() behoben, sodas "permit view public" wirklich
+        beachtet wird
 v0.0.11
     - Es werden nurnoch Seiten angezeigt, bei denen 'showlinks' gesetzt ist.
 v0.0.10
-    - name und title werden nun mit cgi.escape() gewandelt, damit auch Seitennamen wie <robots> Angezeigt werden.
-    - link wird mit urllib.quote_plus(), so sind auch Sonderzeichen wie "/" im Seitennamen erlaubt ;)
+    - name und title werden nun mit cgi.escape() gewandelt, damit auch
+        Seitennamen wie <robots> Angezeigt werden.
+    - link wird mit urllib.quote_plus(), so sind auch Sonderzeichen wie "/"
+        im Seitennamen erlaubt ;)
 v0.0.9
     - Neue Methode 'where_filter()' zum berücksichtigen des Rechtemanagement
 v0.0.8
@@ -88,7 +91,8 @@ class main_menu(PyLucidBaseModule):
         # Füllt self.menudata mit allen relevanten Daten
         self.create_menudata( parentID )
 
-        # Ebenen umdrehen, damit das Menü auch richtig rum dargestellt werden kann
+        # Ebenen umdrehen, damit das Menü auch richtig rum
+        # dargestellt werden kann
         self.menudata.reverse()
 
         # Generiert das Menü aus self.menudata
@@ -96,11 +100,13 @@ class main_menu(PyLucidBaseModule):
 
     def where_filter( self, where_rules ):
         """
-        Erweitert das SQL-where Statement um das Rechtemanagement zu berücksichtigen
+        Erweitert das SQL-where Statement um das Rechtemanagement zu
+        berücksichtigen.
         Selbe Funktion ist auch bei sub_menu vorhanden
         """
         where_rules.append(("showlinks",1))
-        if not self.session.has_key("isadmin") or self.session["isadmin"]!=True:
+        if not self.session.has_key("isadmin") or \
+                                                self.session["isadmin"]!=True:
             where_rules.append(("permitViewPublic",1))
 
         return where_rules
@@ -110,11 +116,12 @@ class main_menu(PyLucidBaseModule):
         Damit sich das evtl. vorhandene Untermenüpunkt "aufklappt" wird
         nachgesehen ob ein Menüpunkt als ParentID die aktuelle SeitenID hat.
         """
+        where_filter = self.where_filter( [("parent",self.current_page_id)] )
         # Gibt es Untermenupunkte?
         result = self.db.select(
                 select_items    = ["parent"],
                 from_table      = "pages",
-                where           = self.where_filter( [("parent",self.current_page_id)] ),
+                where           = where_filter,
                 limit           = (0,1)
             )
         if not result:
@@ -206,15 +213,19 @@ class main_menu(PyLucidBaseModule):
                 # Generell gibt es noch eine höhere Ebene
 
                 if menuitem["id"] == higher_level_parent:
-                    # Es wurde der Menüpunkt erreicht, der das Untermenü "enthält",
-                    # deswegen kommt ab hier erstmal das Untermenü rein
+                    # Es wurde der Menüpunkt erreicht, der das Untermenü
+                    # "enthält", deswegen kommt ab hier erstmal das
+                    # Untermenü rein
                     self.make_menu(menulevel+1, link)
 
             self.response.write(
                 "%s%s\n" % (spacer, self.preferences["mainMenu"]["after"])
             )
 
-        #~ mainMenu - {'begin': '<ul>', 'finish': '</ul>', 'after': '</li>', 'currentAfter': '', 'currentBefore': '', 'before': '<li>'}
+        #~ mainMenu = {
+        #   'begin': '<ul>', 'finish': '</ul>', 'after': '</li>',
+        #   'currentAfter': '', 'currentBefore': '', 'before': '<li>'
+        # }
         # List Ende, default: </ul>
         self.response.write(
             "%s%s\n" % (spacer, self.preferences["mainMenu"]["finish"])

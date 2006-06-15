@@ -74,7 +74,6 @@ class ObjectApp_Base(object):
         self.response.write("<h4>%s</h4>\n" % txt)
 
 
-
         url = self._URLs.currentAction()
         self.response.write(
             '<form name="confirm" method="post" action="%s">\n' % url
@@ -142,8 +141,8 @@ class ObjectApp_Base(object):
         return current_action
 
 
-    def _currentActionLink(self):
-        return self._URLs["action"]
+    #~ def _currentActionLink(self):
+        #~ return self._URLs["action"]
 
 
 

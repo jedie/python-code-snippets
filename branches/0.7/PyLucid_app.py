@@ -10,7 +10,7 @@ __url__     = "http://www.PyLucid.org"
 
 __info__ = """<a href="%s" title="\
 PyLucid - A OpenSource CMS in pure Python CGI by Jens Diemer">PyLucid</a> \
-v0.7.0Alpha""" % __url__
+v0.7.0RC""" % __url__
 
 
 #~ debug = True
@@ -295,7 +295,7 @@ class PyLucidApp(BaseApplication):
             except WrongInstallLockCode:
                 # Der Zugang zum Install wurde verweigert, also
                 # zeigen wir die normale CMS-Seite
-                self.runlevel = "normal"
+                self.runlevel.set_normal()
             else:
                 return self.response
 

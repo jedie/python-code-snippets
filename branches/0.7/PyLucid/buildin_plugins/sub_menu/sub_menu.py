@@ -75,8 +75,7 @@ class sub_menu(PyLucidBaseModule):
 
     def lucidTag( self ):
         self.url_entry  = self.preferences["subMenu"]["before"] # List Item Anfang, default: <li>
-        self.url_entry += '<a href="%s' % self.URLs["base"]
-        self.url_entry += '%(link)s">%(title)s</a>'
+        self.url_entry += '<a href="%(link)s">%(title)s</a>'
         self.url_entry += self.preferences["subMenu"]["after"] + "\n"# List Item ende, default: </li>
 
         current_page_id = self.request.session["page_id"]

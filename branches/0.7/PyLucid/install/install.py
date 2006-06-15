@@ -25,19 +25,20 @@ v0.3.1
 v0.3
     - Es kann nur einmal ein Admin angelegt werden
     - Benutzt nun einige PyLucid-Objekte (erforderlich für neues userhandling)
-    - Möglichkeit dir Markup-String zu IDs zu konvertieren (Änderung in PyLucid v0.5)
+    - Möglichkeit dir Markup-String zu IDs zu konvertieren
+        (Änderung in PyLucid v0.5)
     - CSS Spielereien 2
 v0.2
     - Anpassung an neue install-Daten-Struktur.
     - "add Admin"-Formular wird mit JavaScript überprüft.
-    - NEU Path Check: allerdings wird erstmal nur die Pfade angezeigt, mehr nicht...
+    - NEU Path Check: allerdings wird erstmal nur die Pfade angezeigt
     - CSS Spielereien
     - Aussehen geändert
 v0.1.0
-    - NEU: "partially re-initialisation DB tables" damit kann man nur ausgesuhte
-        Tabellen mit den Defaultwerten überschrieben.
+    - NEU: "partially re-initialisation DB tables" damit kann man nur
+        ausgesuchte Tabellen mit den Defaultwerten überschrieben.
 v0.0.8
-    - Fehler in SQL_dump(): Zeigte SQL-Befehle nur an, anstatt sie auszuführen :(
+    - Fehler in SQL_dump(): Zeigte SQL-Befehle nur an, anstatt sie auszuführen
 v0.0.7
     - Neue Art die nötigen Tabellen anzulegen.
 v0.0.6
@@ -56,7 +57,6 @@ v0.0.1
 """
 
 __todo__ = """
-Sicherheitslücke: Es sollte nur ein Admin angelegt werden können, wenn noch keiner existiert!
 """
 
 
@@ -240,9 +240,9 @@ class InstallApp(object):
             self.writeHTMLfoot()
             sys.exit(1)
 
-        #~ self.page_msg(
-            #~ "Debug: |%s| <-> |%s|" % (self.LockCodeURL, lockCodeFile)
-        #~ )
+        lockCode = lockCode.strip() # Leerzeichen wegschneiden
+
+#        self.page_msg("Debug: |%s| <-> |%s|" % (self.LockCodeURL, lockCode))
 
         if len(lockCode)<8:
             self.page_msg("Install lock code to short! (len min. 8 chars!)")
@@ -317,7 +317,7 @@ class InstallApp(object):
             else:
                 handler = node
 
-        container = None
+        #~ container = None
 
         # Find handler and make first container check
         import inspect
@@ -353,17 +353,11 @@ class InstallApp(object):
         parent.request = self.request
         try:
             handler(parent, *args)
-        except TypeError, e:
-            try:
-                import inspect
-                # Angaben zur Datei, Zeilennummer, aus dem die Nachricht stammt
-                stack = inspect.stack()[1]
-                filename = stack[1].split("/")[-1][-30:]
-                fileinfo = "%-20s line %3s: " % (filename, stack[2])
-            except Exception, e:
-                fileinfo = "(inspect Error: %s)" % e
-
-            raise TypeError, "From %s: %s" % (fileinfo, e)
+        #~ except TypeError, e:
+            #~ msg = (
+                #~ "Error execute install ObjApp Subaction '%s': %s"
+            #~ ) % (handler.__name__, e)
+            #~ raise TypeError, msg
         except SystemExit, e:
             # sys.exit() wird immer bei einem totalabbruch gemacht ;)
             self.response.write('<small style="color:grey">(exit %s)</small>' % e)

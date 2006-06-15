@@ -43,9 +43,7 @@ class SiteMap(PyLucidBaseModule):
         self.parent_list = self.get_parent_list()
         #~ return str( self.parent_l    ist )
 
-        self.link  = '<a href="'
-        self.link += self.URLs["base"]
-        self.link += '%(link)s">%(name)s</a>'
+        self.link  = '<a href="%(link)s">%(name)s</a>'
 
         self.response.write('<div id="SiteMap">\n')
         self.make_sitemap()
@@ -69,10 +67,11 @@ class SiteMap(PyLucidBaseModule):
                 )
 
                 link = "%s/%s" % (parentname, site["shortcut"])
+                linkURL = self.URLs.pageLink(link)
 
                 self.response.write(
                     self.link % {
-                        "link"  : link,
+                        "link"  : linkURL,
                         "name"  : cgi.escape(site["name"]),
                     }
                 )

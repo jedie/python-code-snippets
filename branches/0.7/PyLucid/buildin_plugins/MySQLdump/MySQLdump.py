@@ -49,6 +49,15 @@ v0.0.1
     - Erste Version
 """
 
+__todo__ = """
+    Using jinja!!!
+
+    http://dev.mysql.com/doc/refman/4.1/en/show-create-table.html
+
+    SHOW CREATE TABLE tbl_name
+
+"""
+
 
 import os, sys, cgi, time
 import re, StringIO, zipfile
@@ -65,13 +74,14 @@ class MySQLdump(PyLucidBaseModule):
     def menu(self):
         """ Menü für Aktionen generieren """
         #~ self.URLs.debug()
-        self.response.debug()
+        #~ self.response.debug()
 
         if self.request.form.get("action", False):
             actions = {
                 "display_help": self.display_help,
                 "display_dump": self.display_dump,
                 "display_command": self.display_command,
+                "download_dump": self.download_dump,
                 "install_dump": self.PyLucid_install_dump,
             }
             actionKey = self.request.form["action"]
@@ -121,23 +131,22 @@ class MySQLdump(PyLucidBaseModule):
             ("display_command", "display mysqldump command"),
         ]
 
-        try:
-            version_info = self.tools.subprocess2("mysql --version", ".", timeout=1).out_data
-        except Exection, e:
-            version_info = "ERROR:", e
-
-        buttons = "<p>mysql version: <em>%s</em></p>" % version_info
+        buttons = (
+            "<p>Your mysql server version: <em>v%s</em></p>"
+        ) % self.db.RAWserver_version
 
         for action in self.actions:
-            buttons += '<button type="submit" name="action" value="%s">%s</button>&nbsp;&nbsp;\n' % (
-                    action[0], action[1]
-                )
+            buttons += (
+                '<button type="submit" name="action" value="%s">'
+                '%s</button>&nbsp;&nbsp;\n'
+            ) % (action[0], action[1])
 
         context = {
             "version"       : __version__,
             "tables"        : table_data,
             "url"           : self.URLs.currentAction(),
-            "buttons"       : buttons
+            "buttons"       : buttons,
+            "character-set" : "utf8",#self.db.encoding,
         }
 
         self.templates.write("Menu", context)
@@ -149,7 +158,8 @@ class MySQLdump(PyLucidBaseModule):
         dump = self._run_command_list(command_list, timeout = 120, header=True)
 
         # Zusatzinfo's in den Dump "einblenden"
-        dump = self.additional_dump_info() + dump
+        info = self.additional_dump_info()
+        dump = info + dump
         dumpLen = len(dump)
 
         filename = "%s_%s%s.sql" % (
@@ -191,7 +201,12 @@ class MySQLdump(PyLucidBaseModule):
         """
         Erstellt den SQL Dump und bietet diesen direk zum Download an
         """
+        #~ self.page_msg("download dump!")
+
         dump, dumpLen, filename = self.makedump()
+
+        #~ self.page_msg(dumpLen, filename)
+        #~ self.page_msg(dump)
 
         return self.FileResponse(dump, dumpLen, filename)
 
@@ -284,7 +299,8 @@ class MySQLdump(PyLucidBaseModule):
         for command in self._get_sql_commands():
             self.response.write(
                 "%s>%s" % (
-                    mysqldump_path, command.replace(self.preferences["dbPassword"],"***")
+                    mysqldump_path,
+                    command.replace(self.preferences["dbPassword"],"***")
                 )
             )
         self.response.write("</pre>")
@@ -362,43 +378,46 @@ class MySQLdump(PyLucidBaseModule):
             # Wurde im Formular leer gelassen
             mysqldump_path = "."
 
-        def print_error( out_data, returncode, msg ):
-            if header == True:
-                # Beim Ausführen von "download dump" wurde noch kein Header ausgegeben
-                self.response.write("Content-type: text/html; charset=utf-8\r\n")
+        def print_error(out_data, returncode, msg):
             self.response.write("<h3>%s</h3>" % msg)
             self.response.write("<p>Returncode: %s<br />" % returncode)
-            self.response.write("output:<pre>%s</pre></p>" % cgi.escape( out_data ))
+            self.response.write(
+                "output:<pre>%s</pre></p>" % cgi.escape( out_data )
+            )
 
-        result = ""
+        result = u""
         for command in command_list:
             start_time = time.time()
-            process = self.tools.subprocess2( command, mysqldump_path, timeout )
-            result += process.out_data
+            process = self.tools.subprocess2(command, mysqldump_path, timeout)
+            out_data = process.out_data
+            result += "%s\n" % out_data
 
             if process.killed == True:
                 print_error(
                     result, process.returncode,
-                    "Error: subprocess timeout (%.2fsec.>%ssec.)" % ( time.time()-start_time, timeout )
+                    "Error: subprocess timeout (%.2fsec.>%ssec.)" % (
+                        time.time()-start_time, timeout
+                    )
                 )
                 raise CreateDumpError
             if process.returncode != 0 and process.returncode != None:
-                print_error( result, process.returncode, "subprocess Error!" )
+                print_error(result, process.returncode, "subprocess Error!")
                 raise CreateDumpError
 
         return result
 
     #_______________________________________________________________________
 
-    def additional_dump_info( self ):
-        txt = "-- ------------------------------------------------------\n"
+    def additional_dump_info(self):
+        txt = u"-- ------------------------------------------------------\n"
         txt += "-- Dump created %s with PyLucid's %s v%s\n" % (
-            time.strftime("%d.%m.%Y, %H:%M"), os.path.split(__file__)[1], __version__
-            )
+            time.strftime("%d.%m.%Y, %H:%M"),
+            os.path.split(__file__)[1], __version__
+        )
         txt += "--\n"
 
         if hasattr(os,"uname"): # Nicht unter Windows verfügbar
-            txt += "-- %s\n" % " - ".join( os.uname() )
+            txt += "-- %s\n" % " - ".join(os.uname())
 
         txt += "-- Python v%s\n" % sys.version.replace("\n","")
 
@@ -409,7 +428,15 @@ class MySQLdump(PyLucidBaseModule):
         if output != False:
             # kein Fehler aufgereten
             txt += "-- used:\n"
-            txt += "-- %s" % output
+            txt += "-- %s\n" % output.replace("\n"," ")
+
+        txt += "--\n"
+        txt += "-- command list:\n"
+        command_list = self._get_sql_commands()
+        for cmd in command_list:
+            txt += (
+                "-- %s\n"
+            ) % cmd.replace(self.preferences["dbPassword"],"***")
 
         txt += "--\n"
         txt += "-- This file should be encoded in utf8 !\n"
@@ -481,7 +508,12 @@ class universalize_dump:
         outdata = {}
 
         dumpData = dumpData.split("\n")
-        #~ self.response.write("<br />\n".join(dumpData))
+        #~ self.response.write(
+            #~ "<pre>%s</pre>" % cgi.escape(
+                #~ "<br />\n".join(dumpData)
+            #~ )
+        #~ )
+        #~ sys.exit()
 
         for line in dumpData:
             line = self.preprocess(line)
@@ -501,10 +533,10 @@ class universalize_dump:
 
         return outdata
 
-        if self.found_dbprefix == False:
-            self.response.write(
-                "ERROR: No table prefix '%s' found!!!" % self.dbTablePrefix
-            )
+        #~ if self.found_dbprefix == False:
+            #~ self.response.write(
+                #~ "ERROR: No table prefix '%s' found!!!" % self.dbTablePrefix
+            #~ )
 
 
     def preprocess( self, line ):
@@ -516,7 +548,7 @@ class universalize_dump:
         prefix_mark = "`%s" % self.dbTablePrefix
 
         # Tabellen Prefixe ändern
-        if prefix_mark in line:
+        if line.find(prefix_mark)!=-1:
             self.found_dbprefix = True
             line = line.replace( prefix_mark, "`$$" )
 
@@ -541,7 +573,7 @@ class universalize_dump:
         else:
             line += "\n"
 
-        if line.endswith( ";" ):
+        if line.endswith(";"):
             line += "\n"
             self.in_create_table = False
 
