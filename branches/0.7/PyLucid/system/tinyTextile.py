@@ -22,24 +22,27 @@ __history__="""
 v0.2.5
     - Bugfix beim Handle von <pre>-Areas
 v0.2.4
-    - Bilder-Links dürfen nun keine Leerzeichen enthalten, damit mehrere Fragezeichen nicht
-        irrümlich zu einem Link werden! Wie hier!
+    - Bilder-Links dürfen nun keine Leerzeichen enthalten, damit mehrere
+        Fragezeichen nicht irrümlich zu einem Link werden! Wie hier!
 v0.2.3
-    - Bug 1328496: Fehler im inline-Python-Highlighter. Nun wird Python-Source als kompletter
-        Block durch den Highlighter gejagt.
+    - Bug 1328496: Fehler im inline-Python-Highlighter. Nun wird Python-Source
+        als kompletter Block durch den Highlighter gejagt.
 v0.2.2
-    - *Fettschrift* nun auch bei *Teilen mit Leerzeichen* erlaubt, aber nicht über mehrere Zeilen
-    - Durch bessere Erkennung des Ende einer URL sind kombination möglich mit <small> möglich
+    - *Fettschrift* nun auch bei *Teilen mit Leerzeichen* erlaubt, aber nicht
+        über mehrere Zeilen
+    - Durch bessere Erkennung des Ende einer URL sind kombination möglich mit
+        <small> möglich
         Bsp.: --"text":http://wow.de-- oder --http://www.heise.de--
 v0.2.1
     - Codeerzeugung bei Listen etwas verbessert (newline eingefügt)
 v0.2.0
-    - NEU: area_rules, die jetzt das direkte einbinden von Python-Code mit PyLucid_system.sourcecode_parser
-        ermöglichen
+    - NEU: area_rules, die jetzt das direkte einbinden von Python-Code mit
+        PyLucid_system.sourcecode_parser ermöglichen
     - Verbesserung bei dem <small>-Tag erkennung.
     - Detailverbesserungen einiger Regeln
 v0.1.7
-    - Bug Erkennung ob der Block schon HTML ist, war nicht ganz richtig. Hab es nun vereinfacht
+    - Bug Erkennung ob der Block schon HTML ist, war nicht ganz richtig. Hab
+        es nun vereinfacht
 v0.1.6
     - neu: auch nummerierte Listen: <ol>...</ol>
 v0.1.5
@@ -75,6 +78,7 @@ class parser:
         self.out        = out_obj
 
         self.request    = request
+        self.response   = response
         self.tools      = request.tools
         self.page_msg   = response.page_msg
 
@@ -319,7 +323,7 @@ class parser:
     def python_area_end(self, dummy):
         from PyLucid.system import sourcecode_parser
 
-        p = sourcecode_parser.python_source_parser(self.request)
+        p = sourcecode_parser.python_source_parser(self.request, self.response)
         self.out.write(p.get_CSS())
         self.out.write('<div class="SourceCode">')
 

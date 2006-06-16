@@ -122,9 +122,11 @@ class plugin_data:
         try:
             self.module_id = self.plugins[module_name]["id"]
         except KeyError:
-            msg = "[Module/Plugin unknown or not installed/activated: %s]" % module_name
-            if self.runlevel.is_command():
-                msg = "<!-- %s -->" % msg
+            msg = (
+                "[Module/Plugin unknown or not installed/activated: %s]"
+            ) % module_name
+            #~ if self.runlevel.is_normal():
+                #~ msg = "<!-- %s -->" % msg
 
             raise run_module_error(msg)
 
@@ -343,13 +345,11 @@ class module_manager:
         try:
             return self._run_module_method(function_info)
         except run_module_error, e:
-            pass
+            self.page_msg(e)
         except rights_error, e:
             if self.plugin_data["no_rights_error"] == 1:
                 return ""
-
-        self.page_msg(e)
-        return str(e)
+            self.page_msg(e)
 
     def run_command(self):
         """

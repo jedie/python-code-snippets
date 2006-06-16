@@ -47,6 +47,266 @@ from PyLucid.system.BaseModule import PyLucidBaseModule
 
 
 
+
+
+
+class module_admin(PyLucidBaseModule):
+    #~ def __init__(self, *args, **kwargs):
+        #~ super(ModuleAdmin, self).__init__(*args, **kwargs)
+
+    def menu(self):
+        self.response.write("<fieldset>")
+        if "install" in self.request.form:
+            self.request.db.commit()
+            package_name = self.request.form["package_name"]
+            moduleName = self.request.form["module_name"]
+            #~ try:
+            self.install(package_name, moduleName)
+            #~ except IntegrityError, e:
+                #~ self.response.write("DB Error: %s\n" % e)
+                #~ self.request.db.rollback()
+                #~ self.response.write("(execute DB rollback)")
+            #~ except KeyError, e:
+                #~ self.response.write("KeyError: %s" % e)
+            #~ else:
+                #~ self.request.db.commit()
+            #~ return
+        elif "deinstall" in self.request.form:
+            id = self.request.form["id"]
+            #~ try:
+            self.deinstall(id)
+            #~ except IntegrityError, e:
+                #~ self.response.write("DB Error: %s\n" % e)
+                #~ self.request.db.rollback()
+                #~ self.response.write("(execute DB rollback)")
+            #~ else:
+                #~ self.request.db.commit()
+            #~ return
+        elif "reinit" in self.request.form:
+            id = self.request.form["id"]
+            try:
+                self.reinit(id)
+            except IntegrityError, e:
+                self.response.write("DB Error: %s\n" % e)
+                self.request.db.rollback()
+                self.response.write("(execute DB rollback)")
+            except KeyError, e:
+                self.response.write("KeyError: %s" % e)
+            else:
+                self.request.db.commit()
+        elif "activate" in self.request.form:
+            id = self.request.form["id"]
+            try:
+                self.activate(id)
+            except KeyError, e:
+                self.response.write("KeyError: %s" % e)
+        elif "deactivate" in self.request.form:
+            id = self.request.form["id"]
+            try:
+                self.deactivate(id)
+            except KeyError, e:
+                self.response.write("KeyError: %s" % e)
+        #~ elif sub_action == "module_admin_info":
+            #~ self.module_admin_info()
+            #~ return
+        #~ elif sub_action == "administation_menu":
+            #~ self._write_backlink()
+        #~ elif sub_action == "init_modules":
+            #~ self.print_backlink()
+            #~ if self.CGIdata.get("confirm","no") == "yes":
+                #~ module_admin = self._get_module_admin()
+                #~ self.first_time_install_confirmed()
+            #~ self._write_backlink()
+            #~ return
+
+        self.response.write("</fieldset>\n")
+
+        self.administation_menu()
+
+    def link(self, action):
+        if self.request.runlevel != "install":
+            # Nur wenn nicht im "install" Bereich
+            self.response.write(
+                '<p><a href="%s%s">%s</a></p>' % (
+                    self.URLs["action"], action, action
+                )
+            )
+
+    def administation_menu(self, print_link=True):
+        """
+        Module/Plugins installieren
+        """
+        moduleData = Modules(self.request, self.response)
+        moduleData.readAllModules()
+        if debug:
+            moduleData.debug()
+
+        moduleData = moduleData.getModuleStatusList()
+
+        context_dict = {
+            "version"       : __version__,
+            "moduleData"    : moduleData,
+            "action_url"    : self.URLs.currentAction(),
+        }
+
+        if self.runlevel.is_install():
+            try:
+                f = file(internal_page_file,"rU")
+                install_template = f.read()
+                f.close()
+            except Exception, e:
+                self.response.write(
+                    "Can't read internal_page file '%s': %s" % (
+                        internal_page_file, e
+                    )
+                )
+                return
+
+            from PyLucid.system.template_engines import render_jinja
+            content = render_jinja(install_template, context_dict)
+            self.response.write(content)
+
+            # CSS Daten einfach rein schreiben:
+            try:
+                f = file(internal_page_css, "rU")
+                cssData = f.read()
+                f.close()
+            except:
+                pass
+            else:
+                self.response.write('<style type="text/css">')
+                self.response.write(cssData)
+                self.response.write('</style>')
+
+        else:
+            # Normal als Modul aufgerufen
+            self.templates.write("administation_menu", context_dict)
+
+    #_________________________________________________________________________
+    # install
+
+    def install(self, package_name, module_name):
+        """
+        Modul in die DB eintragen
+        """
+        self.response.write(
+            "<h3>Install %s.<strong>%s</strong></h3>" % (
+                package_name, module_name
+            )
+        )
+        data = Modules(self.request, self.response)
+        data.installModule(module_name, package_name)
+
+    def first_time_install(self, simulation=True):
+        """
+        Installiert alle wichtigen Module/Plugins
+        Das sind alle Module, bei denen:
+        "essential_buildin" == True oder "important_buildin" == True
+        """
+        self.response.write("<h2>First time install:</h2>\n")
+
+        self._truncateTables()
+
+        data = Modules(self.request, self.response)
+        data.read_packages() # Nur die Plugins von Platte laden
+        if debug:
+            data.debug()
+
+        data.first_time_install()
+
+    def _truncateTables(self):
+        self.response.write("<hr />\n")
+        self.response.write(
+            "<h4>truncate tables:</h4>\n"
+            "<ul>\n"
+        )
+        tables = ("plugins", "plugindata", "pages_internal")
+        for table in tables:
+            self.response.write("\t<li>truncate table %s..." % table)
+
+            try:
+                self.db.cursor.execute("TRUNCATE TABLE $$%s" % table)
+            except Exception, e:
+                msg = (
+                    "<h4>%s: %s</h4>"
+                    "<h5>(Have you first init the tables?)</h5>"
+                    "</li></ul>"
+                ) % (sys.exc_info()[0], e)
+                self.response.write(msg)
+                return
+            else:
+                self.response.write("OK</li>\n")
+        self.response.write("</ul>\n")
+        self.response.write("<hr />\n")
+
+    #_________________________________________________________________________
+    # DEinstall
+
+    def deinstall(self, id):
+        """
+        Modul aus der DB löschen
+        """
+        data = Modules(self.request, self.response)
+
+        self.response.write("<pre>")
+        data.deinstallModule(id)
+        self.response.write("</pre>")
+
+    #_________________________________________________________________________
+    # reinit
+
+    def reinit(self, id):
+        """
+        Modul wird deinstalliert und wieder installiert
+        """
+        data = Modules(self.request, self.response)
+        data.reinit(id)
+
+    #_________________________________________________________________________
+
+    def activate(self, id):
+        """
+        Modul soll deaktiviert werden
+        """
+        data = Modules(self.request, self.response)
+        data.activateModule(id)
+
+    #_________________________________________________________________________
+
+    def deactivate(self, id):
+        """
+        Modul soll deaktiviert werden
+        """
+        data = Modules(self.request, self.response)
+        data.deactivateModule(id)
+
+    #_________________________________________________________________________
+
+    def debug_installed_modules_info(self, module_id):
+        moduleData = Modules(self.request, self.response)
+        moduleData.readAllModules()
+
+        moduleData.debug()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 class InternalPage(object):
     """
     Alle Daten zusammenhängent mit der internenSeite
@@ -260,7 +520,7 @@ class Method(object):
             self.response.write("</ul></li>\n")
 
     def deinstall(self):
-        print "deinstall!"
+        self.page_msg("Method deinstall not implemented yet!")
 
     #_________________________________________________________________________
 
@@ -518,7 +778,7 @@ class Module(object):
     #_________________________________________________________________________
 
     def __repr__(self):
-        return "<...module_admin.Module '%s' object, \nData: %s\n>" % (
+        return "<...self.Module '%s' object, \nData: %s\n>" % (
             self.name, self.data
         )
     #_________________________________________________________________________
@@ -676,7 +936,7 @@ class Modules(object):
         module_name = module.data["module_name"]
         package_name = module.data["package_name"]
 
-        print module
+        self.page_msg("reinit not implemented yet!")
 
         #~ module.deinstall()
         #~ del(self.data[module_name])
@@ -742,193 +1002,6 @@ class Modules(object):
         self.page_msg("</ul>")
 
         self.page_msg.raw = oldPageMsgRaw
-
-
-
-
-
-
-
-
-
-class module_admin(PyLucidBaseModule):
-    #~ def __init__(self, *args, **kwargs):
-        #~ super(ModuleAdmin, self).__init__(*args, **kwargs)
-
-    def menu(self):
-        self.response.write(
-            "<h4>Module/Plugin Administration v%s</h4>" % __version__
-        )
-        #~ self.module_manager.build_menu()
-        self.administation_menu()
-
-    def link(self, action):
-        if self.request.runlevel != "install":
-            # Nur wenn nicht im "install" Bereich
-            self.response.write(
-                '<p><a href="%s%s">%s</a></p>' % (
-                    self.URLs["action"], action, action
-                )
-            )
-
-    def administation_menu(self, print_link=True):
-        """
-        Module/Plugins installieren
-        """
-        moduleData = Modules(self.request, self.response)
-        moduleData.readAllModules()
-        if debug:
-            moduleData.debug()
-
-        moduleData = moduleData.getModuleStatusList()
-
-        context_dict = {
-            "version"       : __version__,
-            "moduleData"    : moduleData,
-            "action_url"    : self.URLs.currentAction(),
-        }
-
-        if self.runlevel.is_install():
-            try:
-                f = file(internal_page_file,"rU")
-                install_template = f.read()
-                f.close()
-            except Exception, e:
-                self.response.write(
-                    "Can't read internal_page file '%s': %s" % (
-                        internal_page_file, e
-                    )
-                )
-                return
-
-            from PyLucid.system.template_engines import render_jinja
-            content = render_jinja(install_template, context_dict)
-            self.response.write(content)
-
-            # CSS Daten einfach rein schreiben:
-            try:
-                f = file(internal_page_css, "rU")
-                cssData = f.read()
-                f.close()
-            except:
-                pass
-            else:
-                self.response.write('<style type="text/css">')
-                self.response.write(cssData)
-                self.response.write('</style>')
-
-            return
-
-        else:
-            # Normal als Modul aufgerufen
-            self.response.write("<h1>Alpha-Version: Not working now!</h1>")
-            self.templates.write("administation_menu", context_dict)
-
-    #_________________________________________________________________________
-    # install
-
-    def install(self, package_name, module_name):
-        """
-        Modul in die DB eintragen
-        """
-        self.response.write(
-            "<h3>Install %s.<strong>%s</strong></h3>" % (
-                package_name, module_name
-            )
-        )
-        data = Modules(self.request, self.response)
-        data.installModule(module_name, package_name)
-
-    def first_time_install(self, simulation=True):
-        """
-        Installiert alle wichtigen Module/Plugins
-        Das sind alle Module, bei denen:
-        "essential_buildin" == True oder "important_buildin" == True
-        """
-        self.response.write("<h2>First time install:</h2>\n")
-
-        self._truncateTables()
-
-        data = Modules(self.request, self.response)
-        data.read_packages() # Nur die Plugins von Platte laden
-        if debug:
-            data.debug()
-
-        data.first_time_install()
-
-    def _truncateTables(self):
-        self.response.write("<hr />\n")
-        self.response.write(
-            "<h4>truncate tables:</h4>\n"
-            "<ul>\n"
-        )
-        tables = ("plugins", "plugindata", "pages_internal")
-        for table in tables:
-            self.response.write("\t<li>truncate table %s..." % table)
-
-            try:
-                self.db.cursor.execute("TRUNCATE TABLE $$%s" % table)
-            except Exception, e:
-                msg = (
-                    "<h4>%s: %s</h4>"
-                    "<h5>(Have you first init the tables?)</h5>"
-                    "</li></ul>"
-                ) % (sys.exc_info()[0], e)
-                self.response.write(msg)
-                return
-            else:
-                self.response.write("OK</li>\n")
-        self.response.write("</ul>\n")
-        self.response.write("<hr />\n")
-
-    #_________________________________________________________________________
-    # DEinstall
-
-    def deinstall(self, id):
-        """
-        Modul aus der DB löschen
-        """
-        data = Modules(self.request, self.response)
-
-        self.response.write("<pre>")
-        data.deinstallModule(id)
-        self.response.write("</pre>")
-
-    #_________________________________________________________________________
-    # reinit
-
-    def reinit(self, id):
-        """
-        Modul wird deinstalliert und wieder installiert
-        """
-        data = Modules(self.request, self.response)
-        data.reinit(id)
-
-    #_________________________________________________________________________
-
-    def activate(self, id):
-        """
-        Modul soll deaktiviert werden
-        """
-        data = Modules(self.request, self.response)
-        data.activateModule(id)
-
-    #_________________________________________________________________________
-
-    def deactivate(self, id):
-        """
-        Modul soll deaktiviert werden
-        """
-        data = Modules(self.request, self.response)
-        data.deactivateModule(id)
-
-    #_________________________________________________________________________
-
-    def debug_installed_modules_info(self, module_id):
-        moduleData = Modules(self.request, self.response)
-        moduleData.readAllModules()
-
-        moduleData.debug()
 
 
 

@@ -16,11 +16,16 @@ v0.1
         session["page_id"]
 """
 
-
 import urllib, cgi
 
-
 from PyLucid.system.BaseModule import PyLucidBaseModule
+
+
+
+#~ debug = True
+debug = False
+
+
 
 class detect_page(PyLucidBaseModule):
     """
@@ -79,7 +84,8 @@ class detect_page(PyLucidBaseModule):
             self.session["page_id"] = self.session["page_history"][0]
             self.check_page_id(self.session["page_id"])
         else:
-            self.page_msg( "Debug: History nicht vorhanden!" )
+            if debug:
+                self.page_msg( "Debug: History nicht vorhanden!" )
             self.set_default_page()
 
     def check_page_name(self, page_name):
@@ -138,7 +144,8 @@ class detect_page(PyLucidBaseModule):
     def set_default_page( self ):
         "Setzt die default-Page als aktuelle Seite"
         try:
-            self.session["page_id"] = self.preferences["core"]["defaultPageName"]
+            self.session["page_id"] = \
+                                    self.preferences["core"]["defaultPageName"]
         except KeyError:
             self.page_msg(
                 "Can'r read preferences from DB.",
@@ -153,7 +160,9 @@ class detect_page(PyLucidBaseModule):
             )[0]["id"]
         except IndexError:
             # Die defaultPageName Angabe ist falsch
-            self.page_msg("default Page with ID %s not found!" % self.session["page_id"] )
+            self.page_msg(
+                "default Page with ID %s not found!" % self.session["page_id"]
+            )
             try:
                 self.session["page_id"] = self.db.select(
                     select_items    = ["id"],
@@ -165,4 +174,7 @@ class detect_page(PyLucidBaseModule):
                 # Es gibt wohl überhaupt keine Seite???
                 self.error("Can't find pages!", self.page_msg.data)
 
-        self.page_msg("set_default_page(): ID %s" % self.session["page_id"])
+        if debug:
+            self.page_msg(
+                "set_default_page(): ID %s" % self.session["page_id"]
+            )

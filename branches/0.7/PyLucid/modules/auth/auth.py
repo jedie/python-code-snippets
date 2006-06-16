@@ -48,8 +48,8 @@ from PyLucid.system import crypt
 # =True: Login-Fehler sind aussagekräftiger: Sollte allerdings
 # wirklich nur zu Debug-Zwecke eingesetzt werden!!!
 # Gleichzeitig wird Modul-Manager Debug ein/aus geschaltet
-#~ Debug = True
-Debug = False
+#~ debug = True
+debug = False
 
 
 from PyLucid.system.BaseModule import PyLucidBaseModule
@@ -85,7 +85,7 @@ class auth(PyLucidBaseModule):
         # Zufallszahl "merken"
         self.session["rnd_login"] = rnd_login
 
-        if Debug == True:
+        if debug == True:
             self.session.debug()
 
         context = {
@@ -113,7 +113,7 @@ class auth(PyLucidBaseModule):
                 "<p>Did you run 'install_PyLucid.py'?"
                 " Check login form in SQL table 'pages_internal'.</p>"
             ) % e
-            if Debug: msg += "CGI-Keys: " + str(self.request.form.keys())
+            if debug: msg += "CGI-Keys: " + str(self.request.form.keys())
             self.response.write(msg)
             return
 
@@ -125,7 +125,7 @@ class auth(PyLucidBaseModule):
         self.session.delete_session()
         #~ time.sleep(3)
         self.page_msg( public_msg )
-        if Debug:
+        if debug:
             # Debug Modus: Es wird mehr Informationen an den Client geschickt
             self.page_msg( "Debug:",log_msg )
 
@@ -136,7 +136,8 @@ class auth(PyLucidBaseModule):
         """
         Überprüft die md5-JavaScript-Logindaten
         """
-        self.session.debug()
+        if debug:
+            self.session.debug()
         try:
             # Die Zufallszahl beim login, wird aus der Datenbank geholt, nicht
             # aus den zurück geschickten Formular-Daten
@@ -226,6 +227,9 @@ class auth(PyLucidBaseModule):
     def logout( self ):
         self.session.delete_session()
         self.page_msg( "You are logged out." )
+
+        # Damit der Logout-Link zu einem Login-Link wird...
+        self.staticTags.setup()
 
         # Nach dem Ausführen durch den ModuleManager, soll die aktuelle CMS
         # Seite angezeigt werden, ansonsten wäre die Seite leer.

@@ -10,9 +10,11 @@ Das Menü wird eingebunden mit dem lucid-Tag:
 <lucidTag:main_menu/>
 """
 
-__version__="0.1"
+__version__="0.2"
 
 __history__="""
+v0.2
+    - Anpassung an PyLucid 0.7
 v0.1
     - Anpassung an colubrid 1.0
 v0.0.13

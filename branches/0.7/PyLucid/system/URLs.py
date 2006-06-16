@@ -197,27 +197,9 @@ class URLs(dict):
             " --- from '%s' --- item:'%s', value:'%s'"
         ) % (msg, item, value)
 
-    #~ def __setitem__(self, item, value):
-        #~ """ Nur für Debuging!!! """
-        #~ msg = ""
-        #~ try:
-            #~ import inspect
-            #~ # Angaben zur Datei, Zeilennummer, aus dem die Nachricht stammt
-            #~ filename = inspect.stack()[1][1].split("/")[-1][-20:]
-            #~ msg += "%s line %3s" % (filename, inspect.stack()[1][2])
-        #~ except Exception, e:
-            #~ msg += "<small>(inspect Error: %s)</small> " % e
-
-        #~ self.page_msg(
-            #~ "setitem from '%s': item %s - value %s" % (msg, item, value)
-        #~ )
-
-        #~ dict.__setitem__(self, item, value)
-
     #_________________________________________________________________________
 
     def pageLink(self, url):
-
         if url[0] == "/": # .lstrip("/") gibt es in Python 2.2 so nicht
             url = url[1:]
 
