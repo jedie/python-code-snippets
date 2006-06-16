@@ -17,9 +17,11 @@ v0.2.1
         Zeigt "nur" eine Warnung an.
 v0.2.0
     - Einige Optimierungen
-    - Bug mit den speziellen Zeilenumbrüche mit \ am ende (kein Zeilenumbruch) behoben
+    - Bug mit den speziellen Zeilenumbrüche mit \ am ende (kein Zeilenumbruch)
+        behoben
 v0.1.0
-    - aus SourceCode.py Plugin entnommen, damit er auch für tinyTextile genutzt werden kann
+    - aus SourceCode.py Plugin entnommen, damit er auch für tinyTextile
+        genutzt werden kann
 """
 
 import sys, cgi, keyword, token, tokenize, StringIO
@@ -28,7 +30,7 @@ token.KEYWORD = token.NT_OFFSET + 1
 
 class python_source_parser:
 
-    def __init__(self, request):
+    def __init__(self, request, response):
         self.page_msg = response.page_msg
 
     def parse(self, raw_txt):

@@ -10,7 +10,7 @@ __url__     = "http://www.PyLucid.org"
 
 __info__ = """<a href="%s" title="\
 PyLucid - A OpenSource CMS in pure Python CGI by Jens Diemer">PyLucid</a> \
-v0.7.0RC""" % __url__
+v0.7.0beta2""" % __url__
 
 
 #~ debug = True

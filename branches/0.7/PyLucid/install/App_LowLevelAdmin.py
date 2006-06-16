@@ -100,70 +100,7 @@ class LowLevelAdmin(ObjectApp_Base):
         #~ self.response.debug()
         #~ return
 
-        if "install" in self.request.form:
-            self.request.db.commit()
-            package_name = self.request.form["package_name"]
-            moduleName = self.request.form["module_name"]
-            #~ try:
-            module_admin.install(package_name, moduleName)
-            #~ except IntegrityError, e:
-                #~ self.response.write("DB Error: %s\n" % e)
-                #~ self.request.db.rollback()
-                #~ self.response.write("(execute DB rollback)")
-            #~ except KeyError, e:
-                #~ self.response.write("KeyError: %s" % e)
-            #~ else:
-                #~ self.request.db.commit()
-            #~ return
-        elif "deinstall" in self.request.form:
-            id = self.request.form["id"]
-            #~ try:
-            module_admin.deinstall(id)
-            #~ except IntegrityError, e:
-                #~ self.response.write("DB Error: %s\n" % e)
-                #~ self.request.db.rollback()
-                #~ self.response.write("(execute DB rollback)")
-            #~ else:
-                #~ self.request.db.commit()
-            #~ return
-        elif "reinit" in self.request.form:
-            id = self.request.form["id"]
-            try:
-                module_admin.reinit(id)
-            except IntegrityError, e:
-                self.response.write("DB Error: %s\n" % e)
-                self.request.db.rollback()
-                self.response.write("(execute DB rollback)")
-            except KeyError, e:
-                self.response.write("KeyError: %s" % e)
-            else:
-                self.request.db.commit()
-        elif "activate" in self.request.form:
-            id = self.request.form["id"]
-            try:
-                module_admin.activate(id)
-            except KeyError, e:
-                self.response.write("KeyError: %s" % e)
-        elif "deactivate" in self.request.form:
-            id = self.request.form["id"]
-            try:
-                module_admin.deactivate(id)
-            except KeyError, e:
-                self.response.write("KeyError: %s" % e)
-        #~ elif sub_action == "module_admin_info":
-            #~ self.module_admin_info()
-            #~ return
-        #~ elif sub_action == "administation_menu":
-            #~ self._write_backlink()
-        #~ elif sub_action == "init_modules":
-            #~ self.print_backlink()
-            #~ if self.CGIdata.get("confirm","no") == "yes":
-                #~ module_admin = self._get_module_admin()
-                #~ module_admin.first_time_install_confirmed()
-            #~ self._write_backlink()
-            #~ return
-
-        module_admin.administation_menu()
+        module_admin.menu()
 
     #_________________________________________________________________________
 

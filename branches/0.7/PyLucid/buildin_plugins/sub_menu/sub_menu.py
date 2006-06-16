@@ -74,24 +74,34 @@ class sub_menu(PyLucidBaseModule):
         return where_rules
 
     def lucidTag( self ):
-        self.url_entry  = self.preferences["subMenu"]["before"] # List Item Anfang, default: <li>
+        """
+        Eigentlich keine super tolle Lösung die URL zusammen zu bauen, aber
+        effektiv ;)
+
+        mainMenu: {
+            'begin': '<ul>', 'finish': '</ul>', 'after': '</li>',
+            'currentAfter': '', 'currentBefore': '', 'before': '<li>'
+        }
+        """
+        # List Item Anfang, default: <li>
+        self.url_entry  = self.preferences["subMenu"]["before"]
         self.url_entry += '<a href="%(link)s">%(title)s</a>'
-        self.url_entry += self.preferences["subMenu"]["after"] + "\n"# List Item ende, default: </li>
+        # List Item ende, default: </li>
+        self.url_entry += self.preferences["subMenu"]["after"] + "\n"
 
         current_page_id = self.request.session["page_id"]
+        level_prelink = self.db.get_page_link_by_id(current_page_id)
 
-        level_prelink = self.get_level_prelink( current_page_id )
-
-        #~ mainMenu - {'begin': '<ul>', 'finish': '</ul>', 'after': '</li>', 'currentAfter': '', 'currentBefore': '', 'before': '<li>'}
         # List Anfang, default: <ul>
         self.response.write(self.preferences["subMenu"]["begin"] + "\n")
 
         menu_data = self.db.select(
-                select_items    = ["name","title"],
-                from_table      = "pages",
-                where           = self.where_filter( [("parent",current_page_id)] ),
-                order           = ("position","ASC")
-            )
+            select_items    = ["name", "shortcut", "title"],
+            from_table      = "pages",
+            #~ where           = self.where_filter( [("parent",current_page_id)] ),
+            where           = ("parent",current_page_id),
+            order           = ("position","ASC")
+        )
 
         for SQLline in menu_data:
             title = SQLline["title"]
@@ -99,35 +109,17 @@ class sub_menu(PyLucidBaseModule):
             if title == None or title == "":
                 title = SQLline["name"]
 
+            linkURL = "%s%s/" % (level_prelink, SQLline["shortcut"])
+
             self.response.write(
                 self.url_entry % {
-                    "link"  : level_prelink + urllib.quote_plus(SQLline["name"]),
-                    "title" : cgi.escape( title )
+                    "link"  : linkURL,
+                    "title" : cgi.escape(title)
                 }
             )
 
         # List Ende, Default: </ul>
         self.response.write(self.preferences["subMenu"]["finish"] + "\n")
-
-
-    def get_level_prelink( self, page_id ):
-        """ Generiert den prelink für die Absolute-Seiten-Addressierung """
-        data = []
-        while page_id != 0:
-            result = self.db.select(
-                    select_items    = ["name","parent"],
-                    from_table      = "pages",
-                    where           = ("id",page_id)
-                )[0]
-            page_id  = result["parent"]
-            data.append( result["name"] )
-
-        # Liste umdrehen
-        data.reverse()
-
-        data = [urllib.quote_plus(i) for i in data]
-
-        return "/%s/" % "/".join(data)
 
 
 

@@ -8,9 +8,11 @@ Bsp.:
 <lucidFunction:RSS>http://sourceforge.net/export/rss2_projnews.php?group_id=146328</lucidFunction>
 """
 
-__version__="0.2.7"
+__version__="0.3"
 
 __history__="""
+v0.3
+    - Anpassung an PyLucid v0.7
 v0.2.7
     - Zeit die response time an
     - Aufgeräumt
@@ -30,20 +32,40 @@ v0.2.1
 v0.2
     - Converted by A.Hopek to a CGI - Web Application
 v0.1
-    - borrowed Code from Mark Pilgrim at http://www.xml.com/pub/a/2002/12/18/dive-into-xml.html?page=last
+    - borrowed Code from Mark Pilgrim at:
+        http://www.xml.com/pub/a/2002/12/18/dive-into-xml.html?page=last
 """
 
-#~ import cgitb; cgitb.enable()
 import xml.dom.minidom
 import sys, os, urllib, time
 
+try:
+    import socket
+    socket.setdefaulttimeout(5)
+except AttributeError:
+    # Geht erst ab Python 2.3 :(
+    pass
 
 
+try:
+    from PyLucid.system.BaseModule import PyLucidBaseModule
+except ImportError: # Local test?
+    PyLucidBaseModule = object
 
-#_______________________________________________________________________
+class RSS(PyLucidBaseModule):
+    #~ def __init__(self, *args, **kwargs):
+        #~ super(ModuleAdmin, self).__init__(*args, **kwargs)
+    def lucidFunction(self, function_info):
+        RSS_Maker(
+            out_obj = self.response,
+            rss_url = function_info,
+        )
 
 
-class RSS:
+#_____________________________________________________________________________
+
+
+class RSS_Maker(object):
 
     DEFAULT_NAMESPACES = (
         None, # RSS 0.91, 0.92, 0.93, 0.94, 2.0
@@ -52,75 +74,93 @@ class RSS:
     )
     DUBLIN_CORE = ('http://purl.org/dc/elements/1.1/',)
 
-    def __init__( self, PyLucid ):
-        # Es werden keine PyLucid-Objekte benötigt...
-        pass
+    def __init__(self, out_obj, rss_url):
+        self.out_obj = out_obj
 
-    def lucidFunction( self, function_info ):
+        self.feed(rss_url)
+
+    def feed(self, rss_url):
         """
         Diese Funktion wird direkt vom Modul-Manager ausgeführt.
         """
-        url = function_info
-        try:
-            import socket
-            socket.setdefaulttimeout(5)
-        except AttributeError:
-            # Geht erst ab Python 2.3 :(
-            pass
-
         start_time = time.time()
         try:
-            rss_data = urllib.urlopen( url )
+            rss_data = urllib.urlopen(rss_url)
         except Exception, e:
-            print "[Can't get RSS feed '%s' Error:'%s']" % ( url, e )
+            self.out_obj.write(
+                "[Can't get RSS feed '%s' Error:'%s']" % (rss_url, e )
+            )
             return
-        duration_time = time.time() - start_time
-        print '<small class="RSS_info">(response time: %0.2fsec.)</small>' % duration_time
 
-        rssDocument = xml.dom.minidom.parse( rss_data )
+        duration_time = time.time() - start_time
+
+        txt = (
+            '<small class="RSS_info">'
+            '(response time: %0.2fsec.)'
+            '</small>\n'
+        ) % duration_time
+        self.out_obj.write(txt)
+
+        rssDocument = xml.dom.minidom.parse(rss_data)
 
         for node in self.getElementsByTagName(rssDocument, 'item'):
-            print '<ul class="RSS">'
+            self.out_obj.write('<ul class="RSS">\n')
 
-            print '<li><h1><a href="%s">' % self.get_txt( node, "link", "#" )
-            print self.get_txt( node, "title", "<no title>" )
-            print "</a></h1></li>"
+            self.out_obj.write(
+                '<li><h1><a href="%s">\n' % self.get_txt( node, "link", "#" )
+            )
+            self.out_obj.write(self.get_txt( node, "title", "<no title>" ))
+            self.out_obj.write("</a></h1></li>\n")
 
-            self.print_txt( node, "date",           '<li><small>%(data)s</small></li>' )
-            self.print_txt( node, "description",    '<li>%(data)s</li>' )
-            print "</ul>"
+            self.print_txt(node, "date", '<li><small>%(data)s</small></li>')
+            self.print_txt(node, "description", '<li>%(data)s</li>')
+            self.out_obj.write("</ul>")
 
-    def getElementsByTagName( self, node, tagName, possibleNamespaces=DEFAULT_NAMESPACES ):
+    def getElementsByTagName(self, node, tagName,
+            possibleNamespaces=DEFAULT_NAMESPACES
+        ):
         for namespace in possibleNamespaces:
             children = node.getElementsByTagNameNS(namespace, tagName)
             if len(children): return children
         return []
 
-    def node_data( self, node, tagName, possibleNamespaces=DEFAULT_NAMESPACES):
+    def node_data( self, node, tagName,
+            possibleNamespaces=DEFAULT_NAMESPACES
+        ):
         children = self.getElementsByTagName(node, tagName, possibleNamespaces)
         node = len(children) and children[0] or None
-        return node and "".join([child.data.encode("utf_8") for child in node.childNodes]) or None
+        return node and "".join(
+            [child.data.encode("utf_8") for child in node.childNodes]
+        ) or None
 
     def get_txt( self, node, tagName, default_txt="" ):
         """
         Liefert den Inhalt >tagName< des >node< zurück, ist dieser nicht
         vorhanden, wird >default_txt< zurück gegeben.
         """
-        return self.node_data( node, tagName ) or self.node_data( node, tagName, self.DUBLIN_CORE ) or default_txt
+        return self.node_data(node, tagName) or self.node_data(
+            node, tagName, self.DUBLIN_CORE
+        ) or default_txt
 
     def print_txt( self, node, tagName, print_string ):
         """
         Formatierte Ausgabe
         """
-        item_data = self.get_txt( node, tagName )
+        item_data = self.get_txt(node, tagName)
         if item_data == "":
             return
-        print print_string % {
+        txt = print_string % {
             "tag"   : tagName,
             "data"  : item_data
         }
+        self.out_obj.write(txt)
+        self.out_obj.write("\n")
+
 
 if __name__ == "__main__":
-    RSS("").lucidFunction( "http://sourceforge.net/export/rss2_projnews.php?group_id=146328" )
-    #~ print "="*80
-    RSS("").lucidFunction( "http://jensdiemer.de/RSS" )
+    #~ import sys
+    RSS_Maker(
+        out_obj = sys.stdout,
+        rss_url = "http://sourceforge.net/export/rss2_projnews.php?group_id=146328"
+    )
+    #~ self.out_obj.write("="*80)

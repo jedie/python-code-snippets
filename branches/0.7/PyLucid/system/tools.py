@@ -368,16 +368,18 @@ class html_option_maker:
             # data hat kein Wertepaar, also wird eins erzeugt ;)
             data = [(i,i) for i in data]
 
-        result = ""
+        result = u""
         for value, txt in data:
 
-            if (select_value==True and value==select_item) or (select_value==False and txt==select_item):
-                selected = ' selected="selected"'
+            if (select_value==True and value==select_item) or \
+                                    (select_value==False and txt==select_item):
+                selected = u' selected="selected"'
             else:
-                selected = ""
+                selected = u""
 
-            result += '\t<option value="%s"%s>%s</option>\n' % (
-                cgi.escape( str(value) ), selected, cgi.escape( str(txt) )
+
+            result += u'\t<option value="%s"%s>%s</option>\n' % (
+                cgi.escape(str(value)), selected, cgi.escape(txt)
             )
 
         return result
