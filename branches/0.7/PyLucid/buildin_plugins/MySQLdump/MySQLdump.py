@@ -141,9 +141,15 @@ class MySQLdump(PyLucidBaseModule):
                 '%s</button>&nbsp;&nbsp;\n'
             ) % (action[0], action[1])
 
+        if sys.platform == "win32":
+            filename = "mysqldump.exe"
+        else:
+            filename = "mysqldump"
+
         context = {
             "version"       : __version__,
             "tables"        : table_data,
+            "path"          : self.get_mysqldump_path(filename),
             "url"           : self.URLs.currentAction(),
             "buttons"       : buttons,
             "character-set" : "utf8",#self.db.encoding,
@@ -151,24 +157,24 @@ class MySQLdump(PyLucidBaseModule):
 
         self.templates.write("Menu", context)
 
-    #_______________________________________________________________________
+    def get_mysqldump_path(self, filename):
+        if not "PATH" in os.environ:
+            return "[ERROR: No 'PATH' in environ!]"
 
-    def makedump(self):
-        command_list = self._get_sql_commands()
-        dump = self._run_command_list(command_list, timeout = 120, header=True)
+        path = os.environ["PATH"]
+        if path.find(";")!=-1:
+            # Unter Windows wird mit : getrennt
+            path = path.replace(";", ":")
 
-        # Zusatzinfo's in den Dump "einblenden"
-        info = self.additional_dump_info()
-        dump = info + dump
-        dumpLen = len(dump)
+        path_list = path.split(":")
 
-        filename = "%s_%s%s.sql" % (
-            time.strftime("%Y%m%d"),
-            self.preferences["dbTablePrefix"],
-            self.preferences["dbDatabaseName"]
-        )
+        for test_path in path_list:
+            if os.path.isfile(os.path.join(test_path, filename)):
+                return test_path
 
-        return dump, dumpLen, filename
+        return "[ERROR: '%s' not found in PATH!]" % (filename)
+
+
 
     #_______________________________________________________________________
 
@@ -277,7 +283,7 @@ class MySQLdump(PyLucidBaseModule):
 
         self.response.write('<p><a href="JavaScript:history.back();">back</a></p>')
 
-        output = self._run_command_list( command_list, timeout = 2 )
+        output = self._run_command_list(command_list, timeout = 2)
         if output == False:
             # Fehler aufgereten
             return
@@ -366,8 +372,27 @@ class MySQLdump(PyLucidBaseModule):
 
         return result
 
+    #_______________________________________________________________________
 
-    def _run_command_list( self, command_list, timeout, header=False ):
+    def makedump(self):
+        command_list = self._get_sql_commands()
+        dump = self._run_command_list(command_list, timeout = 120, header=True)
+
+        # Zusatzinfo's in den Dump "einblenden"
+        info = self.additional_dump_info()
+        dump = info + dump
+        dumpLen = len(dump)
+
+        filename = "%s_%s%s.sql" % (
+            time.strftime("%Y%m%d"),
+            self.preferences["dbTablePrefix"],
+            self.preferences["dbDatabaseName"]
+        )
+
+        return dump, dumpLen, filename
+
+
+    def _run_command_list(self, command_list, timeout, header=False):
         """
         Abarbeiten der >command_list<
         liefert die Ausgaben zurück oder erstellt direk eine Fehlermeldung
@@ -376,7 +401,7 @@ class MySQLdump(PyLucidBaseModule):
             mysqldump_path = self.request.form["mysqldump_path"]
         except KeyError:
             # Wurde im Formular leer gelassen
-            mysqldump_path = "."
+            mysqldump_path = self.get_mysqldump_path("mysqldump")
 
         def print_error(out_data, returncode, msg):
             self.response.write("<h3>%s</h3>" % msg)
@@ -390,7 +415,7 @@ class MySQLdump(PyLucidBaseModule):
             start_time = time.time()
             process = self.tools.subprocess2(command, mysqldump_path, timeout)
             out_data = process.out_data
-            result += "%s\n" % out_data
+            result += u"%s\n" % out_data
 
             if process.killed == True:
                 print_error(
@@ -409,7 +434,10 @@ class MySQLdump(PyLucidBaseModule):
     #_______________________________________________________________________
 
     def additional_dump_info(self):
-        txt = u"-- ------------------------------------------------------\n"
+        txt = u"-- "
+        txt += "-"*79
+        txt += "\n"
+
         txt += "-- Dump created %s with PyLucid's %s v%s\n" % (
             time.strftime("%d.%m.%Y, %H:%M"),
             os.path.split(__file__)[1], __version__
@@ -424,7 +452,7 @@ class MySQLdump(PyLucidBaseModule):
         txt += "--\n"
 
         command_list = ["mysqldump --version"]
-        output = self._run_command_list( command_list, timeout = 1 )
+        output = self._run_command_list( command_list, timeout = 5 )
         if output != False:
             # kein Fehler aufgereten
             txt += "-- used:\n"
@@ -440,7 +468,9 @@ class MySQLdump(PyLucidBaseModule):
 
         txt += "--\n"
         txt += "-- This file should be encoded in utf8 !\n"
-        txt += "-- ------------------------------------------------------\n"
+        txt += "-- "
+        txt += "-"*79
+        txt += "\n"
 
         return txt
 

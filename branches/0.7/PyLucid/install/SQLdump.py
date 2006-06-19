@@ -166,7 +166,9 @@ class SQLdump:
         try:
             return self.ziparchiv.read(table_name+".sql")
         except Exception, e:
-            self.response.write("Can't get data for '%s': %s" % (table_name, e))
+            self.response.write(
+                "Can't get data for '%s': %s" % (table_name, e)
+            )
             sys.exit()
 
     def get_table_names(self):

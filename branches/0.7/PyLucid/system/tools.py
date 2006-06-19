@@ -507,7 +507,7 @@ class subprocess2(threading.Thread):
 
         start_time = time.time()
         self.start()
-        self.join( self.timeout )
+        self.join(self.timeout)
         self.stop()
         duration_time = time.time() - start_time
 
@@ -516,47 +516,56 @@ class subprocess2(threading.Thread):
             # wahrscheinlich gekillt...
             self.killed = True
 
+        if not hasattr(self, "process"):
+            # irgendwas ist schief gelaufen :(
+            self.returncode = -1
+            self.out_data = "subprocess2 Error!"
+            return
+
         # Rückgabewert verfügbar machen
         try:
             self.returncode = self.process.returncode
         except:
             self.returncode = -1
 
-        # Ausgabe
-        self.out_data = self.process.stdout.read()
-        response.page_msg(self.out_data)
-
         if hasattr(sys.stdin, "encoding"):
             encoding = sys.stdin.encoding or sys.getdefaultencoding()
         else:
             encoding = sys.getdefaultencoding()
 
-        encodings = [encoding, "latin1", "utf8"]
-        for encodnig in encodings:
+        # Da >encoding< oft auf ASCII steht schauen wir mal ob das nicht auch
+        # mit einem anderen Codec geht:
+        encodings = [encoding, "utf8", "latin1"]
+        for encoding in encodings:
             try:
                 self.out_data = unicode(
                     self.out_data, encoding, errors="strict"
                 )
             except UnicodeError:
-                pass
+                continue
             else:
-                response.page_msg("found: %s" % encoding)
                 return
 
-        response.page_msg("No encodning found!")
+        response.page_msg("Subprocess Error: No encoding found!")
         self.out_data = unicode(self.out_data, encoding, errors="replace")
 
     def run(self):
         "Führt per subprocess den Befehl 'self.command' aus."
         import subprocess
 
-        self.process = subprocess.Popen(
+        try:
+            self.process = subprocess.Popen(
                 self.command,
                 cwd     = self.cwd,
                 shell   = True,
                 stdout  = subprocess.PIPE,
                 stderr  = subprocess.STDOUT
             )
+        except Exception, e:
+            response.page_msg("subprocess2 Error: %s" % e)
+
+        # Ausgabe
+        self.out_data = self.process.stdout.read()
 
     def stop( self ):
         """
@@ -714,7 +723,7 @@ def make_table_from_sql_select(select_results, id, css_class):
 
 
 
-#________________________________________________________________________________________
+#_____________________________________________________________________________
 
 def build_menu(module_manager_data, action_url):
     """
@@ -758,7 +767,7 @@ def build_menu(module_manager_data, action_url):
         print "\t</li>"
     print "</ul>"
 
-#________________________________________________________________________________________
+#_____________________________________________________________________________
 
 
 
@@ -880,7 +889,7 @@ class Find_StringOperators:
 #~ s.debug_results()
 
 
-#________________________________________________________________________________________
+#_____________________________________________________________________________
 
 def get_codecs():
     """
