@@ -217,11 +217,14 @@ class tests(ObjectApp_Base):
         #~ self._execute_verbose("SHOW TABLE STATUS FROM %s;" % table_name)
         self._execute_verbose("CHECK TABLE %s;" % table_name)
         self._execute_verbose("ANALYZE TABLE %s;" % table_name)
-        self._execute_verbose("SHOW FULL COLUMNS FROM %s;" % table_name)
+        self._execute_verbose(
+            "SHOW FULL COLUMNS FROM %s;" % table_name,
+            primaryKey="Field"
+        )
         self._execute_verbose("SHOW INDEX FROM %s;" % table_name)
 
-        #~ SQLcommand = "DESCRIBE %s" % table_name
-        #~ self._execute_verbose(SQLcommand)
+        SQLcommand = "SHOW CREATE TABLE %s" % table_name
+        self._execute_verbose(SQLcommand, primaryKey="Table")
 
 
     def module_admin_info(self, module_id=None):

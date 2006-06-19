@@ -23,7 +23,6 @@ module_manager_data = {
         "must_login"    : True,
         "must_admin"    : True,
         "internal_page_info" : {
-            "name"              : "menu",
             "description"       : "MySQL dump Menu",
             "template_engine"   : "string formatting",
             "markup"            : None

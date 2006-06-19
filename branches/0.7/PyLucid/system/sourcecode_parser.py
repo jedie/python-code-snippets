@@ -8,9 +8,11 @@ Based on Jürgen Hermann's "MoinMoin - Python Source Parser"
 http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/52298/
 """
 
-__version__="0.2.1"
+__version__="0.3"
 
 __history__="""
+v0.3
+    - Anpassung an PyLucid v0.7
 v0.2.1
     - Work-A-Round für Bug 1328496: ERROR in inline python highlighter
         ( http://sourceforge.net/tracker/index.php?func=detail&aid=1328496&group_id=146328&atid=764837 )
@@ -32,6 +34,7 @@ class python_source_parser:
 
     def __init__(self, request, response):
         self.page_msg = response.page_msg
+        self.response = response
 
     def parse(self, raw_txt):
         """
@@ -61,10 +64,10 @@ class python_source_parser:
             ErrorMsg = "tokenize TokenError: %s - %s" % (
                 msg, self.raw[self.lines[line]:]
             )
-            print "<!-- %s -->" % ErrorMsg
+            self.response.write("<!-- %s -->" % ErrorMsg)
             self.page_msg("WARNING: %s" % ErrorMsg)
 
-        print "<br />\n"
+        self.response.write("<br />\n")
 
 
     def __call__(self, toktype, toktext, (srow,scol), (erow,ecol), line):
@@ -82,16 +85,16 @@ class python_source_parser:
             self.special_not_newline = True
         elif self.special_not_newline == True:
             self.special_not_newline = False
-            print "\\<br />\n"
+            self.response.write("\\<br />\n")
 
         # handle newlines
         if toktype in [token.NEWLINE, tokenize.NL]:
-            sys.stdout.write("<br />\n")
+            self.response.write("<br />\n")
             return
 
         # Spaces
         if newpos > oldpos:
-            sys.stdout.write("&nbsp;" * (newpos-oldpos))
+            self.response.write("&nbsp;" * (newpos-oldpos))
 
         if toktext=="":
             return
@@ -112,11 +115,13 @@ class python_source_parser:
         toktext = toktext.replace("\n","<br />\n")
 
         if toktype==token.NAME:
-            sys.stdout.write(toktext)
+            self.response.write(toktext)
         else:
-            sys.stdout.write('<span class="t%s">%s</span>' % (toktype,toktext))
+            self.response.write(
+                '<span class="t%s">%s</span>' % (toktype,toktext)
+            )
 
-        #~ print "\n>>>",toktype
+        #~ self.response.write("\n>>>%s" % toktype)
 
     def get_CSS( self ):
         CSS  = '<style type="text/css">\n'
@@ -151,8 +156,13 @@ if __name__ == '__main__':
 
 print "fertig!"
 """
-    #~ redirector = tools.redirector()
-    python_source_parser({"page_msg":""}).parse(test_code)
+    class fake_response:
+        pass
+
+    response = fake_response()
+    response.page_msg = sys.stdout
+    response.write = sys.stdout.write
+    python_source_parser(None, response).parse(test_code)
     #~ print_clean(redirector.get())
 
     #~ redirector = tools.redirector()
