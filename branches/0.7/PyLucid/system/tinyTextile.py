@@ -323,14 +323,12 @@ class parser:
     def python_area_end(self, dummy):
         from PyLucid.system import sourcecode_parser
 
-        p = sourcecode_parser.python_source_parser(self.request, self.response)
+        self.out.page_msg = self.response.page_msg
+        p = sourcecode_parser.python_source_parser(self.request, self.out)
+
         self.out.write(p.get_CSS())
         self.out.write('<div class="SourceCode">')
-
-        self.redirector = self.tools.redirector()
         p.parse(self.python_source_data.strip())
-        self.out.write(self.redirector.get())
-
         self.out.write("</div>")
 
     #___________________________________________________________________________
