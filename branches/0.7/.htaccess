@@ -18,3 +18,7 @@ Options +ExecCGI
 # werden.
 # http://httpd.apache.org/docs/2.0/mod/mod_mime.html#addhandler
 AddHandler cgi-script .py
+
+<Files install_lock.txt>
+    Deny from all
+</Files>
