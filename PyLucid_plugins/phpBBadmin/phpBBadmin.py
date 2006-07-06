@@ -12,7 +12,8 @@ PyLucid Plugin - 'phpBBAdmin'
 
     -löschen von Spamusern
 
-Die Angabe des SQLprefix muß evtl. angepasst werden!
+Die Angabe des SQLprefix muß evtl. in der seperaten
+Datei 'phpBBtableprefix.py' angepasst werden!
 """
 
 
@@ -25,9 +26,7 @@ v0.1
 """
 
 
-
-SQLprefix = "phpBB.phpbb_"
-
+from PyLucid.plugins.phpBBadmin.phpBBtableprefix import SQLprefix
 
 
 
@@ -54,18 +53,14 @@ class phpBBadmin(PyLucidBaseModule):
         SELECT * FROM `phpbb_users` WHERE user_posts=0 AND user_lastvisit=0
         """
 
+        SQLcommand = (
+            'SELECT user_id, user_active, username, user_website, user_email'
+            ' FROM %susers'
+            ' WHERE user_posts=0 AND user_lastvisit=0 AND user_website!=""'
+        ) % SQLprefix
+        self.response.write("<pre>%s</pre>\n" % SQLcommand)
         try:
-            spam_user = self.db.select(
-                select_items    = [
-                    "user_id", "user_active", "username", "user_website",
-                    "user_email",
-                ],
-                from_table      = "%susers" % SQLprefix,
-                where           = [
-                    ("user_posts", 0), ("user_lastvisit", 0)
-                ],
-                autoprefix      = False
-            )
+            spam_user = self.db.process_statement(SQLcommand)
         except Exception, e:
             self.response.write("<h3>Error:</h3><p>%s</p>\n" % e)
             self.response.write(
@@ -84,10 +79,7 @@ class phpBBadmin(PyLucidBaseModule):
                 ' value="%s" />'
             ) % line["user_id"]
 
-        self.response.write(
-            '<p>Here a list of every spam user.'
-            ' (user_posts=0 and user_lastvisit=0)</p>\n'
-        )
+        self.response.write('<p>Here a list of every spam user.</p>\n')
 
         self.response.write(
             '<form method="post" action="%s">\n' % self.URLs.currentAction()
