@@ -27,9 +27,11 @@ ToDo
     * Es wird immer das paramstyle 'format' benutzt. Also mit %s escaped
 """
 
-__version__="0.10"
+__version__="0.11"
 
 __history__="""
+v0.11
+    - NEU: autoprefix: So kann man auch andere Tabellen ansprechen!
 v0.10
     - änderung im Encoding-Handling
     - NEU: datetimefix (für Python >v2.3)
@@ -599,7 +601,7 @@ class SQL_wrapper(Database):
 
         return result
 
-    def insert(self, table, data, debug=False):
+    def insert(self, table, data, debug=False, autoprefix=True):
         """
         Vereinfachter Insert, per dict
         data ist ein Dict, wobei die SQL-Felder den Key-Namen im Dict
@@ -610,17 +612,22 @@ class SQL_wrapper(Database):
         items  = data.keys()
         values = tuple(data.values())
 
-        SQLcommand = "INSERT INTO $$%(table)s (%(items)s) VALUES (%(values)s);" % {
-                "table"         : table,
-                "items"         : ",".join(items),
-                "values"        : ",".join([self.placeholder]*len(values))
-            }
+        if autoprefix:
+            SQLcommand = "INSERT INTO $$%s" % table
+        else:
+            SQLcommand = "INSERT INTO %s" % table
+
+        SQLcommand += " (%s) VALUES (%s);" % (
+            ",".join(items),
+            ",".join([self.placeholder]*len(values))
+        )
 
         result = self.process_statement(SQLcommand, values)
         if debug: self.debug_command("insert", result)
         return result
 
-    def update(self, table, data, where, limit=False, debug=False):
+    def update(self, table, data, where, limit=False, debug=False,
+                                                            autoprefix=True):
         """
         Vereinfachte SQL-update Funktion
         """
@@ -632,12 +639,16 @@ class SQL_wrapper(Database):
 
         set = ",".join(["%s=%s" % (i, self.placeholder) for i in data_keys])
 
-        SQLcommand = "UPDATE $$%(table)s SET %(set)s WHERE %(where)s%(limit)s;" % {
-                "table"     : table,
-                "set"       : set,
-                "where"     : "%s=%s" % (where[0], self.placeholder),
-                "limit"     : self._make_limit(limit)
-            }
+        if autoprefix:
+            SQLcommand = "UPDATE $$%s" % table
+        else:
+            SQLcommand = "UPDATE %s" % table
+
+        SQLcommand += " SET %(set)s WHERE %(where)s%(limit)s;" % {
+            "set"       : set,
+            "where"     : "%s=%s" % (where[0], self.placeholder),
+            "limit"     : self._make_limit(limit)
+        }
 
         result = self.process_statement(SQLcommand, values)
         if debug: self.debug_command("update", result)
@@ -645,7 +656,7 @@ class SQL_wrapper(Database):
 
 
     def select(self, select_items, from_table, where=None, order=None,
-            limit=None, maxrows=0, how=1, debug=False
+            limit=None, maxrows=0, how=1, debug=False, autoprefix=True
         ):
         """
         Allgemeine SQL-SELECT Anweisung
@@ -669,7 +680,11 @@ class SQL_wrapper(Database):
             SQLcommand += select_items
         else:
             SQLcommand += ",".join(select_items)
-        SQLcommand += " FROM $$%s" % from_table
+
+        if autoprefix:
+            SQLcommand += " FROM $$%s" % from_table
+        else:
+            SQLcommand += " FROM %s" % from_table
 
         values = []
 
@@ -694,11 +709,14 @@ class SQL_wrapper(Database):
             result = self.fixDatetimeFields(result, from_table)
         return result
 
-    def delete(self, table, where, limit=1, debug=False):
+    def delete(self, table, where, limit=1, debug=False, autoprefix=True):
         """
         DELETE FROM table WHERE id=1 LIMIT 1
         """
-        SQLcommand = "DELETE FROM $$%s" % table
+        if autoprefix:
+            SQLcommand = "DELETE FROM $$%s" % table
+        else:
+            SQLcommand = "DELETE FROM %s" % table
 
         where_string, values = self._make_where(where)
 
@@ -788,7 +806,11 @@ class SQL_wrapper(Database):
         if not table_name in self.fieldtype_cache:
             self.fieldtype_cache[table_name] = []
             #~ SHOW FULL COLUMNS FROM lucid_pages
-            for column in self.get_table_field_information(table_name):
+            try:
+                field_info = self.get_table_field_information(table_name)
+            except:
+                return result
+            for column in field_info:
                 if column["Type"] != "datetime":
                     continue
 
