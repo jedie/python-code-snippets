@@ -49,8 +49,8 @@ config = {
     "dbTyp"             : "MySQLdb", # "sqlite"
 
     # Instead of 'localhost' you must possibly use the domain name or IP
-    #~ "dbHost"            : 'localhost',
-    "dbHost"            : '192.168.6.2',
+    "dbHost"            : 'localhost',
+    #~ "dbHost"            : '192.168.6.2',
 
     "dbDatabaseName"    : 'DatabaseName',
     "dbUserName"        : 'UserName',
@@ -87,14 +87,14 @@ config = {
     # Markup Parsern
     # =False -> Fehler in einem Modul führen zu einem CGI-Traceback ( cgitb.enable() )
     # =True  -> Fehler in einem Modul werden in einem Satz zusammen gefasst
-    #~ "ModuleManager_error_handling"  : True,
-    "ModuleManager_error_handling"  : False,
+    "ModuleManager_error_handling"  : True,
+    #~ "ModuleManager_error_handling"  : False,
 
     # Fehlerabfrage beim importieren von Modulen im Module-Manager
     # =True  -> Import-Fehler werden immer angezeigt
     # =False -> Import-Fehler sehen nur eingeloggte Administratoren
-    "ModuleManager_import_error"    : True,
-    #~ "ModuleManager_import_error"    : False,
+    #~ "ModuleManager_import_error"    : True,
+    "ModuleManager_import_error"    : False,
 
     # Damit Suchmaschienen nicht auch interne Seiten indexieren, passt PyLucid den
     # Inhalt des '<lucidTag:robots/>'-Tag je nach Typ der Seite an.
