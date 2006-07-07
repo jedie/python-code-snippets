@@ -69,7 +69,8 @@
                     <form method="post" action="{{ action_url }}">
                         <input name="id" type="hidden" value="{{ module.id }}" />
                         <span class="action">
-                            &dArr; <input type="submit" value="deinstall" name="deinstall" />
+                            &dArr; <input type="submit" value="deinstall" name="deinstall"
+                                title="delete the Plugin with all Data (incl. internal pages)" />
                         </span>
                     </form>
                 {% endif %}

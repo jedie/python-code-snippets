@@ -62,10 +62,11 @@ class page_msg(object):
     """
     Fügt in's environ das page_msg-Objekt hinzu
     """
-    def __init__(self, app):
+    def __init__(self, app, debug):
         self.app = app
+        self.debug = debug
 
     def __call__(self, environ, start_response):
-        environ['PyLucid.page_msg'] = page_msg_Container(debug=True)
+        environ['PyLucid.page_msg'] = page_msg_Container(self.debug)
         return self.app(environ, start_response)
 

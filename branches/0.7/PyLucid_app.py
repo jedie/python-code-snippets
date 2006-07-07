@@ -10,7 +10,7 @@ __url__     = "http://www.PyLucid.org"
 
 __info__ = """<a href="%s" title="\
 PyLucid - A OpenSource CMS in pure Python CGI by Jens Diemer">PyLucid</a> \
-v0.7.0beta2""" % __url__
+v0.7.0RC1""" % __url__
 
 
 #~ debug = True
@@ -244,10 +244,7 @@ class PyLucidApp(BaseApplication):
         self.log.init2(self.request, self.response)
         #~ self.request.log.debug_last()
 
-        self.session.init2(
-            #~ self.request, self.response, page_msg_debug=True
-            self.request, self.response, page_msg_debug=False
-        )
+        self.session.init2(self.request, self.response)
 
         self.staticTags.init2(self.request, self.response)
 
@@ -389,7 +386,7 @@ app = preferencesMiddleware(app)
 
 # Middleware Page-Message-Object
 from PyLucid.middlewares.page_msg import page_msg
-app = page_msg(app)
+app = page_msg(app, debug=False)
 
 # Middleware, die die Tags "script_duration" und "page_msg" ersetzt
 from PyLucid.middlewares import replacer

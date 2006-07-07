@@ -11,10 +11,14 @@ from PyLucid.install.ObjectApp_Base import ObjectApp_Base
 
 info_links = """
 <hr />
-<ul>
-<li><a href="http://pylucid.org/index.py?p=/Download/install+PyLucid">how to install PyLucid</a></li>
-<li><a href="http://pylucid.org/index.py?p=/Download/update+instructions">update instructions</a></li>
-</ul>
+Info at pylucid.org:
+<a href="http://www.pylucid.org/index.py/InstallPyLucid/">
+how to install PyLucid
+</a>
+|
+<a href="http://www.pylucid.org/index.py/UpdateInstructions/">
+update instructions
+</a>
 """
 
 class Install_MenuGenerator(ObjectApp_MenuGenerator):

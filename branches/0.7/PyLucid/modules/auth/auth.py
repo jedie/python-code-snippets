@@ -48,8 +48,8 @@ from PyLucid.system import crypt
 # =True: Login-Fehler sind aussagekräftiger: Sollte allerdings
 # wirklich nur zu Debug-Zwecke eingesetzt werden!!!
 # Gleichzeitig wird Modul-Manager Debug ein/aus geschaltet
-#~ debug = True
-debug = False
+debug = True
+#~ debug = False
 
 
 from PyLucid.system.BaseModule import PyLucidBaseModule
@@ -75,13 +75,11 @@ class auth(PyLucidBaseModule):
 
         url = self.URLs.commandLink("auth", "check_login")
 
-        try:
-            # Alten Usernamen, nach einem Fehlgeschlagenen Login, wieder anzeigen
-            username = self.request.form["user"]
-        except KeyError:
-            username = ""
+        # Alten Usernamen, nach einem Fehlgeschlagenen Login, wieder anzeigen
+        username = self.request.form.get("user", "")
 
         self.session.makeSession() # Eine Session eröffnen
+
         # Zufallszahl "merken"
         self.session["rnd_login"] = rnd_login
 
@@ -121,10 +119,10 @@ class auth(PyLucidBaseModule):
 
     def _error( self, log_msg, public_msg ):
         """Fehler werden abhängig vom Debug-Status angezeigt/gespeichert"""
-        self.log( log_msg )
+        self.log(log_msg)
         self.session.delete_session()
         #~ time.sleep(3)
-        self.page_msg( public_msg )
+        self.page_msg(public_msg)
         if debug:
             # Debug Modus: Es wird mehr Informationen an den Client geschickt
             self.page_msg( "Debug:",log_msg )

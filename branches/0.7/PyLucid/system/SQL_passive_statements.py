@@ -107,8 +107,8 @@ class passive_statements(SQL_wrapper):
                     from_table      = "pages",
                     where           = ( "id", page_id )
                 )
-        
-        side_data = side_data[0]    
+
+        side_data = side_data[0]
 
         if (not "shortcut" in side_data) or side_data["shortcut"] == "" or \
                                                 side_data["shortcut"] == None:
@@ -760,7 +760,8 @@ class passive_statements(SQL_wrapper):
         for page_info in pages_info:
             page_info["markup"] = self.get_markup_name(page_info["markup"])
             try:
-                page_info["lastupdateby"] = self.user_info_by_id(page_info["lastupdateby"])["name"]
+                page_info["lastupdateby"] = \
+                    self.user_info_by_id(page_info["lastupdateby"])["name"]
             except IndexError:
                 pass
         return pages_info

@@ -36,9 +36,11 @@ d.h.:
     SQL_wrapper erbt von Database
 """
 
-__version__="0.4"
+__version__="0.5"
 
 __history__="""
+v0.5
+    - Neu: dbKeyWordsArgs
 v0.4
     - nochmal umgebaut. DBwrapper ist nun per SVN-external eingebunden
 v0.3
@@ -101,6 +103,7 @@ class db(active_statements):
             user    = preferences["dbUserName"],
             passwd  = preferences["dbPassword"],
             db      = preferences["dbDatabaseName"],
+            **preferences["dbKeyWordsArgs"]
         )
 
 

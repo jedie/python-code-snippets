@@ -291,7 +291,6 @@ class active_statements(passive_statements):
         )
 
     def deactivate_module(self, id):
-        print "deact", id
         self.update(
             table   = "plugins",
             data    = {"active": 0},
@@ -373,6 +372,19 @@ class active_statements(passive_statements):
             )
 
     def delete_plugindata(self, plugin_id):
+        """
+        Löscht alle Methoden zu einem Plugin
+        """
+        self.delete(
+            table = "plugindata",
+            where = ("plugin_id", plugin_id),
+            limit = 999,
+        )
+
+    def delete_plugindata(self, plugin_id):
+        """
+        Löscht alle Methoden zu einem Plugin
+        """
         self.delete(
             table = "plugindata",
             where = ("plugin_id", plugin_id),

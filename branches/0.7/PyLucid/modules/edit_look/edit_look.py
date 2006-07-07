@@ -331,7 +331,7 @@ class edit_look(PyLucidBaseModule):
         plugin_data = self.db.pluginsList(select_items)
 
         users = self.db.userList(select_items=["id", "name"])
-        print users
+        #~ print users
 
         # Den ID Benzug auflösen und Daten zusammenfügen
         for page_name, data in internal_pages.iteritems():
@@ -343,14 +343,25 @@ class edit_look(PyLucidBaseModule):
 
             # Plugindaten
             plugin_id = data["plugin_id"]
-            plugin = plugin_data[plugin_id]
+            try:
+                plugin = plugin_data[plugin_id]
+            except KeyError:
+                # Plugin wurde schon aus der Db gelöscht, allerdings ist die
+                # interne Seite noch da, was nicht richtig ist!
+                self.page_msg("orphaned internal page '%s' found!" % page_name)
+                #~ del(internal_pages[page_name])
+                continue
 
             data.update(plugin)
 
         # Baut ein Dict zusammen um an alle Daten über die Keys zu kommen
         contextDict = {}
         for page_name, data in internal_pages.iteritems():
-            package_name = data["package_name"]
+            try:
+                package_name = data["package_name"]
+            except KeyError:
+                # Verwaiste interne Seite, wird ignoriert
+                continue
             package_name = package_name.split(".")
             package_name = package_name[1]
             data["package_name"] = package_name

@@ -16,9 +16,11 @@ http://www.solarorange.com/projects/textile/mtmanual_textile2.html
 
 __author__ = "Jens Diemer (www.jensdiemer.de)"
 
-__version__="0.2.5"
+__version__="0.3"
 
 __history__="""
+v0.3
+    - NEU: shortcut Link - Bsp.: [[ShortCut]]
 v0.2.5
     - Bugfix beim Handle von <pre>-Areas
 v0.2.4
@@ -62,9 +64,6 @@ v0.1.0
 """
 
 __todo__ = """
-    ToDo
-    ----
-mit [sc Datei] PyLucid/system/SourceCode.py benutzen
 """
 
 import sys, re, cgi
@@ -79,6 +78,7 @@ class parser:
 
         self.request    = request
         self.response   = response
+        self.URLs       = request.URLs
         self.tools      = request.tools
         self.page_msg   = response.page_msg
 
@@ -112,9 +112,11 @@ class parser:
             ],
             [ # interne PyLucid Links - Bsp.: Das ist ein [[InternerLink]] zur Seite InternerLink ;)
                 r'\[\[(.+?)\]\]',
-                r'<a href="?\1">\1</a>'
+                self.shortcutLink
             ],
-            [ # Link alleine im Text - Bsp.: Das wird ein Link: http://www.beispiel.de weil es eine URL ist
+            [
+                # http/ftp Links allein im Text
+                # Bsp.: Das wird ein Link: http://www.beispiel.de
                 r'''
                     (?<!=") # Ist noch kein HTML-Link
                     (?P<url>(http|ftp)://([^\s\<]+))
@@ -130,7 +132,9 @@ class parser:
 
         # Pre-Process Regeln
         self.pre_process_rules = self._compile_rules([
-            [ # NewLines von Windows "\r\n", MacOS "\r" nach "\n" vereinheitlichen
+            [
+                # NewLines vereinheitlichen
+                # Windows "\r\n" oder MacOS "\r" -->> "\n"
                 r"\r\n{0,1}",
                 r"\n"
             ],
@@ -165,8 +169,14 @@ class parser:
         ])
 
         self.area_rules = (
-            ["<pre>", "</pre>",         self.pre_area_start,    self.pre_area,      self.pre_area_end],
-            ["<python>", "</python>",   self.python_area_start, self.python_area,   self.python_area_end],
+            [
+                "<pre>", "</pre>",
+                self.pre_area_start, self.pre_area, self.pre_area_end
+            ],
+            [
+                "<python>", "</python>",
+                self.python_area_start, self.python_area, self.python_area_end
+            ],
         )
 
     def _compile_rules(self, rules):
@@ -186,6 +196,13 @@ class parser:
 
     def escaping(self, matchobj):
         return cgi.escape(matchobj.group(1))
+
+    def shortcutLink(self, matchobj):
+        shortcut = matchobj.group(1)
+        link = '<a href="%s">%s</a>' % (
+            self.URLs.pageLink(shortcut), shortcut
+        )
+        return link
 
     def pre_process(self, txt):
         "Vorab Verarbeitung des Textes"
@@ -231,7 +248,7 @@ class parser:
             # Block-rules Anwenden
             self.blockelements(block)
 
-    #___________________________________________________________________________
+    #_________________________________________________________________________
     # Areas
 
     def handle_areas(self, block, current_area):
@@ -274,10 +291,12 @@ class parser:
 
                 rest_block = block[len(area_tag):]
                 try:
-                    if rest_block[0]=="\n": # Evtl. vorhandene Leerzeile ignorieren
+                    if rest_block[0]=="\n":
+                        # Evtl. vorhandene Leerzeile ignorieren
                         rest_block = rest_block[1:]
                 except IndexError:
-                    # Es ist ein Leerzeichen zwischem Tag und Inhalt (kommt selten vor)
+                    # Es ist ein Leerzeichen zwischem Tag und Inhalt
+                    # (kommt selten vor)
                     pass
 
                 if handle_end(current_area, rest_block) == False:
@@ -309,7 +328,7 @@ class parser:
         #~ self.page_msg("pre END:", cgi.escape(self.pre_area_data))
         self.out.write("<pre>%s</pre>" % self.pre_area_data.strip())
 
-    #___________________________________________________________________________
+    #_________________________________________________________________________
 
     def python_area_start(self, block):
         """
@@ -331,7 +350,7 @@ class parser:
         p.parse(self.python_source_data.strip())
         self.out.write("</div>")
 
-    #___________________________________________________________________________
+    #_________________________________________________________________________
 
     def blockelements(self, block):
         "Anwenden der Block-rules. Formatieren des Absatzes"
@@ -383,7 +402,9 @@ class parser:
                 write(deep - currentlen, post_tag, spacer(deep))
                 deep = currentlen
 
-            self.out.write("%s<li>%s</li>%s" % (spacer(deep), item[1], self.newline))
+            self.out.write(
+                "%s<li>%s</li>%s" % (spacer(deep), item[1], self.newline)
+            )
 
         for i in range(deep):
             self.out.write(post_tag)
