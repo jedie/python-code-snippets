@@ -25,8 +25,8 @@ from PyLucid.system.BaseModule import PyLucidBaseModule
 
 
 
-debug = True
-#~ debug = False
+#~ debug = True
+debug = False
 
 
 
