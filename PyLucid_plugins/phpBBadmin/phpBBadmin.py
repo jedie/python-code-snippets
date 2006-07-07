@@ -73,12 +73,19 @@ class phpBBadmin(PyLucidBaseModule):
             self.response.write("No Spamuser found in DB ;)\n")
             return
 
-        # HTML-checkbox in Datensatz einfügen
+
         for line in spam_user:
+            # HTML-checkbox einfügen
             line["delete User?"] = (
                 '<input type="checkbox" name="delete_id"'
                 ' value="%s" />'
             ) % line["user_id"]
+
+            # URL anklickbar machen ;)
+            line["user_website"] = (
+                '<a href="%(url)s">%(url)s</a>'
+            ) % {"url": line["user_website"]}
+
 
         self.response.write('<p>Here a list of every spam user.</p>\n')
 
