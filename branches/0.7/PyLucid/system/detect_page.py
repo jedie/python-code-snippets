@@ -7,9 +7,12 @@ Seite die aktuelle ist :)
 """
 
 
-__version__="0.1"
+__version__="0.2"
 
 __history__="""
+v0.2
+    - Unterstützung für direkte shortcut-Links, d.h. es ist nur der Shortcut
+        einer Seite in der URL, die sich in einer tieferen Ebene befindet.
 v0.1
     - Ausgekoppelt aus der index.py
     - Speichert die aktuelle Seite nicht mehr in CGIdata["page_id"] sondern in
@@ -22,8 +25,8 @@ from PyLucid.system.BaseModule import PyLucidBaseModule
 
 
 
-#~ debug = True
-debug = False
+debug = True
+#~ debug = False
 
 
 
@@ -99,9 +102,42 @@ class detect_page(PyLucidBaseModule):
             self.set_default_page()
             return
 
+
         # bsp/und%2Foder -> ['bsp', 'und%2Foder']
         page_name_split = page_name.split("/")
+        if len(page_name_split) == 1:
+            self._singleShortcut(page_name_split[0])
+        else:
+            self._mutipleShortcut(page_name_split)
 
+    def _singleShortcut(self, shortcut):
+        """
+        Es ist nur ein Shortcut in der URL
+
+        Entweder befindet sich der User wirklich auf der ersten
+        Ebene, oder aber es ist ein "kurz-Link" zu einer Seite die in einer
+        tieferen Ebene ist!
+        """
+        try:
+            page_id = self.db.select(
+                select_items    = ["id"],
+                from_table      = "pages",
+                where           = ("shortcut",shortcut)
+            )[0]["id"]
+        except Exception,e:
+            if debug:
+                self.page_msg("_singleShortcut-Error:", e)
+            self._error404(page_name)
+            self.set_default_page()
+        else:
+            self._set_page_id(page_id)
+
+    def _mutipleShortcut(self, page_name_split):
+        """
+        Es sind mehrere Shortcut in der URL -> Der User befindet sich in
+        einer Ebene >1
+        Jeder einzelne Shortcut wird überprüft, ob die Seite existiert.
+        """
         correctShortcuts=[]
         page_id = 0
         for no, shortcut in enumerate(page_name_split):
@@ -114,32 +150,38 @@ class detect_page(PyLucidBaseModule):
                     ]
                 )[0]["id"]
             except Exception,e:
+                if debug:
+                    self.page_msg("_mutipleShortcut-Error:", e)
                 wrongShortcuts = page_name_split[no:]
-                msg = (
-                    "404 Not Found."
-                    " The requested URL '%s' was not found on this server."
-                ) % cgi.escape("/".join(wrongShortcuts))
-                self.page_msg(msg)
+                self._error404("/".join(wrongShortcuts))
 
                 if no == 0:
                     # Kein Teil der URL ist richtig
                     self.set_default_page()
-                    return
                 else:
                     # Die ersten Teile der URL sind richtig, also werden diese
                     # berücksichtig
                     # URLs richtig setzten, damit die generierung von Links
                     # auch die richtige Grundlage haben:
                     self.URLs.handle404errors(correctShortcuts, wrongShortcuts)
-                    break
+                return
             else:
                 correctShortcuts.append(shortcut)
 
+        self._set_page_id(page_id)
+
+    def _set_page_id(self, page_id):
         self.session["page_id"] = int(page_id)
 
         # Aktuelle Seite zur page_history hinzufügen:
         self.session.set_pageHistory(self.session["page_id"])
 
+    def _error404(self, url):
+        msg = (
+            "404 Not Found."
+            " The requested URL '%s' was not found on this server."
+        ) % cgi.escape(url)
+        self.page_msg(msg)
 
     def set_default_page( self ):
         "Setzt die default-Page als aktuelle Seite"

@@ -22,7 +22,8 @@ v0.1
 """
 
 __todo__="""
-    - CSS deinstallation
+Diese aktuelle Version ist Mist! Aber es funktioniert ;(
+
     - Fehlerausgabe bei check_moduleData
 """
 
@@ -55,7 +56,6 @@ class module_admin(PyLucidBaseModule):
         #~ super(ModuleAdmin, self).__init__(*args, **kwargs)
 
     def menu(self):
-        self.response.write("<fieldset>")
         if "install" in self.request.form:
             self.request.db.commit()
             package_name = self.request.form["package_name"]
@@ -118,8 +118,6 @@ class module_admin(PyLucidBaseModule):
                 #~ self.first_time_install_confirmed()
             #~ self._write_backlink()
             #~ return
-
-        self.response.write("</fieldset>\n")
 
         self.administation_menu()
 
@@ -247,10 +245,7 @@ class module_admin(PyLucidBaseModule):
         Modul aus der DB löschen
         """
         data = Modules(self.request, self.response)
-
-        self.response.write("<pre>")
         data.deinstallModule(id)
-        self.response.write("</pre>")
 
     #_________________________________________________________________________
     # reinit
@@ -344,6 +339,9 @@ class InternalPage(object):
             "<li>install internal page '<strong>%s</strong>'...<ul>\n"
         ) % self.name
         self.response.write(msg)
+
+        # Löscht eine evtl. verwaiste interne Seite:
+        self.db.delete_internal_page(self.name)
 
         lastupdatetime_list = []
 
@@ -481,7 +479,6 @@ class Method(object):
         """
         if 'internal_page_info' in config:
             internal_page_info = config['internal_page_info']
-            del(config['internal_page_info'])
 
             # Eine interne Seite muß keinen speziellen Namen haben, dann nehmen
             # wir einfach den Namen der Methode:
@@ -495,6 +492,9 @@ class Method(object):
             )
 
         self.data.update(config)
+        if 'internal_page_info' in config:
+            # FIXME: Das ist scheiße, muß aber z.Z. gemacht werden:
+            del(self.data['internal_page_info'])
 
     #_________________________________________________________________________
 
@@ -518,9 +518,6 @@ class Method(object):
             self.response.write('<li><ul class="install_ipages">\n')
             self.internalPage.install(module_id, method_id)
             self.response.write("</ul></li>\n")
-
-    def deinstall(self):
-        self.page_msg("Method deinstall not implemented yet!")
 
     #_________________________________________________________________________
 
@@ -610,12 +607,6 @@ class Module(object):
             self.data["active"] = True
 
         module_id = self.data["id"]
-
-        #~ RAW_data = self.db.get_internal_pages_info_by_module(
-            #~ module_id
-        #~ )
-        #~ internal_page_data = self.db.indexResult(RAW_data, "plugin_id")
-        #~ print "XXX:", internal_page_data
 
         plugindata = self.db.get_plugindata(module_id)
         for method_data in plugindata:
@@ -722,7 +713,7 @@ class Module(object):
         """
         Installiert das Modul und all seine Methoden
         """
-        self.response.write("<h4>%s</h4>\n" % self.name)
+        self.response.write("<h4>'%s'</h4>\n" % self.name)
         self.response.write(
             "\t<li>register Module '<strong>%s</strong>'..." % self.name
         )
@@ -755,12 +746,22 @@ class Module(object):
     #_________________________________________________________________________
 
     def deinstall(self):
-        self.page_msg("delete Module '%s' in database." % self.name)
-        # Alle Methoden aus der DB löschen
-        for method in self.methods:
-            method.deinstall()
+        plugin_id = self.data["id"]
 
-        self.db.delete_plugin(self.data["id"])
+        self.page_msg(
+            "delete Module '%s' (id %s) in database." % (self.name, plugin_id)
+        )
+
+        # Alle internen Seiten löschen
+        page_names = self.db.delete_internal_page_by_plugin_id(plugin_id)
+        if page_names != []:
+            self.page_msg("Internal pages %s deleted" % page_names)
+
+        # Alle Methonden aus DB-Tabelle 'plugindata' löschen
+        self.db.delete_plugindata(plugin_id)
+
+        # Plugin selber aus DB-Tabelle 'plugins' löschen
+        self.db.delete_plugin(plugin_id)
 
     def activate(self):
         self.page_msg("activate Module '%s' in database..." % self.name)

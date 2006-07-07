@@ -12,14 +12,11 @@ http://aima.cs.berkeley.edu/python/utils.html
 from __future__ import generators
 
 
-import sys
+import sys, __builtin__
 
 # Damit subprocess.py usw. gefunden werden:
 sys.path.insert(0,"PyLucid/python_backports")
 
-
-
-import __builtin__
 
 
 
@@ -29,6 +26,7 @@ except NameError:
     basestring = (types.StringType, types.UnicodeType)
 
     __builtin__.basestring = basestring
+
 
 
 try: enumerate  ## Introduced in 2.3
@@ -48,11 +46,6 @@ except NameError:
     __builtin__.enumerate = enumerate
 
 
-#~ def strip(chars):
-    #~ raise
-
-#~ import string
-#~ string.strip = strip
 
 """
 time.strptime()
@@ -75,3 +68,26 @@ import time
 if not hasattr(time, "strptime"):
     from _strptime import strptime
     time.strptime = strptime
+
+
+
+
+
+def dict_pop(dict, key, default_value):
+    """
+    In Python 2.2 dict.pop() does not exists.
+
+    replace:
+        value = dict.pop('key', default_value)
+    with:
+        value = dict_pop(dict, 'key', default_value)
+    """
+    if dict.has_key(key):
+       result = dict[key]
+       del dict[key]
+    else:
+       result = default_value
+
+    return result
+
+__builtin__.dict_pop = dict_pop # Global erreichbar machen

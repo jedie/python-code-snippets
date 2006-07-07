@@ -49,13 +49,21 @@ config = {
     "dbTyp"             : "MySQLdb", # "sqlite"
 
     # Instead of 'localhost' you must possibly use the domain name or IP
-    "dbHost"            : 'localhost',
-    #~ "dbHost"            : '192.168.6.2',
+    #~ "dbHost"            : 'localhost',
+    "dbHost"            : '192.168.6.2',
 
     "dbDatabaseName"    : 'DatabaseName',
     "dbUserName"        : 'UserName',
     "dbPassword"        : 'Password',
-    "dbTablePrefix"     : 'lucid_', # No blanks may contain!
+    "dbTablePrefix"     : 'PyLucid_', # No blanks may contain!
+
+    # Optional dbapi Arguments
+    # example:
+    #   If the MySQL socket it not the default (/var/run/mysqld/mysqld.sock).
+    #   You can set "unix_socket" to the used sock.
+    "dbKeyWordsArgs" : {
+        #~ "unix_socket": "/usr/local/pd-admin2/var/mysql.run/mysql.sock",
+    },
 
     # Encoding between SQL-Server and PyLucid
     #   - only supported with MySQL-Server >=v4.1 with <v4.1 sould be 'None'!
@@ -85,8 +93,8 @@ config = {
     # Fehlerabfrage beim importieren von Modulen im Module-Manager
     # =True  -> Import-Fehler werden immer angezeigt
     # =False -> Import-Fehler sehen nur eingeloggte Administratoren
-    #~ "ModuleManager_import_error"    : True,
-    "ModuleManager_import_error"    : False,
+    "ModuleManager_import_error"    : True,
+    #~ "ModuleManager_import_error"    : False,
 
     # Damit Suchmaschienen nicht auch interne Seiten indexieren, passt PyLucid den
     # Inhalt des '<lucidTag:robots/>'-Tag je nach Typ der Seite an.

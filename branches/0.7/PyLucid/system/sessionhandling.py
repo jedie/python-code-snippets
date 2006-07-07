@@ -104,6 +104,10 @@ from socket import getfqdn
 from Cookie import SimpleCookie
 
 
+#~ debug = True
+debug = False
+
+
 # Bestimmt den Log-Typ
 log_typ = "sessionhandling"
 verbose_log    = True
@@ -115,10 +119,9 @@ if base64format == True:
 
 
 class cookieHandler:
-    def __init__ (self, request, response, page_msg_debug):
+    def __init__ (self, request, response):
         self.request        = request
         self.response       = response
-        self.page_msg_debug = page_msg_debug
 
         # shorthands
         self.URLs           = request.URLs
@@ -146,7 +149,7 @@ class cookieHandler:
     def _read_cookie(self):
         """ Liest die ID von einem evtl. vorhandenen Cookie """
 
-        if self.page_msg_debug == True:
+        if debug == True:
             self.page_msg( "-"*30 )
 
         cookie_id = self.readCookie()
@@ -155,7 +158,7 @@ class cookieHandler:
             msg = "no client cookie found."
             if verbose_log == True:
                 self.log.write( msg, "sessionhandling", "error" )
-            if self.page_msg_debug == True:
+            if debug == True:
                 self.page_msg( msg )
                 self.page_msg( "-"*30 )
             return False
@@ -172,7 +175,7 @@ class cookieHandler:
             msg = "wrong Cookie len: %s !" % len(cookie_id)
             if verbose_log == True:
                 self.log.write( msg, "sessionhandling", "error" )
-            if self.page_msg_debug == True:
+            if debug == True:
                 self.page_msg( msg )
                 self.page_msg( "-"*30 )
             return False
@@ -192,6 +195,8 @@ class cookieHandler:
 
     def set_dataCookie(self, key, value):
         key = self._get_key(key)
+        if debug:
+            self.page_msg("Set dataCookie %s with %s" % (key, value))
         self.response.set_cookie(key, value)
 
     def get_dataCookie(self, key):
@@ -221,7 +226,7 @@ class cookieHandler:
         except KeyError:
             return False
 
-        if self.page_msg_debug == True:
+        if debug == True:
             self.page_msg(
                 "client cookie '%s' exists: '%s'" % (
                     self.CookieName, cookieData
@@ -243,27 +248,33 @@ class cookieHandler:
         if self.CookieName in self.request.cookies:
             raise "Existiert schon!"
 
-        if self.page_msg_debug == True:
+        if debug == True:
             self.page_msg( "set_cookie '%s': %s" % (self.CookieName, Text))
 
         self.response.set_cookie(
             self.CookieName, Text,
         )
 
-        if self.page_msg_debug == True:
-            CookieData = self.request.cookies[self.CookieName].value
-            self.page_msg("test Cookie: '%s'" % CookieData)
+        if debug == True:
+            CookieName = self.CookieName
+            cookies = self.request.cookies
+            try:
+                CookieData = cookies[self.CookieName].value
+            except KeyError:
+                self.page_msg("Can't read cookie")
+            else:
+                self.page_msg("test Cookie: '%s'" % CookieData)
 
     def deleteCookie(self, CookieName):
-        if self.page_msg_debug == True:
+        if debug == True:
             self.page_msg("delete_cookie '%s'" % CookieName)
 
         if CookieName in self.request.cookies:
             # FIXME: Bug in colubrid: http://trac.pocoo.org/ticket/34
             # Normalerweise sollte es mit response.delete_cookie() gehen!
-            #~ self.response.delete_cookie(CookieName)
+            self.response.delete_cookie(CookieName)
             # Work-a-round:
-            self.response.set_cookie(CookieName, max_age=0)
+            #~ self.response.set_cookie(CookieName, max_age=0)
 
 
 #_____________________________________________________________________________
@@ -286,12 +297,11 @@ class sessionhandler(dict):
     http://www.python-forum.de/viewtopic.php?p=19523#19523
     """
 
-    def init2(self, request, response, page_msg_debug):
+    def init2(self, request, response):
         #~ dict.__init__(self)
 
         self.request        = request
         self.response       = response
-        self.page_msg_debug = page_msg_debug
 
         # shorthands
         self.db             = request.db
@@ -305,7 +315,7 @@ class sessionhandler(dict):
         self.set_default_values()
 
         # Client ID ermitteln
-        self.cookie = cookieHandler(request, response, page_msg_debug)
+        self.cookie = cookieHandler(request, response)
         self["session_id"] = self.cookie.getClientID()
 
         # Evtl. vorhandene Session-Daten aus DB einlesen
@@ -349,7 +359,7 @@ class sessionhandler(dict):
         isLogin = self.cookie.get_dataCookie("is_login")
         if isLogin != "true":
             # Kein Cookie, dann brauchen wir erst garnicht nachzusehen ;)
-            if self.page_msg_debug == True:
+            if debug == True:
                 self.page_msg(
                     "No 'is_login == true' Data-Cookie! -> Not login!"
                 )
@@ -359,7 +369,7 @@ class sessionhandler(dict):
         if DB_data == False:
             # Keine Daten in DB
             self.cookie.del_dataCookie("is_login")
-            if self.page_msg_debug == True:
+            if debug == True:
                 self.page_msg(
                     "No Session data for id %s in DB" % self["session_id"]
                 )
@@ -383,7 +393,7 @@ class sessionhandler(dict):
             checkSessiondata(DB_data)
         except BrokenSessionData, msg:
             self.log.write(msg, "sessionhandling", "error")
-            if self.page_msg_debug == True:
+            if debug == True:
                 self.page_msg(msg)
                 self.debug_session_data()
             self.delete_session()
@@ -394,13 +404,13 @@ class sessionhandler(dict):
         self.update(DB_data)
 
         # Session ist OK
-        if verbose_log == True or self.page_msg_debug == True:
+        if verbose_log == True or debug == True:
             msg = "Session is OK\nSession-Data %.2fSec old" % (
                 time.time()-DB_data["timestamp"]
             )
             if verbose_log == True:
                 self.log.write(msg, "sessionhandling", "OK")
-            if self.page_msg_debug == True:
+            if debug == True:
                 self.page_msg(msg)
                 self.debug()
 
@@ -412,7 +422,7 @@ class sessionhandler(dict):
         """
         Startet eine Session
         """
-        if self.page_msg_debug == True:
+        if debug == True:
             self.page_msg("makeSession!")
 
         # Stellt Client-Domain-Name fest
@@ -424,6 +434,8 @@ class sessionhandler(dict):
         # Muß beim commit in die DB eingetragen werden
         self.state = "new session"
 
+        self.cookie.set_dataCookie("is_login", "true")
+
 
     def delete_session(self):
         "Löscht die aktuelle Session"
@@ -431,7 +443,7 @@ class sessionhandler(dict):
             self.status = "OK;Client is LogOut, can't LogOut a second time :-)!"
             return
 
-        if self.page_msg_debug == True:
+        if debug == True:
             self.page_msg("-"*30)
             self.page_msg("Delete Session!")
             self.page_msg("debug before:")
@@ -445,7 +457,7 @@ class sessionhandler(dict):
             where = ("session_id",self["session_id"])
         )
 
-        if self.page_msg_debug == True:
+        if debug == True:
             self.page_msg("debug after:")
             self.debug_session_data()
             self.page_msg("-"*30)
@@ -462,7 +474,7 @@ class sessionhandler(dict):
         Schreibt die aktuellen Sessiondaten in die DB.
         Sollte also immer als letztes Aufgerufen werden ;)
         """
-        if self.page_msg_debug == True:
+        if debug == True:
             self.page_msg("session.commit() - state: '%s'" % self.state)
 
         if self.state == "no session":
@@ -494,10 +506,8 @@ class sessionhandler(dict):
             )
             self.db.commit()
 
-            self.cookie.set_dataCookie("is_login", "true")
-
             self.log.write( "created Session.", "sessionhandling", "OK" )
-            if self.page_msg_debug == True:
+            if debug == True:
                 self.page_msg("insert session data for:", self["session_id"])
                 self.debug_session_data()
 
@@ -517,11 +527,11 @@ class sessionhandler(dict):
 
             if verbose_log == True:
                 self.log.write( "update Session: ID:%s" % self["session_id"], "sessionhandling", "OK" )
-            if self.page_msg_debug == True:
+            if debug == True:
                 self.page_msg("update Session: ID:%s" % self["session_id"])
                 self.debug_session_data()
 
-        if self.page_msg_debug == True:
+        if debug == True:
             self.debug()
 
     def _prepare_sessiondata(self):
@@ -558,7 +568,7 @@ class sessionhandler(dict):
         if DB_data == []:
             return False
 
-        if self.page_msg_debug == True: self.page_msg( "DB_data:",DB_data )
+        if debug == True: self.page_msg( "DB_data:",DB_data )
         if len(DB_data) > 1:
             "More than one Session in DB! (%s session found!)" % len(DB_data)
             self.page_msg(msg)
@@ -591,7 +601,7 @@ class sessionhandler(dict):
 
         current_timeout = time.time() - self.timeout_sec
 
-        if self.page_msg_debug == True:
+        if debug == True:
             self.page_msg("-"*30)
             self.page_msg("Delete old Sessions!")
             self.page_msg("SQLcomand:", SQLcommand, current_timeout)
@@ -607,7 +617,7 @@ class sessionhandler(dict):
             sys.stderr.write(msg)
             sys.exit()
 
-        if self.page_msg_debug == True:
+        if debug == True:
             self.page_msg("debug after:")
             self.debug_session_data()
             self.page_msg("-"*30)
