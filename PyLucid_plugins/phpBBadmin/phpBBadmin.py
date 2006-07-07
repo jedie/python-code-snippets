@@ -41,6 +41,7 @@ class phpBBadmin(PyLucidBaseModule):
 
         if self.request.form.has_key("make"):
             # Ausgewählte User sollen gelöscht werden
+            #~ self.page_msg(self.request.form)
             self.deleteUsers()
 
         self.makeTable()
@@ -90,7 +91,7 @@ class phpBBadmin(PyLucidBaseModule):
         )
         self.response.write(
             '<p>Disallow username: '
-            '<input type="checkbox" name="disallow" value="%s"'
+            '<input type="checkbox" name="disallow" value="disallow"'
             ' checked="checked" /></p>\n'
             '<input type="submit" value="make" name="make" />\n'
             '</form>\n'
