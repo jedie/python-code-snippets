@@ -245,6 +245,9 @@ class Database(object):
         self.dbapi = dbapi
         self._setup_paramstyle(dbapi.paramstyle)
 
+        #~ print args
+        #~ print kwargs
+
         try:
             self.conn = WrappedConnection(
                 dbapi.connect(*args, **kwargs),
@@ -259,8 +262,10 @@ class Database(object):
         except Exception, e:
             msg = "Can't connect to DB"
             try:
-                if e[1].startswith("Can't connect to local MySQL server through socket"):
-                    msg += ", probably the server '%s' is wrong!" % host
+                if e[1].startswith(
+                        "Can't connect to local MySQL server through socket"
+                    ):
+                    msg += ", probably the server host is wrong!"
             except IndexError:
                 pass
             msg += " [%s]\n" % e
