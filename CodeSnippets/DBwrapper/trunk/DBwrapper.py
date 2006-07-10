@@ -149,7 +149,15 @@ class Database(object):
         version = version.split("-",1)[0]   # ->> '4.1.15'
         version = version.split("_",1)[0]   # für pure Debian
         version = version.split(".")        # ->> ["4", "1", "15"]
-        version = [int(i) for i in version] # ->> [4, 1, 15]
+
+        for i in version:
+            try:
+                i = int(i)
+            except ValueError:
+                # Kann vorkommen, wenn z.B. die Version: v4.1.10a ist!
+                i = ""
+
+        #~ version = [int(i) for i in version] # ->> [4, 1, 15]
         version = tuple(version)            # ->> (4, 1, 15)
 
         self.server_version = version

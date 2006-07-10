@@ -215,8 +215,6 @@ class passive_statements(SQL_wrapper):
                 #~ from_table      = "preferences",
             #~ )
 
-
-
     def side_id_by_name(self, page_name):
         "Liefert die Side-ID anhand des >page_name< zurück"
         result = self.select(
@@ -765,6 +763,51 @@ class passive_statements(SQL_wrapper):
             except IndexError:
                 pass
         return pages_info
+
+    def get_tag_list(self):
+        """
+        Liefert eine Liste/Dict der installieren und aktivierten Tags
+        """
+        SQLcommand = (
+            "SELECT id,module_name,package_name,description"
+            " FROM $$plugins"
+            " WHERE active!=0;"
+        )
+        plugin_list = self.process_statement(SQLcommand)
+        plugin_list = self.indexResult(plugin_list, "id")
+        #~ self.page_msg(plugin_list)
+
+        SQLcommand = (
+            "SELECT plugin_id,method_name"
+            " FROM $$plugindata"
+            " WHERE method_name='lucidTag' OR method_name='lucidFunction';"
+        )
+        method_list = self.process_statement(SQLcommand)
+        #~ self.page_msg(method_list)
+
+        tag_list = []
+        for method in method_list:
+            #~ self.page_msg(method)
+            plugin_id = method['plugin_id']
+            if plugin_id in plugin_list:
+                plugin_data = plugin_list[plugin_id]
+
+                method_name = method["method_name"]
+                if method_name == 'lucidTag':
+                    plugin_data["is_lucidTag"] = True
+                elif method_name == 'lucidFunction':
+                    plugin_data["is_lucidFunction"] = True
+                else:
+                    # Sollte eigentlich nie vorkommen!
+                    msg = (
+                        "method_name should only be lucidTag or lucidFunction"
+                        " ,but is %s!"
+                    ) % method_name
+                    raise KeyError, msg
+
+                tag_list.append(plugin_data)
+
+        return tag_list
 
     #_____________________________________________________________________________
     ## LOG
