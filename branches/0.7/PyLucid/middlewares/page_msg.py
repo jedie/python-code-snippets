@@ -10,6 +10,18 @@ Seite eingesetzt.
 """
 
 
+__version__="0.2"
+
+__history__="""
+v0.2
+    - used pprint for dicts and lists
+v0.1
+    - init
+"""
+
+import cgi, pprint
+
+
 class page_msg_Container(object):
     """
     Kleine Klasse um die Seiten-Nachrichten zu verwalten
@@ -44,7 +56,18 @@ class page_msg_Container(object):
             except Exception, e:
                 self.data += "<small>(inspect Error: %s)</small> " % e
 
-        self.data += "%s <br />\n" % " ".join([str(i) for i in msg])
+        for item in msg:
+            if isinstance(item, dict) or isinstance(item, list):
+                item = pprint.pformat(item)
+                item = item.split("\n")
+                for line in item:
+                    line = cgi.escape(line)
+                    line = line.replace(" ","&nbsp;")
+                    self.data += "%s<br />\n" % line
+            else:
+                self.data += "%s " % item
+
+        self.data += "<br />\n"
 
     def write(self, *msg):
         self.__call__(*msg)
