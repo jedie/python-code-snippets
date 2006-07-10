@@ -473,6 +473,7 @@ class edit_look(PyLucidBaseModule):
 
         # HTML abspeichern
         page_data = {
+            "lastupdateby"      : self.session['user_id'],
             "content_html"      : page_data["content_html"],
             "content_css"       : page_data.get("content_css",""),
             "content_js"        : page_data.get("content_js",""),
