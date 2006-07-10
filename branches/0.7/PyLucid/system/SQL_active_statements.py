@@ -177,6 +177,7 @@ class active_statements(passive_statements):
     ## InterneSeiten
 
     def update_internal_page(self, internal_page_name, page_data):
+
         self.update(
             table   = "pages_internal",
             data    = page_data,
