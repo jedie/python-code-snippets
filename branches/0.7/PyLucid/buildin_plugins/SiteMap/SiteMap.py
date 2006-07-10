@@ -8,9 +8,11 @@ Generiert das SiteMap
 <lucidTag:SiteMap/>
 """
 
-__version__="0.1"
+__version__="0.2"
 
 __history__="""
+v0.2
+    - Benutzt ein jinja-Template
 v0.1
     - PyLucid["URLs"]
     - Anpassung an neuen ModuleManager
@@ -27,11 +29,6 @@ v0.0.1
     - erste Version
 """
 
-import cgitb;cgitb.enable()
-import cgi, urllib
-
-
-
 from PyLucid.system.BaseModule import PyLucidBaseModule
 
 class SiteMap(PyLucidBaseModule):
@@ -41,13 +38,15 @@ class SiteMap(PyLucidBaseModule):
         self.data = self.db.get_sitemap_data()
 
         self.parent_list = self.get_parent_list()
-        #~ return str( self.parent_l    ist )
 
-        self.link  = '<a href="%(link)s">%(name)s</a>'
+        sitemap = self.make_sitemap()
 
-        self.response.write('<div id="SiteMap">\n')
-        self.make_sitemap()
-        self.response.write('</div>\n')
+        context = {
+            "sitemap" : sitemap
+        }
+        #~ self.page_msg(context)
+
+        self.templates.write("SiteMap", context)
 
     def get_parent_list(self):
         parents = []
@@ -57,38 +56,31 @@ class SiteMap(PyLucidBaseModule):
         return parents
 
     def make_sitemap(self, parentname = "", id = 0, deep = 0):
-        self.response.write(
-            '<ul class="id_%s deep_%s">\n' % (id, deep)
-        )
+        result = []
+
         for site in self.data:
             if site["parent"] == id:
-                self.response.write(
-                    '<li class="id_%s deep_%s">' % (site["id"], deep)
-                )
-
                 link = "%s/%s" % (parentname, site["shortcut"])
                 linkURL = self.URLs.pageLink(link)
 
-                self.response.write(
-                    self.link % {
-                        "link"  : linkURL,
-                        "name"  : cgi.escape(site["name"]),
-                    }
-                )
+                if site["title"] in ("", None):
+                    site["title"] == site["name"]
 
-                if (site["title"] != "") and \
-                        (site["title"] != None) and \
-                        (site["title"] != site["name"]):
-                    self.response.write(
-                        " - %s" % cgi.escape(site["title"])
-                    )
-
-                self.response.write("</li>\n")
+                page_data = {
+                    "href"  : linkURL,
+                    "name"  : site["name"],
+                    "title" : site["title"],
+                    "id"    : site["id"],
+                    "deep"  : deep,
+                }
 
                 if site["id"] in self.parent_list:
-                    self.make_sitemap(link, site["id"], deep +1)
+                    subitems = self.make_sitemap(link, site["id"], deep +1)
+                    page_data["subitems"] = subitems
 
-        self.response.write("</ul>\n")
+                result.append(page_data)
+
+        return result
 
 
 
