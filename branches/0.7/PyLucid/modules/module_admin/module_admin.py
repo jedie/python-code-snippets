@@ -937,17 +937,18 @@ class Modules(object):
         module_name = module.data["module_name"]
         package_name = module.data["package_name"]
 
-        self.page_msg("reinit not implemented yet!")
+        #~ self.page_msg("reinit not implemented yet!")
 
+        self.deinstallModule(id)
         #~ module.deinstall()
-        #~ del(self.data[module_name])
+        del(self.data[module_name])
 
-        #~ self.installModule(module_name, package_name)
+        self.installModule(module_name, package_name)
 
-        #~ module = self.data[module_name]
-        #~ id = module.data["id"]
+        module = self.data[module_name]
+        id = module.data["id"]
 
-        #~ self.activateModule(id)
+        self.activateModule(id)
 
     #_________________________________________________________________________
 
