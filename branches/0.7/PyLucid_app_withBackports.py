@@ -1,6 +1,10 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 
+"""
+Only for lokal test, PyLucid with backports!
+"""
+
 from PyLucid.python_backports import backports
 
 if __name__ == '__main__':
