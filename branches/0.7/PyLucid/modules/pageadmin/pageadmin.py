@@ -10,9 +10,11 @@ Alles was mit dem ändern von Inhalten zu tun hat:
 
 __author__ = "Jens Diemer (www.jensdiemer.de)"
 
-__version__="0.3.3"
+__version__="0.4"
 
 __history__="""
+v0.4
+    - Zeigt nun auch die verfügbaren lucid-Tags/Functions an
 v0.3.3
     - Ein sehr übler Fehler bei der Unterscheidung, zwischen dem editieren
         einer bestehenden Seite oder dem anlegen einer neuen Seite.
@@ -219,6 +221,7 @@ class pageadmin(PyLucidBaseModule):
             "page_id"                   : edit_page_data["page_id"],
             # URls
             "url"                       : self.URLs.actionLink("edit_page"),
+            "list_url"                  : self.URLs.actionLink("tag_list"),
             "abort_url"                 : self.URLs["scriptRoot"],
             # Textfelder
             "summary"                   : edit_page_data["summary"],
@@ -670,12 +673,31 @@ class pageadmin(PyLucidBaseModule):
                     position = int(value[0])
                 except Exception,e:
                     self.page_msg(
-                        "Can't get new page position (%s,%s): %s" % (key, value, e)
+                        "Can't get new page position (%s,%s): %s" % (
+                            key, value, e
+                        )
                     )
                     continue
 
                 self.db.change_page_position( page_id, position)
-                self.page_msg( "Save position %s for page with ID %s" % (position,page_id) )
+                self.page_msg(
+                    "Save position %s for page with ID %s" % (position,page_id)
+                )
+
+
+    #_________________________________________________________________________
+
+    def tag_list(self):
+        """
+        Generiert eine Seite mit allen verfügbaren lucid-Tags/Function
+        """
+        tag_list = self.db.get_tag_list()
+        #~ self.page_msg(tag_list)
+        context = {
+            "tag_list": tag_list
+        }
+
+        self.templates.write("tag_list", context)
 
 
 
