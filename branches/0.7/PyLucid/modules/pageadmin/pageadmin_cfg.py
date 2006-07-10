@@ -6,7 +6,7 @@
 """
 """
 
-#___________________________________________________________________________________________________
+#_____________________________________________________________________________
 # Meta-Angaben
 
 __author__              = "Jens Diemer"
@@ -15,7 +15,7 @@ __description__         = "edit a CMS page"
 __long_description__    = """Edit a normal CMS pages"""
 __essential_buildin__   = True
 
-#___________________________________________________________________________________________________
+#_____________________________________________________________________________
 # Module-Manager Daten
 
 global_rights = {
@@ -69,4 +69,13 @@ module_manager_data = {
         },
     },
     "save_positions" : global_rights,
+    "tag_list": {
+        "must_login"    : True,
+        "must_admin"    : False,
+        "internal_page_info" : {
+            "description"       : "List of all available lucid tags/functions",
+            "template_engine"   : "jinja",
+            "markup"            : None,
+        },
+    }
 }
