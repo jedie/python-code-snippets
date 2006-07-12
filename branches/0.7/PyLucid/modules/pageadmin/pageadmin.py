@@ -537,7 +537,7 @@ class pageadmin(PyLucidBaseModule):
             self.delete_page(page_id_to_del)
 
         context = {
-            "url": self.URLs.make_action_link("select_del_page"),
+            "url": self.URLs.actionLink("select_del_page"),
             "page_option": self.tools.forms().siteOptionList(
                 with_id = True, select = self.session["page_id"]
             )
