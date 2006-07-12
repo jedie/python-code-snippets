@@ -10,9 +10,11 @@ Das Menü wird eingebunden mit dem lucid-Tag:
 <lucidTag:main_menu/>
 """
 
-__version__="0.2"
+__version__="0.3"
 
 __history__="""
+v0.3
+    - Nutzt nun jinja ;)
 v0.2
     - Anpassung an PyLucid 0.7
 v0.1
@@ -62,23 +64,13 @@ from PyLucid.system.BaseModule import PyLucidBaseModule
 
 class main_menu(PyLucidBaseModule):
 
-    def __init__(self, *args, **kwargs):
-        super(main_menu, self).__init__(*args, **kwargs)
-
-        self.menulink  = (
-            '<a%(style)s class="level%(level)s" '
-            'href="%(link)s" title="%(title)s">%(name)s</a>'
-        )
-
-        #~ print self.menulink
-
-        self.current_page_id  = self.session["page_id"]
-
-        # Wird von self.create_menudata() "befüllt"
-        self.menudata = []
+    #~ def __init__(self, *args, **kwargs):
+        #~ super(main_menu, self).__init__(*args, **kwargs)
 
     def lucidTag(self):
         #~ self.URLs.debug()
+
+        self.current_page_id  = self.session["page_id"]
 
         # "Startpunkt" für die Menügenerierung feststellen
         parentID = self.db.select(
@@ -88,19 +80,27 @@ class main_menu(PyLucidBaseModule):
             )[0]["parent"]
 
         # Gibt es Untermenupunkte?
-        parentID = self.check_submenu( parentID )
+        parentID = self.check_submenu(parentID)
 
+        # Wird von self.create_menudata() "befüllt"
+        self.menudata = []
         # Füllt self.menudata mit allen relevanten Daten
-        self.create_menudata( parentID )
+        self.create_menudata(parentID)
 
         # Ebenen umdrehen, damit das Menü auch richtig rum
         # dargestellt werden kann
         self.menudata.reverse()
 
         # Generiert das Menü aus self.menudata
-        self.make_menu()
+        menu_data = self.make_menu()
+        context = {
+            "menu_data" : menu_data
+        }
+        #~ self.page_msg(context)
 
-    def where_filter( self, where_rules ):
+        self.templates.write("main_menu", context)
+
+    def where_filter(self, where_rules):
         """
         Erweitert das SQL-where Statement um das Rechtemanagement zu
         berücksichtigen.
@@ -113,7 +113,7 @@ class main_menu(PyLucidBaseModule):
 
         return where_rules
 
-    def check_submenu( self, parentID, internal=False ):
+    def check_submenu(self, parentID, internal=False):
         """
         Damit sich das evtl. vorhandene Untermenüpunkt "aufklappt" wird
         nachgesehen ob ein Menüpunkt als ParentID die aktuelle SeitenID hat.
@@ -133,7 +133,7 @@ class main_menu(PyLucidBaseModule):
             # Als startpunkt wird die ParentID eines Untermenupunktes übergeben
             return result[0]["parent"]
 
-    def create_menudata( self, parentID ):
+    def create_menudata(self, parentID):
         """
         Hohlt die relevanten Menüdaten aus der DB in einer Rekursiven-Schleife
         """
@@ -154,19 +154,21 @@ class main_menu(PyLucidBaseModule):
             )
         if parent:
             # Unterste Ebene noch nicht erreicht -> rekursiver Aufruf
-            self.create_menudata( parent[0]["parent"] )
+            self.create_menudata(parent[0]["parent"])
 
     def make_menu(self, menulevel=0, parentname=""):
         """
         Erstellt das Menü aus self.menudata in einer Rekursiven-Schleife
         """
+        result = []
+
         # Daten der Aktuellen Menüebene
-        leveldata = self.menudata[ menulevel ]
+        leveldata = self.menudata[menulevel]
 
         if len(self.menudata) > (menulevel+1):
             # Es gibt noch eine höhere Menu-Ebene
             try:
-                higher_level_parent = self.menudata[ menulevel+1 ][0]["parent"]
+                higher_level_parent = self.menudata[menulevel+1][0]["parent"]
             except IndexError:
                 # Aber nicht, wenn die aktuelle Seite "versteckt" ist
                 higher_level_parent = False
@@ -174,42 +176,25 @@ class main_menu(PyLucidBaseModule):
             # Es gibt keine höhere Ebene
             higher_level_parent = False
 
-        # Leerzeichen für das einrücken des HTML-Code
-        spacer = " " * (menulevel * 2)
-
-        # List Anfang, default: <ul>
-        self.response.write(
-            "%s%s\n" % (spacer, self.preferences["mainMenu"]["begin"])
-        )
-
         for menuitem in leveldata:
             name = menuitem["name"]
             title = menuitem["title"]
             if title == None:
                 title = name
 
-            if menuitem["id"] == self.current_page_id:
-                # Der aktuelle Menüpunkt ist der "angeklickte"
-                CSS_style_tag = ' class="current"'
-            else:
-                CSS_style_tag = ""
-
             link = "%s/%s" % (parentname, menuitem["shortcut"])
             linkURL = self.URLs.pageLink(link)
 
-            self.response.write(
-                "%s%s\n" % (spacer, self.preferences["mainMenu"]["before"])
-            )
-
-            self.response.write(" " * ((menulevel+1) * 2))
-            htmlLink = self.menulink % {
-                "style"     : CSS_style_tag,
+            htmlLink = {
                 "level"     : menulevel,
-                "link"      : linkURL,
-                "name"      : cgi.escape(name),
-                "title"     : cgi.escape(title)
+                "href"      : linkURL,
+                "name"      : name,
+                "title"     : title
             }
-            self.response.write("%s\n" % htmlLink)
+
+            if menuitem["id"] == self.current_page_id:
+                # Der aktuelle Menüpunkt ist der "angeklickte"
+                htmlLink["is_current_page"] = True
 
             if higher_level_parent != False:
                 # Generell gibt es noch eine höhere Ebene
@@ -218,20 +203,12 @@ class main_menu(PyLucidBaseModule):
                     # Es wurde der Menüpunkt erreicht, der das Untermenü
                     # "enthält", deswegen kommt ab hier erstmal das
                     # Untermenü rein
-                    self.make_menu(menulevel+1, link)
+                    subitems = self.make_menu(menulevel+1, link)
+                    htmlLink["subitems"] = subitems
 
-            self.response.write(
-                "%s%s\n" % (spacer, self.preferences["mainMenu"]["after"])
-            )
+            result.append(htmlLink)
 
-        #~ mainMenu = {
-        #   'begin': '<ul>', 'finish': '</ul>', 'after': '</li>',
-        #   'currentAfter': '', 'currentBefore': '', 'before': '<li>'
-        # }
-        # List Ende, default: </ul>
-        self.response.write(
-            "%s%s\n" % (spacer, self.preferences["mainMenu"]["finish"])
-        )
+        return result
 
 
 

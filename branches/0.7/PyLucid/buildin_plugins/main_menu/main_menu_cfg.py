@@ -20,5 +20,11 @@ module_manager_data = {
     "lucidTag" : {
         "must_login"    : False,
         "must_admin"    : False,
+        "internal_page_info" : {
+            "name"              : "main_menu",
+            "description"       : "The main menu Template",
+            "template_engine"   : "jinja",
+            "markup"            : None
+        },
     }
 }
