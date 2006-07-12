@@ -5,9 +5,11 @@
 Abwicklung von Login/Logout
 """
 
-__version__ = "0.2"
+__version__ = "0.2.1"
 
 __history__ = """
+v0.2.1
+    - Login-Fehler-Bug behoben
 v0.2
     - Security-Fix: Die Zufallszahl zur MD5 Bildung, wird nun in den
         Sessiondaten in der Datenbank zwischengespeichert und nicht mehr aus
@@ -31,6 +33,9 @@ v0.0.1
     - aus der Klasse PyLucid_system.userhandling rausgenommen
 """
 
+__todo__ = """
+"""
+
 
 
 # Standart Python Module
@@ -48,8 +53,8 @@ from PyLucid.system import crypt
 # =True: Login-Fehler sind aussagekräftiger: Sollte allerdings
 # wirklich nur zu Debug-Zwecke eingesetzt werden!!!
 # Gleichzeitig wird Modul-Manager Debug ein/aus geschaltet
-debug = True
-#~ debug = False
+#~ debug = True
+debug = False
 
 
 from PyLucid.system.BaseModule import PyLucidBaseModule
@@ -120,8 +125,15 @@ class auth(PyLucidBaseModule):
     def _error( self, log_msg, public_msg ):
         """Fehler werden abhängig vom Debug-Status angezeigt/gespeichert"""
         self.log(log_msg)
-        self.session.delete_session()
-        #~ time.sleep(3)
+
+        self.session["isadmin"] = False
+        self.session["user"] = False
+        # Soll beim commit aktualisiert werden:
+        self.session.state = "update session"
+
+        # DOS abhilfe?!?!
+        time.sleep(3)
+
         self.page_msg(public_msg)
         if debug:
             # Debug Modus: Es wird mehr Informationen an den Client geschickt
@@ -130,7 +142,7 @@ class auth(PyLucidBaseModule):
         # Login-Form wieder anzeigen
         self.login()
 
-    def check_md5_login( self, username, form_pass1, form_pass2 ):
+    def check_md5_login(self, username, form_pass1, form_pass2):
         """
         Überprüft die md5-JavaScript-Logindaten
         """
