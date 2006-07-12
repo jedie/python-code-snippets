@@ -440,7 +440,9 @@ class sessionhandler(dict):
     def delete_session(self):
         "Löscht die aktuelle Session"
         if self["session_id"] == False:
-            self.status = "OK;Client is LogOut, can't LogOut a second time :-)!"
+            self.status = (
+                "OK;Client is LogOut, can't LogOut a second time :-)!"
+            )
             return
 
         if debug == True:
@@ -466,8 +468,9 @@ class sessionhandler(dict):
         self["isadmin"] = False
         self["user"] = False
 
-        self.status = "OK;delete Session data / LogOut for '%s'" % self["session_id"]
-
+        self.status = (
+            "OK;delete Session data / LogOut for '%s'"
+        ) % self["session_id"]
 
     def commit(self):
         """
