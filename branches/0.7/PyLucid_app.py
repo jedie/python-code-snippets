@@ -271,16 +271,16 @@ class PyLucidApp(BaseApplication):
 
 
     def process_request(self):
-        #~ try:
-        self.db.connect(self.preferences)
-        #~ except database.ConnectionError, e:
-            #~ msg = (
-                #~ "<h1>DB Error:</h1>\n"
-                #~ "<p>%s</p>\n"
-                #~ "<em>%s</em>\n"
-            #~ ) % (e, __info__)
-            #~ self.response.write(msg)
-            #~ return self.response
+        try:
+            self.db.connect(self.preferences)
+        except database.ConnectionError, e:
+            msg = (
+                "<h1>DB Error:</h1>\n"
+                "<p>%s</p>\n"
+                "<em>%s</em>\n"
+            ) % (e, __info__)
+            self.response.write(msg)
+            return self.response
 
         self.environ["request_start"] = time.time()
 
