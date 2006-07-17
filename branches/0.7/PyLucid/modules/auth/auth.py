@@ -61,10 +61,10 @@ from PyLucid.system.BaseModule import PyLucidBaseModule
 
 class auth(PyLucidBaseModule):
 
-    #~ def __init__(self, *args, **kwargs):
-        #~ super(auth, self).__init__(*args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super(auth, self).__init__(*args, **kwargs)
 
-        #~ self.MyCookie = SimpleCookie()
+        self.staticTags = self.request.staticTags
 
 
     ####################################################
@@ -229,6 +229,9 @@ class auth(PyLucidBaseModule):
             )
         )
         self.page_msg( "You are logged in." )
+
+        # Login/Logout-Link aktualisieren
+        self.staticTags.setup_login_link()
 
         # Nach dem Ausführen durch den ModuleManager, soll die aktuelle CMS
         # Seite angezeigt werden, ansonsten wäre die Seite leer.

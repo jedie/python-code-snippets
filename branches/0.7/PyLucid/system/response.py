@@ -114,8 +114,6 @@ class staticTags(dict):
     """
 
     def init2(self, request, response):
-        #~ dict.__init__(self)
-
         # Shorthands
         self.environ        = request.environ
         self.runlevel       = request.runlevel
@@ -132,6 +130,14 @@ class staticTags(dict):
         self["installURLprefix"] = self.preferences["installURLprefix"]
 
         self["powered_by"]  = __info__
+
+        self.setup_login_link()
+
+        if self.runlevel.is_command():
+            # Ein Kommando soll ausgefÃ¼hrt werden
+            self.setup_command_tags()
+
+    def setup_login_link(self):
         #~ if self.session.has_key("user") and self.session["user"] != False:
         if self.session != None and self.session["user"] != False:
             link = self.URLs.commandLink("auth", "logout")
@@ -141,10 +147,6 @@ class staticTags(dict):
         else:
             link = self.URLs.commandLink("auth", "login")
             self["script_login"] = '<a href="%s">login</a>' % (link)
-
-        if self.runlevel.is_command():
-            # Ein Kommando soll ausgeführt werden
-            self.setup_command_tags()
 
 
     def setup_command_tags(self):
