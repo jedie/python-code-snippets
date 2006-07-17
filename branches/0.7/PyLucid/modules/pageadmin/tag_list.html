@@ -3,15 +3,12 @@
 {% for tag in tag_list %}
   <li>
     <p title="{{ tag.description }}">
-
       {% if tag.is_lucidTag %}
-      &lt;lucidTag:{{ tag.module_name }}/&gt;
+        &lt;lucidTag:{{ tag.module_name }}/&gt;
       {% endif %}
-
       {% if tag.is_lucidFunction %}
-      &lt;lucidFunction:{{ tag.module_name }}&gt;...&lt;/lucidFunction&gt;
+        &lt;lucidFunction:{{ tag.module_name }}&gt;...&lt;/lucidFunction&gt;
       {% endif %}
-
        <small> - {{ tag.description }}</small>
     </p>
   </li>

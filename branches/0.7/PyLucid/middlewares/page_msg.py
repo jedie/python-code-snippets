@@ -42,7 +42,9 @@ class page_msg_Container(object):
     def __call__(self, *msg):
         """ Fügt eine neue Zeile mit einer Nachricht hinzu """
         if self.raw:
-            self.data += "%s\n" % " ".join([str(i) for i in msg])
+            self.add_data(
+                "%s\n" % " ".join([str(i) for i in msg])
+            )
             return
 
         if self.debug:
@@ -63,11 +65,19 @@ class page_msg_Container(object):
                 for line in item:
                     line = cgi.escape(line)
                     line = line.replace(" ","&nbsp;")
-                    self.data += "%s<br />\n" % line
+                    self.add_data("%s<br />\n" % line)
             else:
-                self.data += "%s " % item
+                self.add_data(item)
+                self.data += " "
 
         self.data += "<br />\n"
+
+    def add_data(self, txt):
+        # FIXME: Das ist mehr schlecht als recht... Die Behandlung von unicode
+        # muß irgendwie anders gehen!
+        if isinstance(txt, unicode):
+            txt = txt.encode("UTF-8", "replace")
+        self.data += str(txt)
 
     def write(self, *msg):
         self.__call__(*msg)
@@ -75,7 +85,11 @@ class page_msg_Container(object):
     def get(self):
         if self.data != "":
             # Nachricht vorhanden -> wird eingeblendet
-            return '<fieldset id="page_msg"><legend>page message</legend>%s</fieldset>' % self.data
+            return (
+                '\n<fieldset id="page_msg"><legend>page message</legend>\n'
+                '%s'
+                '\n</fieldset>'
+            ) % self.data
         else:
             return ""
 

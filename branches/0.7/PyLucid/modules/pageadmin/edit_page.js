@@ -1,9 +1,14 @@
 page_content_changed = 0;
 
 // resize the textarea
-textarea = document.getElementById("page_content");
-function resize_big()   { textarea.rows = textarea.rows*1.2; }
-function resize_small() { textarea.rows = textarea.rows/1.2; }
+function resize_big() {
+    textarea = document.getElementById("page_content");
+    textarea.rows = textarea.rows*1.2;
+}
+function resize_small() {
+    textarea = document.getElementById("page_content");
+    textarea.rows = textarea.rows/1.2;
+}
 
 // tinyTextile help in a window
 function OpenInWindow(URL) {
