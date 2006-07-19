@@ -236,6 +236,8 @@ class MySQLdump(PyLucidBaseModule):
         z = zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED)
 
         for filename,data in dump.iteritems():
+            filename = filename.encode("UTF8")
+            data = data.encode("UTF8")
             z.writestr(filename,data)
         z.close()
 
