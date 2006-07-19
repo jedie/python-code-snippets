@@ -150,15 +150,15 @@ class Database(object):
         version = version.split("_",1)[0]   # für pure Debian
         version = version.split(".")        # ->> ["4", "1", "15"]
 
+        temp = []
         for i in version:
             try:
-                i = int(i)
+                temp.append(int(i))
             except ValueError:
                 # Kann vorkommen, wenn z.B. die Version: v4.1.10a ist!
-                i = ""
+                pass
 
-        #~ version = [int(i) for i in version] # ->> [4, 1, 15]
-        version = tuple(version)            # ->> (4, 1, 15)
+        version = tuple(temp)            # ->> (4, 1, 15)
 
         self.server_version = version
 
@@ -167,7 +167,8 @@ class Database(object):
         self.encoding = encoding
 
     def getMySQLcharacter(self):
-        if self.server_version < (4, 1): # älter als v4.1.0
+        version = self.server_version
+        if version < (4, 1, 0): # älter als v4.1.0
             SQLcommand = "SHOW VARIABLES LIKE 'character_set';"
         else: # ab v4.1.0
             SQLcommand = "SHOW VARIABLES LIKE 'character_set_server';"
