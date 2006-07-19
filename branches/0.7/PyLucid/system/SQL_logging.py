@@ -127,8 +127,16 @@ class log:
     def items(self):
         """ Generiert eine Liste der letzten 5 Logeinträge für die Debug Anzeige """
         #~ self.page_msg("lastLog: %s" % self.get_last_logs())
+
+        try:
+            last_logs = self.get_last_logs(limit=5)
+        except AttributeError:
+            # Wenn noch kein init2 ausgeführt wurde, existiert noch kein
+            # self.db Objekt!
+            return []
+
         result = []
-        for item in self.get_last_logs(limit=5):
+        for item in last_logs:
             line = "User: %s - ID: %s - typ: %s - msg: %s" % (
                 item["user_name"], item["sid"], item["typ"], item["message"]
             )
@@ -144,6 +152,7 @@ class log:
             order           = ("id","DESC"),
             limit           = (0,limit)
         )
+
 
     def debug_last(self):
         import inspect
