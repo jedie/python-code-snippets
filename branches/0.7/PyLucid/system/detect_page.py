@@ -127,7 +127,7 @@ class detect_page(PyLucidBaseModule):
         except Exception,e:
             if debug:
                 self.page_msg("_singleShortcut-Error:", e)
-            self._error404(page_name)
+            self._error404(shortcut)
             self.set_default_page()
         else:
             self._set_page_id(page_id)
