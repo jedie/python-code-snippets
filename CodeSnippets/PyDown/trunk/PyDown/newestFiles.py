@@ -90,7 +90,11 @@ class NewestFiles:
         statList = []
         for fileName in fileList:
             absFilePath = os.path.join(absPath, fileName)
-            fileStat = os.stat(absFilePath)
+            try:
+                fileStat = os.stat(absFilePath)
+            except OSError:
+                # z.B. symlink der nicht mehr richtig ist!
+                continue
             statList.append(
                 fileStat[stat.ST_MTIME]
             )
