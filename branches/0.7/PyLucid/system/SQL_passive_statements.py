@@ -329,10 +329,17 @@ class passive_statements(SQL_wrapper):
         Liefert Daten aus der Preferences-Tabelle
         wird in PyLucid_system.preferences verwendet
         """
-        return self.select(
-            select_items    = ["section", "varName", "value"],
-            from_table      = "preferences",
-        )
+        try:
+            result = self.select(
+                select_items    = ["section", "varName", "value"],
+                from_table      = "preferences",
+            )
+        except Exception, e:
+            msg = str(e)
+            if msg.find("doesn't exist"):
+                # PyLucid ist wahrscheinlich noch nicht installiert
+                raise ProbablyNotInstalled(e)
+            raise Exception(e)
 
     def get_sitemap_data(self):
         """ Alle Daten die für`s Sitemap benötigt werden """

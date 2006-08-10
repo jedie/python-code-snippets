@@ -297,7 +297,20 @@ class PyLucidApp(BaseApplication):
                 return self.response
 
         # init der Objekte für einen normalen Request:
-        self.init2()
+        try:
+            self.init2()
+        except ProbablyNotInstalled, e:
+            self.response.write(
+                ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">\n'
+                '<html><head><title>error</title></head><body>'
+                '<h1>ERROR!</h1>\n')
+            )
+            self.response.write("<p>%s</p>\n" % e)
+            self.response.write("<h2>Have you installed PyLucid???</h2>\n")
+            self.response.write("<hr />\n")
+            self.response.write("<address>%s</address>\n" % __info__)
+            self.response.write("</body></html>\n")
+            return self.response
 
         if self.runlevel.is_normal():
             # Normale CMS Seite ausgeben
@@ -357,11 +370,11 @@ class PyLucidApp(BaseApplication):
             "%s\n" % " ".join([str(i) for i in txt])
         )
 
-    def process_normal_request(self):
-        """
-        Entweder wird ein "_command" ausgeführt oder eine
-        normale CMS Seite angezeigt.
-        """
+    #~ def process_normal_request(self):
+        #~ """
+        #~ Entweder wird ein "_command" ausgeführt oder eine
+        #~ normale CMS Seite angezeigt.
+        #~ """
 
     def installPyLucid(self):
         """

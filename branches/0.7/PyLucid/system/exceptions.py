@@ -6,10 +6,13 @@
 """
 
 
-#~ class ConnectionError(Exception):
-    #~ def __repr__(self):
-        #~ return 'Connect Error!'
-    #~ pass
+class ProbablyNotInstalled(Exception):
+    """
+    Fehler die auftauchen, wenn PyLucid noch nicht installiert ist.
+    Tritt auf, wenn versucht wird auf SQL-Daten zurück zu greifen, wenn
+    die Tabellen überhaupt noch nicht eingerichtet wurden.
+    """
+    pass
 
 class IntegrityError(Exception):
     """
