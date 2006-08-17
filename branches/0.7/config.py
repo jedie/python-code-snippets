@@ -55,7 +55,7 @@ config = {
     "dbDatabaseName"    : 'DatabaseName',
     "dbUserName"        : 'UserName',
     "dbPassword"        : 'Password',
-    "dbTablePrefix"     : 'PyLucid_', # No blanks may contain!
+    "dbTablePrefix"     : 'pylucid_', # No blanks may contain!
 
     # Optional dbapi Arguments
     # example:

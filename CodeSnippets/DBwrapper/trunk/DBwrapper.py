@@ -508,8 +508,8 @@ class IterableDictCursor(object):
 
         try:
             self._cursor.execute(*tuple(args))
-        except Exception, e:
-            msg = "cursor.execute error: %s --- " % e
+        except Exception, (errno, msg):
+            msg = "cursor.execute error: %s --- " % msg
             msg += "\nargs: %s" % args
             raise Exception(msg)
 
@@ -599,8 +599,8 @@ class SQL_wrapper(Database):
         #~ self.outObject("DEBUG:", SQLcommand)
         try:
             self.cursor.execute(SQLcommand, SQL_values)
-        except Exception, e:
-            msg  = "execute Error: %s\n --- " % e
+        except Exception, msg:
+            msg  = "%s\n --- " % msg
             msg += "SQL-command: %s\n --- " % SQLcommand
             msg += "SQL-values: %s" % str(SQL_values)
             raise Exception(msg)

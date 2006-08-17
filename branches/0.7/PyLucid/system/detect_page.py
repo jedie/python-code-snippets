@@ -22,7 +22,7 @@ v0.1
 import urllib, cgi
 
 from PyLucid.system.BaseModule import PyLucidBaseModule
-
+from PyLucid.system.exceptions import *
 
 
 #~ debug = True
@@ -213,8 +213,8 @@ class detect_page(PyLucidBaseModule):
                     limit           = (0,1) # Nur den ersten ;)
                 )[0]["id"]
             except IndexError:
-                # Es gibt wohl überhaupt keine Seite???
-                self.error("Can't find pages!", self.page_msg.data)
+                # Es gibt wohl Ã¼berhaupt keine Seite???
+                raise ProbablyNotInstalled("Can't find any cms page!")
 
         if debug:
             self.page_msg(

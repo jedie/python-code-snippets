@@ -115,7 +115,7 @@ pre {
     margin: 0px;
 }
 a {
-    color:#00BBEE;
+    color:#0BE;
     padding: 0.1em;
 }
 a:hover {
@@ -230,27 +230,19 @@ class InstallApp(object):
             lockCode = f.readline()
             f.close()
         except IOError, e:
-            self.writeHTMLhead()
-            msg = (
-                "<h1>Error opening install lock file:</h1>\n"
-                "<h3>%s</h3>\n"
-
-            ) % e
-            self.response.write(msg)
-            self.writeHTMLfoot()
-            sys.exit(1)
+            raise NoInstallLockFile
 
         lockCode = lockCode.strip() # Leerzeichen wegschneiden
 
-#        self.page_msg("Debug: |%s| <-> |%s|" % (self.LockCodeURL, lockCode))
+#        print "Debug: |%s| <-> |%s|" % (self.LockCodeURL, lockCode)
 
         if len(lockCode)<8:
-            self.page_msg("Install lock code to short! (len min. 8 chars!)")
-            raise WrongInstallLockCode()
+            raise WrongInstallLockCode(
+                "Install lock code to short! (len min. 8 chars!)"
+            )
 
         if not self.LockCodeURL.endswith(lockCode):
-            self.page_msg("Wrong install lock code!")
-            raise WrongInstallLockCode()
+            raise WrongInstallLockCode("Wrong install lock code in URL!")
 
     #_________________________________________________________________________
 
