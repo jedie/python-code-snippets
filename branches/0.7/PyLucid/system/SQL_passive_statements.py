@@ -19,8 +19,8 @@ v0.1
 
 import urllib, pickle, sys, time
 
-from PyLucid.system.DBwrapper.DBwrapper import SQL_wrapper
 from PyLucid.system.exceptions import *
+from PyLucid.system.DBwrapper.DBwrapper import SQL_wrapper
 
 debug = False
 
@@ -338,8 +338,10 @@ class passive_statements(SQL_wrapper):
             msg = str(e)
             if msg.find("doesn't exist"):
                 # PyLucid ist wahrscheinlich noch nicht installiert
-                raise ProbablyNotInstalled(e)
+                raise ProbablyNotInstalled("Can't get Preferences from DB", e)
             raise Exception(e)
+
+        return result
 
     def get_sitemap_data(self):
         """ Alle Daten die für`s Sitemap benötigt werden """

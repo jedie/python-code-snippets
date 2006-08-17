@@ -8,9 +8,10 @@ __license__ = """GNU General Public License v2 or above -
  http://www.opensource.org/licenses/gpl-license.php"""
 __url__     = "http://www.PyLucid.org"
 
+__version__ = "0.7.0RC2"
 __info__ = """<a href="%s" title="\
 PyLucid - A OpenSource CMS in pure Python CGI by Jens Diemer">PyLucid</a> \
-v0.7.0RC2""" % __url__
+v%s""" % (__url__, __version__)
 
 
 #~ debug = True
@@ -84,6 +85,8 @@ response.__info__ = __info__ # Übertragen
 
 
 
+
+
 class runlevel(object):
     state = "init"
 
@@ -113,9 +116,6 @@ class runlevel(object):
 
     def __repr__(self):
         return "<runlevel object with state = '%s'>" % self.state
-
-
-
 
 
 
@@ -274,43 +274,18 @@ class PyLucidApp(BaseApplication):
         try:
             self.db.connect(self.preferences)
         except database.ConnectionError, e:
-            msg = (
-                "<h1>DB Error:</h1>\n"
-                "<p>%s</p>\n"
-                "<em>%s</em>\n"
-            ) % (e, __info__)
-            self.response.write(msg)
-            return self.response
+            raise ConnectionError(e)
 
         self.environ["request_start"] = time.time()
 
         self.setup_runlevel()
 
         if self.runlevel.is_install():
-            try:
-                self.installPyLucid()
-            except WrongInstallLockCode:
-                # Der Zugang zum Install wurde verweigert, also
-                # zeigen wir die normale CMS-Seite
-                self.runlevel.set_normal()
-            else:
-                return self.response
+            self.installPyLucid()
+            return self.response
 
         # init der Objekte für einen normalen Request:
-        try:
-            self.init2()
-        except ProbablyNotInstalled, e:
-            self.response.write(
-                ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">\n'
-                '<html><head><title>error</title></head><body>'
-                '<h1>ERROR!</h1>\n')
-            )
-            self.response.write("<p>%s</p>\n" % e)
-            self.response.write("<h2>Have you installed PyLucid???</h2>\n")
-            self.response.write("<hr />\n")
-            self.response.write("<address>%s</address>\n" % __info__)
-            self.response.write("</body></html>\n")
-            return self.response
+        self.init2()
 
         if self.runlevel.is_normal():
             # Normale CMS Seite ausgeben
@@ -383,6 +358,21 @@ class PyLucidApp(BaseApplication):
         from PyLucid.install.install import InstallApp
         InstallApp.__info__ = __info__
         InstallApp(self.request, self.response).process_request()
+
+    #~ def DBerror(self, txt, advice=""):
+        #~ self.response.write(
+            #~ ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">\n'
+            #~ '<html><head><title>Database Error</title></head><body>'
+            #~ '<h1>ERROR!</h1>\n')
+        #~ )
+        #~ self.response.write("<p>%s</p>\n" % txt)
+        #~ self.response.write("<h2>%s</h2>\n" % advice)
+        #~ self.response.write("<hr />\n")
+        #~ self.response.write("<address>%s</address>\n" % __info__)
+        #~ self.response.write("</body></html>\n")
+
+
+
 
 
 

@@ -136,16 +136,16 @@ class SQLdump:
             self.response.write(" - recreate Table and insert values...",)
             if self.simulation:
                 self.response.write("\n<code>\n")
-            try:
-                counter = self.execute_many(command)
-            except Exception,e:
-                self.response.write("ERROR: %s\n" % e)
-                sys.exit()
-            else:
-                if self.simulation:
-                    self.response.write("</code>\n")
-                else:
-                    self.response.write("OK\n")
+            #~ try:
+            counter = self.execute_many(command)
+            #~ except Exception,e:
+                #~ self.response.write("ERROR: %s\n" % e)
+                #~ sys.exit()
+            #~ else:
+                #~ if self.simulation:
+                    #~ self.response.write("</code>\n")
+                #~ else:
+                    #~ self.response.write("OK\n")
 
             #~ if current_table in self.datetime_updates:
                 #~ self.setup_table_datetime(current_table)
@@ -241,8 +241,14 @@ class SQLdump:
             self.response.write("%s\n" % SQLcommand)
             return
 
+        if isinstance(SQLcommand, str):
+            try:
+                SQLcommand = unicode(SQLcommand, "utf8")
+            except UnicodeDecodeError, e:
+                self.response.write("Unicode Error: %s" % e)
+                SQLcommand = unicode(SQLcommand, "utf8", errors="replace")
+
         try:
-            #~ self.db.cursor.execute(SQLcommand)
             self.db.cursor.execute_unescaped(SQLcommand)
         except Exception, e:
             self.response.write(
