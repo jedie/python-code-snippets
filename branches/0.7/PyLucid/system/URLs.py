@@ -225,11 +225,13 @@ class URLs(dict):
         link = self.addSlash(link)
         return link
 
-    def actionLink(self, methodname):
+    def actionLink(self, methodname, args=""):
+        if isinstance(args, list):
+            args = "/".join(args)
         if self.runlevel.is_command():
             link = posixpath.join(
                 self["scriptRoot"], self.preferences["commandURLprefix"],
-                self["command"], methodname
+                self["command"], methodname, args
             )
         elif self.runlevel.is_install():
             if self["command"] == None:
@@ -237,7 +239,7 @@ class URLs(dict):
                 self.actionLinkRuntimeError("actionLink()")
             link = posixpath.join(
                 self["scriptRoot"], self["commandBase"], self["command"],
-                methodname
+                methodname, args
             )
         else:
             self.actionLinkRuntimeError("actionLink() wrong runlevel!")
