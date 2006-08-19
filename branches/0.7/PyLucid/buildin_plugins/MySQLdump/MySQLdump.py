@@ -211,8 +211,8 @@ class MySQLdump(PyLucidBaseModule):
 
         dump, dumpLen, filename = self.makedump()
 
-        #~ self.page_msg(dumpLen, filename)
-        #~ self.page_msg(dump)
+        self.page_msg(dumpLen, filename)
+        self.page_msg(dump)
 
         return self.FileResponse(dump, dumpLen, filename)
 

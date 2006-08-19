@@ -697,6 +697,14 @@ class passive_statements(SQL_wrapper):
             where           = [("package_name", package), ("module_name", module)],
         )[0]["id"]
 
+    def get_package_name(self, module_name):
+        """ Für PluginDownload """
+        return self.select(
+            select_items    = ["package_name"],
+            from_table      = "plugins",
+            where           = ("module_name", module_name),
+        )[0]["package_name"]
+
     def get_plugin_data_by_id(self, plugin_id):
         result = self.select(
             select_items    = [
