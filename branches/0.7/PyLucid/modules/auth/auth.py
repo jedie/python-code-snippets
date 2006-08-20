@@ -5,9 +5,11 @@
 Abwicklung von Login/Logout
 """
 
-__version__ = "0.2.1"
+__version__ = "0.2.2"
 
 __history__ = """
+v0.2.2
+    - Nutzt raise-Fehlerseite
 v0.2.1
     - Login-Fehler-Bug behoben
 v0.2
@@ -34,6 +36,10 @@ v0.0.1
 """
 
 __todo__ = """
+    -Bug: Direkt nach logout kann man sich nicht neu einloggen (erst beim
+        nächsten Request geht's wieder)
+    -Bann-Liste: Nach drei falschen Loginversuchen, sollte die IP für eine
+        gewisse Zeit gesperrt werden!!!
 """
 
 
@@ -48,6 +54,8 @@ from Cookie import SimpleCookie
 
 # eigene Module -> DoTo -> crypt irgendwie anders hinterlegen!
 from PyLucid.system import crypt
+
+from PyLucid.system.exceptions import LogInError
 
 
 # =True: Login-Fehler sind aussagekräftiger: Sollte allerdings
@@ -131,16 +139,12 @@ class auth(PyLucidBaseModule):
         # Soll beim commit aktualisiert werden:
         self.session.state = "update session"
 
-        # DOS abhilfe?!?!
-        time.sleep(3)
-
-        self.page_msg(public_msg)
         if debug:
-            # Debug Modus: Es wird mehr Informationen an den Client geschickt
-            self.page_msg( "Debug:",log_msg )
+            msg = "<p>%s</p><p>Debug: %s</p>" % (public_msg, log_msg)
+        else:
+            msg = "<p>%s</p>" % public_msg
 
-        # Login-Form wieder anzeigen
-        self.login()
+        raise LogInError(msg)
 
     def check_md5_login(self, username, form_pass1, form_pass2):
         """

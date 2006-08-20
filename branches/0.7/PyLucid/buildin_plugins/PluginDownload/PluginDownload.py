@@ -36,7 +36,7 @@ class PluginDownload(PyLucidBaseModule):
         """
         Link zum Downloaden des Plugins ausgeben
         """
-        html = '<a href="%s">%s</a>' % ( 
+        html = '<a href="%s">%s</a>' % (
             self.URLs.actionLink("download", function_info), function_info
         )
         self.response.write(html)
@@ -51,20 +51,24 @@ class PluginDownload(PyLucidBaseModule):
         except IndexError:
             self.response.write("Plugin/Module unknown!")
             return
-            
+
         plugin_path = package_name.replace(".",os.sep)
-        #sef.response.write(plugin_path)        
-                
+        #~ self.response.write(plugin_path)
+
         #Dateiliste erstellen, von allen Dateien im Plugin Verzeichnis
         try:
             filelist = self.get_filelist(plugin_path)
         except WrongPath, e:
             msg = (
                 "Can't get filelist! Is the path '%s' right? (Error: %s)"
-            ) % (function_info, e)
+            ) % (plugin_path, e)
             self.page_msg(msg)
             return
 
+        if filelist == []:
+            msg = "No files found! Is the path '%s' right?" % plugin_path
+            self.page_msg(msg)
+            return
 
         # Virtuelle Datei im RAM erstellen
         buffer = StringIO.StringIO()
@@ -72,7 +76,6 @@ class PluginDownload(PyLucidBaseModule):
         z = zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED)
 
         for arcname in filelist:
-
             absfilename = os.path.join(plugin_path, arcname)
             #self.page_msg(arcname, absfilename)
 
@@ -103,8 +106,9 @@ class PluginDownload(PyLucidBaseModule):
         filename = "%s.zip" % filename
 
         # ZIP Datei zum Browser senden
-        response = self.FileResponse(content, buffer_len, filename)
-        return response
+        self.response.startFileResponse(filename, buffer_len)
+        self.response.write(content)
+        return self.response
 
 
     def get_pluginname(self, function_info):
@@ -116,16 +120,20 @@ class PluginDownload(PyLucidBaseModule):
         return filename
 
 
-    def get_filelist(self, function_info):
+    def get_filelist(self, path):
         """liefert eine Liste aller Dateien, die zum Plugin gehören zurück"""
 
         try:
-            filelist = os.listdir(function_info)
+            filelist = os.listdir(path)
         except OSError, e:
             raise WrongPath(e)
 
         result = []
         for filename in filelist:
+            abspath = os.path.join(path, filename)
+            if not os.path.isfile(abspath):
+                # Nur Dateien packen, keine Links oder Unterverzeichnisse
+                continue
 
             name, ext = os.path.splitext(filename)
 
@@ -136,29 +144,6 @@ class PluginDownload(PyLucidBaseModule):
         #self.page_msg(result) # Alle Dateien außer *.pyc ausgeben
 
         return result # Ergebnis zurück liefern
-
-
-    def FileResponse(self, content, contentLen, filename):
-        # force Windows input/output to binary
-        if sys.platform == "win32":
-            import msvcrt
-            msvcrt.setmode(sys.stdin.fileno(), os.O_BINARY)
-            msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
-
-
-        # Ein "wirklich" frisches response-Object nehmen:
-        response = HttpResponse()
-
-        response.headers['Content-Disposition'] = \
-            'attachment; filename="%s"' % filename
-        response.headers['Content-Length'] = '%s' % contentLen
-        response.headers['Content-Transfer-Encoding'] = '8bit' #'binary'
-        response.headers['Content-Type'] = \
-            'application/octet-stream; charset=utf-8'
-
-        response.write(content)
-
-        return response
 
 
 

@@ -5,9 +5,11 @@
 
 """
 
-__version__="0.1"
+__version__="0.2"
 
 __history__="""
+v0.2
+    - Neu: startFileResponse()
 v0.1
     - erste Version
 """
@@ -18,7 +20,7 @@ __todo__="""
 # Colubrid
 from colubrid import HttpResponse
 
-import re, os, cgi
+import sys, os, re, cgi
 
 
 
@@ -104,6 +106,31 @@ class HttpResponse(HttpResponse):
 
         self.response = []
         return result
+
+    def startFileResponse(self, filename, contentLen=None):
+        """
+        Gibt einen Header aus, um einen octet-stream zu "erzeugen"
+
+        Bsp:
+        self.response.startFileResponse(filename, buffer_len)
+        self.response.write(content)
+        return self.response
+        """
+        if sys.platform == "win32":
+            # force Windows input/output to binary
+            import msvcrt
+            msvcrt.setmode(sys.stdin.fileno(), os.O_BINARY)
+            msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
+
+        self.response = [] # Evtl. schon gemachte "Ausgaben" verwerfen
+
+        self.headers['Content-Disposition'] = \
+            'attachment; filename="%s"' % filename
+        if contentLen:
+            self.headers['Content-Length'] = '%s' % contentLen
+        self.headers['Content-Transfer-Encoding'] = '8bit' #'binary'
+        self.headers['Content-Type'] = \
+            'application/octet-stream; charset=utf-8'
 
 
 

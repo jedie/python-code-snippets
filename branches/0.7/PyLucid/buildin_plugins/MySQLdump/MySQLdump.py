@@ -6,9 +6,11 @@ Erzeugt einen Download des MySQL Dumps
 http://dev.mysql.com/doc/mysql/de/mysqldump.html
 """
 
-__version__="0.4"
+__version__="0.4.1"
 
 __history__="""
+v0.4.1
+    - Nutzt nun response.startFileResponse() (s. sendFile()-Methode)
 v0.4
     - Anpassung an PyLucid v0.7
 v0.3.2
@@ -178,28 +180,14 @@ class MySQLdump(PyLucidBaseModule):
 
     #_______________________________________________________________________
 
-
-    def FileResponse(self, content, contentLen, filename):
-        # force Windows input/output to binary
-        if sys.platform == "win32":
-            import msvcrt
-            msvcrt.setmode(sys.stdin.fileno(), os.O_BINARY)
-            msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
-
-
-        # Ein "wirklich" frisches response-Object nehmen:
-        response = HttpResponse()
-
-        response.headers['Content-Disposition'] = \
-            'attachment; filename="%s"' % filename
-        response.headers['Content-Length'] = '%s' % contentLen
-        response.headers['Content-Transfer-Encoding'] = '8bit' #'binary'
-        response.headers['Content-Type'] = \
-            'application/octet-stream; charset=utf-8'
-
-        response.write(content)
-
-        return response
+    def sendFile(self, content, filename):
+        """
+        Startet den Download der Datei zum Browser
+        """
+        content_len = len(content)
+        self.response.startFileResponse(filename, content_len)
+        self.response.write(content)
+        return self.response
 
     #_______________________________________________________________________
 
@@ -209,28 +197,17 @@ class MySQLdump(PyLucidBaseModule):
         """
         #~ self.page_msg("download dump!")
 
-        dump, dumpLen, filename = self.makedump()
+        dump, filename = self.makedump()
 
-        self.page_msg(dumpLen, filename)
-        self.page_msg(dump)
-
-        return self.FileResponse(dump, dumpLen, filename)
+        # Datei zum Browser senden
+        return self.sendFile(dump, filename)
 
 
     def PyLucid_install_dump(self):
-        dump, dumpLen, dumpfilename = self.makedump()
+        dump, dumpfilename = self.makedump()
 
         dbTablePrefix = self.preferences["dbTablePrefix"]
         dump = universalize_dump(self.response, dbTablePrefix).process(dump)
-
-        # Debug:
-        #~ self.response.write("<pre>\n")
-        #~ self.response.write("Keys: %s\n" % dump.keys())
-        #~ for k,v in dump.iteritems():
-            #~ self.response.write("<strong>%s</strong>\n" % k)
-            #~ self.response.write("%s\n" % cgi.escape(v))
-        #~ self.response.write("</pre>\n")
-        #~ return
 
         buffer = StringIO.StringIO()
         z = zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED)
@@ -241,15 +218,27 @@ class MySQLdump(PyLucidBaseModule):
             z.writestr(filename,data)
         z.close()
 
-        buffer.seek(0,2) # Am Ende der Daten springen
-        buffer_len = buffer.tell() # Aktuelle Position
-        buffer.seek(0) # An den Anfang springen
-
+        buffer.seek(0) # An den Anfang der ZIP Datei springen
 
         content = buffer.read()
         filename = "%s.zip" % dumpfilename
 
-        return self.FileResponse(content, buffer_len, filename)
+        # Debug:
+        #~ self.response.write("<pre>\n")
+        #~ self.response.write("Keys: %s\n" % dump.keys())
+        #~ for k,v in dump.iteritems():
+            #~ self.response.write("<strong>%s</strong>\n" % k)
+            #~ self.response.write("%s\n" % cgi.escape(v))
+        #~ self.response.write("\nfilename: %s\n" % filename)
+        #~ self.response.write("\nZIP file len: %s\n" % len(content))
+        #~ self.response.write(
+            #~ "\nZIP content: %s...\n" % cgi.escape(content[:50])
+        #~ )
+        #~ self.response.write("</pre>\n")
+        #~ return
+
+        # Datei zum Browser senden
+        return self.sendFile(content, filename)
 
 
     #_______________________________________________________________________
@@ -383,7 +372,6 @@ class MySQLdump(PyLucidBaseModule):
         # Zusatzinfo's in den Dump "einblenden"
         info = self.additional_dump_info()
         dump = info + dump
-        dumpLen = len(dump)
 
         filename = "%s_%s%s.sql" % (
             time.strftime("%Y%m%d"),
@@ -391,7 +379,7 @@ class MySQLdump(PyLucidBaseModule):
             self.preferences["dbDatabaseName"]
         )
 
-        return dump, dumpLen, filename
+        return dump, filename
 
 
     def _run_command_list(self, command_list, timeout, header=False):
