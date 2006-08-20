@@ -142,6 +142,18 @@ class WrongInstallLockCode(PyLucidException):
 
 
 
+class LogInError(PyLucidException):
+    """
+    Fehler beim Login
+    """
+    code = 403
+    title = 'Access denied.'
+
+    def __init__(self, origErrMsg):
+        self.msg = origErrMsg
+
+
+
 
 class IntegrityError(Exception):
     """
