@@ -4,14 +4,22 @@
 """
 PyLucid Plugin - ZIP-File of Sourcecode
 
-Bsp.:
-<lucidFunction:PluginDownload>PyLucid/buildin_plugins/PluginDownload</lucidFunction>
+Mit diesem Plugin kann man selbst geschriebene Plugins einfach zum Download
+anbieten.
 
+Bsp.:
+Komplette Liste aller externen Plugins mit:
+    <lucidTag:PluginDownload/>
+
+Gezielt nur ein Plugin zum download anbieten:
+    <lucidFunction:PluginDownload>PluginName</lucidFunction>
 """
 
-__version__="0.1"
+__version__="0.2"
 
 __history__="""
+v0.2
+    - NEU: aus als <lucidTag> (generiert eine Liste aller externen Plugins
 v0.1
     - erste Version
 
@@ -24,7 +32,7 @@ __todo__="""
 """
 
 
-import os, sys, StringIO, zipfile
+import os, sys, cgi, StringIO, zipfile
 
 from colubrid import HttpResponse
 
@@ -35,11 +43,47 @@ class PluginDownload(PyLucidBaseModule):
     def lucidFunction(self, function_info):
         """
         Link zum Downloaden des Plugins ausgeben
+        ToDo: Sollte das gleiche machen, wie lucidTag, nur das in der Liste
+            nur das angegebene Plugin drin ist!
         """
         html = '<a href="%s">%s</a>' % (
-            self.URLs.actionLink("download", function_info), function_info
+            self.get_downloadurl(function_info), function_info
         )
         self.response.write(html)
+    
+    def lucidTag(self):
+        """
+    	Liste aller externen Plugins ausgeben
+    	externe Plugins, sind alle, die sich im Ordner ./PyLucid/plugins
+    	befinden
+    	"""
+        pluginlist = self.db.get_installed_modules_info()
+        
+        # Filtern, nur externe Plugins (aus ./PyLucid/plugins) bleiben:
+        i = 0
+        while i < len(pluginlist): 
+            if not pluginlist[i]['package_name'].startswith("PyLucid.plugins"):
+                del(pluginlist[i])
+            else:
+                i += 1 
+            
+        if pluginlist == []:
+            # FIXME: Interne Seite sollte das regeln:
+            self.page_msg("No external Plugins installed!")
+            
+        for plugin in pluginlist:
+            module_name = plugin['module_name']
+            plugin["download_url"] = self.get_downloadurl(module_name)
+            filename = self.get_download_filename(module_name)
+            plugin["filename"] = filename
+
+        self.page_msg(pluginlist)
+        
+        context = {
+            "PluginList": pluginlist,
+        }
+        
+        self.templates.write("PluginDownload", context)
 
     def download(self, function_info):
         """
@@ -47,9 +91,15 @@ class PluginDownload(PyLucidBaseModule):
         """
         try:
             plugin_name = function_info[0]
+            
+            #Quick hack:
+            plugin_name = os.path.splitext(plugin_name)[0]
+            
             package_name = self.db.get_package_name(plugin_name)
         except IndexError:
-            self.response.write("Plugin/Module unknown!")
+            self.response.write(
+                "Plugin/Module '%s' unknown!" % cgi.escape(plugin_name)
+            )
             return
 
         plugin_path = package_name.replace(".",os.sep)
@@ -100,24 +150,21 @@ class PluginDownload(PyLucidBaseModule):
         #self.page_msg(content[:50]) #Debug
         buffer.close()
 
-        filename = self.get_pluginname(plugin_path)
-
-        # Endung .zip anhängen
-        filename = "%s.zip" % filename
+        filename = self.get_download_filename(plugin_name)
 
         # ZIP Datei zum Browser senden
         self.response.startFileResponse(filename, buffer_len)
         self.response.write(content)
         return self.response
 
+    def get_download_filename(self, plugin_name):
+        """Endung .zip anhängen"""
+        return "%s.zip" % plugin_name
 
-    def get_pluginname(self, function_info):
-        # Pfad normalisieren (evtl. vorhandenes / am Ende entfernen)
-        filename = os.path.normpath(function_info)
-        # Nur den letzten Teil des Namens:
-        filename = os.path.basename(filename)
-
-        return filename
+    def get_downloadurl(self, plugin_name):
+        filename = self.get_download_filename(plugin_name)
+        url = self.URLs.actionLink("download")
+        return url + filename
 
 
     def get_filelist(self, path):
@@ -153,4 +200,3 @@ class WrongPath(Exception):
     Wenn der Pfad zu den Plugin Sourcen nicht stimmt
     """
     pass
-
