@@ -17,17 +17,24 @@ __important_buildin__   = True
 #~ module_manager_debug = True
 module_manager_debug = False
 
-module_manager_data = {
-    "lucidFunction" : {
+
+global_rights = {
         "must_login"    : False,
         "must_admin"    : False,
-        #"direct_out"    : True,
-        #"sys_exit"      : True, # Damit ein sys.exit() auch wirklich fuktioniert
-    },
-    "download" : {
-        "must_login"    : False,
-        "must_admin"    : False,
-        #"direct_out"    : True,
-        #"sys_exit"      : True, # Damit ein sys.exit() auch wirklich fuktioniert
     }
+
+
+module_manager_data = {
+    "lucidFunction" 	: global_rights,
+    "lucidTag" 		: {
+        "must_login"    : False,
+        "must_admin"    : False,
+        "internal_page_info" : {
+            "name"              : "PluginDownload",
+            "description"       : "A list of all external plugins",
+            "template_engine"   : "jinja",
+            "markup"            : None
+        },
+    },
+    "download" 		: global_rights,
 }
