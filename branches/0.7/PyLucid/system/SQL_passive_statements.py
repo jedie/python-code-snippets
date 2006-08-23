@@ -717,6 +717,9 @@ class passive_statements(SQL_wrapper):
         return result
 
     def get_installed_modules_info(self):
+    	"""
+    	Für ModulAdmin und PluginDownload
+    	"""
         return self.select(
             select_items    = [
                 "module_name", "package_name", "id","version","author",

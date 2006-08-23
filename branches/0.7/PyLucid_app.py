@@ -8,7 +8,7 @@ __license__ = """GNU General Public License v2 or above -
  http://www.opensource.org/licenses/gpl-license.php"""
 __url__     = "http://www.PyLucid.org"
 
-__version__ = "0.7.0RC2"
+__version__ = "0.7.0RC3"
 __info__ = """<a href="%s" title="\
 PyLucid - A OpenSource CMS in pure Python CGI by Jens Diemer">PyLucid</a> \
 v%s""" % (__url__, __version__)
@@ -399,7 +399,8 @@ app = replacer.Replacer(app)
 
 
 if __name__ == '__main__':
-    from colubrid.debug import DebuggedApplication
-    from colubrid import execute
-    app = DebuggedApplication('PyLucid_app:app')
-    execute(app, reload=True)
+    #~ from colubrid.debug import DebuggedApplication
+    from colubrid.server import execute
+    #~ app = DebuggedApplication('PyLucid_app:app')
+    print "Starting local test server..."
+    execute(app, debug=True, reload=True)

@@ -31,12 +31,17 @@ __todo__="""
     - Sourcecode ansicht
 """
 
+# Debug-Ausgaben:
+debug = False
+#~ debug = True
+
 
 import os, sys, cgi, StringIO, zipfile
 
-from colubrid import HttpResponse
 
+from colubrid import HttpResponse
 from PyLucid.system.BaseModule import PyLucidBaseModule
+
 
 class PluginDownload(PyLucidBaseModule):
 
@@ -50,39 +55,40 @@ class PluginDownload(PyLucidBaseModule):
             self.get_downloadurl(function_info), function_info
         )
         self.response.write(html)
-    
+
     def lucidTag(self):
         """
-    	Liste aller externen Plugins ausgeben
-    	externe Plugins, sind alle, die sich im Ordner ./PyLucid/plugins
-    	befinden
-    	"""
+        Liste aller externen Plugins ausgeben
+        externe Plugins, sind alle, die sich im Ordner ./PyLucid/plugins
+        befinden
+        """
         pluginlist = self.db.get_installed_modules_info()
-        
+
         # Filtern, nur externe Plugins (aus ./PyLucid/plugins) bleiben:
         i = 0
-        while i < len(pluginlist): 
+        while i < len(pluginlist):
             if not pluginlist[i]['package_name'].startswith("PyLucid.plugins"):
                 del(pluginlist[i])
             else:
-                i += 1 
-            
+                i += 1
+
         if pluginlist == []:
             # FIXME: Interne Seite sollte das regeln:
             self.page_msg("No external Plugins installed!")
-            
+
         for plugin in pluginlist:
             module_name = plugin['module_name']
             plugin["download_url"] = self.get_downloadurl(module_name)
             filename = self.get_download_filename(module_name)
             plugin["filename"] = filename
 
-        self.page_msg(pluginlist)
-        
+        if debug:
+            self.page_msg(pluginlist)
+
         context = {
             "PluginList": pluginlist,
         }
-        
+
         self.templates.write("PluginDownload", context)
 
     def download(self, function_info):
@@ -91,10 +97,10 @@ class PluginDownload(PyLucidBaseModule):
         """
         try:
             plugin_name = function_info[0]
-            
+
             #Quick hack:
             plugin_name = os.path.splitext(plugin_name)[0]
-            
+
             package_name = self.db.get_package_name(plugin_name)
         except IndexError:
             self.response.write(
