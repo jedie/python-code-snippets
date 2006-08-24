@@ -23,7 +23,7 @@ except ImportError:
 
 
 
-class SQLdump:
+class SQLdump(object):
     """
     Klasse zum "verwalten" des SQL-install-Dumps
     """

@@ -73,7 +73,9 @@ class page_style(PyLucidBaseModule):
         # Ein "wirklich" frisches response-Object nehmen:
         response = HttpResponse()
         response.headers['Content-Type'] = 'text/css; charset=utf-8'
-        response.headers['Connection'] = "Keep-Alive"
+
+        # Hop-by-hop Headers ist mit wsgiref nicht erlaubt:
+        #~ response.headers['Connection'] = "Keep-Alive"
 
         page_id = self.session["page_id"]
         getItems = ["id", "content", "lastupdatetime"]
