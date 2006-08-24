@@ -500,6 +500,12 @@ class subprocess2(threading.Thread):
         self.cwd        = cwd
         self.timeout    = timeout
 
+        #Debug:
+        #~ response.page_msg("subprocess Debug:")
+        #~ response.page_msg("command: '%s'" % command)
+        #~ response.page_msg("cwd: '%s'" % cwd)
+        #~ response.page_msg("timeout: '%s'" % timeout)
+
         self.killed = False # Wird True, wenn der Process gekillt wurde
         self.out_data = ""  # Darin werden die Ausgaben gespeichert
 
@@ -562,10 +568,12 @@ class subprocess2(threading.Thread):
                 stderr  = subprocess.STDOUT
             )
         except Exception, e:
-            response.page_msg("subprocess2 Error: %s" % e)
-
-        # Ausgabe
-        self.out_data = self.process.stdout.read()
+            msg = "subprocess2 Error: %s" % e
+            response.page_msg(msg)
+            self.out_data = "[%s]" % msg
+        else:
+            # Ausgabe
+            self.out_data = self.process.stdout.read()
 
     def stop( self ):
         """

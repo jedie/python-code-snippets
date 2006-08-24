@@ -9,7 +9,7 @@ Bsp.:
 from PyLucid.system.BaseModule import PyLucidBaseModule
 
 class Bsp(PyLucidBaseModule):
-    def __init__(*args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super(Bsp, self).__init__(*args, **kwargs)
 
 """

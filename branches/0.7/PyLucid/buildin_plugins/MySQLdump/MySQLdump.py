@@ -6,9 +6,11 @@ Erzeugt einen Download des MySQL Dumps
 http://dev.mysql.com/doc/mysql/de/mysqldump.html
 """
 
-__version__="0.4.1"
+__version__="0.4.2"
 
 __history__="""
+v0.4.2
+    - Bugfixes, now it realy works undern Windows too
 v0.4.1
     - Nutzt nun response.startFileResponse() (s. sendFile()-Methode)
 v0.4
@@ -72,6 +74,14 @@ from PyLucid.system.BaseModule import PyLucidBaseModule
 
 
 class MySQLdump(PyLucidBaseModule):
+
+    def __init__(self, *args, **kwargs):
+        super(MySQLdump, self).__init__(*args, **kwargs)
+
+        if sys.platform == "win32":
+            self.mysqldump_name = "mysqldump.exe"
+        else:
+            self.mysqldump_name = "mysqldump"
 
     def menu(self):
         """ Menü für Aktionen generieren """
@@ -143,15 +153,10 @@ class MySQLdump(PyLucidBaseModule):
                 '%s</button>&nbsp;&nbsp;\n'
             ) % (action[0], action[1])
 
-        if sys.platform == "win32":
-            filename = "mysqldump.exe"
-        else:
-            filename = "mysqldump"
-
         context = {
             "version"       : __version__,
             "tables"        : table_data,
-            "path"          : self.get_mysqldump_path(filename),
+            "path"          : self.get_mysqldump_path(),
             "url"           : self.URLs.currentAction(),
             "buttons"       : buttons,
             "character-set" : "utf8",#self.db.encoding,
@@ -159,7 +164,7 @@ class MySQLdump(PyLucidBaseModule):
 
         self.templates.write("Menu", context)
 
-    def get_mysqldump_path(self, filename):
+    def get_mysqldump_path(self):
         if not "PATH" in os.environ:
             return "[ERROR: No 'PATH' in environ!]"
 
@@ -171,10 +176,10 @@ class MySQLdump(PyLucidBaseModule):
         path_list = path.split(":")
 
         for test_path in path_list:
-            if os.path.isfile(os.path.join(test_path, filename)):
+            if os.path.isfile(os.path.join(test_path, self.mysqldump_name)):
                 return test_path
 
-        return "[ERROR: '%s' not found in PATH!]" % (filename)
+        return "[ERROR: '%s' not found in PATH!]" % (self.mysqldump_name)
 
 
 
@@ -248,8 +253,9 @@ class MySQLdump(PyLucidBaseModule):
         Zeigt den SQL dump im Browser an
         """
         start_time = time.time()
-        dump, dumpLen, filename = self.makedump()
+        dump, filename = self.makedump()
 
+        dumpLen = len(dump)
         dumpLen = self.tools.formatter(dumpLen, format="%0i")
         msg = (
             "<p><small>"
@@ -270,9 +276,11 @@ class MySQLdump(PyLucidBaseModule):
         """
         Zeigt die Hilfe von mysqldump an
         """
-        command_list = ["mysqldump --help"]
+        command_list = ["%s --help" % self.mysqldump_name]
 
         self.response.write('<p><a href="JavaScript:history.back();">back</a></p>')
+
+        self.response.write("<p>command: '%s'</p>" % command_list[0])
 
         output = self._run_command_list(command_list, timeout = 2)
         if output == False:
@@ -323,9 +331,10 @@ class MySQLdump(PyLucidBaseModule):
             compatible = " --compatible=%s" % compatible
 
         default_command = (
-            "mysqldump --default-character-set=%(cs)s%(cp)s%(op)s"
+            "%(fn)s --default-character-set=%(cs)s%(cp)s%(op)s"
             " -u%(u)s -p%(p)s -h%(h)s %(n)s"
         ) % {
+            "fn" : self.mysqldump_name,
             "cs" : self.request.form["character-set"],
             "cp" : compatible,
             "op" : options,
