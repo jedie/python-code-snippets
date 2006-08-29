@@ -2,13 +2,15 @@
 # -*- coding: ISO-8859-1 -*-
 
 __author__      = "Jens Diemer"
-__url__         = "http://www.jensdiemer.de/Programmieren/Python/Codesnippets"
+__url__         = "http://www.jensdiemer.de/index.py/Codesnippets/"
 __license__     = "GNU General Public License (GPL)"
 __description__ = "makes thumbs with the PIL"
 
-__version__ = "v0.2"
+__version__ = "v0.2.1"
 
 __history__ = """
+v0.2.1
+    - try-except if the file is not a image
 v0.2
     - JPEG quality Setting in cfg, now
 v0.1
@@ -87,11 +89,17 @@ class thumb_maker:
 
     def process_file( self, abs_file ):
         path, im_name   = os.path.split( abs_file )
+        print abs_file
         try:
             im_obj = Image.open( abs_file )
         except IOError:
             # Ist wohl kein Bild, oder unbekanntes Format
             #~ print "Not a image, skip.\n"
+            return
+        except OverflowError, e:
+            print ">>> OverflowError: %s" % e
+            print "Not a picture ? (...%s)" % abs_file[10:]
+            print
             return
 
         print "%-40s - %4s %12s %s" % (
@@ -148,8 +156,13 @@ class thumb_maker:
             return
 
         print "resize (max %ix%i)..." % size,
-        im_obj.thumbnail( size, Image.ANTIALIAS )
-        print "OK, real size %ix%i" % im_obj.size
+        try:
+            im_obj.thumbnail( size, Image.ANTIALIAS )
+        except Exception, e:
+            print ">>>Error: %s" % e
+            return
+        else:
+            print "OK, real size %ix%i" % im_obj.size
 
         if im_obj.mode!="RGB":
             print "convert to RGB...",
