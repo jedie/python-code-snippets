@@ -22,7 +22,6 @@ v0.2
     - NEU: aus als <lucidTag> (generiert eine Liste aller externen Plugins
 v0.1
     - erste Version
-
 """
 
 __todo__="""
@@ -39,7 +38,7 @@ debug = False
 import os, sys, cgi, StringIO, zipfile
 
 
-from colubrid import HttpResponse
+#~ from colubrid import HttpResponse
 from PyLucid.system.BaseModule import PyLucidBaseModule
 
 

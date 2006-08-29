@@ -12,6 +12,11 @@ v0.1
     - erste Version
 """
 
+__todo__ = """
+Muß umgebaut werden, sodas man auch eine get-Methode benutzten kann.
+    z.B. für den RSS Generator!
+"""
+
 import sys, os
 
 
@@ -85,6 +90,16 @@ class TemplateEngines(object):
         self.addCSS(internal_page_data["content_css"], internal_page_name)
         self.addJS(internal_page_data["content_js"], internal_page_name)
 
+    def get(self, internal_page_name, context):
+        """
+        FIXME!!!!
+        """
+        internal_page_data = self.get_internal_page_data(
+            internal_page_name
+        )
+        content = internal_page_data["content_html"]
+        content = render_jinja(content, context)
+        return content
 
     def get_internal_page_data(self, internal_page_name):
         if self.runlevel.is_install():

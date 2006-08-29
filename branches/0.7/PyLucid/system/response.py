@@ -107,7 +107,8 @@ class HttpResponse(HttpResponse):
         self.response = []
         return result
 
-    def startFileResponse(self, filename, contentLen=None):
+    def startFileResponse(self, filename, contentLen=None, \
+                    content_type='application/octet-stream; charset=utf-8'):
         """
         Gibt einen Header aus, um einen octet-stream zu "erzeugen"
 
@@ -129,8 +130,7 @@ class HttpResponse(HttpResponse):
         if contentLen:
             self.headers['Content-Length'] = '%s' % contentLen
         self.headers['Content-Transfer-Encoding'] = '8bit' #'binary'
-        self.headers['Content-Type'] = \
-            'application/octet-stream; charset=utf-8'
+        self.headers['Content-Type'] = content_type
 
 
 

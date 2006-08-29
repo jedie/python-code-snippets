@@ -19,9 +19,9 @@ module_manager_debug = False
 
 
 global_rights = {
-        "must_login"    : False,
-        "must_admin"    : False,
-    }
+    "must_login"    : False,
+    "must_admin"    : False,
+}
 
 
 module_manager_data = {
