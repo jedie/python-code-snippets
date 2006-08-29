@@ -22,5 +22,11 @@ module_manager_data = {
     "lucidTag" : {
         "must_login"    : False,
         "must_admin"    : False,
+        "internal_page_info" : {
+            "name"              : "PageUpdateTable",
+            "description"       : "Table for the list of page updates",
+            "template_engine"   : "jinja",
+            "markup"            : None
+        },
     }
 }

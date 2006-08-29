@@ -8,9 +8,13 @@
 Generiert eine Liste der "letzten Änderungen"
 """
 
-__version__="0.2"
+__version__="0.3"
 
 __history__="""
+v0.3
+    - Erweitert: zeigt nun an, wer die Änderunen vorgenommen hat.
+    - Nutzt ein jinja Template.
+    - Zeigt nun immer die letzten 10 Änderungen, statt 5.
 v0.2
     - Anpassung an v0.7
 v0.1.1
@@ -32,7 +36,6 @@ v0.0.1
 """
 
 
-import cgitb;cgitb.enable()
 
 
 # Python-Basis Module einbinden
@@ -49,17 +52,33 @@ class list_of_new_sides(PyLucidBaseModule):
         Aufruf über <lucidTag:list_of_new_sides />
         """
         SQLresult = self.db.select(
-            select_items    = [ "id", "name", "title", "lastupdatetime" ],
+            select_items    = [
+                "id", "name", "title", "lastupdatetime", "lastupdateby"
+            ],
             from_table      = "pages",
             where           = ( "permitViewPublic", 1 ),
             order           = ( "lastupdatetime", "DESC" ),
-            limit           = ( 0, 5 )
+            limit           = ( 0, 10 )
         )
 
-        self.response.write('<ul id="ListOfNewSides">\n')
+        userlist = [item["lastupdateby"] for item in SQLresult]
+        tmp = {}
+        for user in userlist:
+            tmp[user] = None
+        userlist = tmp.keys()
 
-        url_entry = '<li>%(date)s - <a href="%(link)s">%(title)s</a></li>\n'
+        where = ["(id=%s)" for i in userlist]
+        where = " or ".join(where)
 
+        SQLcommand = "SELECT id,name FROM $$md5users WHERE %s" % where
+        users = self.db.process_statement(SQLcommand, userlist)
+        #~ self.page_msg(users)
+        users = self.db.indexResult(users, "id")
+        #~ self.page_msg(users)
+
+        #~ self.page_msg(SQLresult)
+
+        page_updates = []
         for item in SQLresult:
             prelink = self.db.get_page_link_by_id(item["id"])
             linkTitle   = item["title"]
@@ -71,16 +90,27 @@ class list_of_new_sides(PyLucidBaseModule):
             lastupdate = self.tools.convert_date_from_sql(
                 item["lastupdatetime"]
             )
+            user_id = item["lastupdateby"]
+            try:
+                user = users[user_id]["name"]
+            except KeyError:
+                user = "unknown id %s" % user_id
 
-            self.response.write(
-                url_entry % {
+            page_updates.append(
+                {
                     "date"  : lastupdate,
                     "link"  : prelink,# + item["name"],
                     "title" : cgi.escape( linkTitle ),
+                    "user"  : user,
                 }
             )
 
-        self.response.write("</ul>\n")
+        context = {
+            "page_updates" : page_updates
+        }
+        #~ self.page_msg(context)
+
+        self.templates.write("PageUpdateTable", context)
 
 
 
