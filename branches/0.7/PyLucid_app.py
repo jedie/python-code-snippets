@@ -325,8 +325,8 @@ class PyLucidApp(BaseApplication):
         # Evtl. vorhandene Sessiondaten in DB schreiben
         self.session.commit()
 
-        if debug:
-            self.response.debug()
+        #~ if debug:
+        self.response.debug()
 
         return self.response
 
@@ -397,10 +397,32 @@ app = replacer.AddCode(app) # Middleware, für addCode
 app = replacer.Replacer(app)
 
 
-
 if __name__ == '__main__':
+    # Eine Aufwendigere Variante, damit der Standalone-Entwicklungsserver
+    # auch funktioniert, s. http://trac.pocoo.org/ticket/87
+    def start():
+        print "\n", "="*79, "\nStarting local test server...\n"
+
+        # with 'debugged application':
+        from colubrid.debug import DebuggedApplication
+        global app
+        app = DebuggedApplication(app)
+
+        # usind the new wsgiref (from Python 2.5)
+        from wsgiref.simple_server import WSGIServer, WSGIRequestHandler
+        server = WSGIServer(('localhost', 8080), WSGIRequestHandler)
+        server.set_app(app)
+        server.serve_forever()
+
+    from colubrid import reloader
+    reloader.main(start, [])
+
+#~ if __name__ == '__main__':
+    #~ print "\n", "="*79, "\nStarting local test server...\n"
+
+    #~ # with 'debugged application':
     #~ from colubrid.debug import DebuggedApplication
-    from colubrid.server import execute
-    #~ app = DebuggedApplication('PyLucid_app:app')
-    print "Starting local test server..."
-    execute(app, debug=True, reload=True)
+    #~ app = DebuggedApplication(app)
+
+    #~ from colubrid.server import execute
+    #~ execute(app, debug=True, reload=True)
