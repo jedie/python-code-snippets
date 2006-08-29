@@ -325,8 +325,8 @@ class PyLucidApp(BaseApplication):
         # Evtl. vorhandene Sessiondaten in DB schreiben
         self.session.commit()
 
-        #~ if debug:
-        self.response.debug()
+        if debug:
+            self.response.debug()
 
         return self.response
 
