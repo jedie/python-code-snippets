@@ -60,6 +60,8 @@ Auth.Verfahren - User erstellen:
     2.1. restliche Zeichen des Passworts mit geschickter MD5 Summe verschlüsseln
     2.2. verschlüßeltes Passwort und sonstige Userdaten in DB eintragen
 
+Ist noch nicht implementiert!
+
 
 Auth.Verfahren - Client Login:
 ==============================
