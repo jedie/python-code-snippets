@@ -16,7 +16,7 @@ from __future__ import generators
 import sys
 
 from PyLucid.python_backports import backports
-from PyLucid import PEP333_WSGI_CGIServer as CGIServer
+from wsgiref.handlers import CGIHandler
 
 
 if __name__ == "__main__":
@@ -31,4 +31,4 @@ if __name__ == "__main__":
 
     sys.stdout = oldstdout
 
-    CGIServer.run_with_cgi(app)
+    CGIHandler().run(app)

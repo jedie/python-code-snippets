@@ -14,7 +14,7 @@ import cgitb;cgitb.enable()
 import sys
 
 from PyLucid.python_backports import backports
-from PyLucid import PEP333_WSGI_CGIServer as CGIServer
+from wsgiref.handlers import CGIHandler
 
 from colubrid.debug import DebuggedApplication
 
@@ -31,4 +31,4 @@ if __name__ == "__main__":
 
     sys.stdout = oldstdout
 
-    CGIServer.run_with_cgi(app)
+    CGIHandler().run(app)
