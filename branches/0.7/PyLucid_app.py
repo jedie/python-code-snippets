@@ -8,7 +8,7 @@ __license__ = """GNU General Public License v2 or above -
  http://www.opensource.org/licenses/gpl-license.php"""
 __url__     = "http://www.PyLucid.org"
 
-__version__ = "0.7.0RC3"
+__version__ = "0.7.0RC4"
 __info__ = """<a href="%s" title="\
 PyLucid - A OpenSource CMS in pure Python CGI by Jens Diemer">PyLucid</a> \
 v%s""" % (__url__, __version__)
@@ -213,8 +213,11 @@ class PyLucidApp(BaseApplication):
             self.page_msg(fileinfo.replace(" ","&nbsp;"))
         except Exception, e:
             self.page_msg("<small>(inspect Error: %s)</small> " % e)
-        from colubrid.debug import debug_info
-        self.page_msg(debug_info(self.request))
+        try:
+            from colubrid.debug import debug_info
+            self.page_msg(debug_info(self.request))
+        except Exception, e:
+            self.page_msg("Can't make debug info: %s" % e)
 
     def setup_runlevel(self):
 
