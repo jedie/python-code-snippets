@@ -27,9 +27,13 @@ ToDo
     * Es wird immer das paramstyle 'format' benutzt. Also mit %s escaped
 """
 
-__version__="0.11"
+__version__="0.12"
 
 __history__="""
+v0.12
+    - Bugfix: execute_unescaped() kann nun auch mit unicode SQL-Statements
+        gefüttert werden. execute_unescaped() und execute() nutzt die
+        Ausgelagerte Methode encode() zum Umwandeln.
 v0.11
     - NEU: autoprefix: So kann man auch andere Tabellen ansprechen!
 v0.10
@@ -46,7 +50,8 @@ v0.8
 v0.7
     - Die connect-Methode wird nun nicht mehr automatisch aufgerufen.
     - Die Connection-Parameter müßen nun explizit zur verwendeten dbapi passen!
-    - Für jeder Datenbanktyp (MySQL, SQLite) gibt es eine eigene connect-Methode.
+    - Für jeder Datenbanktyp (MySQL, SQLite) gibt es eine eigene
+        connect-Methode.
 v0.6.1
     - encode_sql_results für unicode angepasst.
     - databasename global gemacht
@@ -487,18 +492,26 @@ class IterableDictCursor(object):
         return sql.replace('$$', self._prefix)\
                   .replace('?', self._placeholder)
 
+    def encode(self, s):
+        """
+        Encode the String >s< to the DB encoding
+        """
+        if type(s) == unicode:
+            # Wandelt unicode in das DB-Encoding zurück
+            try:
+                s = self._unicode_encoder(s, 'strict')[0]
+            except UnicodeError:
+                s = self._unicode_encoder(s, 'replace')[0]
+                sys.stderr.write("Unicode encode Error!") #FIXME
+        return s
+
     def execute(self, sql, values=None):
         args = [self.prepare_sql(sql)]
         if values:
             temp = []
             for item in values:
-                if type(item) == unicode:
-                    # Wandelt unicode in das DB-Encoding zurück
-                    try:
-                        item = self._unicode_encoder(item, 'strict')[0]
-                    except UnicodeError:
-                        item = self._unicode_encoder(item, 'replace')[0]
-                        sys.stderr.write("Unicode encode Error!") #FIXME
+                # Von unicode ins DB encoding konvertieren
+                item = self.encode(item)
                 temp.append(item)
 
             temp = tuple(temp)
@@ -517,6 +530,9 @@ class IterableDictCursor(object):
         """
         execute without prepare_sql (replace prefix and placeholders)
         """
+        # Von unicode ins DB encoding konvertieren
+        sql = self.encode(sql)
+
         self.last_statement = sql
         self._cursor.execute(sql)
 
