@@ -9,6 +9,9 @@ SQL_dump Klasse zum "verwalten" des SQL-install-Dumps
 install_zipfileName = "PyLucid/PyLucid_SQL_install_data.zip"
 
 
+#~ debug = True
+debug = False
+
 
 import os, sys, cgi, time, zipfile
 
@@ -68,15 +71,18 @@ class SQLdump(object):
 
             command = self.get_table_data(current_table)
 
-            try:
+            if debug:
                 counter = self.execute_many(command)
-            except Exception,e:
-                self.response.write("<strong>ERROR: %s</strong>" % e)
             else:
-                if self.simulation:
-                    self.response.write("</code>\n")
-                else:
-                    self.response.write("OK\n")
+                try:
+                    counter = self.execute_many(command)
+                except Exception,e:
+                    self.response.write("<strong>ERROR: %s</strong>" % e)
+
+            if self.simulation:
+                self.response.write("</code>\n")
+            else:
+                self.response.write("OK\n")
 
         self.response.write("</pre>")
 
@@ -248,15 +254,17 @@ class SQLdump(object):
                 self.response.write("Unicode Error: %s" % e)
                 SQLcommand = unicode(SQLcommand, "utf8", errors="replace")
 
-        try:
+        if debug:
             self.db.cursor.execute_unescaped(SQLcommand)
-        except Exception, e:
-            self.response.write(
-                "Error: '%s' in SQL-command:" % cgi.escape(str(e))
-            )
-            return False
         else:
-            return True
+            try:
+                self.db.cursor.execute_unescaped(SQLcommand)
+            except Exception, e:
+                self.response.write(
+                    "Error: '%s' in SQL-command:" % cgi.escape(str(e))
+                )
+                return False
+        return True
 
     #_________________________________________________________________________
 
