@@ -9,9 +9,11 @@ ein normaler SELECT Befehl ist. Also nur Methoden die nur Daten aus
 der DB bereitstellen.
 """
 
-__version__="0.1"
+__version__="0.2"
 
 __history__="""
+v0.2
+    - Bugfix in get_tag_list()
 v0.1
     - erste Release nach aufteilung
     - Allgemeine History nach __init__ verschoben
@@ -786,7 +788,7 @@ class passive_statements(SQL_wrapper):
 
     def get_tag_list(self):
         """
-        Liefert eine Liste/Dict der installieren und aktivierten Tags
+        Liefert eine Liste der installieren und aktivierten Tags
         """
         SQLcommand = (
             "SELECT id,module_name,package_name,description"
@@ -794,8 +796,8 @@ class passive_statements(SQL_wrapper):
             " WHERE active!=0;"
         )
         plugin_list = self.process_statement(SQLcommand)
-        plugin_list = self.indexResult(plugin_list, "id")
-        #~ self.page_msg(plugin_list)
+        plugin_dict = self.indexResult(plugin_list, "id")
+        #self.page_msg(plugin_dict)
 
         SQLcommand = (
             "SELECT plugin_id,method_name"
@@ -803,30 +805,29 @@ class passive_statements(SQL_wrapper):
             " WHERE method_name='lucidTag' OR method_name='lucidFunction';"
         )
         method_list = self.process_statement(SQLcommand)
-        #~ self.page_msg(method_list)
+        #self.page_msg(method_list)
 
         tag_list = []
         for method in method_list:
             #~ self.page_msg(method)
             plugin_id = method['plugin_id']
-            if plugin_id in plugin_list:
-                plugin_data = plugin_list[plugin_id]
+            
+            if not plugin_id in plugin_dict:
+                # Sollte eigentlich nie vorkommen
+                self.page_msg("Warning: obsolete method found!")
+                continue
+                
+            plugin_data = dict(plugin_dict[plugin_id]) # make a copy
 
-                method_name = method["method_name"]
-                if method_name == 'lucidTag':
-                    plugin_data["is_lucidTag"] = True
-                elif method_name == 'lucidFunction':
-                    plugin_data["is_lucidFunction"] = True
-                else:
-                    # Sollte eigentlich nie vorkommen!
-                    msg = (
-                        "method_name should only be lucidTag or lucidFunction"
-                        " ,but is %s!"
-                    ) % method_name
-                    raise KeyError, msg
+            method_name = method["method_name"]
+            if method_name == 'lucidTag':
+                plugin_data["is_lucidTag"] = True
+            elif method_name == 'lucidFunction':
+                plugin_data["is_lucidFunction"] = True
+                
+            tag_list.append(plugin_data)
 
-                tag_list.append(plugin_data)
-
+        #self.page_msg(tag_list)
         return tag_list
 
     #_____________________________________________________________________________
