@@ -3,10 +3,10 @@
         <p>
         <label class="left" for="username">Username:</label>
         <input name="username" id="username" type="text" value="" />
-        {% if admin_button %}
-            <label for="is_admin">is admin:</lable>
-            <input type="checkbox" id="is_admin" name="is_admin" value="1">
-        {% endif %}
+
+        <label for="is_admin">is admin:</lable>
+        <input type="checkbox" {% if runlevel_is_install %}checked="checked"{% endif %} id="is_admin" name="is_admin" value="1">
+
         <br />
         <label class="left" for="email">email:</label>
         <input name="email" id="email" type="text" value="" />

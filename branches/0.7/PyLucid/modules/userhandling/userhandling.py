@@ -86,15 +86,22 @@ Auth.Verfahren - Client Login:
     4.4. vergleichen der zweiten MD5 summe vom Client und der gebilteten
 """
 
-__version__ = "0.1"
+__version__ = "0.2"
 
 __history__ = """
+v0.2
+    - Anderes Handling wenn self.runlevel.is_install()
 v0.1
     - Anpassung an PyLucid v0.7
 v0.0.2
     - auth-Klasse nach PyLucid_modules.user_auth ausgelagert
 v0.0.1
     - erste Version
+"""
+
+__todo__ = """
+    - Warum nicht das Template "user_table.html" und "add_user.html" direkt
+        zusammenlegen???
 """
 
 
@@ -137,13 +144,14 @@ class userhandling(PyLucidBaseModule):
 
         context = {"url": self.URLs.currentAction()}
 
-        # Bei _install wird immer ein admin erstellt, deswegen soll da auch
-        # kein Admin-Button zu sehen sein ;)
+        # Bei _install soll i.d.R. ein admin erstellt werden, deswegen soll
+        # der Admin-Button "checked" sein
         if self.runlevel.is_install():
-            context["admin_button"] = False
+            context["runlevel_is_install"] = True
         else:
-            context["admin_button"] = True
+            context["runlevel_is_install"] = False
 
+        #~ self.page_msg(context)
         self.templates.write("add_user", context)
 
     def user_table(self):
@@ -214,9 +222,6 @@ class userhandling(PyLucidBaseModule):
 
         realname = self.request.form.get("realname","")
         is_admin = self.request.form.get("is_admin", False)
-        if self.runlevel.is_install():
-            # Bei der Installation wird immer ein Admin erstellt!
-            is_admin = True
 
         # Das Klartext-Password verschlüsseln
         pass1, pass2 = self.create_md5_pass(pass1)
