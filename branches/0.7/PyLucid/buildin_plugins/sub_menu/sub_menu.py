@@ -5,15 +5,14 @@
 
 """
 <lucidTag:sub_menu/>
-Generiert das komplette Seitenmenü mit Untermenüs
-
-eingebunden kann es per lucid-"IncludeRemote"-Tag:
-<lucidFunction:IncludeRemote>/cgi-bin/PyLucid/Menu.py?page_name=<lucidTag:page_name/></lucidFunction>
+Generiert Links aller Unterseiten
 """
 
-__version__="0.2"
+__version__="0.2.1"
 
 __history__="""
+v0.2.1
+    - Bessere Darstellung (name, title)
 v0.2
     - Anpassung an v0.7
 v0.1.1
@@ -50,7 +49,7 @@ v0.0.1
     - erste Version
 """
 
-#~ import cgitb;cgitb.enable()
+__todo__ = "jinja !!!"
 
 # Python-Basis Module einbinden
 import re, os, sys, urllib, cgi
@@ -64,8 +63,8 @@ class sub_menu(PyLucidBaseModule):
 
     def where_filter( self, where_rules ):
         """
-        Erweitert das SQL-where Statement um das Rechtemanagement zu berücksichtigen
-        selbe funktion ist auch in main_menu vorhanden
+        Erweitert das SQL-where Statement um das Rechtemanagement zu
+        berücksichtigen selbe funktion ist auch in main_menu vorhanden
         """
         where_rules.append(("showlinks",1))
         if not self.session.has_key("isadmin") or self.session["isadmin"]!=True:
@@ -104,10 +103,13 @@ class sub_menu(PyLucidBaseModule):
         )
 
         for SQLline in menu_data:
-            title = SQLline["title"]
+            page_name = SQLline["name"]
+            page_title = SQLline["title"]
 
-            if title == None or title == "":
-                title = SQLline["name"]
+            if page_title == None or page_title == "":
+                title = page_name
+            else:
+                title = "%s - %s" % (page_name, page_title)
 
             linkURL = "%s%s/" % (level_prelink, SQLline["shortcut"])
 
