@@ -18,9 +18,11 @@ Datei 'phpBBtableprefix.py' angepasst werden!
 
 
 
-__version__="0.1"
+__version__="0.1.1"
 
 __history__= """
+v0.1.1
+    - user_lastvisit=0 raus genommen (Machen Bots mittlerweile auch!)
 v0.1
     - init with "delete spamuser" ;)
 """
@@ -57,7 +59,7 @@ class phpBBadmin(PyLucidBaseModule):
         SQLcommand = (
             'SELECT user_id, user_active, username, user_website, user_email'
             ' FROM %susers'
-            ' WHERE user_posts=0 AND user_lastvisit=0 AND user_website!=""'
+            ' WHERE user_posts=0 AND user_website!=""'
         ) % SQLprefix
         self.response.write("<pre>%s</pre>\n" % SQLcommand)
         try:
