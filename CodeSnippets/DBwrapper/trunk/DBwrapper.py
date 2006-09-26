@@ -116,7 +116,7 @@ v0.0.1
 
 from __future__ import generators
 import sys, codecs
-import time, datetime
+import time, datetime, cgi
 
 
 debug = False
@@ -616,9 +616,9 @@ class SQL_wrapper(Database):
         try:
             self.cursor.execute(SQLcommand, SQL_values)
         except Exception, msg:
-            msg  = "%s\n --- " % msg
-            msg += "SQL-command: %s\n --- " % SQLcommand
-            msg += "SQL-values: %s" % str(SQL_values)
+            msg  = "%s\n --- " % cgi.escape(str(msg))
+            msg += "SQL-command: %s\n --- " % cgi.escape(SQLcommand)
+            msg += "SQL-values: %s" % cgi.escape(str(SQL_values))
             raise Exception(msg)
 
         #~ try:

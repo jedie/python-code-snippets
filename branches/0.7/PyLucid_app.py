@@ -67,7 +67,6 @@ WSGIrequestKey = "colubrid.request."
 from PyLucid.system import response
 from PyLucid.system import tools
 from PyLucid.system import URLs
-from PyLucid.system import jinjaRenderer
 
 # init2
 #~ from PyLucid.system import staticTags
@@ -188,8 +187,6 @@ class PyLucidApp(BaseApplication):
         # Jinja-Context anhängen
         self.request.context = {}
 
-        #~ self.request.jinjaRenderer = jinjaRenderer.jinjaRenderer(self.request)
-
         # Anbindung an die SQL-Datenbank, mit speziellen PyLucid Methoden
         self.db = self.request.db = environ['PyLucid.database']
 
@@ -263,6 +260,7 @@ class PyLucidApp(BaseApplication):
 
         # Übertragen von Objekten
         self.db.render = self.render
+        self.db.session = self.session
 
         self.response.module_manager = self.module_manager
         self.response.staticTags = self.staticTags
