@@ -1,12 +1,24 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 
+"""
+Python Module Info CGI
+
+Zeigt alle installierten Module an und gibt details dazu aus.
+
+Zur Info:
+In PyLucid gibt es diese Modul in einer besseren Variante
+schon eingebaut: http://www.pylucid.org
+"""
+
 __author__  = "Jens Diemer (www.jensdiemer.de)"
 __license__ = "GNU General Public License (GPL)"
 __url__     = "http://www.python-forum.de/viewtopic.php?t=3816"
-__version__ = "0.2"
+__version__ = "0.3"
 
 __history__ = """
+v0.3
+    - spuckt auch in moduleinfo den help() Text aus
 v0.2
     - Informationen eines Moduls können angezeigt werden
     - umgebaut zum CGI Progie
@@ -127,12 +139,25 @@ class moduleinfo:
 
         print backurl
 
-        print "SourceCode:"
+        try:
+            module = __import__( module_name )
+        except Exception,e:
+            self.response.write("<p>Can't import module ;(</p>")
+            return
+
+        print "<h4>help:</h4>"
+        print "<hr /><pre>"
+        help(module)
+        print "</pre><hr />"
+
+        print backurl
+
+        print "<h4>SourceCode:</h4>"
         filehandle = t[0]
-        print "<hr><pre>"
+        print "<hr /><pre>"
         for i in filehandle:
             sys.stdout.write( i )
-        print "</pre><hr>"
+        print "</pre><hr />"
 
         print backurl
 
