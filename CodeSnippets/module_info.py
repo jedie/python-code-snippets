@@ -14,9 +14,11 @@ schon eingebaut: http://www.pylucid.org
 __author__  = "Jens Diemer (www.jensdiemer.de)"
 __license__ = "GNU General Public License (GPL)"
 __url__     = "http://www.python-forum.de/viewtopic.php?t=3816"
-__version__ = "0.3"
+__version__ = "0.3.1"
 
 __history__ = """
+v0.3.1
+    - Mehr Info's am Ende der Seite
 v0.3
     - spuckt auch in moduleinfo den help() Text aus
 v0.2
@@ -161,6 +163,30 @@ class moduleinfo:
 
         print backurl
 
+
+def print_information():
+    print "<h3>Python v%s</h3>" % sys.version
+
+    print "<h3>os.uname():</h3>%s<br />" % " - ".join(os.uname())
+    print "<h3>sys.path:</h3>"
+    sys_path = sys.path[:]
+    sys_path.sort()
+    for p in sys_path:
+        print "%s<br />" % p
+
+    print "<h3>OS-Enviroment:</h3>"
+    print '<dl id="environment">'
+    keys = os.environ.keys()
+    keys.sort()
+    for key in keys:
+        value = os.environ[key]
+        print "<dt>%s</dt>" % key
+        print "<dd>%s</dd>" % value
+    print "</dl>"
+
+
+
+
 if __name__ == "__main__":
     #~ print "<pre>"
     #~ for i,v in os.environ.iteritems(): print i,v
@@ -169,7 +195,12 @@ if __name__ == "__main__":
     query_string = os.environ["QUERY_STRING"]
     if query_string == "":
         # Alle Module auflisten
+        print "<h3>module list:</h3>"
         modules()
+
+        # Zusätzliche Informationen ausgeben:
+        print "<hr />"
+        print_information()
     else:
         # Information über ein Modul anzeigen
         backurl = '<p><a href="%s">back</a></p>' % \
