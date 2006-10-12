@@ -14,9 +14,11 @@ schon eingebaut: http://www.pylucid.org
 __author__  = "Jens Diemer (www.jensdiemer.de)"
 __license__ = "GNU General Public License (GPL)"
 __url__     = "http://www.python-forum.de/viewtopic.php?t=3816"
-__version__ = "0.3.1"
+__version__ = "0.4"
 
 __history__ = """
+v0.4
+    - Geht nun auch, wenn modPython (?) im Spiel ist!
 v0.3.1
     - Mehr Info's am Ende der Seite
 v0.3
@@ -31,6 +33,7 @@ v0.1
 import cgitb;cgitb.enable()
 print "Content-type: text/html; charset=utf-8\r\n"
 print "<h1>Module Info v%s</h1>" % __version__
+
 
 import os, sys, glob, imp
 
@@ -185,25 +188,44 @@ def print_information():
     print "</dl>"
 
 
+#~ print_information()
 
 
-if __name__ == "__main__":
-    #~ print "<pre>"
-    #~ for i,v in os.environ.iteritems(): print i,v
-    #~ print "</pre>"
+if __name__ != "__main__":
+    # Kann passieren, wenn das Skript nicht als CGI läuft, sondern
+    # evtl. über modPython
+    print "<hr /><h1>Error:</h1>"
+    print "<p>__name__ == %s (should be __main__!)</p>" % __name__
+    gateway = os.environ.get(
+        "GATEWAY_INTERFACE", "[Error:GATEWAY_INTERFACE not in os.environ!]"
+    )
+    if gateway!="CGI/1.1":
+        print "<h3>Running not as CGI!</h3>"
 
-    query_string = os.environ["QUERY_STRING"]
-    if query_string == "":
-        # Alle Module auflisten
-        print "<h3>module list:</h3>"
-        modules()
+    print "<p>GATEWAY_INTERFACE: <strong>%s</strong></p>" % gateway
+    print "<hr />"
 
-        # Zusätzliche Informationen ausgeben:
-        print "<hr />"
-        print_information()
-    else:
-        # Information über ein Modul anzeigen
-        backurl = '<p><a href="%s">back</a></p>' % \
-            os.environ['REQUEST_URI'].split("?",1)[0]
 
-        moduleinfo( query_string, backurl )
+
+## Nutzt extra kein import-Hook, wie:
+##      if __name__ == "__main__":
+## damit das Skript auch mit modPython (?) funktioniert
+
+
+query_string = os.environ["QUERY_STRING"]
+if query_string == "":
+    # Alle Module auflisten
+    print "<h3>module list:</h3>"
+    modules()
+
+    # Zusätzliche Informationen ausgeben:
+    print "<hr />"
+    print_information()
+else:
+    # Information über ein Modul anzeigen
+    backurl = '<p><a href="%s">back</a></p>' % \
+        os.environ['REQUEST_URI'].split("?",1)[0]
+
+    moduleinfo( query_string, backurl )
+
+
