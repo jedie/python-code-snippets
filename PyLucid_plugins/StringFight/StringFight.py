@@ -16,9 +16,12 @@ __author__  = "Jens Diemer (www.jensdiemer.de)"
 __license__ = "GNU General Public License (GPL)"
 __url__     = "http://www.PyLucid.org"
 
-__version__="0.2"
+__version__="0.3"
 
 __history__="""
+v0.3
+    - Anzeige der gesammt Anzahl an Abfragen
+    - txt_max_len
 v0.2
     - Zeigt die letzten 10 Fights an ;)
 v0.1
@@ -54,8 +57,9 @@ result = """<h2>Results:</h2>
 """
 
 
-# Minimal länge der Strings
+# Min./Max. länge der Strings
 txt_min_len = 2
+txt_max_len = 20
 
 
 # Suchmaschine + regex zum filtern
@@ -109,6 +113,11 @@ class StringFight(PyLucidBaseModule):
             self.lucidTag() # Formular wieder anzeigen lassen
             return
 
+        if len(txt1)>txt_max_len or len(txt2)>txt_max_len:
+            self.page_msg("Given Strings are to long!")
+            self.lucidTag() # Formular wieder anzeigen lassen
+            return
+
         start_time = time.time()
 
         try:
@@ -121,10 +130,14 @@ class StringFight(PyLucidBaseModule):
 
         duration = time.time() - start_time
 
+        fight_no = self.get_fight_no()
+
         txt1 = cgi.escape(txt1)
         txt2 = cgi.escape(txt2)
 
-        log_txt = "%s %s vs. %s %s" % (txt1, count1, txt2, count2)
+        log_txt = "No. %s: %s %s vs. %s %s (%.3fsec)" % (
+            fight_no+1, txt1, count1, txt2, count2, duration
+        )
         self.log(log_txt, "StringFight", "OK")
 
         result_html = result % {
@@ -136,6 +149,22 @@ class StringFight(PyLucidBaseModule):
         }
         self.response.write(result_html)
         self.lucidTag() # Formular wieder anzeigen lassen
+
+    def get_fight_no(self):
+        result = self.db.select(
+            select_items    = ["message"],
+            from_table      = "log",
+            where           = [("typ","StringFight"),("status","OK")],
+            order           = ("timestamp","DESC"),
+            limit           = (0,1)
+        )
+        try:
+            last_fight = result[0]['message']
+            no = int(re.findall("(\d*?):", last_fight)[0])
+        except:
+            return 0
+        else:
+            return no
 
     def display_last_fights(self):
         """
@@ -149,11 +178,11 @@ class StringFight(PyLucidBaseModule):
             limit           = (0,10)
         )
         self.response.write('<h4>last 10 fights</h4>\n')
-        self.response.write('<ol id="last_search_words">\n')
+        self.response.write('<ul id="last_search_words">\n')
         for line in result:
             message = line["message"]
             self.response.write("\t<li>%s</li>\n" % message)
-        self.response.write("</ol>\n")
+        self.response.write("</ul>\n")
 
     def get_count(self, txt1, txt2):
         """
