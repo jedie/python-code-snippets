@@ -16,11 +16,13 @@ __author__  = "Jens Diemer (www.jensdiemer.de)"
 __license__ = "GNU General Public License (GPL)"
 __url__     = "http://www.PyLucid.org"
 
-__version__="0.1"
+__version__="0.2"
 
 __history__="""
+v0.2
+    - Zeigt die letzten 10 Fights an ;)
 v0.1
-    erste Version
+    - erste Version
 """
 
 
@@ -88,6 +90,8 @@ class StringFight(PyLucidBaseModule):
         }
         self.response.write(html)
 
+        self.display_last_fights()
+
     def fight(self):
         """
         Zeigt die Ergebnisse an
@@ -110,21 +114,46 @@ class StringFight(PyLucidBaseModule):
         try:
             count1, count2 = self.get_count(txt1, txt2)
         except (EngineError, REerror), e:
+            self.log("Error: %s" % e, "StringFight", "error")
             self.page_msg(e)
             self.lucidTag() # Formular wieder anzeigen lassen
             return
 
         duration = time.time() - start_time
 
+        txt1 = cgi.escape(txt1)
+        txt2 = cgi.escape(txt2)
+
+        log_txt = "%s %s vs. %s %s" % (txt1, count1, txt2, count2)
+        self.log(log_txt, "StringFight", "OK")
+
         result_html = result % {
-            "txt1": cgi.escape(txt1),
-            "txt2": cgi.escape(txt2),
+            "txt1": txt1,
+            "txt2": txt2,
             "count1": count1,
             "count2": count2,
             "duration": duration,
         }
         self.response.write(result_html)
         self.lucidTag() # Formular wieder anzeigen lassen
+
+    def display_last_fights(self):
+        """
+        Letzten Fights anzeigen
+        """
+        result = self.db.select(
+            select_items    = ["message","domain"],
+            from_table      = "log",
+            where           = [("typ","StringFight"),("status","OK")],
+            order           = ("timestamp","DESC"),
+            limit           = (0,10)
+        )
+        self.response.write('<h4>last 10 fights</h4>\n')
+        self.response.write('<ol id="last_search_words">\n')
+        for line in result:
+            message = line["message"]
+            self.response.write("\t<li>%s</li>\n" % message)
+        self.response.write("</ol>\n")
 
     def get_count(self, txt1, txt2):
         """
