@@ -1,0 +1,31 @@
+<form action="{{ url }}" method="post" enctype="multipart/form-data">
+    <p>
+        <input type="file" name="upload" size="255" id="filename" />
+        <input type="submit" value="upload" />
+    </p>
+</form>
+
+
+{% if not filelist %}
+    <small>[ no files ]</small>
+{% else %}
+    <table>
+        <tr>
+            <th>filename</th>
+            <th>file size</th>
+            <th>upload time</th>
+            <th>file info</th>
+            <th>client info</th>
+        </tr>
+        {% for file in filelist %}
+            {% cycle rowclass through "odd", "even" %}
+            <tr class="{{ rowclass }}">
+                <td><a href="{{ file.url }}">{{ file.filename|escapexml }}</a></td>
+                <td>{{ file.size|filesizeformat }}</td>
+                <td>{{ file.uploadTime }}</td>
+                <td>{{ file.fileInfo|escapexml }}</td>
+                <td>{{ file.clientInfo|escapexml }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+{% endif %}
