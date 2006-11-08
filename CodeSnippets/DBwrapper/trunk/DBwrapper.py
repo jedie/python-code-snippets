@@ -27,9 +27,11 @@ ToDo
     * Es wird immer das paramstyle 'format' benutzt. Also mit %s escaped
 """
 
-__version__="0.12"
+__version__="0.13"
 
 __history__="""
+v0.13
+    - Neu: GROUP BY bei select
 v0.12
     - Bugfix: execute_unescaped() kann nun auch mit unicode SQL-Statements
         gefüttert werden. execute_unescaped() und execute() nutzt die
@@ -526,6 +528,8 @@ class IterableDictCursor(object):
             msg += "\nargs: %s" % args
             raise Exception(msg)
 
+        #~ print dir(self._cursor)
+
     def execute_unescaped(self, sql):
         """
         execute without prepare_sql (replace prefix and placeholders)
@@ -686,7 +690,8 @@ class SQL_wrapper(Database):
 
 
     def select(self, select_items, from_table, where=None, order=None,
-            limit=None, maxrows=0, how=1, debug=False, autoprefix=True
+            group=None, limit=None, maxrows=0, how=1, debug=False,
+            autoprefix=True
         ):
         """
         Allgemeine SQL-SELECT Anweisung
@@ -726,9 +731,21 @@ class SQL_wrapper(Database):
             try:
                 SQLcommand += " ORDER BY %s %s" % order
             except TypeError,e:
-                raise TypeError(
-                    "Error in db.select() ORDER statement (must be a tuple or List): %s" % e
-                )
+                msg = (
+                    "Error in db.select() ORDER statement"
+                    " (must be a tuple or List): %s"
+                ) % e
+                raise TypeError(msg)
+
+        if group:
+            try:
+                SQLcommand += " GROUP BY %s %s" % group
+            except TypeError,e:
+                msg = (
+                    "Error in db.select() GROUP statement"
+                    " (must be a tuple or List): %s"
+                ) % e
+                raise TypeError(msg)
 
         SQLcommand += self._make_limit(limit)
 
