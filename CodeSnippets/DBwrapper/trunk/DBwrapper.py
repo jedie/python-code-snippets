@@ -27,9 +27,11 @@ ToDo
     * Es wird immer das paramstyle 'format' benutzt. Also mit %s escaped
 """
 
-__version__="0.13"
+__version__="0.13.1"
 
 __history__="""
+v0.13.1:
+    - Neu: MaxErrorLen - Fehlerausgaben kürzen
 v0.13
     - Neu: GROUP BY bei select
 v0.12
@@ -127,6 +129,11 @@ debug = False
 MySQL40_character_table = {
     "german1": "latin1",
 }
+
+# SQL Fehler in process_statement() können sehr lang werden wenn z.B. große
+# Daten in die SQL Db geschrieben werden. Mit der Angabe werden die Teile der
+# Ausgabe gekürzt auf die Zeichenlänge:
+MaxErrorLen = 300
 
 
 class Database(object):
@@ -620,9 +627,15 @@ class SQL_wrapper(Database):
         try:
             self.cursor.execute(SQLcommand, SQL_values)
         except Exception, msg:
-            msg  = "%s\n --- " % cgi.escape(str(msg))
-            msg += "SQL-command: %s\n --- " % cgi.escape(SQLcommand)
-            msg += "SQL-values: %s" % cgi.escape(str(SQL_values))
+            def escape(txt):
+                txt = cgi.escape(str(txt))
+                if len(txt)>MaxErrorLen:
+                    return txt[:MaxErrorLen]+"..."
+                return txt
+
+            msg  = "%s\n --- " % escape(msg)
+            msg += "SQL-command: %s\n --- " % escape(SQLcommand)
+            msg += "SQL-values: %s" % escape(SQL_values)
             raise Exception(msg)
 
         #~ try:
