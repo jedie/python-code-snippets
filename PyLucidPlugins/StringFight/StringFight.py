@@ -21,7 +21,7 @@ __version__="0.3"
 __history__="""
 v0.3
     - Anzeige der gesammt Anzahl an Abfragen
-    - txt_max_len
+    - TXT_MAX_LEN
 v0.2
     - Zeigt die letzten 10 Fights an ;)
 v0.1
@@ -58,8 +58,8 @@ result = """<h2>Results:</h2>
 
 
 # Min./Max. länge der Strings
-txt_min_len = 2
-txt_max_len = 20
+TXT_MIN_LEN = 2
+TXT_MAX_LEN = 150
 
 
 # Suchmaschine + regex zum filtern
@@ -108,12 +108,12 @@ class StringFight(PyLucidBaseModule):
             self.lucidTag() # Formular wieder anzeigen lassen
             return
 
-        if len(txt1)<txt_min_len or len(txt2)<txt_min_len:
+        if len(txt1)<TXT_MIN_LEN or len(txt2)<TXT_MIN_LEN:
             self.page_msg("Given Strings are to short!")
             self.lucidTag() # Formular wieder anzeigen lassen
             return
 
-        if len(txt1)>txt_max_len or len(txt2)>txt_max_len:
+        if len(txt1)>TXT_MAX_LEN or len(txt2)>TXT_MAX_LEN:
             self.page_msg("Given Strings are to long!")
             self.lucidTag() # Formular wieder anzeigen lassen
             return
