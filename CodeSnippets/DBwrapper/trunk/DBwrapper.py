@@ -27,9 +27,12 @@ ToDo
     * Es wird immer das paramstyle 'format' benutzt. Also mit %s escaped
 """
 
-__version__="0.13.1"
+__version__="0.14"
 
 __history__="""
+v0.14
+    - ermöglicht an das Ursprüngliche Cursor Objekt zu gelangen, mit:
+        c = self.db.conn.raw_cursor()
 v0.13.1:
     - Neu: MaxErrorLen - Fehlerausgaben kürzen
 v0.13
@@ -431,6 +434,9 @@ class WrappedConnection(object):
     def cursor(self):
         return IterableDictCursor(self.cnx, self.placeholder, self.prefix)
 
+    def raw_cursor(self):
+        return self.cnx.cursor()
+
     def __getattr__(self, attr):
         """
         Attribute/Methoden des original Connection-Objekt durchreichen
@@ -537,6 +543,10 @@ class IterableDictCursor(object):
 
         #~ print dir(self._cursor)
 
+    def execute_raw(self, sql, values=None):
+        sql = self.prepare_sql(sql)
+        self._cursor.execute(sql, values)
+
     def execute_unescaped(self, sql):
         """
         execute without prepare_sql (replace prefix and placeholders)
@@ -546,6 +556,9 @@ class IterableDictCursor(object):
 
         self.last_statement = sql
         self._cursor.execute(sql)
+
+    def fetchall_raw(self):
+        return self._cursor.fetchall()
 
     def fetchone(self):
         row = self._cursor.fetchone()
