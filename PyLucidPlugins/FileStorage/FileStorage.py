@@ -13,9 +13,14 @@ FileStorage
 
 
 
-__version__="0.1.1"
+__version__="0.2Alpha"
 
 __history__= """
+v0.2Alpha
+    - Daten werden nun in einer seperaten Tabelle eingefügt, das geschied
+        mittels raw_cursor, um die automatische DB-Encoding-Konvertierung zu
+        umgehen.
+    - Benötigt neue Version des DB_wrappers!
 v0.1.1
     - Keine 64KB beschränkung durch LONGBLOB
     - Anzeige des Speicherverbrauchs
@@ -43,12 +48,23 @@ SQL_install_commands = """CREATE TABLE $$plugin_filestorage (
     info VARCHAR(255) NOT NULL,
     size INT(11) NOT NULL,
     client_info VARCHAR(255) NOT NULL,
-    data LONGBLOB,
+    data_id INT(11) NOT NULL,
     owner_id INT(11) NOT NULL,
     public TINYINT(1) NOT NULL DEFAULT '0',
     PRIMARY KEY (id)
-);"""
-SQL_deinstall_commands = "DROP TABLE $$plugin_filestorage"
+) COMMENT = "FileStorage - management data";
+
+CREATE TABLE $$plugin_filestorage_data (
+    id INT(11) NOT NULL auto_increment,
+    data LONGBLOB,
+    PRIMARY KEY (id)
+) COMMENT = "FileStorage - BLOB Data";
+
+
+"""
+SQL_deinstall_commands = """DROP TABLE $$plugin_filestorage;
+DROP TABLE $$plugin_filestorage_data;
+"""
 
 
 
@@ -164,6 +180,7 @@ class FileStorage(PyLucidBaseModule):
 
     def lucidTag(self):
         #~ self.response.debug()
+
         if self.request.files:
             # Ein Upload wurde gemacht
             try:
@@ -232,6 +249,14 @@ class FileStorage(PyLucidBaseModule):
 
         self.insert(filename, info, data)
 
+    def db_rollback(self):
+        try:
+            self.db.rollback() # transaktion aufheben
+        except Exception, e:
+            self.page_msg("Error, db rollback failed: %s" % e)
+        else:
+            self.page_msg("Info: db rollback successful.")
+
     def insert(self, filename, info, data):
         """
         Trägt eine neue Datei in die DB ein
@@ -239,14 +264,35 @@ class FileStorage(PyLucidBaseModule):
         client_info = "%s - %s" % (
             self.session['client_IP'], self.session['client_domain_name']
         )
+
+        c = self.db.conn.raw_cursor()
+
+        # Nur die Daten als BLOB einfügen
+        sql = "".join(
+            ["INSERT INTO ",self.db.tableprefix,
+            "plugin_filestorage_data (data) VALUES (%s);"]
+        )
         try:
+            c.execute(sql, (data,))
+        except Exception, e:
+            self.db_rollback()
+            txt = "%s..." % str(e)[:200]
+            if "MySQL server has gone away" in txt:
+                raise UploadTooBig()
+            else:
+                raise Exception(txt)
+
+        data_id = c.lastrowid
+
+        try:
+            # Meta Daten zum Upload eintragen
             self.db.insert(
                 table = "plugin_filestorage",
                 data  = {
                     "filename"      : filename,
                     "info"          : info,
                     "size"          : len(data),
-                    "data"          : data,
+                    "data_id"       : data_id,
                     "upload_time"   : datetime.datetime.now(),
                     "client_info"   : client_info,
                     "owner_id"      : self.session['user_id'],
@@ -255,15 +301,17 @@ class FileStorage(PyLucidBaseModule):
                 #~ debug = True
             )
         except Exception, e:
-            txt = "%s..." % str(e)[:200]
-            if "MySQL server has gone away" in txt:
-                raise UploadTooBig()
-            else:
-                raise Exception(txt)
+            self.page_msg("Error, can't insert Metadata: %s" % e)
+            self.db_rollback()
+        else:
+            self.db.commit() # transaktion ende
 
     #_________________________________________________________________________
 
     def get_filedata(self):
+        """
+        Liefert die Daten zu allen hochgeladenen Dateien zurück.
+        """
         result = self._filedata()
 
         user_list = self.db.userList(select_items=["name","email"])
@@ -405,16 +453,28 @@ class FileStorage(PyLucidBaseModule):
         """
         Liefert die eigentlichen Dateidaten zurück
         """
-        result = self.db.select(
-            select_items    = "data",
+        # ID des BLOB Eintrags feststellen
+        data_id1 = self.db.select(
+            select_items    = "data_id",
             from_table = "plugin_filestorage",
             where = ("id",file_id),
         )
-        result = result[0]["data"]
+        data_id = data_id1[0]["data_id"]
 
-        result = result.tostring() # Aus der DB kommt ein array Objekt!
+        c = self.db.conn.raw_cursor()
 
-        return result
+        # Eigentlichen Daten aus DB holen
+        sql = "".join(
+            ["SELECT data FROM ", self.db.tableprefix,
+            "plugin_filestorage_data WHERE (id=%s)"]
+        )
+        c.execute(sql, (data_id,))
+        data1 = c.fetchone()
+
+        data = data1[0]
+        data = data.tostring() # Aus der DB kommt ein array Objekt!
+
+        return data
 
     #_________________________________________________________________________
 
