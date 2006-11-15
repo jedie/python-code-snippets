@@ -25,6 +25,10 @@ module_manager_data = {
             "markup"            : None
         },
     },
+    "md5check" : {
+        "must_login"    : True,
+        "must_admin"    : False,
+    },
     "download" : {
         "must_login"    : True,
         "must_admin"    : False,
