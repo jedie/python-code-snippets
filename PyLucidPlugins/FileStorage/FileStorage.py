@@ -13,9 +13,12 @@ FileStorage
 
 
 
-__version__="0.2Alpha"
+__version__="0.2"
 
 __history__= """
+v0.2
+    - MD5 Summe wird angezeigt und gespeichert.
+    - Benutzt die neuen page_msg Farben
 v0.2Alpha
     - Daten werden nun in einer seperaten Tabelle eingefügt, das geschied
         mittels raw_cursor, um die automatische DB-Encoding-Konvertierung zu
@@ -37,7 +40,7 @@ http://pylucid.htfx.eu/index.py/ModuleManager/
 
 
 
-import datetime, cgi
+import datetime, cgi, md5
 
 
 
@@ -50,6 +53,7 @@ SQL_install_commands = [
     size INT(11) NOT NULL,
     client_info VARCHAR(255) NOT NULL,
     data_id INT(11) NOT NULL,
+    data_md5 VARCHAR(32) NOT NULL,
     owner_id INT(11) NOT NULL,
     public TINYINT(1) NOT NULL DEFAULT '0',
     PRIMARY KEY (id)
@@ -109,6 +113,7 @@ summary = """<h1>file storage v{{ version }}</h1>
             <th>upload time</th>
             <th>file info</th>
             <th>client info</th>
+            <th>md5</th>
             <th>from user</th>
             <th>action</th>
         </tr>
@@ -125,6 +130,7 @@ summary = """<h1>file storage v{{ version }}</h1>
                 <td><small>{{ file.upload_time }}</small></td>
                 <td><small>{{ file.info|escapexml }}</small></td>
                 <td><small>{{ file.client_info|escapexml }}</small></td>
+                <td><small>{{ file.data_md5|escapexml }}</small></td>
                 <td>
                     {% if file.user_name %}
                         <a href="mailto:{{ file.user_email }}">
@@ -188,7 +194,7 @@ class FileStorage(PyLucidBaseModule):
             try:
                 self.handle_upload()
             except UploadTooBig, e:
-                self.page_msg(e)
+                self.page_msg.red(e)
 
         self._create_page()
 
@@ -202,7 +208,7 @@ class FileStorage(PyLucidBaseModule):
         except Exception, e:
             if not "doesn't exist" in str(e):
                 raise Exception(e)
-                self.page_msg("Error: %s" % e)
+                self.page_msg.red("Error: %s" % e)
             else:
                 self.create_table()
             filelist = []
@@ -216,7 +222,7 @@ class FileStorage(PyLucidBaseModule):
             "filelist"  : filelist,
             "version"   : __version__,
         }
-        #~ self.page_msg(context)
+        #~ self.page_msg.debug(context)
 
         #~ self.templates.write("summary", context)
         self.response.write(
@@ -246,8 +252,8 @@ class FileStorage(PyLucidBaseModule):
             #~ self.page_msg("Upload too big!")
             #~ return
 
-        #~ self.page_msg(self.request.files)
-        #~ self.page_msg(filename, totalBytes)
+        #~ self.page_msg.debug(self.request.files)
+        #~ self.page_msg.debug(filename, totalBytes)
 
         self.insert(filename, info, data)
 
@@ -255,9 +261,9 @@ class FileStorage(PyLucidBaseModule):
         try:
             self.db.rollback() # transaktion aufheben
         except Exception, e:
-            self.page_msg("Error, db rollback failed: %s" % e)
+            self.page_msg.red("Error, db rollback failed: %s" % e)
         else:
-            self.page_msg("Info: db rollback successful.")
+            self.page_msg.black("Info: db rollback successful.")
 
     def insert(self, filename, info, data):
         """
@@ -267,7 +273,7 @@ class FileStorage(PyLucidBaseModule):
             self.session['client_IP'], self.session['client_domain_name']
         )
 
-        c = self.db.conn.raw_cursor()
+        raw_cursor = self.db.conn.raw_cursor()
 
         # Nur die Daten als BLOB einfügen
         sql = "".join(
@@ -275,7 +281,7 @@ class FileStorage(PyLucidBaseModule):
             "plugin_filestorage_data (data) VALUES (%s);"]
         )
         try:
-            c.execute(sql, (data,))
+            raw_cursor.execute(sql, (data,))
         except Exception, e:
             self.db_rollback()
             txt = "%s..." % str(e)[:200]
@@ -284,7 +290,9 @@ class FileStorage(PyLucidBaseModule):
             else:
                 raise Exception(txt)
 
-        data_id = c.lastrowid
+        data_id = raw_cursor.lastrowid
+        data_md5 = md5.new(data).hexdigest()
+        size = len(data)
 
         try:
             # Meta Daten zum Upload eintragen
@@ -293,8 +301,9 @@ class FileStorage(PyLucidBaseModule):
                 data  = {
                     "filename"      : filename,
                     "info"          : info,
-                    "size"          : len(data),
+                    "size"          : size,
                     "data_id"       : data_id,
+                    "data_md5"      : data_md5,
                     "upload_time"   : datetime.datetime.now(),
                     "client_info"   : client_info,
                     "owner_id"      : self.session['user_id'],
@@ -303,10 +312,13 @@ class FileStorage(PyLucidBaseModule):
                 #~ debug = True
             )
         except Exception, e:
-            self.page_msg("Error, can't insert Metadata: %s" % e)
+            self.page_msg.red("Error, can't insert Metadata: %s" % e)
             self.db_rollback()
         else:
             self.db.commit() # transaktion ende
+            self.page_msg.green(
+                "Upload successful. saved %s Bytes. MD5: %s" % (size, data_md5)
+            )
 
     #_________________________________________________________________________
 
@@ -317,7 +329,7 @@ class FileStorage(PyLucidBaseModule):
         result = self._filedata()
 
         user_list = self.db.userList(select_items=["name","email"])
-        #~ self.page_msg(user_list)
+        #~ self.page_msg.debug(user_list)
 
         # Daten auffüllen
         for line in result:
@@ -358,8 +370,8 @@ class FileStorage(PyLucidBaseModule):
 
         result = self.db.process_statement(
             SQLcommand = (
-                "SELECT id, filename, size, info, upload_time, client_info,"
-                " owner_id, public"
+                "SELECT id, filename, size, data_md5, info,"
+                " upload_time, client_info, owner_id, public"
                 " FROM $$plugin_filestorage"
                 " WHERE %s" % where[0]
             ),
@@ -393,17 +405,17 @@ class FileStorage(PyLucidBaseModule):
         try:
             filedata = self._get_filedata(function_info)
         except PermissionDeny:
-            self.page_msg("Permission Deny!")
+            self.page_msg.red("Permission Deny!")
             return
 
-        self.page_msg(filedata)
+        self.page_msg.debug(filedata)
 
         data = self._get_data(filedata["id"])
 
         file_len = len(data)
         filename = str(filedata['filename']) # kein unicode!
 
-        #~ self.page_msg(len(data), data)
+        #~ self.page_msg.debug(len(data), data)
 
         # Datei zum Browser senden
         self.response.startFileResponse(filename, file_len)
@@ -414,13 +426,13 @@ class FileStorage(PyLucidBaseModule):
         try:
             filedata = self._get_filedata(function_info)
         except (PermissionDeny, WrongFileID), e:
-            self.page_msg(e)
+            self.page_msg.red(e)
             return
-        #~ self.page_msg(filedata)
+        #~ self.page_msg.debug(filedata)
 
         self._delete_file(filedata["id"])
 
-        self.page_msg(
+        self.page_msg.green(
             "File '%s' deleted in DB!" % cgi.escape(filedata["filename"])
         )
 
@@ -499,9 +511,9 @@ class FileStorage(PyLucidBaseModule):
             try:
                 self.db.process_statement(sql)
             except Exception, e:
-                self.page_msg("Error: %s" % e)
+                self.page_msg.red("Error: %s" % e)
             else:
-                self.page_msg("One Table created, OK!")
+                self.page_msg.green("One Table created, OK!")
 
     def drop_table(self):
         """
@@ -512,13 +524,13 @@ class FileStorage(PyLucidBaseModule):
                 self.db.process_statement(sql)
             except Exception, e:
                 if "Unknown table" in str(e):
-                    self.page_msg(
+                    self.page_msg.black(
                         "Skip drop table, because it doesn't exists."
                     )
                 else:
-                    self.page_msg("Error: %s" % e)
+                    self.page_msg.red("Error: %s" % e)
             else:
-                self.page_msg("Drop one table OK")
+                self.page_msg.green("Drop one table OK")
 
 
 
