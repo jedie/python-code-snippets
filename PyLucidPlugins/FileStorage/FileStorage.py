@@ -13,9 +13,13 @@ FileStorage
 
 
 
-__version__="0.2"
+__version__="0.3"
 
 __history__= """
+v0.3
+    - nun werden die Daten in base64 gespeichert
+    - MD5 Summe kann mit den Daten in der DB verglichen werden
+    - Tabelle werden beim löschen direkt optimiert
 v0.2
     - MD5 Summe wird angezeigt und gespeichert.
     - Benutzt die neuen page_msg Farben
@@ -40,7 +44,7 @@ http://pylucid.htfx.eu/index.py/ModuleManager/
 
 
 
-import datetime, cgi, md5
+import datetime, cgi, md5, base64
 
 
 
@@ -130,7 +134,11 @@ summary = """<h1>file storage v{{ version }}</h1>
                 <td><small>{{ file.upload_time }}</small></td>
                 <td><small>{{ file.info|escapexml }}</small></td>
                 <td><small>{{ file.client_info|escapexml }}</small></td>
-                <td><small>{{ file.data_md5|escapexml }}</small></td>
+                <td>
+                    <a href="{{ file.md5check_url }}">
+                        <small>{{ file.data_md5|escapexml }}</small>
+                    </a>
+                </td>
                 <td>
                     {% if file.user_name %}
                         <a href="mailto:{{ file.user_email }}">
@@ -152,7 +160,10 @@ summary = """<h1>file storage v{{ version }}</h1>
             </tr>
         {% endfor %}
     </table>
-    <p>total size: {{ total_size|filesizeformat }} in {{ file_count }} files.</p>
+    <p>
+        total size: {{ total_size|filesizeformat }} in {{ file_count }} files.
+        (Used {{ db_data_length|filesizeformat }} in db, {{ overhead }}% overhead.)
+    </p>
 {% endif %}
 """
 
@@ -186,6 +197,12 @@ from PyLucid.system.BaseModule import PyLucidBaseModule
 
 class FileStorage(PyLucidBaseModule):
 
+    def __init__(self, *args, **kwargs):
+        super(FileStorage, self).__init__(*args, **kwargs)
+
+        self.meta_tablename = "%splugin_filestorage" % self.db.tableprefix
+        self.data_tablename = "%splugin_filestorage_data" % self.db.tableprefix
+
     def lucidTag(self):
         #~ self.response.debug()
 
@@ -213,14 +230,17 @@ class FileStorage(PyLucidBaseModule):
                 self.create_table()
             filelist = []
 
-        total_size, file_count = self.get_size_info()
+        total_size, file_count, db_data_length, overhead = self.get_size_info()
+        overhead = round(overhead, 1)
 
         context = {
-            "url"       : self.URLs.actionLink("lucidTag"),
-            "total_size": total_size,
-            "file_count": file_count,
-            "filelist"  : filelist,
-            "version"   : __version__,
+            "url"               : self.URLs.actionLink("lucidTag"),
+            "total_size"        : total_size,
+            "file_count"        : file_count,
+            "db_data_length"    : db_data_length,
+            "overhead"          : overhead,
+            "filelist"          : filelist,
+            "version"           : __version__,
         }
         #~ self.page_msg.debug(context)
 
@@ -265,6 +285,9 @@ class FileStorage(PyLucidBaseModule):
         else:
             self.page_msg.black("Info: db rollback successful.")
 
+    def _make_md5(self, data):
+        return md5.new(data).hexdigest()
+
     def insert(self, filename, info, data):
         """
         Trägt eine neue Datei in die DB ein
@@ -277,11 +300,10 @@ class FileStorage(PyLucidBaseModule):
 
         # Nur die Daten als BLOB einfügen
         sql = "".join(
-            ["INSERT INTO ",self.db.tableprefix,
-            "plugin_filestorage_data (data) VALUES (%s);"]
+            ["INSERT INTO ", self.data_tablename," (data) VALUES (%s);"]
         )
         try:
-            raw_cursor.execute(sql, (data,))
+            raw_cursor.execute(sql, (base64.b64encode(data),))
         except Exception, e:
             self.db_rollback()
             txt = "%s..." % str(e)[:200]
@@ -291,7 +313,7 @@ class FileStorage(PyLucidBaseModule):
                 raise Exception(txt)
 
         data_id = raw_cursor.lastrowid
-        data_md5 = md5.new(data).hexdigest()
+        data_md5 = self._make_md5(data)
         size = len(data)
 
         try:
@@ -352,6 +374,11 @@ class FileStorage(PyLucidBaseModule):
                 # Vielleicht ist der User mittlerweile gelöscht worden
                 pass
 
+            # URLs
+            line["md5check_url"] = self.URLs.actionLink(
+                "md5check", str(line["id"])
+            )
+
         return result
 
     def _filedata(self, id=None):
@@ -370,7 +397,7 @@ class FileStorage(PyLucidBaseModule):
 
         result = self.db.process_statement(
             SQLcommand = (
-                "SELECT id, filename, size, data_md5, info,"
+                "SELECT id, filename, size, data_md5, info, data_id,"
                 " upload_time, client_info, owner_id, public"
                 " FROM $$plugin_filestorage"
                 " WHERE %s" % where[0]
@@ -397,7 +424,21 @@ class FileStorage(PyLucidBaseModule):
             )
         )
         total_size = result[0]["SUM(size)"]
-        return total_size, file_count
+        if total_size == None: total_size=0
+
+        SQLresult = self.db.process_statement("SHOW TABLE STATUS")
+
+        for line in SQLresult:
+            if line["Name"] == self.data_tablename:
+                db_data_length = line["Data_length"]
+                break
+
+        try:
+            overhead = float(db_data_length)/float(total_size) * 100.0-100.0
+        except ZeroDivisionError:
+            overhead = 0.0
+
+        return total_size, file_count, db_data_length, overhead
 
     #_________________________________________________________________________
 
@@ -410,7 +451,7 @@ class FileStorage(PyLucidBaseModule):
 
         self.page_msg.debug(filedata)
 
-        data = self._get_data(filedata["id"])
+        data = self._get_data_by_file_id(filedata["id"])
 
         file_len = len(data)
         filename = str(filedata['filename']) # kein unicode!
@@ -422,21 +463,7 @@ class FileStorage(PyLucidBaseModule):
         self.response.write(data)
         return self.response
 
-    def delete(self, function_info=None):
-        try:
-            filedata = self._get_filedata(function_info)
-        except (PermissionDeny, WrongFileID), e:
-            self.page_msg.red(e)
-            return
-        #~ self.page_msg.debug(filedata)
 
-        self._delete_file(filedata["id"])
-
-        self.page_msg.green(
-            "File '%s' deleted in DB!" % cgi.escape(filedata["filename"])
-        )
-
-        self._create_page()
 
     def _get_filedata(self, function_info):
         """
@@ -463,7 +490,7 @@ class FileStorage(PyLucidBaseModule):
 
         return filedata
 
-    def _get_data(self, file_id):
+    def _get_data_by_file_id(self, file_id):
         """
         Liefert die eigentlichen Dateidaten zurück
         """
@@ -475,31 +502,99 @@ class FileStorage(PyLucidBaseModule):
         )
         data_id = data_id1[0]["data_id"]
 
-        c = self.db.conn.raw_cursor()
+        return self._get_data_by_data_id(data_id)
+
+    def _get_data_by_data_id(self, data_id):
+        raw_cursor = self.db.conn.raw_cursor()
 
         # Eigentlichen Daten aus DB holen
         sql = "".join(
-            ["SELECT data FROM ", self.db.tableprefix,
-            "plugin_filestorage_data WHERE (id=%s)"]
+            ["SELECT data FROM ", self.data_tablename, " WHERE (id=%s)"]
         )
-        c.execute(sql, (data_id,))
-        data1 = c.fetchone()
+        raw_cursor.execute(sql, (data_id,))
+        data1 = raw_cursor.fetchone()
 
         data = data1[0]
         data = data.tostring() # Aus der DB kommt ein array Objekt!
+
+        data = base64.b64decode(data)
 
         return data
 
     #_________________________________________________________________________
 
-    def _delete_file(self, file_id):
+    def md5check(self, function_info=None):
         """
-        Löschen einer Datei in der DB
+        Prüft die gespeicherte MD5 Summe: Erstellt eine neue MD5 von den
+        gespeicherten DB Daten und vergleicht diese.
         """
-        self.db.delete(
-            table = "plugin_filestorage",
-            where = ("id",file_id),
-        )
+        try:
+            filedata = self._get_filedata(function_info)
+        except (PermissionDeny, WrongFileID), e:
+            self.page_msg.red(e)
+            return
+
+        #~ self.page_msg.debug(filedata)
+
+        data_md5 = filedata["data_md5"]
+        data_id = filedata["data_id"]
+
+        data = self._get_data_by_data_id(data_id)
+        db_md5 = self._make_md5(data)
+        del(data)
+
+        if data_md5 != db_md5:
+            self.page_msg.red("Wrong MD5: %s != %s" % (data_md5, db_md5))
+            self.page_msg.red("The saved data in database are corrupt!")
+        else:
+            self.page_msg.green("MD5 ok, data consistent.")
+
+        self._create_page()
+
+    #_________________________________________________________________________
+
+    def delete(self, function_info=None):
+        try:
+            filedata = self._get_filedata(function_info)
+        except (PermissionDeny, WrongFileID), e:
+            self.page_msg.red(e)
+            return
+        #~ self.page_msg.debug(filedata)
+        #~ return
+
+        data_id = filedata["data_id"]
+        id = filedata["id"]
+
+        try:
+            # Eigentliche Daten löschen
+            self.db.delete(
+                table = "plugin_filestorage_data",
+                where = ("id",data_id),
+            )
+            # Metadaten löschen
+            self.db.delete(
+                table = "plugin_filestorage",
+                where = ("id",id),
+            )
+        except Exception, e:
+            self.page_msg.red("Can't delete: %s" % e)
+        else:
+            self.page_msg.green(
+                "File '%s' deleted in DB!" % cgi.escape(filedata["filename"])
+            )
+
+        try:
+            status = self.db.process_statement(
+                "OPTIMIZE TABLE %s" % self.data_tablename
+            )[0]
+        except Exception, e:
+            self.page_msg.red("Optimize data table error: %s" % e)
+        else:
+            self.page_msg.green(
+                "Optimize data table: %s" % status["Msg_text"]
+            )
+
+        self._create_page()
 
     #_________________________________________________________________________
 
