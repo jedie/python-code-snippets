@@ -25,6 +25,8 @@ Erwartet ein WSGI request-Objekt s. http://wsgiarea.pocoo.org/colubrid/
 ToDo
 ----
     * Es wird immer das paramstyle 'format' benutzt. Also mit %s escaped
+    * Erweiterung der Select Methode so das eine Abfrage mit LIKE Parameter gemacht werden kann.
+      so wie: select * from table where feld like %suchwort%
 """
 
 __version__="0.14"
