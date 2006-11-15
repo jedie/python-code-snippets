@@ -41,7 +41,8 @@ import datetime, cgi
 
 
 
-SQL_install_commands = """CREATE TABLE $$plugin_filestorage (
+SQL_install_commands = [
+"""CREATE TABLE $$plugin_filestorage (
     id INT(11) NOT NULL auto_increment,
     filename VARCHAR(255) NOT NULL,
     upload_time datetime NOT NULL,
@@ -52,19 +53,20 @@ SQL_install_commands = """CREATE TABLE $$plugin_filestorage (
     owner_id INT(11) NOT NULL,
     public TINYINT(1) NOT NULL DEFAULT '0',
     PRIMARY KEY (id)
-) COMMENT = "FileStorage - management data";
-
-CREATE TABLE $$plugin_filestorage_data (
+) COMMENT = "FileStorage - management data";"""
+,
+"""CREATE TABLE $$plugin_filestorage_data (
     id INT(11) NOT NULL auto_increment,
     data LONGBLOB,
     PRIMARY KEY (id)
-) COMMENT = "FileStorage - BLOB Data";
+) COMMENT = "FileStorage - BLOB Data";"""
+]
 
 
-"""
-SQL_deinstall_commands = """DROP TABLE $$plugin_filestorage;
-DROP TABLE $$plugin_filestorage_data;
-"""
+SQL_deinstall_commands = [
+    "DROP TABLE $$plugin_filestorage;",
+    "DROP TABLE $$plugin_filestorage_data;"
+]
 
 
 
@@ -493,23 +495,30 @@ class FileStorage(PyLucidBaseModule):
         """
         FIXME put this into the ModuleManager!
         """
-        try:
-            self.db.process_statement(SQL_install_commands)
-        except Exception, e:
-            self.page_msg("Error: %s" % e)
-        else:
-            self.page_msg("Tables created, OK!")
+        for sql in SQL_install_commands:
+            try:
+                self.db.process_statement(sql)
+            except Exception, e:
+                self.page_msg("Error: %s" % e)
+            else:
+                self.page_msg("One Table created, OK!")
 
     def drop_table(self):
         """
         FIXME put this into the ModuleManager!
         """
-        try:
-            self.db.process_statement(SQL_deinstall_commands)
-        except Exception, e:
-            self.page_msg("Error: %s" % e)
-        else:
-            self.page_msg("Drop table OK")
+        for sql in SQL_deinstall_commands:
+            try:
+                self.db.process_statement(sql)
+            except Exception, e:
+                if "Unknown table" in str(e):
+                    self.page_msg(
+                        "Skip drop table, because it doesn't exists."
+                    )
+                else:
+                    self.page_msg("Error: %s" % e)
+            else:
+                self.page_msg("Drop one table OK")
 
 
 
