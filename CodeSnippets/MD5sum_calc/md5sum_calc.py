@@ -18,8 +18,13 @@ __author__  = "Jens Diemer"
 __license__ = "GNU General Public License http://www.opensource.org/licenses/gpl-license.php"
 __info__    = "md5sum_calc"
 __url__     = "http://www.jensdiemer.de"
-__version__ = "0.2.3"
+
+__version__ = "0.2.4"
+
 __history__ = """
+v0.2.4
+    - Bugfix: ZeroDivisionError bei sehr kleinen Dateien und der
+        Preformance Berechnung
 v0.2.3
     - NEU: Overall performance ;)
 v0.2.2
@@ -58,9 +63,16 @@ class md5sum:
             else:
                 sys.stderr.write("'%s' no file/dir!\n" % arg)
 
-        overall_performance = sum(self.overall_performance)/len(self.overall_performance)
-        print "Overall performance: %.1fMB/sec" % overall_performance
-        print
+        try:
+            overall_performance = (
+                sum(self.overall_performance) / len(self.overall_performance)
+            )
+            print "Overall performance: %.1fMB/sec" % overall_performance
+            print
+        except ZeroDivisionError:
+            # Evtl. war die Datei so klein, das es in Windeseile fertig war ;)
+            pass
+
         raw_input("(press enter to continue)")
 
     def calc_dir(self, dirname):
