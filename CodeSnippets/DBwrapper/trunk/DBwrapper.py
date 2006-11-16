@@ -31,9 +31,11 @@ ToDo
             select * from table where feld like %suchwort%
 """
 
-__version__="0.14"
+__version__="0.15"
 
 __history__="""
+v0.15
+    - Neu: get_db_variable()
 v0.14
     - ermöglicht an das Ursprüngliche Cursor Objekt zu gelangen, mit:
         c = self.db.conn.raw_cursor()
@@ -160,11 +162,9 @@ class Database(object):
         """
         3.23, 4.0, 4.1, 5.0, 5.1
         """
-        SQLcommand = "SHOW VARIABLES LIKE 'version';"
-        version = self.cursor.raw_processone(SQLcommand)
-        # ->> ('version', '4.1.15-Debian_1ubuntu5-log')
+        version = self.get_db_variable("version")
+        # Beispiel version ->> '4.1.15-Debian_1ubuntu5-log'
 
-        version = version[1] # ->> '4.1.15-Debian_1ubuntu5-log'
         self.RAWserver_version = version
 
         version = version.split("-",1)[0]   # ->> '4.1.15'
@@ -190,12 +190,9 @@ class Database(object):
     def getMySQLcharacter(self):
         version = self.server_version
         if version < (4, 1, 0): # älter als v4.1.0
-            SQLcommand = "SHOW VARIABLES LIKE 'character_set';"
+            character_set = self.get_db_variable("character_set")
         else: # ab v4.1.0
-            SQLcommand = "SHOW VARIABLES LIKE 'character_set_server';"
-
-        character_set = self.cursor.raw_processone(SQLcommand)
-        character_set = character_set[1]
+            character_set = self.get_db_variable("character_set_server")
 
         return character_set
 
@@ -551,7 +548,7 @@ class IterableDictCursor(object):
         sql = self.prepare_sql(sql)
         self._cursor.execute(sql, values)
 
-    def execute_unescaped(self, sql):
+    def execute_unescaped(self, sql, values=None):
         """
         execute without prepare_sql (replace prefix and placeholders)
         """
@@ -559,7 +556,7 @@ class IterableDictCursor(object):
         sql = self.encode(sql)
 
         self.last_statement = sql
-        self._cursor.execute(sql)
+        self._cursor.execute(sql, values)
 
     def fetchall_raw(self):
         return self._cursor.fetchall()
@@ -596,8 +593,8 @@ class IterableDictCursor(object):
     def raw_fetchall(self):
         return self._cursor.fetchall()
 
-    def raw_processone(self, SQLcommand):
-        self.execute_unescaped(SQLcommand)
+    def raw_processone(self, SQLcommand, values=None):
+        self.execute_unescaped(SQLcommand, values)
         return self._cursor.fetchone()
 
     def __iter__(self):
@@ -925,6 +922,33 @@ class SQL_wrapper(Database):
 
     #_________________________________________________________________________
     # Spezial SELECT
+
+    def get_db_variable(self, variable_name):
+        """
+        Liefert den Wert einer MySQL variable zurück. Dabei werden Zahlen
+        von String nach long gewandelt.
+        """
+        SQLcommand = "SHOW VARIABLES LIKE %s;"
+        result = self.cursor.raw_processone(SQLcommand, variable_name)
+        if result == None:
+            raise IndexError(
+                "SQL variable '%s' not found or unknown!" % variable_name
+            )
+
+        if result[0]!=variable_name:
+            raise IndexError(
+                "SQL result contains not the variable '%s': %s" % (
+                    variable_name, result
+                )
+            )
+
+        variable_data = result[1]
+        try:
+            variable_data = long(variable_data)
+        except ValueError:
+            pass
+
+        return variable_data
 
     def indexResult(self, selectDict, indexKey):
         """
