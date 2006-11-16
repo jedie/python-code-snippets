@@ -13,9 +13,11 @@ FileStorage
 
 
 
-__version__="0.3.1"
+__version__="0.3.2"
 
 __history__= """
+v0.3.2
+    - Berücksichtig die MySQL Variable "max_allowed_packet"
 v0.3.1
     - Bugfix: Nun klappt es mit base64 auch mit Python 2.3 :)
 v0.3
@@ -89,7 +91,8 @@ summary = """<h1>file storage v{{ version }}</h1>
         <strong>Note:</strong>
         <ul>
             <li>The files store insecure: Use only for unimportant files.</li>
-            <li>Data store in database, so only for small files suitably. (>1-2MB)!</li>
+            <li>Data store in database, so only for small files suitably!</li>
+            <li>You can only upload smaller files than: <strong>&gt;{{ max_upload_size|filesizeformat }}</strong>!</li>
         </ul>
         <label class="left" for="upload">upload:</label>
         <input class="right" type="file" name="upload" size="50" id="filename" />
@@ -173,7 +176,7 @@ summary = """<h1>file storage v{{ version }}</h1>
 
 def render_jinja(template, context):
     """
-    Ist als normale Funktion ausgelagert, damit sie auch w�hrend der _install
+    Ist als normale Funktion ausgelagert, damit sie auch w婲end der _install
     Phase benutzt werden kann...
     """
     import jinja
@@ -235,12 +238,15 @@ class FileStorage(PyLucidBaseModule):
         total_size, file_count, db_data_length, overhead = self.get_size_info()
         overhead = round(overhead, 1)
 
+        max_upload_size = self.get_max_upload_size()
+
         context = {
             "url"               : self.URLs.actionLink("lucidTag"),
             "total_size"        : total_size,
             "file_count"        : file_count,
             "db_data_length"    : db_data_length,
             "overhead"          : overhead,
+            "max_upload_size"   : max_upload_size,
             "filelist"          : filelist,
             "version"           : __version__,
         }
@@ -269,10 +275,15 @@ class FileStorage(PyLucidBaseModule):
         filename = FieldStorage.filename
         data = FieldStorage.read()
 
-        totalBytes = self.request.environ["CONTENT_LENGTH"]
-        #~ if totalBytes>5000:
-            #~ self.page_msg("Upload too big!")
-            #~ return
+        totalBytes = long(self.request.environ["CONTENT_LENGTH"])
+
+        max_upload_size = self.get_max_upload_size()
+
+        if totalBytes >= max_upload_size:
+            self.page_msg.red(
+                "Upload %fBytes too big!" % (totalBytes-max_upload_size)
+            )
+            return
 
         #~ self.page_msg.debug(self.request.files)
         #~ self.page_msg.debug(filename, totalBytes)
@@ -409,6 +420,8 @@ class FileStorage(PyLucidBaseModule):
         )
         return result
 
+    #_________________________________________________________________________
+
     def get_size_info(self):
         """
         Liefert die gesammt Größe und Anzahl aller gespeicherten Dateien
@@ -442,6 +455,10 @@ class FileStorage(PyLucidBaseModule):
             overhead = 0.0
 
         return total_size, file_count, db_data_length, overhead
+
+    def get_max_upload_size(self):
+        max_upload_size = self.db.get_db_variable("max_allowed_packet")
+        return max_upload_size
 
     #_________________________________________________________________________
 
