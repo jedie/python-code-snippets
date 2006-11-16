@@ -13,9 +13,11 @@ FileStorage
 
 
 
-__version__="0.3.2"
+__version__="0.3.3"
 
 __history__= """
+v0.3.3
+    - get_max_upload_size berücksichtigt 33% overhead durch base64 encodierung
 v0.3.2
     - Berücksichtig die MySQL Variable "max_allowed_packet"
 v0.3.1
@@ -280,9 +282,8 @@ class FileStorage(PyLucidBaseModule):
         max_upload_size = self.get_max_upload_size()
 
         if totalBytes >= max_upload_size:
-            self.page_msg.red(
-                "Upload %fBytes too big!" % (totalBytes-max_upload_size)
-            )
+            too_big = float(totalBytes-max_upload_size) / 1024
+            self.page_msg.red("Upload %.2fKBytes too big!" % too_big)
             return
 
         #~ self.page_msg.debug(self.request.files)
@@ -457,8 +458,23 @@ class FileStorage(PyLucidBaseModule):
         return total_size, file_count, db_data_length, overhead
 
     def get_max_upload_size(self):
+        """
+        Ermittelt die max upload größe in Bytes.
+        Dabei wird die MySQL Variable "max_allowed_packet" als Grundlage
+        genommen und 33,33% overhead durch die base64 encodierung abgezogen.
+        """
         max_upload_size = self.db.get_db_variable("max_allowed_packet")
-        return max_upload_size
+
+        overhead = max_upload_size * 0.34
+        total_upload_size = max_upload_size - overhead
+
+        #~ self.page_msg.debug(
+            #~ "db max_upload_size: %s, overhead: %s, total_upload_size: %s" % (
+                #~ max_upload_size, overhead, total_upload_size
+            #~ )
+        #~ )
+
+        return total_upload_size
 
     #_________________________________________________________________________
 
