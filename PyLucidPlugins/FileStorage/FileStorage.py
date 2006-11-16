@@ -13,9 +13,11 @@ FileStorage
 
 
 
-__version__="0.3"
+__version__="0.3.1"
 
 __history__= """
+v0.3.1
+    - Bugfix: Nun klappt es mit base64 auch mit Python 2.3 :)
 v0.3
     - nun werden die Daten in base64 gespeichert
     - MD5 Summe kann mit den Daten in der DB verglichen werden
@@ -303,7 +305,7 @@ class FileStorage(PyLucidBaseModule):
             ["INSERT INTO ", self.data_tablename," (data) VALUES (%s);"]
         )
         try:
-            raw_cursor.execute(sql, (base64.b64encode(data),))
+            raw_cursor.execute(sql, (base64.encodestring(data),))
         except Exception, e:
             self.db_rollback()
             txt = "%s..." % str(e)[:200]
@@ -315,6 +317,7 @@ class FileStorage(PyLucidBaseModule):
         data_id = raw_cursor.lastrowid
         data_md5 = self._make_md5(data)
         size = len(data)
+        del(data)
 
         try:
             # Meta Daten zum Upload eintragen
@@ -517,7 +520,7 @@ class FileStorage(PyLucidBaseModule):
         data = data1[0]
         data = data.tostring() # Aus der DB kommt ein array Objekt!
 
-        data = base64.b64decode(data)
+        data = base64.decodestring(data)
 
         return data
 
