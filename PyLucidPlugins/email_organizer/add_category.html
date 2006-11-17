@@ -1,0 +1,37 @@
+<form name="auswahl" method="post" action="{{ addCat.0.Action }}">
+<table width="100%" border="0" cellpadding="5" class="rand">
+ <tr>
+  <td colspan="2" valign="top" class="tablehead1">Neue Kategorie eingeben: </td>
+ </tr>
+ <tr>
+  <td colspan="2" align="right">
+   <a href="{{ menu_entries.Liste }}"><span class="textklein">[Liste anzeigen]</span></a>&nbsp;&nbsp;&nbsp;&#124;&nbsp;&nbsp;&nbsp;
+   <a href="{{ menu_entries.Neue_Kategorie }}"><span class="textklein">[Neue Kategorie]</span></a> -
+   <a href="{{ menu_entries.Neue_EMail }}"><span class="textklein">[Neue Email]</span></a>
+  </td>
+ </tr>
+ <tr>
+   <td width="120" valign="top"><span class="textklein bold">Neue Kategorie:</span> <br>
+     <input name="kategorie" type="text" id="kat" size="30" maxlength="30" value="{{ form_data.kategorie }}">
+   </td>
+   <td width="604"><span class="textklein bold">NAME:</span> <br>
+     <input name="name" type="text" size="100" maxlength="100" value="{{ form_data.name }}">
+     <br>
+     <span class="textklein bold">E-MAIL ADRESSE:</span>
+     <br>
+     <input name="email" type="text" size="100" maxlength="100" value="{{ form_data.email }}">
+     <br>
+     <span class="textklein bold">BEMERKUNG:</span> <br>
+     <textarea name="bemerkung" cols="70" rows="3" id="textarea">{{ form_data.bemerkung  }}</textarea>
+     <br>
+     <br>
+     <input name="button" type="button" onClick="document.auswahl.submit();" value="Speichern"> -
+     <input type="reset" name="Reset" onClick="clear(auswahl);" value="Reset"> -
+     <input name="quit" type="button" onClick="window.location.href='{{ menu_entries.Neue_Kategorie }}';" value="Beenden">
+   </td>
+ </tr>
+ <tr>
+   <td colspan="2">{{ other.status }}</td>
+ </tr>
+</table>
+</form>
