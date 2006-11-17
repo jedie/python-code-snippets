@@ -1,0 +1,64 @@
+ <table width="100%" border="0" cellpadding="3" cellspacing="2" class="rand">
+  <tr>
+   <td width="25%" class="tablehead1">&nbsp;&nbsp;E-Mail-Adressenverwaltung &nbsp;&nbsp;</td>
+   <td align="right" class="tablehead1">
+    <form name="wortsuche" action="{{ other.keyword_form_action }}" method="POST">
+     <span class="textklein bold">Stichwortsuche</span>
+     <input class="textklein" type="stichwort" name="suchwort" size="40" maxlength="40" value="{{ form_data.stichwort }}">
+     <input class="textklein" type="submit" name="los" value="suchen">
+    </form>
+   </td>
+  </tr>
+  <tr valign="top">
+   <td width="25%" valign="bottom"><span class="textklein bold">Auswahl Kategorie</span>
+    <form name="auswahl" method="post" action="{{ other.select_form_action }}">
+     <select name="kategorie" id="kat" onChange="document.auswahl.submit();">
+     {% for item in option_entries.list %}
+       {% if item equals option_entries.selected %}
+        <option selected>{{ item }}</option>
+       {% else %}
+        <option>{{ item }}</option>
+       {% endif %}
+     {% endfor %}
+     </select>
+    </form>
+   </td>
+   <td width="421" valign="top" align="right">
+    <br>
+     <a href="{{ menu_entries.Aktualisieren }}"><span class="textklein">[Liste anzeigen]</span></a>&nbsp;&nbsp;&nbsp;&#124;&nbsp;&nbsp;&nbsp;
+     <a href="{{ menu_entries.Neue_Kategorie }}"><span class="textklein">[Neue Kategorie]</span></a> -
+     <a href="{{ menu_entries.Neue_EMail }}"><span class="textklein">[Neue Email]</span></a>
+   </td>
+  </tr>
+ </table>
+<br />
+
+<table width="100%" border="0" cellpadding="5" class="rand">
+  <tr>
+   <th align="left" class="textklein bold tablehead1">E-Mail Adresse</th>
+   <th align="left" class="textklein bold tablehead1">Name</th>
+   <th align="left" class="textklein bold tablehead1">Bemerkung</th>
+   <th align="left" class="textklein bold tablehead1">Aktionen</th>
+  </tr>
+  {% for item in list_entries %}
+   <tr bgcolor="{{ item.bgcolor }}">
+    <td>
+     <a href="mailto:{{ item.email }}">
+      <span class="textklein">{{ item.email|escapexml }}</span>
+     </a>
+    </td>
+    <td class="textklein">{{ item.name }}</td>
+    <td class="textklein">{{ item.bemerkung }}</td>
+    <td>
+     <a href="{{ other.edit_action }}?nr={{ item.id }}">
+      <img src="http://www.hopek.de/grafiken/Buttons/button_edit.png" border="0" alt="Eintrag bearbeiten" title="Eintrag bearbeiten">
+     </a> -
+     <a href="{{ other.delete_action }}?kategorie={{ item.kategorie }}&amp;nr={{ item.id }}">
+      <img src="http://www.hopek.de/grafiken/Buttons/button_delete.png" border="0" alt="Eintrag loeschen" title="Eintrag loeschen">
+     </a>
+    </td>
+   </tr>
+  {% endfor %}
+</table>
+
+<br />

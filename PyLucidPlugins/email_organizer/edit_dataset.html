@@ -1,0 +1,45 @@
+<form name="auswahl" method="post" action="index.php">
+<table width="100%" border="0" cellpadding="5" class="rand">
+ <tr>
+      <td colspan="2" valign="top" class="tablehead1">Bearbeiten Mail-Adresse: </td>
+ </tr>
+ <tr>
+  <td colspan="2" align="right">
+   <a href="{{ menu_entries.Liste }}"><span class="textklein">[Liste anzeigen]</span></a>&nbsp;&nbsp;&nbsp;&#124;&nbsp;&nbsp;&nbsp;
+   <a href="{{ menu_entries.Neue_Kategorie }}"><span class="textklein">[Neue Kategorie]</span></a> -
+   <a href="{{ menu_entries.Neue_EMail }}"><span class="textklein">[Neue Email]</span></a>
+  </td>
+ </tr>
+ <tr>
+   <td width="120" valign="top"><span class="textklein bold">Kategorie:</span> <br>
+     <select name="kategorie" id="kat" onChange="document.auswahl.submit();">
+     {% for item in option_entries.list %}
+       {% if item equals option_entries.selected %}
+        <option selected>{{ item }}</option>
+       {% else %}
+        <option>{{ item }}</option>
+       {% endif %}
+     {% endfor %}
+     </select>
+   </td>
+   <td width="604"><span class="textklein bold">NAME:</span> <br>
+     <input name="name_field" type="text" value="{{ edit_dataset_entry.name_field }}" size="100" maxlength="100">
+     <br>
+     <span class="textklein bold">EMAIL-ADRESSE:</span>
+     <br>
+     <input name="email_field" type="text" value="{{ edit_dataset_entry.email_field }}" size="100" maxlength="100">
+     <br>
+     <span class="textklein bold">BEMERKUNG:</span> <br>
+     <textarea name="bemerkung_field" cols="67" rows="3" id="textarea">{{ edit_dataset_entry.bemerkung_field }}</textarea>
+     <input type="hidden" name="save" value="1">
+     <input type="hidden" name="nr" value="$nr">
+     <br>
+     <br>
+     <input name="button" type="button" onClick="document.auswahl.submit();" value="Speichern"> -
+     <input type="reset" name="Reset" onClick="clear(auswahl);" value="Reset"> -
+     <input name="quit" type="button" onClick="window.location.href='http://www.nelanet.de/pytools/index.py/_command/email/liste/';" value="Beenden">
+   </td>
+ </tr>
+</table>
+</form>
+<br />

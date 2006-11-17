@@ -1,0 +1,32 @@
+.meldungOK { font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #00AA00; font-style: normal; }
+.meldungFehler { font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #FF0000; font-style: normal; }
+
+.bold { font-family: Arial, Helvetica, sans-serif;  font-weight: bold; }
+.normal { font-family: Arial, Helvetica, sans-serif;  font-weight: normal; }
+
+.tablehead1 { font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #FFFFFF; background-color: #0099FF; }
+.tablehead2 { font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #FFFFFF; background-color: #0099EE; }
+.showurl { font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #0000FF; }.rand { border: solid 1px #4d89dd }
+.rand_oben { border-top: solid 1px #4d89dd }.rand_unten { border-bottom: solid 1px #4d89dd }
+
+.center { text-align: center; }
+.left { text-align: left; }
+.right { text-align: right; }
+
+.font8 { font-size: 8px; }
+.font9 { font-size: 9px; }
+.font10 { font-size: 10px; }
+.font11 { font-size: 11px; }
+.font12 { font-size: 12px; }
+
+.bolditalic {  font-style: italic;  font-weight: bold;  }
+.rot { color: red;  font-weight: bold;}
+
+
+a.nav1:link, a.nav1:link { color: blue; font-size: 12px; font-weight: normal; text-decoration: none; }
+a.nav1:hover { color: white; text-decoration: none; background-color: blue; display:justify; font-weight: normal; }
+a.nav1:active, a.nav1:focus { color: white; text-decoration: none; background-color: navy; display:justify; font-weight: normal; }
+
+a.nav2:link, a.nav2:link { color: blue; font-weight: normal ; text-decoration: none; }
+a.nav2:hover { color: white; text-decoration: none; background-color: blue; display:justify; font-weight: normal; }
+a.nav2:active, a.nav2:focus { color: white; text-decoration: none; background-color: navy; display:justify; font-weight: normal; }
