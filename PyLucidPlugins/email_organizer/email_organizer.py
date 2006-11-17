@@ -22,10 +22,38 @@ __todo__ = """
 import os, urllib2, urllib, pprint
 from PyLucid.system.BaseModule import PyLucidBaseModule
 
+
+## DoTo: Wenn der ModuleManager die SQL install Kommandos übernimmt, dann
+## müßen die Daten in die *_cfg.py rein:
+SQL_install_commands = [
+"""CREATE TABLE $$email_table (
+  nr int(3) NOT NULL auto_increment,
+  kategorie varchar(40) NOT NULL default '',
+  email varchar(120) NOT NULL default '',
+  name varchar(120) NOT NULL default '',
+  bemerkung varchar(255) default NULL,
+  PRIMARY KEY (nr)
+) COMMENT = "email_organizer plugin table";"""
+]
+
+
+SQL_deinstall_commands = [
+    "DROP TABLE $$email_table;"
+]
+
+
+
 class email_organizer(PyLucidBaseModule):
 
     def lucidTag(self):
-        ''' Nope '''
+        """ Baut die Seite auf """
+        self.liste()
+
+        # Nur vorläuftig hier drin:
+        self.response.write(
+            '<p><small><a href="%s">DROP TABLE</a></small></p>' % \
+                                        self.URLs.actionLink("drop_table")
+        )
 
     # --- Action Methods ---
 
@@ -74,7 +102,7 @@ class email_organizer(PyLucidBaseModule):
                 self.request.form,
             )
 
-            template_entry['other']['status'] = "<b>STATUS</b>: Datensatz wurde erfolgreich gespeichert."
+            self.page_msg.green("Datensatz wurde erfolgreich gespeichert.")
 
         template_entry['menu_entries']   = self._MakeMenuEntries()
 
@@ -98,7 +126,7 @@ class email_organizer(PyLucidBaseModule):
                 self.request.form,
             )
 
-            template_entry['other']['status'] = "<b>STATUS</b>: Datensatz wurde erfolgreich gespeichert."
+            self.page_msg.green("Datensatz wurde erfolgreich gespeichert.")
 
         template_entry['option_entries'] = self._GetOptionFieldData()
         template_entry['menu_entries']   = self._MakeMenuEntries()
@@ -175,11 +203,17 @@ class email_organizer(PyLucidBaseModule):
         option_entries = {}
         cat_values = []
 
-        SQLresult = self.db.select(
-            select_items    = ["kategorie"],
-            from_table      = "email_table",
-            group           = ("kategorie", "ASC")
+        try:
+            SQLresult = self.db.select(
+                select_items    = ["kategorie"],
+                from_table      = "email_table",
+                group           = ("kategorie", "ASC")
             )
+        except Exception, e:
+            if "doesn't exist" in str(e):
+                # Tabellen existieren noch nicht, werden erstellt
+                self.create_table()
+                return
 
         cat_values.append( u"" )
         cat_values.append( u"-- Alle --" )
@@ -289,3 +323,36 @@ class email_organizer(PyLucidBaseModule):
         other["edit_action"]             = self.URLs.commandLink("email_organizer", "EditDataset")
 
         return other
+
+
+    #_________________________________________________________________________
+    ## FIXME put this into the ModuleManager!
+
+    def create_table(self):
+        """
+
+        """
+        for sql in SQL_install_commands:
+            try:
+                self.db.process_statement(sql)
+            except Exception, e:
+                self.page_msg.red("Error: %s" % e)
+            else:
+                self.page_msg.green("One Table created, OK!")
+
+    def drop_table(self):
+        """
+        FIXME put this into the ModuleManager!
+        """
+        for sql in SQL_deinstall_commands:
+            try:
+                self.db.process_statement(sql)
+            except Exception, e:
+                if "Unknown table" in str(e):
+                    self.page_msg.black(
+                        "Skip drop table, because it doesn't exists."
+                    )
+                else:
+                    self.page_msg.red("Error: %s" % e)
+            else:
+                self.page_msg.green("Drop one table OK")

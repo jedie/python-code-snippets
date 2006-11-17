@@ -19,19 +19,19 @@ You can organize all your E-Mail Adress Collection
 #~ module_manager_debug = True
 module_manager_debug = False
 
-global_rights = {
-        "must_login"    : False,
-        "must_admin"    : False,
-}
-
 module_manager_data = {
+    "drop_table": {
+        "must_login"    : True,
+        "must_admin"    : True,
+    },
+
     "lucidTag" : {
-        "must_login"    : False,
+        "must_login"    : True,
         "must_admin"    : False,
     },
 
     "liste" : {
-        "must_login"    : False,
+        "must_login"    : True,
         "must_admin"    : False,
         "internal_page_info" : {
             "name"              : "email_auswahl_liste",
@@ -42,7 +42,7 @@ module_manager_data = {
     },
 
     "NewCategory" : {
-        "must_login"    : False,
+        "must_login"    : True,
         "must_admin"    : False,
         "internal_page_info" : {
             "name"              : "add_category",
@@ -53,7 +53,7 @@ module_manager_data = {
     },
 
     "AddEmail" : {
-        "must_login"    : False,
+        "must_login"    : True,
         "must_admin"    : False,
         "internal_page_info" : {
             "name"              : "add_email",
@@ -64,7 +64,7 @@ module_manager_data = {
     },
 
     "EditDataset" : {
-        "must_login"    : False,
+        "must_login"    : True,
         "must_admin"    : False,
         "internal_page_info" : {
             "name"              : "edit_dataset",
@@ -75,7 +75,7 @@ module_manager_data = {
     },
 
     "DeleteDataset" : {
-        "must_login"    : False,
+        "must_login"    : True,
         "must_admin"    : False,
         "internal_page_info" : {
             "name"              : "delete_dataset",
