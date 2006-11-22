@@ -31,9 +31,11 @@ ToDo
             select * from table where feld like %suchwort%
 """
 
-__version__="0.15"
+__version__="0.16"
 
 __history__="""
+v0.16
+    - remove obsolete datetimefix (now Python 2.3 needed)
 v0.15
     - Neu: get_db_variable()
 v0.14
@@ -625,8 +627,6 @@ class SQL_wrapper(Database):
     Nutzt ein filelike request-Objekt (WSGI) für Debugausgaben.
     Es geht auch sys.stdout :)
     """
-    # Sould be enabled with Python >v2.3 !
-    datetimefix = False
 
     db_date_format = "%Y-%m-%d %H:%M:%S"
     fieldtype_cache = {}
@@ -779,8 +779,6 @@ class SQL_wrapper(Database):
         result = self.process_statement(SQLcommand, values)
         if debug: self.debug_command("select", result)
 
-        if self.datetimefix == True:
-            result = self.fixDatetimeFields(result, from_table)
         return result
 
     def delete(self, table, where, limit=1, debug=False, autoprefix=True):
@@ -856,69 +854,6 @@ class SQL_wrapper(Database):
             if not key in field_list:
                 del data[key]
             index += 1
-
-    #_________________________________________________________________________
-
-    def fixDatetimeFields(self, result, table_name):
-        """
-        Unter Python 2.2 gibt es normalerweise kein datetime. Deswegen liefert
-        MySQLdb auch keine datetime Objekte sondern ein String bei
-        datetime-Feldern zurück. Diese Methode wandelt die String zu datetime
-        Objekten.
-
-        Bei Python 2.2 ist die Methode strptime nicht fester Bestandteil vom
-        Module time!
-        siehe: http://www.python.org/doc/2.2/lib/module-time.html#l2h-1379
-
-        Alternativ kann man _strptime.py von Python 2.3 benutzten:
-        http://svn.python.org/view/python/branches/release23-maint/Lib/_strptime.py
-
-        Für datetime kann man datetime.py von PyPy nutzten:
-        http://codespeak.net/svn/pypy/release/0.8.x/pypy/lib/datetime.py
-        """
-
-        if not table_name in self.fieldtype_cache:
-            self.fieldtype_cache[table_name] = []
-            #~ SHOW FULL COLUMNS FROM lucid_pages
-            try:
-                field_info = self.get_table_field_information(table_name)
-            except:
-                return result
-            for column in field_info:
-                if column["Type"] != "datetime":
-                    continue
-
-                self.fieldtype_cache[table_name].append(column["Field"])
-
-        datetime_fields = self.fieldtype_cache[table_name]
-        if datetime_fields == []:
-            # es gibt keine Felder vom Typ datetime in der aktuellen Tabelle
-            return result
-
-        for line in result:
-            for key in line.keys():
-                if not key in datetime_fields:
-                    continue
-
-                value = line[key]
-
-                if isinstance(value, datetime.datetime):
-                    # Ist doch schon Datetime ?!?!?
-
-                    # Für weitere Select-Abfragen den Patch abstellen
-                    self.datetimefix = False
-
-                    return result
-
-                if isinstance(value, basestring):
-                    t = time.strptime(value, self.db_date_format)
-                    line[key] = datetime.datetime(*t[:6])
-
-                elif hasattr(value, "tuple"): # ist ein mxDateTime Objekt
-                    time_tuple = value.tuple()
-                    line[key] = datetime.datetime(*time_tuple[:6])
-
-        return result
 
     #_________________________________________________________________________
     # Spezial SELECT
