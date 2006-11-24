@@ -31,9 +31,11 @@ ToDo
             select * from table where feld like %suchwort%
 """
 
-__version__="0.16"
+__version__="0.17"
 
 __history__="""
+v0.17
+    - replace execute_unescaped with execute(SQLcommand, do_prepare=False)
 v0.16
     - remove obsolete datetimefix (now Python 2.3 needed)
 v0.15
@@ -523,40 +525,28 @@ class IterableDictCursor(object):
                 sys.stderr.write("Unicode encode Error!") #FIXME
         return s
 
-    def execute(self, sql, values=None):
-        args = [self.prepare_sql(sql)]
+    def execute(self, sql, values=None, do_prepare=True):
+        if do_prepare:
+            sql = self.prepare_sql(sql)
+
+        self.last_statement = sql
+
+        execute_args = [sql]
+
         if values:
-            temp = []
-            for item in values:
-                # Von unicode ins DB encoding konvertieren
-                item = self.encode(item)
-                temp.append(item)
-
-            temp = tuple(temp)
-            args.append(temp)
-
-        self.last_statement = args
+            # Von unicode ins DB encoding konvertieren
+            values = tuple([self.encode(value) for value in values])
+            execute_args.append(values)
 
         try:
-            self._cursor.execute(*tuple(args))
+            self._cursor.execute(*execute_args)
         except Exception, (errno, msg):
             msg = "cursor.execute error: %s --- " % msg
-            msg += "\nargs: %s" % args
+            msg += "\nexecute_args: %s" % execute_args
             raise Exception(msg)
-
-        #~ print dir(self._cursor)
 
     def execute_raw(self, sql, values=None):
         sql = self.prepare_sql(sql)
-        self._cursor.execute(sql, values)
-
-    def execute_unescaped(self, sql, values=None):
-        """
-        execute without prepare_sql (replace prefix and placeholders)
-        """
-        # Von unicode ins DB encoding konvertieren
-        sql = self.encode(sql)
-
         self.last_statement = sql
         self._cursor.execute(sql, values)
 
@@ -596,7 +586,13 @@ class IterableDictCursor(object):
         return self._cursor.fetchall()
 
     def raw_processone(self, SQLcommand, values=None):
-        self.execute_unescaped(SQLcommand, values)
+        self.last_statement = SQLcommand
+
+        execute_args = [SQLcommand]
+        if values:
+            execute_args.append(values)
+
+        self._cursor.execute(*execute_args)
         return self._cursor.fetchone()
 
     def __iter__(self):
@@ -635,7 +631,7 @@ class SQL_wrapper(Database):
         super(SQL_wrapper, self).__init__(*args, **kwargs)
         self.outObject = outObject
 
-    def process_statement(self, SQLcommand, SQL_values = ()):
+    def process_statement(self, SQLcommand, SQL_values=()):
         """ kombiniert execute und fetchall """
         #~ self.outObject("DEBUG:", SQLcommand)
         try:
