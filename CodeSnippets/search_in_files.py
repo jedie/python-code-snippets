@@ -13,17 +13,18 @@ __version__ = "0.1"
 
 
 
-import os, time
+import os, time, fnmatch
 
 
 class search:
-    def __init__( self, path, search_string ):
+    def __init__(self, path, search_string, file_filter):
         self.search_path    = path
         self.search_string  = search_string
+        self.file_filter     = file_filter
 
         print "Search '%s' in [%s]..." % (
             self.search_string, self.search_path
-        )
+       )
         print "_"*80
 
         time_begin = time.time()
@@ -31,32 +32,46 @@ class search:
         print "_"*80
         print "%s files searched in %0.2fsec." % (
             file_count, (time.time()-time_begin)
-        )
+       )
 
-    def walk( self ):
+    def walk(self):
         file_count = 0
         for root, dirlist, filelist in os.walk(self.search_path):
             for filename in filelist:
-                filename = os.path.join( root, filename )
-                self.search_file( filename )
-                file_count += 1
+                for file_filter in self.file_filter:
+                    if fnmatch.fnmatch(filename, file_filter):
+                        self.search_file(os.path.join(root, filename))
+                        file_count += 1
         return file_count
 
-    def search_file( self, filepath ):
-        f = file( filepath, "r" )
+    def search_file(self, filepath):
+        f = file(filepath, "r")
         content = f.read()
         f.close()
         if self.search_string in content:
             print filepath
-            string_pos = content.find( self.search_string )
-            content = content[string_pos-content_window:string_pos+content_window]
-            content = content.replace("\n","")
-            print ">>>", content
-            print
+            self.cutout_content(content)
+
+    def cutout_content(self, content):
+        current_pos = 0
+        search_string_len = len(self.search_string)
+        for i in xrange(max_cutouts):
+            try:
+                pos = content.index(self.search_string, current_pos)
+            except ValueError:
+                break
+
+            content_window = content[ pos-content_extract : pos+content_extract ]
+            print ">>>", content_window.encode("String_Escape")
+            current_pos += pos + search_string_len
+        print
 
 
 if __name__ == "__main__":
     search_path     = r"c:\texte"
+    file_filter     = ("*.py",) # fnmatch-Filter
     search_string   = "history"
-    content_window  = 35
-    search( search_path, search_string )
+    content_extract = 35 # Größe des Ausschnittes der angezeigt wird
+    max_cutouts     = 20 # Max. Anzahl an Treffer, die Angezeigt werden sollen
+
+    search(search_path, search_string, file_filter)
