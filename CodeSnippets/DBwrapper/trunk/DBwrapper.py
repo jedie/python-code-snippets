@@ -540,10 +540,10 @@ class IterableDictCursor(object):
 
         try:
             self._cursor.execute(*execute_args)
-        except Exception, (errno, msg):
-            msg = "cursor.execute error: %s --- " % msg
+        except Exception, e:
+            msg = "cursor.execute error: %s --- " % e
             msg += "\nexecute_args: %s" % execute_args
-            raise Exception(msg)
+            raise Exception(e)
 
     def execute_raw(self, sql, values=None):
         sql = self.prepare_sql(sql)
