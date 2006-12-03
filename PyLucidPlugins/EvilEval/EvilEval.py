@@ -2,13 +2,16 @@
 # -*- coding: UTF-8 -*-
 
 """
-EvilEval
+EvilEval - a PyLucid Plugin
+
+Created by Jens Diemer
+license: GNU General Public License (GPL)
 
  - execute Python
  - execute commands on the shell
 
-Created by Jens Diemer
-license: GNU General Public License (GPL)
+Inspired of code from the package:
+colubrid.debug by Armin Ronacher, Benjamin Wiegand, Georg Brandl
 """
 
 
