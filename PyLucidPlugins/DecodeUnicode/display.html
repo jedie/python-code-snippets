@@ -1,8 +1,8 @@
-<style>
-.odd {
-    background-color:#fff;
-}
-</style>
+{*
+    Jinja Template
+    <pre>{% debug %}</pre>
+*}
+
 <fieldset><legend>{{ range_hex1 }}-{{ range_hex2 }} - {{ block_name }}:</legend>
 <p>
     Link to <a href="http://www.decodeunicode.org/w3.php?ucHex={{ ucHex }}">
@@ -35,4 +35,5 @@
     </tr>
     {% endfor %}
 </table>
+<p><small>Use Unicode database v{{ unidata_version }}</small></p>
 </fieldset>
