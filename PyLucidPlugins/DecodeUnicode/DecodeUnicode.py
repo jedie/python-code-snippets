@@ -191,6 +191,8 @@ class DecodeUnicode(PyLucidBaseModule):
 
         self.block_select()
 
+        self.page_msg()
+
     def block_select(self, selected_id = 0):
         block_data = []
         for id, block in enumerate(self.blocks):
@@ -204,7 +206,8 @@ class DecodeUnicode(PyLucidBaseModule):
         context = {
             "url": self.URLs.actionLink("display"),
             "selected_id": selected_id,
-            "blocks": block_data
+            "blocks": block_data,
+            "unidata_version": unicodedata.unidata_version,
         }
         #~ self.page_msg(context)
         self.templates.write("select", context)
@@ -256,7 +259,7 @@ class DecodeUnicode(PyLucidBaseModule):
             "ucHex": "%X" % block_range[0], # Für decodeunicode.org Link
             "range_hex1": "0x%04X" % block_range[0],
             "range_hex2": "0x%04X" % block_range[1],
-            "block_data": block_data
+            "block_data": block_data,
         }
         #~ self.page_msg(context)
         self.templates.write("display", context)
