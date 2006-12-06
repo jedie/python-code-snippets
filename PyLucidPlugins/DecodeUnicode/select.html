@@ -1,0 +1,13 @@
+<fieldset><legend>Select a unicode block:</legend>
+    <label for="block">select a unicode block:</label>
+    <form name="block_select" method="post" action="{{ url }}">
+        <select name="block">
+            {% for block in blocks %}
+            <option value="{{ block.id }}" {% if block.id equals selected_id %}selected="selected"{% endif %}>
+                {{ block.id }} - {{ block.name }}
+            </option>
+            {% endfor %}
+        </select>
+        <input value="display" type="submit">
+    </form>
+</fieldset>
