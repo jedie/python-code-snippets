@@ -1,8 +1,6 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 
-# copyleft: jensdiemer.de (GPL v2 or above)
-
 """
 Stellt die Verbindung zur DB her.
 Bietet dabei einen DictCursor für alle SQL-DBs.
@@ -29,109 +27,28 @@ ToDo
     * Erweiterung der Select Methode so das eine Abfrage mit LIKE Parameter
         gemacht werden kann. so wie:
             select * from table where feld like %suchwort%
+
+
+
+
+Last commit info:
+----------------------------------
+$LastChangedDate:$
+$Rev:$
+$Author: jensdiemer $
+
+Created by Jens Diemer
+
+license:
+    GNU General Public License v2 or above
+    http://www.opensource.org/licenses/gpl-license.php
+
 """
 
-__version__="0.17"
+__version__= "$Rev:$"
 
-__history__="""
-v0.17
-    - replace execute_unescaped with execute(SQLcommand, do_prepare=False)
-v0.16
-    - remove obsolete datetimefix (now Python 2.3 needed)
-v0.15
-    - Neu: get_db_variable()
-v0.14
-    - ermöglicht an das Ursprüngliche Cursor Objekt zu gelangen, mit:
-        c = self.db.conn.raw_cursor()
-v0.13.1:
-    - Neu: MaxErrorLen - Fehlerausgaben kürzen
-v0.13
-    - Neu: GROUP BY bei select
-v0.12
-    - Bugfix: execute_unescaped() kann nun auch mit unicode SQL-Statements
-        gefüttert werden. execute_unescaped() und execute() nutzt die
-        Ausgelagerte Methode encode() zum Umwandeln.
-v0.11
-    - NEU: autoprefix: So kann man auch andere Tabellen ansprechen!
-v0.10
-    - änderung im Encoding-Handling
-    - NEU: datetimefix (für Python >v2.3)
-v0.9
-    - NEU: get_tableDict()
-        Select-Abfrage mit Index-Basierende-Ergebniss-Dict
-v0.8.1
-    - neu unittestDBwrapper.py ;)
-v0.8
-    - Es gibt nun eine encoding-Angabe, damit alle String als Unicode zurück
-        geliefert werden. Ist allerdings nur mit MySQLdb getestet!!!
-v0.7
-    - Die connect-Methode wird nun nicht mehr automatisch aufgerufen.
-    - Die Connection-Parameter müßen nun explizit zur verwendeten dbapi passen!
-    - Für jeder Datenbanktyp (MySQL, SQLite) gibt es eine eigene
-        connect-Methode.
-v0.6.1
-    - encode_sql_results für unicode angepasst.
-    - databasename global gemacht
-    - bugfixes
-v0.6
-    - Einige Anpassungen für SQLite
-    - Weil's portabler ist, database.py und SQL_wrapper.py zusammen gelegt.
-    - self.fetchall umbenannt in process_statement
-v0.5
-    - Aufteilung: SQL-Wrapper aufgegliedert
-v0.4.1
-    - Work-a-round für fehlendes lastrowid
-        (s. PEP-0249) http://www.python-forum.de/viewtopic.php?p=28819#28819
-v0.4
-    - Verwendet nun einen eigenen Dict-Cursor
-        ( http://pythonwiki.pocoo.org/Dict_Cursor )
-    - Nur mit MySQLdb getestet!
-v0.3
-    - Wenn fetchall verwendet wird, werden in self.last_SQLcommand und
-        self.last_SQL_values die letzten SQL-Aktionen festgehalten. Dies kann
-        gut, für Fehlerausgaben verwendet werden.
-v0.2
-    - insert() filtert nun automatisch Keys im Daten-Dict raus, die nicht als
-        Spalte in der Tabelle vorkommen
-    - NEU: get_table_field_information() und get_table_fields()
-v0.1.1
-    - NEU: decode_sql_results() - Alle Ergebnisse eines SQL-Aufrufs encoden
-v0.1.0
-    - Umbau, nun kann man den table_prefix bei einer Methode auch mit angeben,
-        um auch an Tabellen zu kommen, die anders anfangen als in der
-        config.py festgelegt.
-v0.0.9
-    - in update() wird nun auch die where-value SQL-Escaped
-v0.0.8
-    - bei select() werden nun auch die select-values mit der SQLdb escaped
-    - methode _make_values() gelöscht und einfach durch tuple() erstetzt ;)
-v0.0.7
-    - Statt query_fetch_row() wird der Cursor jetzt mit
-        MySQLdb.cursors.DictCursor erstellt. Somit liefern alle Abfragen ein
-        dict zurück! Das ganze funktioniert auch mit der uralten
-        MySQLdb v0.9.1
-    - DEL: query_fetch_row()
-    - NEU: fetchall()
-v0.0.6
-    - NEU: query_fetch_row() und exist_table_name()
-v0.0.5
-    - Stellt über self.conn das Connection-Objekt zur verfügung
-v0.0.4
-    - Bugfixes
-    - Debugfunktion eingefügt
-    - Beispiel hinzugefügt
-    - SQL "*"-select verbessert.
-v0.0.3
-    - Allgemeine SQL insert und update Funktion eingefügt
-    - SQL-where-Parameter kann nun auch meherere Bedingungen haben
-v0.0.2
-    - Allgemeine select-SQL-Anweisung
-    - Fehlerausgabe bei fehlerhaften SQL-Anfrage
-v0.0.1
-    - erste Release
-"""
 
-from __future__ import generators
+
 import sys, codecs
 import time, datetime, cgi
 
@@ -139,9 +56,6 @@ import time, datetime, cgi
 debug = False
 #~ debug = True
 
-MySQL40_character_table = {
-    "german1": "latin1",
-}
 
 # SQL Fehler in process_statement() können sehr lang werden wenn z.B. große
 # Daten in die SQL Db geschrieben werden. Mit der Angabe werden die Teile der
@@ -153,12 +67,9 @@ class Database(object):
     """
     Klasse, die nur allgemeine SQL-Funktionen beinhaltet
     """
-    def __init__(self, encoding="utf8"):
-        # Zum speichern der letzten SQL-Statements (evtl. für Fehlerausgabe)
-        self.last_statement = None
-
-        self.encoding = encoding
-
+    def __init__(self):
+        self.last_statement = None # letzter SQL-Statement (für Fehlerausgabe)
+        self.encoding = None # SQL Server encoding, wird autom. festgelegt
         self.dbtyp = None
         self.tableprefix = ""
 
@@ -187,80 +98,23 @@ class Database(object):
 
         self.server_version = version
 
-    def set_codec(self, encoding):
-        self.cursor.setup_encoding(encoding)
-        self.encoding = encoding
-
     def getMySQLcharacter(self):
-        version = self.server_version
-        if version < (4, 1, 0): # älter als v4.1.0
-            character_set = self.get_db_variable("character_set")
-        else: # ab v4.1.0
-            character_set = self.get_db_variable("character_set_server")
+        """
+        Liefert das Encoding des SQL Servers zurück. Das wird benötigt um
+        die Daten aus der DB nach unicode zu wandeln
+        """
+        try:
+            character_set = self.conn.character_set_name()
+        except AttributeError:
+            # FixMe: Haben alle MySQLdb Version diese Methode???
+
+            version = self.server_version
+            if version < (4, 1, 0): # älter als v4.1.0
+                character_set = self.get_db_variable("character_set")
+            else: # ab v4.1.0
+                character_set = self.get_db_variable("character_set_server")
 
         return character_set
-
-    def setup_mysql40(self):
-        character_set = self.getMySQLcharacter()
-        if not character_set in MySQL40_character_table:
-            # Das Encodning scheint unbekannt zu sein
-            try:
-                self.set_codec(character_set)
-            except LookupError, e:
-                # Python kennt das encoding auch nicht, als letzten
-                # Ausweg, ignorieren wir das Enconding :(
-                self._set_NoneCodec(encoding = None)
-        else:
-            encoding = MySQL40_character_table[character_set]
-            self.set_codec(encoding)
-
-    def set_mysql_encoding(self, encoding):
-        try:
-            # Funktioniert erst mit MySQL =>v4.1
-            self.cursor.execute('set character set ?;', (self.encoding,))
-        except Exception, e:
-            if str(e).find("Unknown character set") != -1:
-                # Der character Set wird nicht unterstützt!
-                msg = (
-                    "%s - Please check PyLucid's config.py and\n"
-                    " look at _install / tests / db_info /"
-                    " _show_characterset!"
-                ) % e
-                self.page_msg(msg)
-
-                # Versuchen wir es mit dem default codec:
-                self.encoding = None
-                self.setup_mysql41()
-            else:
-                raise ConnectionError(e)
-
-    def setup_mysql41(self):
-        if self.encoding == None:
-            # Es soll das default encoding vom MySQL-Server genutzt werden
-            self.encoding = self.getMySQLcharacter()
-            try:
-                self.set_codec(self.encoding)
-            except LookupError, e:
-                # Python kennt das encoding nicht, als letzten
-                # Ausweg, ignorieren wir das Enconding :(
-                msg = (
-                    "Error: MySQL server use the codec '%s',"
-                    " but python doesn't know this codec!"
-                    " (try to use utf8, you should manually set a codec!)"
-                ) % character_set
-                self.page_msg(msg)
-                self.set_mysql_encoding("utf8")
-        else:
-            self.set_codec(self.encoding)
-            self.set_mysql_encoding(self.encoding)
-
-
-    def setup_mysql_character_set(self):
-        if self.server_version < (4, 1): # älter als v4.1.0
-            self.setup_mysql40()
-        else:
-            self.setup_mysql41()
-
 
     def connect_mysqldb(self, *args, **kwargs):
         self.dbtyp = "MySQLdb"
@@ -282,11 +136,6 @@ class Database(object):
         try:
             self.conn = WrappedConnection(
                 dbapi.connect(*args, **kwargs),
-                    #~ host    = host,
-                    #~ user    = username,
-                    #~ passwd  = password,
-                    #~ db      = self.databasename,
-                #~ ),
                 placeholder = self.placeholder,
                 prefix = self.tableprefix,
             )
@@ -310,7 +159,9 @@ class Database(object):
         self.setup_MySQL_version()
 
         # Encoding festlegen
-        self.setup_mysql_character_set()
+        self.encoding = self.getMySQLcharacter()
+
+        self.cursor.setup_encoding(self.encoding)
 
         try:
             # Autocommit sollte immer aus sein!
@@ -320,36 +171,36 @@ class Database(object):
             pass
 
 
-    def connect_sqlite(self, *args, **kwargs):
-        self.dbtyp = "sqlite"
-        try:
-            from pysqlite2 import dbapi2 as dbapi
-        except ImportError, e:
-            msg  = "PySqlite import error: %s\n" % e
-            msg += 'Modul <a href="http://pysqlite.org">pysqlite-mysqldb</a>\n'
-            msg += " not installed???"
-            raise ImportError(msg)
+    #~ def connect_sqlite(self, *args, **kwargs):
+        #~ self.dbtyp = "sqlite"
+        #~ try:
+            #~ from pysqlite2 import dbapi2 as dbapi
+        #~ except ImportError, e:
+            #~ msg  = "PySqlite import error: %s\n" % e
+            #~ msg += 'Modul <a href="http://pysqlite.org">pysqlite-mysqldb</a>\n'
+            #~ msg += " not installed???"
+            #~ raise ImportError(msg)
 
-        self.dbapi = dbapi
-        self._setup_paramstyle(dbapi.paramstyle)
+        #~ self.dbapi = dbapi
+        #~ self._setup_paramstyle(dbapi.paramstyle)
 
-        try:
-            self.conn = WrappedConnection(
-                dbapi.connect(*args, **kwargs),
-                placeholder = self.placeholder,
-                prefix = self.tableprefix,
-            )
-        except Exception, e:
-            import os
-            msg = "Can't connect to SQLite-DB (%s)\n - " % e
-            msg += "check the write rights on '%s'\n - " % os.getcwd()
-            msg += "connect method args...: %s\n - " % str(args)
-            msg += "connect method kwargs.: %s" % str(kwargs)
-            raise ConnectionError(msg)
+        #~ try:
+            #~ self.conn = WrappedConnection(
+                #~ dbapi.connect(*args, **kwargs),
+                #~ placeholder = self.placeholder,
+                #~ prefix = self.tableprefix,
+            #~ )
+        #~ except Exception, e:
+            #~ import os
+            #~ msg = "Can't connect to SQLite-DB (%s)\n - " % e
+            #~ msg += "check the write rights on '%s'\n - " % os.getcwd()
+            #~ msg += "connect method args...: %s\n - " % str(args)
+            #~ msg += "connect method kwargs.: %s" % str(kwargs)
+            #~ raise ConnectionError(msg)
 
-        self.cursor = self.conn.cursor()
+        #~ self.cursor = self.conn.cursor()
 
-        self.conn.text_factory = str
+        #~ self.conn.text_factory = str
 
 
         #_____________________________________________________________________
@@ -479,17 +330,10 @@ class IterableDictCursor(object):
 
     def setup_encoding(self, encoding):
         """
-        Legt den decoder/encoder Methode fest, mit dem die Daten aus der DB in
-        unicode gewandelt werden können. Daten von App zur DB werden wieder
-        zurück von unicode in's DB-Encoding gewandelt
+        Legt den decoder Methode fest, mit dem die Daten aus der DB in
+        unicode gewandelt werden können.
         """
-        if encoding == None:
-            # Sollte nur im Fehlerfall genutzt werden!
-            self._unicode_decoder = self._unicode_encoder = self._NoneCodec
-            return
-
         self._unicode_decoder = codecs.getdecoder(encoding)
-        self._unicode_encoder = codecs.getencoder(encoding)
 
     def _NoneCodec(self, *txt):
         return txt
@@ -512,19 +356,6 @@ class IterableDictCursor(object):
         return sql.replace('$$', self._prefix)\
                   .replace('?', self._placeholder)
 
-    def encode(self, s):
-        """
-        Encode the String >s< to the DB encoding
-        """
-        if type(s) == unicode:
-            # Wandelt unicode in das DB-Encoding zurück
-            try:
-                s = self._unicode_encoder(s, 'strict')[0]
-            except UnicodeError:
-                s = self._unicode_encoder(s, 'replace')[0]
-                sys.stderr.write("Unicode encode Error!") #FIXME
-        return s
-
     def execute(self, sql, values=None, do_prepare=True):
         if do_prepare:
             sql = self.prepare_sql(sql)
@@ -534,8 +365,7 @@ class IterableDictCursor(object):
         execute_args = [sql]
 
         if values:
-            # Von unicode ins DB encoding konvertieren
-            values = tuple([self.encode(value) for value in values])
+            values = tuple(values)
             execute_args.append(values)
 
         try:
