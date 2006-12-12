@@ -23,8 +23,6 @@ __version__="$Rev:$"
 
 
 __ToDo__ = """
-str() aus self.URLs.actionLink() entfernen, wenn Bug
-https://pylucid.net/trac/ticket/15 erledigt ist.
 """
 
 
@@ -191,8 +189,6 @@ class DecodeUnicode(PyLucidBaseModule):
 
         self.block_select()
 
-        self.page_msg()
-
     def block_select(self, selected_id = 0):
         block_data = []
         for id, block in enumerate(self.blocks):
@@ -248,12 +244,12 @@ class DecodeUnicode(PyLucidBaseModule):
             next_id = block_id
 
         context = {
-            "back_url"  : self.URLs.actionLink("display", str(back_id)),
+            "back_url"  : self.URLs.actionLink("display", back_id),
             "back_name"  : self.blocks[back_id]["name"],
-            "next_url"  : self.URLs.actionLink("display", str(next_id)),
+            "next_url"  : self.URLs.actionLink("display", next_id),
             "next_name"  : self.blocks[next_id]["name"],
 
-            "url"       : self.URLs.actionLink("display", str(block_id)),
+            "url"       : self.URLs.actionLink("display", block_id),
             "block_name": block["name"],
             "ucHex": "%X" % block_range[0], # Für decodeunicode.org Link
             "range_hex1": "0x%04X" % block_range[0],
