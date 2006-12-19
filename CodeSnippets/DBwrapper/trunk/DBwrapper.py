@@ -735,6 +735,8 @@ class SQL_wrapper(Database):
         das Ergebniss von einer Liste zu einem Dict umgeformt, sodas der
         Tabellen-Index >index_key< als Dict-Key dient.
         """
+        if isinstance(select_items, basestring):
+            select_items = [select_items]
 
         if (not "*" in select_items) and (not index_key in select_items):
             # Der index muß immer mit abgefragt werden!
