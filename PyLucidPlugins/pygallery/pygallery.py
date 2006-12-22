@@ -30,6 +30,14 @@ from PyLucid.system.BaseModule import PyLucidBaseModule
 
 
 template = """
+{% if is_admin %}
+<h3>Admin menu</h3>
+<ul>
+    <li><a href="{{ make_thumbs_url }}">make thumbs</a></li>
+</ul>
+<hr />
+{% endif %}
+
 <ul class="gallery_dirs">
     <li><a href="{{ back_href }}">&lt; ..</a></li>
 {% for item in dirs %}
@@ -103,7 +111,63 @@ class pygallery(PyLucidBaseModule):
         path = function_info.split("/")
         self.gallery(path)
 
-    def gallery(self, function_info):
+    def make_thumbs(self, function_info):
+        """
+        Erstellt von allen Bildern Thumbnails
+        - der Pfad steckt dabei in function_info ;)
+        """
+        try:
+            self._setup_path(function_info)
+        except PathError: # Der Pfad ist ungültig
+            return # Fehler wurde schon ausgegeben
+
+        self.page_msg("Make Thumbs in %s" % self.workdir)
+
+        ##____________________________________________________________________
+        ## instanz von Thumbmaker machen, um zu sehen, ob PIL existiert.
+
+        from PyLucid.tools import thumbnail_maker
+        try:
+            thumb_maker = thumbnail_maker.ThumbnailMaker(
+                self.request, self.response
+            )
+        except thumbnail_maker.PIL_ImportError, e:
+            # PIL ist wohl nicht installiert
+            self.page_msg.red(e)
+            return
+
+        ##____________________________________________________________________
+        ## Dateisystem lesen
+
+        try:
+            files, dirs, thumbnails = self._read_workdir()
+        except DirReadError, e:
+            self.page_msg.red(e)
+            return
+
+        for filename in files:
+            base, ext = os.path.splitext(filename)
+            if not ext in self.cfg["ext_whitelist"]:
+                continue
+
+            if base in thumbnails:
+                # Es existiert zu dem Bild ein Thumbnail
+                if debug:
+                    msg = "Skip %s, thubnail: %s exist." % (
+                        filename, thumbnails[base]
+                    )
+                    self.page_msg(msg)
+                continue
+
+            abs_filepath = self._get_absolut_filepath(filename)
+
+            self.page_msg("Thumb:", abs_filepath)
+
+            raise "To Be Continued!"
+            #~ thumb_maker.make_thumbs(self.workdir)
+
+
+    def _setup_path(self, function_info):
         #~ self.page_msg(function_info)
         path = "/".join(function_info)
         self.relativ_path = posixpath.normpath(path)
@@ -117,11 +181,21 @@ class pygallery(PyLucidBaseModule):
             msg = "Path Error!"
             if debug:
                 msg += " (Workdir: %s - Error: %s)" % (self.workdir, e)
+            raise PathError(msg)
             self.page_msg.red(msg)
             return
 
         if debug:
             self.page_msg("workdir:", self.workdir)
+
+    def gallery(self, function_info):
+        """
+        Generiert die Gallery-Seite
+        """
+        try:
+            self._setup_path(function_info)
+        except PathError: # Der Pfad ist ungültig
+            return # Fehler wurde schon ausgegeben
 
         try:
             files, dirs, thumbnails = self._read_workdir()
@@ -133,17 +207,19 @@ class pygallery(PyLucidBaseModule):
         dir_context = self._built_dir_context(dirs)
 
         context = {
+            "is_admin": self.session["isadmin"],
+            "make_thumbs_url": self.URLs.actionLink(
+                "make_thumbs", self.relativ_path
+            ),
             "files": file_context,
             "dirs": dir_context,
         }
         if debug:
             self.page_msg("context:", context)
 
-        url = self.URLs.actionLink("gallery", path)
-        self.response.write('<a href="%s">%s</a>' % (url, url))
-
         from PyLucid.system.template_engines import render_jinja
         content = render_jinja(template, context)
+        self.response.write(content)
         self.response.write("<pre>")
         self.response.write(cgi.escape(content))
         self.response.write("</pre>")
@@ -251,6 +327,11 @@ class pygallery(PyLucidBaseModule):
 
         return files, dirs, thumbnails
 
+    #_________________________________________________________________________
+
+    def _get_absolut_filepath(self, filename):
+        return posixpath.join("/", self.relativ_path, filename)
+
     def _built_file_context(self, files, thumbnails):
         """
         Formt aus den Datelisting Daten den jinja context
@@ -263,7 +344,7 @@ class pygallery(PyLucidBaseModule):
                 # Kein Thumbnail, dann zeigen wir das normale Bild in klein
                 thumbnail = filename
 
-            return posixpath.join(self.relativ_path, thumbnail)
+            return self._get_absolut_filepath(thumbnail)
 
 
         def get_clean_name(base):
