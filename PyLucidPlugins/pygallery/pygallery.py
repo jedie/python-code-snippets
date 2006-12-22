@@ -22,6 +22,7 @@ debug = True
 
 
 import os, posixpath
+import cgi
 
 
 
@@ -29,6 +30,13 @@ from PyLucid.system.BaseModule import PyLucidBaseModule
 
 
 template = """
+<ul class="gallery_dirs">
+    <li><a href="{{ back_href }}">&lt; ..</a></li>
+{% for item in dirs %}
+    <li><a href="{{ item.href }}">{{ item.name }} &gt;</a></li>
+{% endfor %}
+</ul>
+
 <ul class="gallery_files">
 {% for item in files %}
     <li class="gallery_pic">
@@ -39,6 +47,7 @@ template = """
         </a>
     </li>
 {% endfor %}
+</ul>
 """
 
 
@@ -48,7 +57,7 @@ template = """
 class pygallery(PyLucidBaseModule):
     cfg = {
         # Nur Endungen anzeigen, die in der Liste vorkommen
-        "ext_whitelist": [".jpg", ".png", ".mpg", ".avi"],
+        "ext_whitelist": (".jpg", ".png", ".mpg", ".avi"),
 
         # =False -> Nur Dateien im aktuellen Verz. anzeigen
         "allow_subdirs": True,
@@ -71,6 +80,16 @@ class pygallery(PyLucidBaseModule):
         "thumb_pic_filter"  : ("_WEB",),
         "thumb_suffix"      : ("_thumb",),
         "resize_thumb_size" : (100,60),
+
+        # Name des Bildes
+        "name_filter" : {
+            "replace_rules" : [# Ersetzten im Dateinamen (Reihenfolge wichtig!)
+                ("_WEB", " "),
+                ("_klein", " "),
+                ("_", " "),
+            ],
+            "strip_whitespaces": True, # mehrere Leerzeichen zu einem wandeln
+        }
     }
 
     def __init__(self, *args, **kwargs):
@@ -110,12 +129,12 @@ class pygallery(PyLucidBaseModule):
             self.page_msg.red(e)
             return
 
-        files = self._built_file_context(files, thumbnails)
-        return
+        file_context = self._built_file_context(files, thumbnails)
+        dir_context = self._built_dir_context(dirs)
 
         context = {
-            "files": files,
-            "dirs": dirs,
+            "files": file_context,
+            "dirs": dir_context,
         }
         if debug:
             self.page_msg("context:", context)
@@ -125,7 +144,9 @@ class pygallery(PyLucidBaseModule):
 
         from PyLucid.system.template_engines import render_jinja
         content = render_jinja(template, context)
-        self.response.write(content)
+        self.response.write("<pre>")
+        self.response.write(cgi.escape(content))
+        self.response.write("</pre>")
 
     def _normpath(self, path):
         """
@@ -135,7 +156,7 @@ class pygallery(PyLucidBaseModule):
         -Prüft ob das Ziel wirklich ein existierendes Verz. ist
         """
         path = posixpath.normpath(path)
-        if ".." in path or "//" in path or "\\" in path:
+        if ".." in path or "//" in path or "\\\\" in path:
             # Da stimmt doch was nicht...
             raise PathError("bad character in path")
         if not path.startswith(self.absolute_base_path):
@@ -234,10 +255,67 @@ class pygallery(PyLucidBaseModule):
         """
         Formt aus den Datelisting Daten den jinja context
         """
+        def get_thumbnail(base):
+            if base in thumbnails:
+                # Es existiert zu dem Bild ein Thumbnail
+                thumbnail = thumbnails[base]
+            else:
+                # Kein Thumbnail, dann zeigen wir das normale Bild in klein
+                thumbnail = filename
+
+            return posixpath.join(self.relativ_path, thumbnail)
+
+
+        def get_clean_name(base):
+            result = base
+            for rule in self.cfg["name_filter"]["replace_rules"]:
+                # Alle "replace_rules" Anwenden
+                result = result.replace(rule[0], rule[1])
+
+            if self.cfg["name_filter"]["strip_whitespaces"]:
+                # Leerzeichen bearbeiten
+                result = result.strip(" ")
+                for i in xrange(10):
+                    # Mehrere Leerzeichen, die evtl. bei den "replace_rules"
+                    # entstanden sind, zu einem wandeln
+                    if not "  " in result:
+                        break
+                    result = result.replace("  ", " ")
+
+            return result
+
+
+        context = []
+
         self.page_msg(thumbnails)
         for filename in files:
-            base, ext           = posixpath.splitext( filename )
-            self.page_msg(filename)
+            base, ext = os.path.splitext(filename)
+            if not ext in self.cfg["ext_whitelist"]:
+                continue
+
+            file_info = {}
+
+            # Adresse zum Thumbnail
+            file_info["src"] = get_thumbnail(base)
+
+            # Name des Bildes
+            file_info["name"] = get_clean_name(base)
+
+            context.append(file_info)
+
+        return context
+
+    def _built_dir_context(self, dirs):
+        context = []
+        #~ self.page_,s
+        for dirname in dirs:
+            dir_info = {
+                "href": dirname,
+                "name": dirname
+            }
+            context.append(dir_info)
+
+        return context
 
 
 class PathError(Exception):
