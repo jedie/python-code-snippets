@@ -22,4 +22,8 @@ module_manager_data = {
         "must_login"    : False,
         "must_admin"    : False,
     },
+    "make_thumbs" : {
+        "must_login"    : True,
+        "must_admin"    : True,
+    },
 }
