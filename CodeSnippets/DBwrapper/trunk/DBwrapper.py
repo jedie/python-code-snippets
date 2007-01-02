@@ -28,6 +28,8 @@ ToDo
         gemacht werden kann. so wie:
             select * from table where feld like %suchwort%
 
+    *
+
 
 
 
