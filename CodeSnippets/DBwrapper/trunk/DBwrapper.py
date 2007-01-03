@@ -28,8 +28,6 @@ ToDo
         gemacht werden kann. so wie:
             select * from table where feld like %suchwort%
 
-    *
-
 
 
 
@@ -520,11 +518,8 @@ class SQL_wrapper(Database):
         """
         Vereinfachte SQL-update Funktion
         """
-        data_keys   = data.keys()
-
-        values      = data.values()
-        values.append(where[1])
-        values      = tuple(values)
+        data_keys = data.keys()
+        values = tuple(data.values())
 
         set = ",".join(["%s=%s" % (i, self.placeholder) for i in data_keys])
 
@@ -533,14 +528,18 @@ class SQL_wrapper(Database):
         else:
             SQLcommand = "UPDATE %s" % table
 
-        SQLcommand += " SET %(set)s WHERE %(where)s%(limit)s;" % {
-            "set"       : set,
-            "where"     : "%s=%s" % (where[0], self.placeholder),
-            "limit"     : self._make_limit(limit)
-        }
+        SQLcommand += " SET %s" % set
+
+        if where:
+            where_string, where_values = self._make_where(where)
+            SQLcommand += where_string
+            values += where_values
+
+        SQLcommand += self._make_limit(limit)
+        SQLcommand += ";"
 
         result = self.process_statement(SQLcommand, values)
-        if debug: self.debug_command("update", result)
+        if debug: self.debug_command("update", result, values)
         return result
 
 
@@ -562,7 +561,7 @@ class SQL_wrapper(Database):
         mehrfache where Klausel:
         where=[("parent",0),("id",0)] ===> WHERE `parent`="0" and `id`="0"
 
-        maxrows - Anzahl der zurí¤«gegebenen Datensåµºe, =0 alle Datensåµºe
+        maxrows - Anzahl der zurí¤«gegebenen DatensÃ¤tze, =0 alle DatensÃ¤tze
         how     - Form der zurí¤«gegebenen Daten. =1 -> als Dict, =0 als Tuple
         """
         SQLcommand = "SELECT "
@@ -882,12 +881,18 @@ class SQL_wrapper(Database):
         for i, line in enumerate(result):
             self.outObject.write("%s - %s\n" % (i, line))
 
-    def debug_command(self, methodname, result=None):
+    def debug_command(self, methodname, result=None, values=None):
+        import pprint
         self.outObject.write("-"*79)
         self.outObject.write("<br />\n")
         self.outObject.write("db.%s - Debug:<br />\n" % methodname)
         self.outObject.write("last SQL statement:<br />\n")
         self.outObject.write("%s<br />\n" % str(self.cursor.last_statement))
+        if values:
+            self.outObject.write("Values:<br />\n")
+            self.outObject.write(
+                "<pre>%s</pre><br />\n" % pprint.pformat(values)
+            )
         if result:
             self.outObject.write("Result:<br />\n")
             self.outObject.write("<pre>%s</pre><br />\n" % result)
