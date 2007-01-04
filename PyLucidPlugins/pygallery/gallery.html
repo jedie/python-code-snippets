@@ -1,0 +1,18 @@
+<ul class="gallery_dirs">
+    <li><a href="{{ back_href }}">&lt; ..</a></li>
+{% for item in dirs %}
+    <li><a href="{{ item.href }}">{{ item.name }} &gt;</a></li>
+{% endfor %}
+</ul>
+
+<ul class="gallery_files">
+{% for item in files %}
+    <li class="gallery_pic">
+        <a href="{{ item.href }}" title="{{ item.name }}">
+            <img src="{{ item.src }}" />
+            <br />
+            <small>{{ item.name }}</small>
+        </a>
+    </li>
+{% endfor %}
+</ul>

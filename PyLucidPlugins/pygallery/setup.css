@@ -1,0 +1,10 @@
+label.left {
+  float: left;
+  text-align: right;
+  width: 10em;
+  margin-right: .3em;
+  padding: 0px;
+}
+.right {
+  margin-left: 11em;
+}

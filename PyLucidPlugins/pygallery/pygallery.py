@@ -29,36 +29,6 @@ import cgi
 from PyLucid.system.BaseModule import PyLucidBaseModule
 
 
-template = """
-{% if is_admin %}
-<h3>Admin menu</h3>
-<ul>
-    <li><a href="{{ make_thumbs_url }}">make thumbs</a></li>
-</ul>
-<hr />
-{% endif %}
-
-<ul class="gallery_dirs">
-    <li><a href="{{ back_href }}">&lt; ..</a></li>
-{% for item in dirs %}
-    <li><a href="{{ item.href }}">{{ item.name }} &gt;</a></li>
-{% endfor %}
-</ul>
-
-<ul class="gallery_files">
-{% for item in files %}
-    <li class="gallery_pic">
-        <a href="{{ item.href }}" title="{{ item.name }}">
-            <img src="{{ item.src }}" />
-            <br />
-            <small>{{ item.name }}</small>
-        </a>
-    </li>
-{% endfor %}
-</ul>
-"""
-
-
 
 
 
@@ -108,36 +78,205 @@ class pygallery(PyLucidBaseModule):
             self.page_msg("absolute_path:", self.absolute_base_path)
 
     def lucidFunction(self, function_info):
-        path = function_info.split("/")
-        self.gallery(path)
-
-    def make_thumbs(self, function_info):
         """
-        Erstellt von allen Bildern Thumbnails
-        - der Pfad steckt dabei in function_info ;)
+        Aufruf um eine Gallerie in die CMS Seite aufzubauen
+        """
+        self.gallery(function_info)
+
+    def lucidTag(self):
+        """
+        Dummy, mit Infos
+        """
+        self.page_msg.red("Wrong call.")
+        msg = (
+            "<p>You should use a special lucidTag:</p>"
+            "<h3>&lt;lucidTag:pygallery.setup/&gt;</h3>"
+            "<p>Put this tag on a cms page without 'permit view public'.</p>"
+        )
+        self.response.write(msg)
+
+    #_________________________________________________________________________
+
+    def create_new_gallerie(self):
+        """
+        Erstellt eine neue Gallerie
         """
         try:
-            self._setup_path(function_info)
-        except PathError: # Der Pfad ist ungültig
-            return # Fehler wurde schon ausgegeben
-
-        self.page_msg("Make Thumbs in %s" % self.workdir)
-
-        ##____________________________________________________________________
-        ## instanz von Thumbmaker machen, um zu sehen, ob PIL existiert.
-
-        from PyLucid.tools import thumbnail_maker
-        try:
-            thumb_maker = thumbnail_maker.ThumbnailMaker(
-                self.request, self.response
-            )
-        except thumbnail_maker.PIL_ImportError, e:
-            # PIL ist wohl nicht installiert
-            self.page_msg.red(e)
+            gallery_name = self.request.form["name"]
+        except KeyError, e:
+            self.page_msg.red("Form error. Key '%s' not found." % e)
             return
 
-        ##____________________________________________________________________
-        ## Dateisystem lesen
+        if gallery_name in self.plugin_cfg["galleries"]:
+            self.page_msg.red(
+                "A gallery named '%s' already exists!" % gallery_name
+            )
+            return
+
+        self.plugin_cfg["galleries"][gallery_name] = {
+            "path": None
+        }
+        self.page_msg.green("Gallerie created. Please setup.")
+
+        # Direkt die Config Seite aufrufen
+        self.gallery_config([gallery_name])
+
+    #_________________________________________________________________________
+
+    def setup(self):
+        """
+        Alle existierende Gallerien verwalten
+        """
+        if debug:
+            self.page_msg(self.request.form)
+            self.plugin_cfg.debug()
+
+        if "create" in self.request.form:
+            # Es soll eine neue Gallerie eingerichtet werden
+            self.create_new_gallerie()
+            return
+
+        galleries = []
+        for gallerie, data in self.plugin_cfg["galleries"].iteritems():
+            tag = "<lucidFunction:pygallery>%s</lucidFunction>" % gallerie
+            tag = cgi.escape(tag)
+            galleries.append({
+                "name": gallerie,
+                "lucidFunction": tag,
+                "path": data["path"],
+                "edit_link": self.URLs.actionLink("gallery_config", gallerie)
+            })
+
+        context = {
+            "galleries" : galleries,
+            "url": self.URLs.currentAction(),
+            "base_path": self._get_absolute_path(),
+        }
+        self.page_msg(context)
+        self.templates.write("setup", context)
+
+    def _rename_gallery(self, old_name, new_name):
+        """
+        Umbenennen einer Gallerie...
+        """
+        if new_name == old_name:
+            # Dolles umbenennen ;)
+            return old_name
+
+        if new_name in self.plugin_cfg["galleries"]:
+            self.page_msg.red("Can't rename gallery! New name exist!")
+            return old_name
+
+        self.plugin_cfg["galleries"][new_name] = \
+                                        self.plugin_cfg["galleries"][old_name]
+
+        del(self.plugin_cfg["galleries"][old_name])
+        self.page_msg.green(
+            "Gallery renamed from %s to %s" % (
+                old_name, new_name
+            )
+        )
+        return new_name
+
+    def gallery_config(self, function_info):
+        """
+        Einstellungen einer bestehenden Gallerie ändern
+        """
+        if debug:
+            self.plugin_cfg.debug()
+            self.page_msg("self.request.form:", self.request.form)
+
+        gallery_name = function_info[0]
+
+        try:
+            gallery_data = self.plugin_cfg["galleries"][gallery_name]
+        except KeyError, e:
+            msg = "Error: Gallery named '%s' unknown! (KeyError: %s)" % (
+                gallery_name, e
+            )
+            self.page_msg.red(msg)
+            return
+
+        if "name" in self.request.form:
+            # Gallerie soll umbenannt werden!
+            new_gallery_name = self.request.form["name"]
+            gallery_name = self._rename_gallery(gallery_name, new_gallery_name)
+
+        absolute_path = self._get_absolute_path()
+
+        def get_paths():
+            result = []
+
+            def dir_filter(path):
+                for filter in self.plugin_cfg["dir_filter"]:
+                    if path.startswith(filter):
+                        return True
+                return False
+
+            abs_path_len = len(absolute_path) + 1
+            for path in os.walk(absolute_path):
+                path = path[0] # Nur Verz. Infos aus os.walk()
+
+                path = path[abs_path_len:]
+                if path == "":
+                    # Erstes Verz.
+                    continue
+                if path.startswith("."):
+                    # Linux versteckte Verz.
+                    continue
+                if dir_filter(path):
+                    # PyLucid Verz.
+                    continue
+
+                result.append(path)
+
+            return result
+
+        paths = get_paths()
+
+        if "path" in self.request.form:
+            new_path = self.request.form["path"]
+            if not new_path in paths:
+                self.page_msg.red("path error!")
+            else:
+                if gallery_data["path"] != new_path:
+                    gallery_data["path"] = new_path
+                    self.page_msg.green("new gallery path saved.")
+
+        context = {
+            #~ "galleries" : galleries,
+            "absolute_path": absolute_path,
+            "current_path": gallery_data["path"],
+            "paths": paths,
+            "name": gallery_name,
+
+            "url": self.URLs.actionLink("gallery_config", gallery_name),
+            # Nicht self.URLs.currentAction() nehmen!
+            # Wenn von setup() aufrufgerufen wurde, stimmt der Link nicht!
+        }
+        self.page_msg(context)
+        self.templates.write("gallery_config", context)
+
+    #_________________________________________________________________________
+
+    def gallery(self, function_info):
+        #~ self.page_msg(function_info)
+        gallery_name = function_info
+
+        try:
+            gallery_data = self.plugin_cfg["galleries"][gallery_name]
+        except KeyError, e:
+            msg = "Error: Gallery named '%s' unknown! " % gallery_name
+            if debug:
+                msg += "(KeyError: %s)" % e
+            self.page_msg.red(msg)
+            return
+
+        try:
+            self._setup_workdir(gallery_data["path"])
+        except PathError, e:
+            self.page_msg.red(e)
+            return
 
         try:
             files, dirs, thumbnails = self._read_workdir()
@@ -145,31 +284,21 @@ class pygallery(PyLucidBaseModule):
             self.page_msg.red(e)
             return
 
-        for filename in files:
-            base, ext = os.path.splitext(filename)
-            if not ext in self.cfg["ext_whitelist"]:
-                continue
+        file_context = self._built_file_context(files, thumbnails)
+        dir_context = self._built_dir_context(dirs)
 
-            if base in thumbnails:
-                # Es existiert zu dem Bild ein Thumbnail
-                if debug:
-                    msg = "Skip %s, thubnail: %s exist." % (
-                        filename, thumbnails[base]
-                    )
-                    self.page_msg(msg)
-                continue
+        context = {
+            "files": file_context,
+            "dirs": dir_context,
+        }
+        #~ url = self.URLs.actionLink("gallery", gallery_data["path"])
+        #~ self.response.write('<a href="%s">%s</a>' % (url, url))
 
-            abs_filepath = self._get_absolut_filepath(filename)
+        self.templates.write("gallery", context, debug=True)
 
-            self.page_msg("Thumb:", abs_filepath)
+    #_________________________________________________________________________
 
-            raise "To Be Continued!"
-            #~ thumb_maker.make_thumbs(self.workdir)
-
-
-    def _setup_path(self, function_info):
-        #~ self.page_msg(function_info)
-        path = "/".join(function_info)
+    def _setup_workdir(self, path):
         self.relativ_path = posixpath.normpath(path)
         if debug:
             self.page_msg("relativ_path:", self.relativ_path)
@@ -182,47 +311,9 @@ class pygallery(PyLucidBaseModule):
             if debug:
                 msg += " (Workdir: %s - Error: %s)" % (self.workdir, e)
             raise PathError(msg)
-            self.page_msg.red(msg)
-            return
 
         if debug:
             self.page_msg("workdir:", self.workdir)
-
-    def gallery(self, function_info):
-        """
-        Generiert die Gallery-Seite
-        """
-        try:
-            self._setup_path(function_info)
-        except PathError: # Der Pfad ist ungültig
-            return # Fehler wurde schon ausgegeben
-
-        try:
-            files, dirs, thumbnails = self._read_workdir()
-        except DirReadError, e:
-            self.page_msg.red(e)
-            return
-
-        file_context = self._built_file_context(files, thumbnails)
-        dir_context = self._built_dir_context(dirs)
-
-        context = {
-            "is_admin": self.session["isadmin"],
-            "make_thumbs_url": self.URLs.actionLink(
-                "make_thumbs", self.relativ_path
-            ),
-            "files": file_context,
-            "dirs": dir_context,
-        }
-        if debug:
-            self.page_msg("context:", context)
-
-        from PyLucid.system.template_engines import render_jinja
-        content = render_jinja(template, context)
-        self.response.write(content)
-        self.response.write("<pre>")
-        self.response.write(cgi.escape(content))
-        self.response.write("</pre>")
 
     def _normpath(self, path):
         """
@@ -252,6 +343,8 @@ class pygallery(PyLucidBaseModule):
             doc_root = os.getcwd()
 
         return doc_root
+
+    #_________________________________________________________________________
 
     def _read_workdir(self):
         """
@@ -327,11 +420,6 @@ class pygallery(PyLucidBaseModule):
 
         return files, dirs, thumbnails
 
-    #_________________________________________________________________________
-
-    def _get_absolut_filepath(self, filename):
-        return posixpath.join("/", self.relativ_path, filename)
-
     def _built_file_context(self, files, thumbnails):
         """
         Formt aus den Datelisting Daten den jinja context
@@ -344,7 +432,7 @@ class pygallery(PyLucidBaseModule):
                 # Kein Thumbnail, dann zeigen wir das normale Bild in klein
                 thumbnail = filename
 
-            return self._get_absolut_filepath(thumbnail)
+            return posixpath.join(self.relativ_path, thumbnail)
 
 
         def get_clean_name(base):

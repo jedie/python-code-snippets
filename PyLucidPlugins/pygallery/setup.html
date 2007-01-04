@@ -1,0 +1,33 @@
+<fieldset><legend>existing galleries:</legend>
+{% if galleries %}
+  <table id="gallerie_table">
+    <thead>
+     <tr>
+       <th>gallery name</th><th>the lucidFunction Tag</th><th>path</th><th>edit</th>
+     </tr>
+    </thead>
+    {% for gallery in galleries %}
+    <tr>
+	<td>{{ gallery.name }}</td>
+        <td>{{ gallery.lucidFunction }}</td>
+        <td>{{ gallery.path }}</td>
+	<td><a href="{{gallery.edit_link}}">edit</a></td>
+    </tr>
+    {% endfor %}
+  </table>
+{% else %}
+  [No gallery exists.]
+{% endif %}
+</fieldset>
+
+<fieldset><legend>new gallery:</legend>
+<form name="new_gallery" method="post" action="{{ url }}">
+    <label class="left" for="name">The gallery name:</label>
+    <input name="name" value="" size="20" maxlength="50" type="text">
+    <ul>Note:
+       <li>This name will appear in the URL.</li>
+       <li>It must be unique.</li>
+    </ul>
+    <input type="submit" name="create" value="create" />
+</form>
+</fieldset>
