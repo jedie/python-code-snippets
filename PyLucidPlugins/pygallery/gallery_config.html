@@ -1,0 +1,19 @@
+<fieldset><legend>config for gallery '{{ name }}':</legend>
+<form name="gallery_config" method="post" action="{{ url }}">
+    <label class="left" for="path">Path:</label>
+    <select name="path">
+      {% for path in paths %}
+        <option value="{{ path }}" {% if path equals current_path %}selected="selected"{% endif %}>{{ path }}</option>
+      {% endfor %}
+    </select>
+    <small>(Old path: {{ current_path }})</small>
+    <br />
+    <label class="left" for="name">The gallery name:</label>
+    <input name="name" value="{{ name }}" size="20" maxlength="50" type="text">
+    <ul>Note:
+       <li>The gallery name will appear in the URL. It must be unique.</li>
+       <li>The path is relative to {{ absolute_path }} (document root)</li>
+    </ul>
+    <input type="submit" name="update" value="update" />
+</form>
+</fieldset>
