@@ -20,9 +20,15 @@ HTML = """
 </form>
 """
 
+from PyLucid.components.plugin_cfg import PluginConfig
 from PyLucid.system.BaseModule import PyLucidBaseModule
 
 class PluginCfgExample(PyLucidBaseModule):
+
+    def __init__(self, *args, **kwargs):
+        super(PluginCfgExample, self).__init__(*args, **kwargs)
+
+        self.plugin_cfg = PluginConfig(self.request, self.response)
 
     def lucidTag(self):
 
