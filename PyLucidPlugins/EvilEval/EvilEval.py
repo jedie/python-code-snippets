@@ -67,6 +67,7 @@ shell_input_form = """Execute a command as <em title="Username">%(userinfo)s</em
 """
 
 
+from PyLucid.tools.out_buffer import Redirector
 from PyLucid.system.BaseModule import PyLucidBaseModule
 
 
@@ -74,12 +75,17 @@ class EvilEval(PyLucidBaseModule):
 
     def lucidTag(self):
         #~ self.response.debug()
+        try:
+            osuname = " ".join(os.uname())
+        except AttributeError:
+            # Windows?!?
+            osuname = ""
         context = {
             "python_url": self.URLs.actionLink("python"),
             "shell_url": self.URLs.actionLink("shell"),
             "sysversion": sys.version,
             "userinfo": self._userinfo(),
-            "osuname": " ".join(os.uname()),
+            "osuname": osuname,
         }
         self.response.write(select_function % context)
 
@@ -131,7 +137,7 @@ class EvilEval(PyLucidBaseModule):
 
         start_time = time.time()
 
-        stdout_redirector = self.tools.redirector()
+        stdout_redirector = Redirector(self.page_msg)
         globals = {}
         locals = {}
 
@@ -175,10 +181,18 @@ class EvilEval(PyLucidBaseModule):
             # abgeschickter Befehl ausführen
             self.run_command()
 
+        try:
+            userinfo = os.getlogin()
+            osuname = " ".join(os.uname())
+        except AttributeError:
+            # Windows?!?!
+            userinfo = ""
+            osuname = "[Windows ?]"
+
         context = {
             "url": self.URLs.actionLink("shell"),
-            "userinfo": os.getlogin(),
-            "osuname": " ".join(os.uname()),
+            "userinfo": userinfo,
+            "osuname": osuname,
         }
         self.response.write(shell_input_form % context)
 
