@@ -58,5 +58,41 @@ plugin_cfg = {
     "dir_filter": ( # PyLucid-Verz. sollen ausgelassen werden.
             "colubrid", "jinja", "pygments", "PyLucid", "tests", "wsgiref"
     ),
-    "galleries": {}
+    "galleries": {},
+    "default_cfg": {
+        # Nur Endungen anzeigen, die in der Liste vorkommen
+        "ext_whitelist": (".jpg", ".png", ".mpg", ".avi"),
+
+        # =False -> Nur Dateien im aktuellen Verz. anzeigen
+        "allow_subdirs": True,
+
+        # Dateien die nicht angezeigt werden sollen
+        "file_filter": (".htaccess",),
+
+        ## Thumb-Gallerie-Einstellung
+        # pic_ext           = Dateiendungen, die als Bilder behandelt werden sollen
+        # thumb_pic_filter  = Filter, der aus den Dateinamen rausgeschnitten werden soll, um
+        #                     damit das passende Thumbnail zu finden
+        # thumb_suffix      = Liste der Suffixe im Dateiname mit dem ein Thumbnail markiert ist
+        # resize_thumb_size = Wird kein Thumbnail gefunden, wird das original Bild auf diese Werte
+        #                     verkleinert als Thumb genommen
+        #
+        # Bsp.:
+        # Urlaub01_WEB.jpg   -> Bild zu dem ein Thumbnail gesucht wird
+        # Urlaub01_thumb.jpg -> Das passende Thumbnail
+        "pic_ext"           : (".jpg", ".jpeg"),
+        "thumb_pic_filter"  : ("_WEB",),
+        "thumb_suffix"      : ("_thumb",),
+        "resize_thumb_size" : (100,60),
+
+        # Name des Bildes
+        "name_filter" : {
+            "replace_rules" : [# Ersetzten im Dateinamen (Reihenfolge wichtig!)
+                ("_WEB", " "),
+                ("_klein", " "),
+                ("_", " "),
+            ],
+            "strip_whitespaces": True, # mehrere Leerzeichen zu einem wandeln
+        }
+    }
 }
