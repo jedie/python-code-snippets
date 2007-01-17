@@ -4,8 +4,8 @@
 """
 Last commit info:
 ----------------------------------
-$LastChangedDate:$
-$Rev:$
+$LastChangedDate$
+$Rev$
 $Author$
 
 Created by Jens Diemer
@@ -15,6 +15,7 @@ license:
     http://www.opensource.org/licenses/gpl-license.php
 """
 
+__version__ = "$Rev$"
 
 debug = True
 #~ debug = False
@@ -25,53 +26,19 @@ import os, posixpath
 import cgi
 
 
-
+from PyLucid.components.plugin_cfg import PluginConfig
 from PyLucid.system.BaseModule import PyLucidBaseModule
 
 
 
 
 
+
 class pygallery(PyLucidBaseModule):
-    cfg = {
-        # Nur Endungen anzeigen, die in der Liste vorkommen
-        "ext_whitelist": (".jpg", ".png", ".mpg", ".avi"),
-
-        # =False -> Nur Dateien im aktuellen Verz. anzeigen
-        "allow_subdirs": True,
-
-        # Dateien die nicht angezeigt werden sollen
-        "file_filter": (".htaccess",),
-
-        ## Thumb-Gallerie-Einstellung
-        # pic_ext           = Dateiendungen, die als Bilder behandelt werden sollen
-        # thumb_pic_filter  = Filter, der aus den Dateinamen rausgeschnitten werden soll, um
-        #                     damit das passende Thumbnail zu finden
-        # thumb_suffix      = Liste der Suffixe im Dateiname mit dem ein Thumbnail markiert ist
-        # resize_thumb_size = Wird kein Thumbnail gefunden, wird das original Bild auf diese Werte
-        #                     verkleinert als Thumb genommen
-        #
-        # Bsp.:
-        # Urlaub01_WEB.jpg   -> Bild zu dem ein Thumbnail gesucht wird
-        # Urlaub01_thumb.jpg -> Das passende Thumbnail
-        "pic_ext"           : (".jpg", ".jpeg"),
-        "thumb_pic_filter"  : ("_WEB",),
-        "thumb_suffix"      : ("_thumb",),
-        "resize_thumb_size" : (100,60),
-
-        # Name des Bildes
-        "name_filter" : {
-            "replace_rules" : [# Ersetzten im Dateinamen (Reihenfolge wichtig!)
-                ("_WEB", " "),
-                ("_klein", " "),
-                ("_", " "),
-            ],
-            "strip_whitespaces": True, # mehrere Leerzeichen zu einem wandeln
-        }
-    }
-
     def __init__(self, *args, **kwargs):
         super(pygallery, self).__init__(*args, **kwargs)
+
+        self.plugin_cfg = PluginConfig(self.request, self.response)
 
         self.absolute_base_path = self._get_absolute_path()
         if debug:
@@ -87,39 +54,14 @@ class pygallery(PyLucidBaseModule):
         """
         Dummy, mit Infos
         """
-        self.page_msg.red("Wrong call.")
-        msg = (
-            "<p>You should use a special lucidTag:</p>"
-            "<h3>&lt;lucidTag:pygallery.setup/&gt;</h3>"
-            "<p>Put this tag on a cms page without 'permit view public'.</p>"
-        )
-        self.response.write(msg)
-
-    #_________________________________________________________________________
-
-    def create_new_gallerie(self):
-        """
-        Erstellt eine neue Gallerie
-        """
-        try:
-            gallery_name = self.request.form["name"]
-        except KeyError, e:
-            self.page_msg.red("Form error. Key '%s' not found." % e)
-            return
-
-        if gallery_name in self.plugin_cfg["galleries"]:
-            self.page_msg.red(
-                "A gallery named '%s' already exists!" % gallery_name
-            )
-            return
-
-        self.plugin_cfg["galleries"][gallery_name] = {
-            "path": None
-        }
-        self.page_msg.green("Gallerie created. Please setup.")
-
-        # Direkt die Config Seite aufrufen
-        self.gallery_config([gallery_name])
+        self.setup()
+        #~ self.page_msg.red("Wrong call.")
+        #~ msg = (
+            #~ "<p>You should use a special lucidTag:</p>"
+            #~ "<h3>&lt;lucidTag:pygallery.setup/&gt;</h3>"
+            #~ "<p>Put this tag on a cms page without 'permit view public'.</p>"
+        #~ )
+        #~ self.response.write(msg)
 
     #_________________________________________________________________________
 
@@ -154,6 +96,35 @@ class pygallery(PyLucidBaseModule):
         }
         self.page_msg(context)
         self.templates.write("setup", context)
+
+    #_________________________________________________________________________
+
+    def create_new_gallerie(self):
+        """
+        Erstellt eine neue Gallerie
+        """
+        try:
+            gallery_name = self.request.form["name"]
+        except KeyError, e:
+            self.page_msg.red("Form error. Key '%s' not found." % e)
+            return
+
+        if gallery_name in self.plugin_cfg["galleries"]:
+            self.page_msg.red(
+                "A gallery named '%s' already exists!" % gallery_name
+            )
+            return
+
+        self.plugin_cfg["galleries"][gallery_name] = {
+            "path": None,
+            "cfg": self.plugin_cfg["default_cfg"],
+        }
+        self.page_msg.green("Gallerie created. Please setup.")
+
+        # Direkt die Config Seite aufrufen
+        self.gallery_config([gallery_name])
+
+    #_________________________________________________________________________
 
     def _rename_gallery(self, old_name, new_name):
         """
@@ -277,6 +248,8 @@ class pygallery(PyLucidBaseModule):
         except PathError, e:
             self.page_msg.red(e)
             return
+
+        self.cfg = gallery_data["cfg"]
 
         try:
             files, dirs, thumbnails = self._read_workdir()
