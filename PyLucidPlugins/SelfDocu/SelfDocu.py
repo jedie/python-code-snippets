@@ -8,7 +8,7 @@ Last commit info:
 ----------------------------------
 $LastChangedDate:$
 $Rev:$
-$Author: JensDiemer $
+$Author$
 
 Created by Jens Diemer
 
