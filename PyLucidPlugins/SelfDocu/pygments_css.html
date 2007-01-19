@@ -1,0 +1,17 @@
+<a href="{{ menu_link }}">back</a>
+
+<ul>
+{% for style_name in styles %}
+  <li>
+     <a href="{{ style_name }}">
+     {% if style_name equals selected_style %}
+        <strong title="selected">{{ style_name }}</strong>
+     {% else %}
+        {{ style_name }}
+     {% endif %}
+     </a>
+  </li>
+{% endfor %}
+</ul>
+
+<a href="{{ menu_link }}">back</a>

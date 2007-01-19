@@ -15,11 +15,11 @@ Self PyLucid Documentation
 # Module-Manager Daten
 
 module_manager_data = {
-    "lucidTag"  : {
+    "lucidTag": {
         "must_login"        : False,
         "must_admin"        : False,
     },
-    "menu"      : {
+    "menu": {
         "must_login"        : False,
         "must_admin"        : False,
     },
@@ -34,6 +34,28 @@ module_manager_data = {
             "template_engine"   : "jinja",
             "markup"            : None
         }
+    },
+    "pygments_lexer_list": {
+        "must_login"        : False,
+        "must_admin"        : False,
+        "menu_section"      : "pygments",
+        "menu_description"  : "available lexers",
+        "internal_page_info" : {
+            "description"       : "List of available lexers",
+            "template_engine"   : "jinja",
+            "markup"            : None
+        },
+    },
+    "pygments_css": {
+        "must_login"        : False,
+        "must_admin"        : False,
+        "menu_section"      : "pygments",
+        "menu_description"  : "Stylesheet info",
+        "internal_page_info" : {
+            "description"       : "Stylesheet information page",
+            "template_engine"   : "jinja",
+            "markup"            : None
+        },
     },
 }
 
