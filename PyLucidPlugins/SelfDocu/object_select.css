@@ -1,0 +1,30 @@
+.doc {
+  width: 100%;
+  max-height: 11em;
+  overflow: auto;
+  white-space:pre;
+  border:1px solid gray;
+  background-color: white;
+  color: black;
+  padding: 5px;
+  margin: 5px;
+  margin-bottom: 2em;
+}
+.info_box {
+  display: none;
+}
+
+#obj_info a {
+  text-decoration:none;
+}
+#obj_info a:hover {
+  text-decoration:underline;
+}
+
+a.hover_info .root_doc {
+  display: none;
+}
+
+a.hover_info:hover .root_doc {
+  display:block;
+}

@@ -6,8 +6,8 @@ Self PyLucid Documentation
 
 Last commit info:
 ----------------------------------
-$LastChangedDate:$
-$Rev:$
+$LastChangedDate$
+$Rev$
 $Author$
 
 Created by Jens Diemer
@@ -17,11 +17,12 @@ license:
     http://www.opensource.org/licenses/gpl-license.php
 """
 
-__version__= "$Rev:$"
+__version__= "$Rev$"
 
-import cgi
+import cgi, inspect
 
 from PyLucid.components.plugin_cfg import PluginConfig
+from PyLucid.tools.out_buffer import Redirector
 from PyLucid.system.BaseModule import PyLucidBaseModule
 
 class SelfDocu(PyLucidBaseModule):
@@ -32,8 +33,6 @@ class SelfDocu(PyLucidBaseModule):
         self.plugin_cfg = PluginConfig(self.request, self.response)
 
     def lucidTag(self):
-        #~ url = self.URLs.actionLink("menu")
-        #~ self.response.write('<a href="%s">self documentation</a>' % url)
         self.menu()
 
     def menu(self):
@@ -44,19 +43,13 @@ class SelfDocu(PyLucidBaseModule):
         self.response.write(self.module_manager.build_menu())
 
     def object_hierarchy(self, function_info=None):
-        self.page_msg("object_hierarchy")
-
         context = {
             "menu_link": self.URLs.actionLink("menu"),
         }
-
-        if function_info:
-            selected_object = function_info[0].split(".")
-            if not selected_object[0] in self.plugin_cfg["object_names"]:
-                self.page_msg.red("Object name Error!")
-                return
+        if function_info == None:
+            context["obj_info"] = self._get_start_object_info()
         else:
-            raise "jo?"
+            context["obj_info"] = self._make_obj_info(function_info)
 
         """
 {'menu_data': [{'href': u'/Index/',
@@ -86,54 +79,127 @@ class SelfDocu(PyLucidBaseModule):
                 'title': u'example pages'}]}
         """
 
+        #~ self.page_msg(context)
+        self.templates.write("object_select", context)
+
+    def _make_obj_info(self, function_info):
+
+        selected_object = function_info[0].split(".")
+        if not selected_object[0] in self.plugin_cfg["object_names"]:
+            self.page_msg.red("Object name Error!")
+            return
+
         object_data = []
-        for obj_name in selected_object[:-1]:
+        for obj_name in selected_object[1:-1]:
             self.page_msg("1:", obj_name)
             #~ data = {
                 #~ "name": obj_name
             #~ }
-            #~ if obj_name == selected_object:
-                #~ attr_info = self.display_object(obj_name)
+            try:
+                attr_info = self.display_object(obj_name)
+            except Exception, e:
+                self.page_msg.red("Error: %s" % e)
+                continue
+
+            self.page_msg(attr_info)
 
             #~ object_data
             #~ context[obj_name] = attr_info
 
         self.page_msg("2:", selected_object[-1])
 
-        #~ self.page_msg(context)
-        #~ self.templates.write("object_select", context)
+    def _get_start_object_info(self):
+        result = []
+        for obj_name in self.plugin_cfg["object_names"]:
+            result.append(self._get_basic_obj_info(self, obj_name))
+        return result
 
-    def display_object(self, obj_name):
+    def _get_basic_obj_info(self, parent_obj, obj_name):
+        context = self._get_object_info(parent_obj, obj_name)
 
-        obj = getattr(self, obj_name)
+        subitems = self._get_object_attributes(parent_obj, obj_name)
+        if subitems!=[]:
+            context["subitems"] = subitems
 
+        return context
+
+    def _get_object_attributes(self, parent_obj, obj_name):
+        obj = getattr(parent_obj, obj_name)
         attributes = dir(obj)
-        #~ self.page_msg(attributes)
 
-        attr_info = []
+        result = []
         for attr_name in attributes:
             if attr_name.startswith("_"):
                 continue
 
-            attr_obj = getattr(obj, attr_name)
-            #~ self.page_msg(dir(attr_obj))
+            result.append(
+                self._get_object_info(obj, attr_name)
+            )
 
-            type_info = str(type(attr_obj)).strip("<>")
-            #~ self.page_msg(type_info)
+        return result
 
-            info = {
-                "name": attr_name,
-                "type": type_info,
-            }
+    def _get_object_info(self, parent_obj, obj_name):
+        obj = getattr(parent_obj, obj_name)
 
-            doc = attr_obj.__doc__
-            if doc != None:
-                info["doc"] = doc.strip()
+        context = {
+            "name": obj_name,
+            "type": self.__get_type_info(obj),
+        }
 
-            attr_info.append(info)
+        doc = self.__get_doc_or_help(obj)
+        if doc != None:
+            context["doc"] = doc
 
-        self.page_msg(attr_info)
+        return context
 
-        return attr_info
+    def __get_doc_or_help(self, obj):
+        doc = self.__get_doc(obj)
+        if doc != None:
+            return doc
 
+        doc = self.__get_help(obj)
+        if doc != None:
+            return doc
 
+    def __get_help(self, obj):
+        out = Redirector(self.page_msg)
+        help(obj)
+        return cgi.escape(out.get())
+
+    def __get_doc(self, obj):
+        doc = obj.__doc__
+        if doc == None:
+            return None
+
+        try:
+            doc = unicode(doc, "utf8")
+        except UnicodeError, e:
+            doc = "%s [Unicode Error: %s]" % (
+                unicode(doc, errors="replace"), e
+            )
+
+        doc = doc.strip()
+        if doc == "":
+            return None
+
+        doc = cgi.escape(doc)
+        return doc
+
+    def __get_type_info(self, obj):
+        type_info = type(obj)
+        type_info = unicode(type_info)
+        type_info = type_info.strip("<>")
+        return type_info
+
+    #_______________________________________________________________________
+
+    def pygments_lexer_list(self):
+        """
+        Liste alle vorhandener pygments Lexer erstellen
+        """
+        from pygments_info import lexer_list
+        lexer_list(self.request, self.response)
+
+    def pygments_css(self, function_info=None):
+        from pygments_info import style_info
+        style_info(self.request, self.response, function_info)

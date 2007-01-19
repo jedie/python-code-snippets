@@ -1,0 +1,23 @@
+<ul id="obj_info">
+{% for item in obj_info %}
+  <li><a href="#" class="hover_info"><strong>{{ item.name }}</strong>
+    <div class="root_doc">{{ item.doc }}</div>
+    </a>
+    {% if item.subitems %}
+        <ul id="subitems">
+           {% for subitem in item.subitems %}
+           <li>
+             <a href="JavaScript:toggle('{{ item.name }}_{{ subitem.name }}');">{{ item.name }}.<strong>{{ subitem.name }}</strong>
+             <br />
+             <div class="info_box" id="{{ item.name }}_{{ subitem.name }}">
+               <p>{{ subitem.type }}</p>
+               <pre class="doc">{{ subitem.doc }}</pre>
+             </div>
+             </a>
+           </li>
+           {% endfor %}
+        </ul>
+    {% endif %}
+  </li>
+{% endfor %}
+</ul>
