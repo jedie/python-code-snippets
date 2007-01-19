@@ -64,12 +64,17 @@ def style_info(request, response, function_info):
     }
     request.templates.write("pygments_css", context, debug=False)
 
-    if selected_style != None:
-        # CSS zum Style anzeigen
-        stylesheet = HtmlFormatter(style=selected_style)
-        stylesheet = stylesheet.get_style_defs('.syntax')
+    if selected_style == None:
+        # Es wurde kein Style ausgewählt
+        return
 
-        request.render.highlight(".css", stylesheet)
+    # CSS zum Style anzeigen
+    stylesheet = HtmlFormatter(style=selected_style)
+    stylesheet = stylesheet.get_style_defs('.pygments_code')
+
+    request.render.highlight(
+        ".css", stylesheet, pygments_style=selected_style
+    )
 
 
 

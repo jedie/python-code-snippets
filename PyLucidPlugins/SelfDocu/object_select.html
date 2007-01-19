@@ -7,13 +7,14 @@
         <ul id="subitems">
            {% for subitem in item.subitems %}
            <li>
-             <a href="JavaScript:toggle('{{ item.name }}_{{ subitem.name }}');">{{ item.name }}.<strong>{{ subitem.name }}</strong>
+             <a href="JavaScript:toggle('{{ item.name }}_{{ subitem.name }}');">
+                {{ item.name }}.<strong>{{ subitem.name }}</strong>
+             </a>
              <br />
              <div class="info_box" id="{{ item.name }}_{{ subitem.name }}">
                <p>{{ subitem.type }}</p>
                <pre class="doc">{{ subitem.doc }}</pre>
              </div>
-             </a>
            </li>
            {% endfor %}
         </ul>
