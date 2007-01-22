@@ -13,22 +13,28 @@ Komplette Liste aller externen Plugins mit:
 
 Gezielt nur ein Plugin zum download anbieten:
     <lucidFunction:PluginDownload>PluginName</lucidFunction>
-"""
 
-__version__="0.2"
-
-__history__="""
-v0.2
-    - NEU: aus als <lucidTag> (generiert eine Liste aller externen Plugins
-v0.1
-    - erste Version
-"""
-
-__todo__="""
+ToDo
+----------------------------------
     - Anzeigen einer Versionsnummer / Änderungsdatum
     - Mehr Info's zum Plugin (automatisch aus der DB)
     - Sourcecode ansicht
+
+
+Last commit info:
+----------------------------------
+$LastChangedDate:$
+$Rev:$
+$Author$
+
+Created by Jens Diemer
+
+license:
+    GNU General Public License v2 or above
+    http://www.opensource.org/licenses/gpl-license.php
 """
+
+__version__= "$Rev:$"
 
 # Debug-Ausgaben:
 debug = False
@@ -80,15 +86,13 @@ class PluginDownload(PyLucidBaseModule):
             plugin["download_url"] = self.get_downloadurl(module_name)
             filename = self.get_download_filename(module_name)
             plugin["filename"] = filename
-
-        if debug:
-            self.page_msg(pluginlist)
+            plugin['version'] = plugin['version'].strip("$ ")
 
         context = {
             "PluginList": pluginlist,
         }
 
-        self.templates.write("PluginDownload", context)
+        self.templates.write("PluginDownload", context, debug)
 
     def download(self, function_info):
         """
