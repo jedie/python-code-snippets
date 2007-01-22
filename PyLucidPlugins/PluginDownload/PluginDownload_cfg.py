@@ -3,29 +3,19 @@
 
 #___________________________________________________________________________________________________
 # Meta-Angaben
-__author__      = "Benjamin Weber + Jens Diemer"
-__url__         = "http://blinx.tippsl.de"
-__description__ = "Displays a random text of a Site in PyLucid."
-__long_description__ = """
-Displays a random text.
-"""
-__important_buildin__   = True
+__author__      = "Jens Diemer"
+__url__         = "http://www.pylucid.org"
+__description__ = __long_description__ = \
+                    "Make a Download Page for all installed external Plugins"
 
 #___________________________________________________________________________________________________
 # Module-Manager Daten
 
-#~ module_manager_debug = True
-module_manager_debug = False
-
-
-global_rights = {
-    "must_login"    : False,
-    "must_admin"    : False,
-}
-
-
 module_manager_data = {
-    "lucidFunction" 	: global_rights,
+    "lucidFunction" : {
+        "must_login"    : False,
+        "must_admin"    : False,
+    },
     "lucidTag" 		: {
         "must_login"    : False,
         "must_admin"    : False,
@@ -36,5 +26,8 @@ module_manager_data = {
             "markup"            : None
         },
     },
-    "download" 		: global_rights,
+    "download" : {
+        "must_login"    : False,
+        "must_admin"    : False,
+    },
 }
