@@ -50,20 +50,13 @@ class pygallery(PyLucidBaseModule):
         """
         self.gallery(function_info)
 
+    #_________________________________________________________________________
+
     def lucidTag(self):
         """
         Dummy, mit Infos
         """
         self.setup()
-        #~ self.page_msg.red("Wrong call.")
-        #~ msg = (
-            #~ "<p>You should use a special lucidTag:</p>"
-            #~ "<h3>&lt;lucidTag:pygallery.setup/&gt;</h3>"
-            #~ "<p>Put this tag on a cms page without 'permit view public'.</p>"
-        #~ )
-        #~ self.response.write(msg)
-
-    #_________________________________________________________________________
 
     def setup(self):
         """
@@ -203,36 +196,52 @@ class pygallery(PyLucidBaseModule):
 
             return result
 
-        paths = get_paths()
-
-        if "path" in self.request.form:
-            new_path = self.request.form["path"]
-            if not new_path in paths:
-                self.page_msg.red("path error!")
-            else:
-                if gallery_data["path"] != new_path:
-                    gallery_data["path"] = new_path
-                    self.page_msg.green("new gallery path saved.")
-
         context = {
             #~ "galleries" : galleries,
             "absolute_path": absolute_path,
             "current_path": gallery_data["path"],
-            "paths": paths,
             "name": gallery_name,
 
             "url": self.URLs.actionLink("gallery_config", gallery_name),
             # Nicht self.URLs.currentAction() nehmen!
             # Wenn von setup() aufrufgerufen wurde, stimmt der Link nicht!
         }
+
+        paths = get_paths()
+        if paths == []:
+            self.page_msg.red("No potential directories found!")
+        else:
+            context["paths"] = paths
+
+            if "path" in self.request.form:
+                new_path = self.request.form["path"]
+                if not new_path in paths:
+                    self.page_msg.red("path error!")
+                else:
+                    if gallery_data["path"] != new_path:
+                        gallery_data["path"] = new_path
+                        self.page_msg.green("new gallery path saved.")
+
         self.page_msg(context)
         self.templates.write("gallery_config", context)
 
     #_________________________________________________________________________
 
     def gallery(self, function_info):
-        #~ self.page_msg(function_info)
-        gallery_name = function_info
+
+        if isinstance(function_info, basestring):
+            # Direkter Aufruf druch lucidFunction
+            gallery_name = function_info
+            gallery_path = ""
+        else:
+            # User hat ein tieferes Verz. gewählt (_command-Aufruf)
+            gallery_name = function_info[0]
+            gallery_path = "/".join(function_info[1:])
+
+        self.page_msg(
+            "function_info: %s - gallery_name: %s - gallery_path: %s" % (
+                function_info, gallery_name, gallery_path)
+        )
 
         try:
             gallery_data = self.plugin_cfg["galleries"][gallery_name]
@@ -244,7 +253,7 @@ class pygallery(PyLucidBaseModule):
             return
 
         try:
-            self._setup_workdir(gallery_data["path"])
+            self._setup_workdir(gallery_data["path"], gallery_path)
         except PathError, e:
             self.page_msg.red(e)
             return
@@ -258,25 +267,24 @@ class pygallery(PyLucidBaseModule):
             return
 
         file_context = self._built_file_context(files, thumbnails)
-        dir_context = self._built_dir_context(dirs)
-
         context = {
             "files": file_context,
-            "dirs": dir_context,
         }
-        #~ url = self.URLs.actionLink("gallery", gallery_data["path"])
-        #~ self.response.write('<a href="%s">%s</a>' % (url, url))
+        dir_context = self._built_dir_context(gallery_name, dirs)
+        context.update(dir_context)
 
         self.templates.write("gallery", context, debug=True)
 
     #_________________________________________________________________________
 
-    def _setup_workdir(self, path):
-        self.relativ_path = posixpath.normpath(path)
-        if debug:
-            self.page_msg("relativ_path:", self.relativ_path)
+    def _setup_workdir(self, path, gallery_path):
+        self.docRoot = self.URLs["docRoot"]
 
-        self.workdir = posixpath.join(self.absolute_base_path, self.relativ_path)
+        path = posixpath.normpath(path)
+        self.relativ_path = posixpath.join(path, gallery_path)
+        self.workdir = posixpath.join(
+            self.absolute_base_path, self.relativ_path
+        )
         try:
             self.workdir = self._normpath(self.workdir)
         except PathError, e:
@@ -286,7 +294,7 @@ class pygallery(PyLucidBaseModule):
             raise PathError(msg)
 
         if debug:
-            self.page_msg("workdir:", self.workdir)
+            self._debug_path()
 
     def _normpath(self, path):
         """
@@ -316,6 +324,14 @@ class pygallery(PyLucidBaseModule):
             doc_root = os.getcwd()
 
         return doc_root
+
+    def _debug_path(self):
+        self.URLs.debug()
+        self.page_msg("---")
+        self.page_msg("self.absolute_base_path:", self.relativ_path)
+        self.page_msg("self.relativ_path:", self.relativ_path)
+        self.page_msg("self.workdir:", self.workdir)
+        self.page_msg("self.docRoot:", self.docRoot)
 
     #_________________________________________________________________________
 
@@ -367,7 +383,7 @@ class pygallery(PyLucidBaseModule):
                     # Datei soll nicht angezeigt werden
                     continue
 
-                name, ext = posixpath.splitext( item )
+                name, ext = posixpath.splitext(item)
 
                 # Thumbnails rausfiltern
                 if is_thumb( name, item ):
@@ -405,7 +421,7 @@ class pygallery(PyLucidBaseModule):
                 # Kein Thumbnail, dann zeigen wir das normale Bild in klein
                 thumbnail = filename
 
-            return posixpath.join(self.relativ_path, thumbnail)
+            return posixpath.join(self.docRoot, self.relativ_path, thumbnail)
 
 
         def get_clean_name(base):
@@ -447,15 +463,18 @@ class pygallery(PyLucidBaseModule):
 
         return context
 
-    def _built_dir_context(self, dirs):
-        context = []
-        #~ self.page_,s
+    def _built_dir_context(self, gallery_name, dirs):
+        dir_info = []
         for dirname in dirs:
-            dir_info = {
-                "href": dirname,
+            dir_info.append({
+                "href": self.URLs.actionLink("gallery",(gallery_name,dirname)),
                 "name": dirname
-            }
-            context.append(dir_info)
+            })
+
+        context = {
+            "back_href": "..",
+            "dirs": dir_info,
+        }
 
         return context
 
