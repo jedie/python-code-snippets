@@ -15,6 +15,7 @@
 </p>
 <table style="width: 100%">
     <tr>
+        <th>no</th>
         <th>char</th>
         <th>unicode</th>
         <th>hex</th>
@@ -23,9 +24,10 @@
     </tr>
     {% for row in block_data %}{% cycle rowclass through "odd", "even" %}
     <tr class="{{ rowclass }}">
+        <td>{{ row.id }}</td>
         <td><strong>{{ row.char }}</strong></td>
-        <td>{{ row.unicode }}</td>
-        <td>{{ row.hex }}</td>
+        <td title="Use in Python like this: &gt;print u'{{ row.unicode }}'&lt;">{{ row.unicode }}</td>
+        <td title="Use in Python like this: &gt;print '{{ row.hex }}'&lt;">{{ row.hex }}</td>
         <td>{{ row.html|escapexml }}</td>
         <td>
             <a name="{{ row.id }}"><a href="{{ url }}#{{ row.id }}" title="anchor to this char">
@@ -35,5 +37,12 @@
     </tr>
     {% endfor %}
 </table>
-<p><small>Use Unicode database v{{ unidata_version }}</small></p>
+<ul>&#x22D8; Column usage info: &#x22D9;
+  <li><strong>unicode</strong>: Python example &#x2192; <strong>print u'\u0041'</strong></li>
+  <li><strong>hex</strong>: Python example &#x2192; <strong>print '\x41'</strong></li>
+  <li><strong>html</strong>: copy&paste into your html code ;)</li>
+</ul>
+<p>
+  <small>Used Unicode database v{{ unidata_version }}</small>
+</p>
 </fieldset>
