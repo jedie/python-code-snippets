@@ -14,7 +14,7 @@ Last commit info:
 ----------------------------------
 LastChangedDate: $LastChangedDate:$
 Revision.......: $Rev:$
-Author.........: $Author: jensdiemer $
+Author.........: $Author$
 """
 
 
@@ -258,8 +258,8 @@ class DecodeUnicode(PyLucidBaseModule):
 
             "unidata_version": unicodedata.unidata_version,
         }
-        #~ self.page_msg(context)
-        self.templates.write("display", context)
+        #~ self.templates.write("display", context, debug=True)
+        self.templates.write("display", context, debug=False)
 
     def get_block_data(self, block):
 
@@ -269,23 +269,18 @@ class DecodeUnicode(PyLucidBaseModule):
         for no in xrange(int(block[0]), int(block[1])):
             char = unichr(no)
 
-            # zum Einbinden in Python Sourcecode z.B.: print u"\u256c"
-            unicode_value = "\\u%X" % no
+            char_code = "%X" % no
 
-            try:
-                hex_value = "%s" % char.decode("String_Escape")
-            except:
-                hex_value = "0x%04X" % no
+            # zum Einbinden in Python Sourcecode z.B.: print u"\u256c"
+            unicode_value = "000%s" % char_code
+            unicode_value = "\\u%s" % unicode_value[-4:]
+
+            hex_value = "\\x%s" % char_code
 
             # zum einbinden in HTML:
-            HTML = "&amp;#%i;" % no
+            HTML = "&#x%s;" % char_code
 
             name = unicodedata.name(char, "(no unicode name)")
-
-            #~ try:
-                #~ char.encode("utf-8")
-            #~ except UnicodeEncodeError:
-                #~ char="???"
 
             data.append({
                 "id": no,
