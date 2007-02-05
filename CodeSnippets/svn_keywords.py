@@ -34,31 +34,33 @@ except ImportError, e:
 #_____________________________________________________________________________
 # settings:
 
-REPOSITORY = "../../" # PyLucid trunk Verz.
+class Config(object):
+    # Path to the SVN repo:
+    repository = "."
 
-SIMULATION = False
-#~ SIMULATION = True
+    #~ simulation = False
+    simulation = True
 
-# Dateien die keine svn:keywords haben dÃ¼rfen, ist in den svn:keywords dennoch
-# welche drin, werden die gelÃ¶scht:
-NO_KEYWORD_FILE_EXT = (".zip",)
+    # Dateien die keine svn:keywords haben dürfen, ist in den svn:keywords dennoch
+    # welche drin, werden die gelöscht:
+    no_keyword_file_ext = (".zip",)
 
-# Dateien mit der Endung, werden komplett ausgelassen:
-SKIP_FILE_EXT = (".pyc",)
+    # Dateien mit der Endung, werden komplett ausgelassen:
+    skip_file_ext = (".pyc",)
 
-# Nur diese keywords werden als svn:keywords eingetragen:
-ALLOWED_KEYWORDS = set([
-    "LastChangedDate", "LastChangedRevision", "LastChangedBy", "HeadURL",
-    "Id", "Rev", "Author"
-])
+    # Nur diese keywords werden als svn:keywords eingetragen:
+    allowed_keywords = set([
+        "LastChangedDate", "LastChangedRevision", "LastChangedBy", "HeadURL",
+        "Id", "Rev", "Author"
+    ])
 
-# Properties die in jeder Datei gesetzt werden sollen:
-BASIC_PROPERTIES = (
-    {
-        "fnmatches": ("*.py",),
-        "properties": (["svn:eol-style", "LF"],),
-    },
-)
+    # Properties die in jeder Datei gesetzt werden sollen:
+    basic_properties = (
+        {
+            "fnmatches": ("*.py",),
+            "properties": (["svn:eol-style", "LF"],),
+        },
+    )
 
 #_____________________________________________________________________________
 
@@ -68,21 +70,21 @@ client = pysvn.Client()
 # Hier ist $ durch \x24 maskiert, damit das Skript nicht die re findet!
 re_keywords = re.compile(r"\x24(.*?):(.*?)\x24")
 
-# Ein kleiner Test fÃ¼r die re:
+# Ein kleiner Test für die re:
 assert re_keywords.findall(u"jau\u0024Test:OK\u0024jup") == [(u'Test', u'OK')]
 
 
 #_____________________________________________________________________________
 
-def cleanup():
+def cleanup(config):
     print "SVN cleanup...",
-    client.cleanup(REPOSITORY)
+    client.cleanup(config.repository)
     print "OK"
 
 #_____________________________________________________________________________
 
 
-def print_status():
+def print_status(config):
     """
     shows the SVN status
     """
@@ -99,7 +101,7 @@ def print_status():
 
     print "SVN status:"
     print "- "*39
-    changes = client.status(REPOSITORY)
+    changes = client.status(config.repository)
 
     for status in ("added","deleted","modified","conflicted","unversioned"):
         print_list(changes, status)
@@ -108,19 +110,19 @@ def print_status():
 
 #_____________________________________________________________________________
 
-def walk():
+def walk(repo_path, skip_file_ext):
     """
     os.walk durch das repro-Verz.
     Liefert den absoluten Pfad als generator zurí¤«
     """
-    for dir,_,files in os.walk(REPOSITORY):
+    for dir,_,files in os.walk(repo_path):
         if ("/.svn" in dir) or ("\\.svn" in dir):
             # Versteckte .svn Verzeichnisse auslassen
             continue
 
         for fn in files:
             ext = os.path.splitext(fn)[1]
-            if ext in SKIP_FILE_EXT:
+            if ext in skip_file_ext:
                 continue
             abs_path = os.path.join(dir, fn)
             yield abs_path
@@ -171,14 +173,14 @@ def delete_svn_keywords(filename, proplist):
 
     client.propdel("svn:keywords", filename)
 
-def set_svn_keywords(filename, keywords):
+def set_svn_keywords(filename, keywords, simulation=True):
     """
     Setzt svn:keywords
     """
     keywords = " ".join(keywords)
     print ">>> set svn_keywords to:", keywords
-    if SIMULATION:
-        print "simulation on, no change made."
+    if simulation:
+        print "config.simulation on, no change made."
         return
 
     client.propset("svn:keywords", keywords, filename)
@@ -219,7 +221,7 @@ def convert_newlines(filename):
 
     print "OK"
 
-def set_basic_properties(filename, proplist):
+def set_basic_properties(filename, proplist, basic_properties):
     """
     Setzten der properties, die immer vorhanden sein sollen.
     """
@@ -229,7 +231,7 @@ def set_basic_properties(filename, proplist):
                 return True
         return False
 
-    for prop in BASIC_PROPERTIES:
+    for prop in basic_properties:
         if not filenamematch(filename, prop["fnmatches"]):
             continue
 
@@ -268,23 +270,23 @@ def set_basic_properties(filename, proplist):
 
 #_____________________________________________________________________________
 
-def sync_keywords():
+def sync_keywords(config):
     """
     syncronisiert keywords aus allen Dateien.
     """
-    for fn in walk():
+    for fn in walk(config.repository, config.skip_file_ext):
         try:
             svn_entry = client.info(fn)
         except pysvn._pysvn.ClientError, e:
             if "is not a working copy" in str(e):
-                # ist nicht in repository
+                # ist nicht in config.repository
                 pass
             else:
                 print ">>> Error:", e
             continue
         else:
             if svn_entry == None:
-                # Die Datei ist nicht im repository
+                # Die Datei ist nicht im config.repository
                 continue
 
         print "-"*40
@@ -293,21 +295,21 @@ def sync_keywords():
         proplist = client.proplist(fn)
 
         ext = os.path.splitext(fn)[1]
-        if ext in NO_KEYWORD_FILE_EXT:
+        if ext in config.no_keyword_file_ext:
             # Diese Datei sollte keine Keywords haben!
             delete_svn_keywords(fn, proplist)
             continue
 
-        set_basic_properties(fn, proplist)
+        set_basic_properties(fn, proplist, config.basic_properties)
 
         # svn:keywords aus in der Datei mit re suchen:
         file_keywords = get_file_keywords(fn)
 
-        if not file_keywords.issubset(ALLOWED_KEYWORDS):
+        if not file_keywords.issubset(config.allowed_keywords):
             print ">>>Error!"
-            not_allowed = file_keywords.difference(ALLOWED_KEYWORDS)
+            not_allowed = file_keywords.difference(config.allowed_keywords)
             print ">Found not allowed keyword in file:", ", ".join(not_allowed)
-            file_keywords = file_keywords.intersection(ALLOWED_KEYWORDS)
+            file_keywords = file_keywords.intersection(config.allowed_keywords)
             print ">I used only this keywords:", ", ".join(file_keywords)
 
         # Die aktuell gesetzten svn:keywords ermitteln:
@@ -321,7 +323,7 @@ def sync_keywords():
             if len(file_keywords) == 0:
                 delete_svn_keywords(fn, proplist)
             else:
-                set_svn_keywords(fn, list(file_keywords))
+                set_svn_keywords(fn, list(file_keywords), config.simulation)
         else:
             print "keywords are the same, ok"
 
@@ -330,6 +332,6 @@ def sync_keywords():
 
 
 if __name__ == "__main__":
-    cleanup()
-    sync_keywords()
-    print_status()
+    #~ cleanup(Config)
+    sync_keywords(Config)
+    #~ print_status(Config)
