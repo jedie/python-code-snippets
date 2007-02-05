@@ -1,0 +1,9 @@
+name "MailLastRendered"
+
+version 0.1
+
+copy mailLastRendered.mcr to $scripts
+copy mailLastRendered.ms to $scripts
+
+run "install_info.ms"
+
