@@ -1,21 +1,25 @@
 #!/usr/bin/python
 # -*- coding: ISO-8859-1 -*-
 
-__author__      = "Jens Diemer"
-__url__         = "http://www.jensdiemer.de/index.py/Codesnippets/"
-__license__     = "GNU General Public License (GPL)"
-__description__ = "makes thumbs with the PIL"
-
-__version__ = "v0.2.1"
-
-__history__ = """
-v0.2.1
-    - try-except if the file is not a image
-v0.2
-    - JPEG quality Setting in cfg, now
-v0.1
-    - Patch für PIL's Fehler "Suspension not allowed here"
 """
+    makes thumbs with the PIL
+
+
+Last commit info:
+----------------------------------
+$LastChangedDate:$
+$Rev:$
+$Author: jensdiemer $
+
+Created by Jens Diemer
+
+license:
+    GNU General Public License v2 or above
+    http://www.opensource.org/licenses/gpl-license.php
+"""
+
+__version__= "$Rev:$"
+
 
 import sys, os, time, fnmatch, urllib
 
@@ -38,6 +42,7 @@ except ImportError:
 class thumb_maker_cfg:
     # Standardwerte
     path_to_convert = os.getcwd()
+    path_output     = path_to_convert
     make_thumbs     = True
     thumb_size      = (160, 120)
     thumb_suffix    = "_thumb"
@@ -114,7 +119,7 @@ class thumb_maker:
         if self.cfg.make_smaller == True:
             self.convert(
                 im_obj      = im_obj,
-                im_path     = path,
+                im_path     = self.cfg.path_output,
                 im_name     = im_name,
                 suffix      = self.cfg.suffix,
                 size        = self.cfg.smaller_size,
@@ -125,7 +130,7 @@ class thumb_maker:
         if self.cfg.make_thumbs == True:
             self.convert(
                 im_obj      = im_obj,
-                im_path     = path,
+                im_path     = self.cfg.path_output,
                 im_name     = im_name,
                 suffix      = self.cfg.thumb_suffix,
                 size        = self.cfg.thumb_size,
