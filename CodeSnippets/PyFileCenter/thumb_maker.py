@@ -21,7 +21,7 @@ license:
 __version__= "$Rev:$"
 
 
-import sys, os, time, fnmatch, urllib
+import sys, os, time, fnmatch, urllib, string
 
 
 try:
@@ -68,6 +68,8 @@ class thumb_maker_cfg:
     ]
 
 
+
+
 class thumb_maker:
     def __init__( self, cfg ):
         self.cfg = cfg
@@ -79,6 +81,18 @@ class thumb_maker:
     def go( self ):
         """ Aktion starten """
         time_begin = time.time()
+
+        if not os.path.isdir(self.cfg.path_output):
+            print "Make output dir '%s'..." % self.cfg.path_output,
+            try:
+                os.makedirs(self.cfg.path_output)
+            except Exception, e:
+                print "Error!"
+                print "Can't make ouput dir:", e
+                sys.exit()
+            else:
+                print "OK"
+
         print "work path:", self.cfg.path_to_convert
 
         for root,dirs,files in os.walk( self.cfg.path_to_convert ):
@@ -113,7 +127,7 @@ class thumb_maker:
 
         if self.cfg.clean_filenames == True:
             # Dateinamen säubern
-            im_name = self.clean_filename( im_name )
+            im_name = self.clean_filename(im_name)
 
         # Kleinere Bilder für's Web erstellen
         if self.cfg.make_smaller == True:
@@ -189,17 +203,34 @@ class thumb_maker:
         else:
             print "OK"
 
-    def clean_filename( self, file_name ):
+    def clean_filename(self, file_name):
         """ Dateinamen für's Web säubern """
 
-        if urllib.quote( file_name ) == file_name:
+        if urllib.quote(file_name) == file_name:
             # Gibt nix zu ersetzten!
             return file_name
 
-        for rule in self.cfg.rename_rules:
-            file_name = file_name.replace( rule[0], rule[1] )
+        fn, ext = os.path.splitext(file_name)
 
-        return urllib.quote( file_name )
+        for rule in self.cfg.rename_rules:
+            fn = fn.replace(rule[0], rule[1])
+
+        allowed_chars = string.ascii_letters + string.digits
+        allowed_chars += "-_#"
+
+        # Nur ASCII Zeichen erlauben und gleichzeitig trennen
+        parts = [""]
+        for char in fn:
+            if not char in allowed_chars:
+                parts.append("")
+            else:
+                parts[-1] += char
+
+        # Erster Buchstabe immer groß geschrieben
+        parts = [i[0].upper() + i[1:] for i in parts if i!=""]
+        fn = "".join(parts)
+
+        return fn + ext
 
 
 
