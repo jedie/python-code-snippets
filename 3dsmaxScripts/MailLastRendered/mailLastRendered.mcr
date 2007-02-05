@@ -16,9 +16,9 @@
 --
 --
 -- subversion information:
---  $HeadURL:$
---  $LastChangedDate:$
---  $Rev:$
+--  $HeadURL$
+--  $LastChangedDate$
+--  $Rev$
 --  $Author$
 --
 -- license:
