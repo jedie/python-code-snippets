@@ -72,7 +72,10 @@ class Requester(object):
             )
 
         average = sum(self.response_times) / len(self.response_times)
-        print ">>> average: %0.2fsec" % average,
+        rps = 1.0 / average
+        print ">>> average: %0.2fsec. (%0.2f requests per sec.)" % (
+            average, rps
+        )
 
         target_len = (self.count * self.threads) - (2*self.delete)
 
