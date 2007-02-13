@@ -113,7 +113,8 @@ function abs_filename filename = (
 
 
 function get_clean_maxFileName = (
-	-- Script filename without the last part, seperated with " "
+	-- Script filename without the last part
+	-- convert spaces into "_"
 
 	-- split string into a Array
 	tokens = filterString maxFileName " "
@@ -122,8 +123,9 @@ function get_clean_maxFileName = (
 	len = tokens.count-1
 	clean_filename = ""
 	for i = 1 to len do (
-  		clean_filename += tokens[i]
+  		clean_filename += "_" + tokens[i]
 	)
+	clean_filename = trimLeft clean_filename "_"
     return clean_filename
 )
 
