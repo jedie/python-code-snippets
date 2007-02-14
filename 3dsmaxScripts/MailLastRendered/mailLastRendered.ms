@@ -167,11 +167,18 @@ function main = (
 	clean_filename = get_clean_maxFileName()
 	print clean_filename
 
-	filename = clean_filename + seperator + suffix + seperator
+    cam = getActiveCamera()
+	filename = clean_filename + seperator + cam.name + seperator + suffix + seperator
 
 	filename = get_expand_filename(filename)
 	abs_path = abs_filename(filename)
 	print filename
+
+	abs_path = getSaveFileName caption:"save rendered pic" filename:abs_path
+	if abs_path == undefined then (
+	    return false
+	)
+
 	print abs_path
 
 	JPEG.setQuality(90)
