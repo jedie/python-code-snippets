@@ -168,7 +168,12 @@ function main = (
 	print clean_filename
 
     cam = getActiveCamera()
-	filename = clean_filename + seperator + cam.name + seperator + suffix + seperator
+	if cam == undefined then (
+	   cam_name = ""
+	) else (
+	   cam_name = cam.name + seperator
+	)
+	filename = clean_filename + seperator + cam_name + suffix + seperator
 
 	filename = get_expand_filename(filename)
 	abs_path = abs_filename(filename)
