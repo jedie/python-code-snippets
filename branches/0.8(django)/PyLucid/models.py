@@ -2,15 +2,16 @@ from django.db import models
 
 from settings import TABLE_PREFIX
 
+
 class Page(models.Model):
     """
-    A CMS Page
+    A CMS Page Object
     """
     id = models.IntegerField(primary_key=True)
-    parent = models.IntegerField()
 
     content = models.TextField(blank=True)
 
+    parent = models.IntegerField()
     position = models.IntegerField()
 
     name = models.CharField(maxlength=150)
@@ -21,8 +22,8 @@ class Page(models.Model):
     style = models.IntegerField()
     markup = models.CharField(blank=True, maxlength=150)
 
-    keywords = models.TextField(blank=True)
-    description = models.TextField(blank=True)
+    keywords = models.TextField(blank=True, maxlength=255)
+    description = models.TextField(blank=True, maxlength=255)
 
     createtime = models.DateTimeField()
     lastupdatetime = models.DateTimeField(null=True, blank=True)
@@ -40,7 +41,23 @@ class Page(models.Model):
         db_table = '%spage' % TABLE_PREFIX
 
     class Admin:
-        pass
+        fields = (
+            ('basic', {'fields': ('id', 'content','parent','position',)}),
+            ('identification', {'fields': ('name','shortcut','title')}),
+            ('internal', {'fields': ('template','style','markup')}),
+            ('meta', {'fields': ('keywords', 'description')}),
+            ('update information', {
+                'fields': ('createtime','lastupdatetime','lastupdateby')
+            }),
+
+            ('Advanced options', {
+                'classes': 'collapse',
+                'fields' : (
+                    'showlinks', 'permitViewPublic', 'permitViewGroupID',
+                    'ownerID', 'permitEditGroupID'
+                ),
+            }),
+        )
 
     def __str__(self):
         return "CMS page '%s'" % self.shortcut
@@ -52,6 +69,10 @@ class Archive(models.Model):
     date = models.DateTimeField()
     comment = models.CharField(maxlength=255)
     content = models.TextField()
+
+    class Admin:
+        pass
+
     class Meta:
         db_table = '%sarchive' % TABLE_PREFIX
 
@@ -64,6 +85,10 @@ class Group(models.Model):
     lastupdatetime = models.DateTimeField()
     lastupdateby = models.IntegerField(null=True, blank=True)
     createtime = models.DateTimeField()
+
+    class Admin:
+        pass
+
     class Meta:
         db_table = '%sgroup' % TABLE_PREFIX
 
@@ -73,6 +98,10 @@ class L10N(models.Model):
     varName = models.CharField(maxlength=150)
     value = models.CharField(maxlength=255)
     description = models.CharField(maxlength=255)
+
+    class Admin:
+        pass
+
     class Meta:
         db_table = '%sl10n' % TABLE_PREFIX
 
@@ -86,12 +115,20 @@ class Log(models.Model):
     message = models.CharField(maxlength=255)
     typ = models.CharField(maxlength=150)
     status = models.CharField(maxlength=36)
+
+    class Admin:
+        pass
+
     class Meta:
         db_table = '%slog' % TABLE_PREFIX
 
 class Markup(models.Model):
     id = models.IntegerField(primary_key=True)
     name = models.CharField(maxlength=150)
+
+    class Admin:
+        pass
+
     class Meta:
         db_table = '%smarkup' % TABLE_PREFIX
 
@@ -106,6 +143,10 @@ class Md5User(models.Model):
     lastupdatetime = models.DateTimeField()
     lastupdateby = models.IntegerField(null=True, blank=True)
     createtime = models.DateTimeField()
+
+    class Admin:
+        pass
+
     class Meta:
         db_table = '%smd5user' % TABLE_PREFIX
 
@@ -115,6 +156,10 @@ class ObjectCache(models.Model):
     request_ip = models.CharField(blank=True, maxlength=45)
     user_id = models.IntegerField(null=True, blank=True)
     pickled_data = models.TextField(blank=True)
+
+    class Admin:
+        pass
+
     class Meta:
         db_table = '%sobject_cache' % TABLE_PREFIX
 
@@ -131,6 +176,10 @@ class PagesInternal(models.Model):
     content_css = models.TextField()
     description = models.TextField()
     createtime = models.DateTimeField()
+
+    class Admin:
+        pass
+
     class Meta:
         db_table = '%spages_internal' % TABLE_PREFIX
 
@@ -147,6 +196,10 @@ class Plugindata(models.Model):
     no_rights_error = models.IntegerField()
     direct_out = models.IntegerField()
     sys_exit = models.IntegerField()
+
+    class Admin:
+        pass
+
     class Meta:
         db_table = '%splugindata' % TABLE_PREFIX
 
@@ -163,6 +216,10 @@ class Plugin(models.Model):
     debug = models.IntegerField()
     SQL_deinstall_commands = models.TextField(blank=True)
     plugin_cfg = models.TextField(blank=True)
+
+    class Admin:
+        pass
+
     class Meta:
         db_table = '%splugin' % TABLE_PREFIX
 
@@ -175,8 +232,15 @@ class Preference(models.Model):
     description = models.TextField()
     value = models.CharField(maxlength=255)
     type = models.CharField(maxlength=90)
+
+    class Admin:
+        pass
+
     class Meta:
         db_table = '%spreference' % TABLE_PREFIX
+
+    def __str__(self):
+        return "%s (%s)" % (self.varName, self.name)
 
 class SessionData(models.Model):
     session_id = models.CharField(maxlength=96)
@@ -184,6 +248,10 @@ class SessionData(models.Model):
     ip = models.CharField(maxlength=45)
     domain_name = models.CharField(maxlength=150)
     session_data = models.TextField()
+
+    class Admin:
+        pass
+
     class Meta:
         db_table = '%ssession_data' % TABLE_PREFIX
 
@@ -196,12 +264,20 @@ class Style(models.Model):
     name = models.CharField(unique=True, maxlength=150)
     description = models.TextField(blank=True)
     content = models.TextField()
+
+    class Admin:
+        pass
+
     class Meta:
         db_table = '%sstyle' % TABLE_PREFIX
 
 class TemplateEngine(models.Model):
     id = models.IntegerField(primary_key=True)
     name = models.CharField(unique=True, maxlength=150)
+
+    class Admin:
+        pass
+
     class Meta:
         db_table = '%stemplate_engine' % TABLE_PREFIX
 
@@ -213,6 +289,10 @@ class Template(models.Model):
     content = models.TextField()
     lastupdatetime = models.DateTimeField()
     createtime = models.DateTimeField()
+
+    class Admin:
+        pass
+
     class Meta:
         db_table = '%stemplate' % TABLE_PREFIX
 
@@ -223,5 +303,9 @@ class UserGroup(models.Model):
     lastupdatetime = models.DateTimeField()
     lastupdateby = models.IntegerField(null=True, blank=True)
     createtime = models.DateTimeField()
+
+    class Admin:
+        pass
+
     class Meta:
         db_table = '%suser_group' % TABLE_PREFIX
