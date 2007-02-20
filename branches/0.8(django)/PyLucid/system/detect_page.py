@@ -18,18 +18,34 @@ license:
 #~ debug = True
 debug = False
 
-from PyLucid.models import Page
+from PyLucid.models import Page, Preference
+
+from django.http import Http404
+
+def get_default_page_id():
+    """
+    returns the default page id
+    """
+    default_page = Preference.objects.get(varName__exact="defaultPage")
+    id = default_page.value
+    return id
 
 def get_current_page_obj(request, url_info):
-    #~ response.write("<p>url: [%s]</p>" % repr(url_info))
-
+    """
+    returns the page object
+    use:
+     - the shortcut in the requested url
+    or:
+     - the default page (stored in the Preference table)
+    """
     # /bsp/und%2Foder/ -> bsp/und%2Foder
     page_name = url_info.strip("/")
 
     if page_name == "":
         # Index Seite wurde aufgerufen. Zumindest bei poor-modrewrite
-        set_default_page()
-        return
+        page_id = get_default_page_id()
+        page = Page.objects.get(id__exact=page_id)
+        return page
 
     # bsp/und%2Foder -> ['bsp', 'und%2Foder']
     shortcuts = page_name.split("/")
@@ -41,9 +57,7 @@ def get_current_page_obj(request, url_info):
         try:
             page = Page.objects.get(shortcut__exact=shortcut)
         except Page.DoesNotExist:
-            msg = "Page '%s' doesn't exists." % shortcut
-            #~ request.user.message_set.create(message=msg)
-            request.page_msg(msg)
+            request.page_msg(_("Page '%s' doesn't exists.") % shortcut)
         else:
             return page
 
