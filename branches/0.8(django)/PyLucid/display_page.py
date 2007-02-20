@@ -5,8 +5,9 @@ Display a PyLucid CMS Page
 
 import os, cgi
 
-from django.http import HttpResponse
-from django.http import Http404
+#~ from django.http import HttpResponse
+from PyLucid.system.response import HttpResponse
+
 
 from PyLucid.models import Page
 from PyLucid.system.page_msg import put_page_msg, PageMsgBuffer
