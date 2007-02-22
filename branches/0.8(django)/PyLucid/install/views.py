@@ -6,90 +6,78 @@ from django.db import connection
 #~ from PyLucid.db import DBwrapper
 import os, cgi
 
-HTML_head = """<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head>
-<title>PyLucid Setup</title>
-<meta http-equiv="expires"      content="0" />
-<meta name="robots"             content="noindex,nofollow" />
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<style type="text/css">
-html, body {
-    padding: 30px;
-    background-color: #FFFFEE;
-}
-body {
-    font-family: tahoma, arial, sans-serif;
-    color: #000000;
-    font-size: 0.9em;
-    background-color: #FFFFDB;
-    margin: 30px;
-    border: 3px solid #C9C573;
-}
-form * {
-  vertical-align:middle;
-}
-input {
-    border: 1px solid #C9C573;
-    margin: 0.4em;
-}
-pre {
-    background-color: #FFFFFF;
-    padding: 1em;
-}
-#menu li, #menu li a {
-    list-style-type: none;
-    padding: 0.3em;
-}
-#menu h4 {
-    margin: 0px;
-}
-a {
-    color:#0BE;
-    padding: 0.1em;
-}
-a:hover {
-    color:#000000;
-    background-color: #F4F4D2;
-}
-</style>
-%(addCodeTag)s
-</head>
-<body>
-<h3>%(info)s - Setup @ <a href="%(base_url)s">%(base_url)s</a></h3>
-<lucidTag:page_msg/>
-"""
-HTML_bottom = """
-<hr />
-<small>
-<p>Rendertime: <lucidTag:script_duration/></p>
-</small>
-</body></html>"""
-
-from PyLucid.db.models import Pages
 import sys, cgi, inspect
 
-class Install:
-    def inspectdb(request):
-        """
-        django.core.management.instectdb
-        """
-        response = HttpResponse()
-        response.write(HTML_head)
-        response.write("<h1>inspectdb</h1>")
-        response.write("<pre>")
+from django.template import Template, Context, loader
 
-        from django.core.management import inspectdb
+from PyLucid.models import Page
 
-        for line in inspectdb():
-            response.write("%s\n" % line)
 
-        response.write("</pre>")
-        response.write(HTML_bottom)
-        return response
+inspectdb_template = """
+{% extends "PyLucid/install/base.html" %}
+{% block content %}
+<h1>inspectdb</h1>
+<pre>
+{% for line in inspectdb %}{{ line }}<br />{% endfor %}
+</pre>
+{% endblock %}
+"""
+def inspectdb(request):
+    """
+    django.core.management.instectdb
+    """
+    #~ return HttpResponse("JO")
 
-    def table_info
+    from django.core.management import inspectdb
+
+    inspectdb_data = list(inspectdb())
+
+    t = Template(inspectdb_template)
+    c = Context({
+        "inspectdb": inspectdb_data,
+    })
+    html = t.render(c)
+    return HttpResponse(html)
+
+info_template = """
+{% extends "PyLucid/install/base.html" %}
+{% block content %}
+<h1>Info</h1>
+<h2>request objects:</h2>
+<ul>
+{% for item in objects %}
+    <li>{{ item }}</li>
+{% endfor %}
+</ul>
+
+<h2>environ info:</h2>
+<ul>
+{% for item in environ_info %}
+    <li>{{ item.0 }}: {{ item.1|escape }}</li>
+{% endfor %}
+</ul>
+{% endblock %}
+"""
+def info(request, url_info):
+
+    objects = []
+    for item in dir(request):
+        if not item.startswith("__"):
+            objects.append("request.%s" % item)
+
+    environ_info = []
+    for key in sorted(request.environ):
+        environ_info.append(
+            (key,request.environ[key])
+        )
+
+    t = Template(info_template)
+    c = Context({
+        "objects": objects,
+        "environ_info": environ_info,
+    })
+    html = t.render(c)
+    return HttpResponse(html)
 
 def index(request, url_info):
     response = HttpResponse()

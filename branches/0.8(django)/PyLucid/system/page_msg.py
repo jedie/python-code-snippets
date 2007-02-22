@@ -23,21 +23,40 @@ license:
 debug = False
 
 
-import os, cgi, pprint
+import os, sys, cgi, pprint
+import inspect
 
+class PrintLocator(object):
+    """
+    redirect all writes into the page_msg object.
+    """
+    def __init__(self, page_msg):
+        self.page_msg = page_msg
+        self.oldFileinfo = ""
 
-def put_page_msg(request, page):
-    page_msg = request.user.get_and_delete_messages()
-    page_msg.reverse()
+    def write(self, *txt):
+        """
+        write into the page-messages
+        """
+        #~ sys.__stdout__.write(">>>%s<<<\n" % txt)
 
-    page_msg = (
-        '\n<fieldset id="page_msg"><legend>page message</legend>\n'
-        '%s'
-        '\n</fieldset>'
-    ) % "\n".join(page_msg)
-    page = page.replace("<lucidTag:page_msg/>", page_msg)
-    return page
+        # Angaben zur Datei, Zeilennummer, aus dem die Nachricht stammt
+        stack = inspect.stack()[1]
+        fileinfo = (stack[1].split("/")[-1][-40:], stack[2])
 
+        if fileinfo != self.oldFileinfo:
+            self.oldFileinfo = fileinfo
+            self.page_msg.data.append(
+                "<br />[stdout/stderr from ...%s, line %s:] " % fileinfo
+            )
+
+        txt = " ".join([str(i) for i in txt])
+        txt = cgi.escape(txt)
+        txt = txt.replace("\n", "<br />")
+
+        self.page_msg.data.append(txt)
+
+#_____________________________________________________________________________
 
 class PageMsgBuffer(object):
     """
@@ -54,9 +73,26 @@ class PageMsgBuffer(object):
     raw = False
     debug_mode = debug
 
-    def __init__(self, request):
+    def __init__(self, request, handle_stdout=False):
         self.request = request
+        self.handle_stdout = handle_stdout
+        self.data = []
         self.reset()
+
+        if self.handle_stdout:
+            self.redirect_stdout()
+    #_________________________________________________________________________
+
+    def redirect_stdout(self):
+        self.old_stdout = sys.stdout
+        self.old_stderr = sys.stderr
+        sys.stdout = sys.stderr = PrintLocator(self)
+
+    def restore_stdout(self):
+        sys.stdout = self.old_stdout
+        sys.stderr = self.old_stderr
+
+    #_________________________________________________________________________
 
     def reset(self):
         old_msg = self.request.user.get_and_delete_messages()
@@ -67,6 +103,31 @@ class PageMsgBuffer(object):
         for line in old_msg:
             self.red(line)
         self.red("-"*40)
+
+    #_________________________________________________________________________
+
+    def put_into_page(self, page):
+        """
+        Replace <lucidTag:page_msg/> and insert every user messages.
+        """
+
+        if self.handle_stdout:
+            self.restore_stdout()
+
+        #~ page_msg = self.request.user.get_and_delete_messages()
+        #~ page_msg.reverse()
+        #~ page_msg = "".join(page_msg)
+
+        page_msg = "".join(self.data)
+        self.data = []
+
+        page_msg = (
+            '\n<fieldset id="page_msg"><legend>page message</legend>\n'
+            '%s'
+            '\n</fieldset>'
+        ) % page_msg
+        page = page.replace("<lucidTag:page_msg/>", page_msg)
+        return page
 
     #_________________________________________________________________________
 
@@ -101,7 +162,9 @@ class PageMsgBuffer(object):
                 color, self.prepare(*msg)
             )
 
-        self.request.user.message_set.create(message=msg)
+        #~ self.request.user.message_set.create(message=msg)
+
+        self.data.append(msg)
 
     def prepare(self, *msg):
         """ Fügt eine neue Zeile mit einer Nachricht hinzu """
