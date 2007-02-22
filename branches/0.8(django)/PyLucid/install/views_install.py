@@ -1,13 +1,15 @@
 
 """
 installation
+
+sollte ich mir mal ansehen:
+http://code.djangoproject.com/wiki/CookBookScriptsMiniFlush
 """
 
 import sys
 
 import os
-print os.getcwd()
-print sys.path
+
 
 from PyLucid.settings import TABLE_PREFIX
 
@@ -60,6 +62,7 @@ def create_user(request):
         response.write("OK\n")
 
     return response
+
 
 def update(request):
     """

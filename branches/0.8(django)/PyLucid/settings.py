@@ -61,9 +61,11 @@ MIDDLEWARE_CLASSES = (
 
 ROOT_URLCONF = 'PyLucid.urls'
 
+import os
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates".
     # Always use forward slashes, even on Windows.
+    os.getcwd(),
 )
 
 INSTALLED_APPS = (

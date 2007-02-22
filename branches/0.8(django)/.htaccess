@@ -1,0 +1,25 @@
+# Sollte auf der verwedeten Handler zeigen, damit die URL auch ohne
+# den Dateinamen funktioniert.
+# http://httpd.apache.org/docs/2.0/mod/mod_dir.html#directoryindex
+DirectoryIndex index.html
+
+
+# Damit allgemein CGI's ausgeführt werden
+# http://httpd.apache.org/docs/2.0/mod/core.html#options
+Options +ExecCGI
+
+
+# http://httpd.apache.org/docs/2.0/mod/mod_mime.html#addhandler
+AddHandler cgi-script .py .cgi
+
+#AddHandler fastcgi-script .fcgi
+AddHandler fcgid-script .fcgi
+#RewriteEngine On
+#RewriteCond %{REQUEST_FILENAME} !-f
+#RewriteRule ^(.*)$ mysite.fcgi/$1 [QSA,L]
+
+# Sehr wichtig! Damit niemand einfach per URL das install-Passwort
+# vom Apache angezeigt bekommt!
+<Files install_lock.txt>
+    Deny from all
+</Files>

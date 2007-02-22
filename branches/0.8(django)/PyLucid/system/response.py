@@ -21,8 +21,7 @@ from django.http import HttpResponse
 import sys, os, re, cgi
 
 
-
-
+from PyLucid.system.module_manager import handleTag, handleFunction
 
 lucidSplitRE = re.compile("<lucid(.*?)")
 
@@ -31,7 +30,10 @@ ignore_tag = ("page_msg", "script_duration")
 
 
 
-class HttpResponse(HttpResponse):
+class PyLucidResponse(HttpResponse):
+    def __init__(self, request):
+        super(PyLucidResponse, self).__init__()
+        self.request = request
 
     def write(self, txt):
         assert isinstance(txt, basestring)
@@ -50,8 +52,6 @@ class HttpResponse(HttpResponse):
                 # post => <p>jau</p>
 
                 tag = tag[4:].rstrip("/")
-                #~ if tag[-1]=="/": # .rstrip("/") gibt es in Python 2.2 so nicht
-                    #~ tag = tag[:-1]
 
                 # Tag über Module-Manager ausführen
                 self.handleTag(tag)
@@ -82,7 +82,7 @@ class HttpResponse(HttpResponse):
                     function = function.split(":")[1]
                     # function => IncludeRemote
 
-                self.module_manager.run_function(function, function_info)
+                self.handleFunction(function, function_info)
 
                 # Teil hinter dem Tag schreiben
                 self._container.append(post)
@@ -92,7 +92,9 @@ class HttpResponse(HttpResponse):
     def handleTag(self, tag):
         if tag in ignore_tag:
             self._container.append("<lucidTag:%s/>" % tag)
+            return
 
+        return handleTag(tag, self.request, self)
         print tag
         return
 
@@ -100,6 +102,14 @@ class HttpResponse(HttpResponse):
             #~ self.response.append(self.staticTags[tag])
         #~ else:
             #~ self.module_manager.run_tag(tag)
+
+    def handleFunction(self, function, function_info):
+        print ">>>", function, function_info
+        return handleFunction(function, function_info)
+
+
+'''
+OBSOLETE?!?!
 
     def get(self):
         "zurückliefern der bisher geschriebene Daten"
@@ -162,79 +172,4 @@ class HttpResponse(HttpResponse):
         self.response = [] # Evtl. schon gemachte "Ausgaben" verwerfen
         self.headers['Content-Type'] = content_type
 
-
-
-
-class staticTags(dict):
-    """
-    Dict zum speichern der statischen Tag-Informationen
-    """
-
-    def init2(self, request, response):
-        # Shorthands
-        self.environ        = request.environ
-        self.runlevel       = request.runlevel
-        self.preferences    = request.preferences
-        self.URLs           = request.URLs
-        self.session        = request.session
-        self.tools          = request.tools
-
-    def setup(self):
-        """
-        "Statische" Tag's definieren
-        """
-        self["commandURLprefix"] = self.preferences["commandURLprefix"]
-        self["installURLprefix"] = self.preferences["installURLprefix"]
-
-        self["powered_by"]  = __info__
-
-        self.setup_login_link()
-
-        if self.runlevel.is_command():
-            # Ein Kommando soll ausgeführt werden
-            self.setup_command_tags()
-
-    def setup_login_link(self):
-        #~ if self.session.has_key("user") and self.session["user"] != False:
-        if self.session != None and self.session["user"] != False:
-            link = self.URLs.commandLink("auth", "logout")
-            self["script_login"] = '<a href="%s">logout [%s]</a>' % (
-                link, self.session["user"]
-            )
-        else:
-            link = self.URLs.commandLink("auth", "login")
-            self["script_login"] = '<a href="%s">login</a>' % (link)
-
-
-    def setup_command_tags(self):
-        self["robots"] = self.preferences["robots_tag"]["internal_pages"]
-        self["page_keywords"] = ""
-        self["page_description"] = ""
-
-        #FIXME:
-        self["page_name"] = self["page_title"] = self.environ["PATH_INFO"]
-        self["page_last_modified"] = ""
-        self["page_datetime"] = ""
-
-
-    def fill_with_page_data(self, page_data):
-        """
-        Eintragen von Tags durch die CMS-Seiten-Informationen aus der DB
-        Wird von page_parser.render verwendet
-        """
-        self["robots"] = self.preferences["robots_tag"]["content_pages"]
-
-        self["markup"]               = page_data["markup"]
-        self["page_name"]            = cgi.escape(page_data["name"])
-        self["page_title"]           = cgi.escape(page_data["title"])
-        self["page_keywords"]        = page_data["keywords"]
-        self["page_description"]     = page_data["description"]
-
-        self["page_last_modified"]   = self.tools.locale_datetime(
-            page_data["lastupdatetime"]
-        )
-
-        self["page_datetime"] = self.tools.W3CDTF_datetime(
-            page_data["lastupdatetime"]
-        )
-
+'''
