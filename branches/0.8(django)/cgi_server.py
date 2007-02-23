@@ -49,7 +49,7 @@ def runcgi():
         elif not headers_sent:
             # Before the first output, send the stored headers
             status, response_headers = headers_sent[:] = headers_set
-            response_headers = send_content_type(response_headers)
+            #~ response_headers = send_content_type(response_headers)
             sys.stdout.write('Status: %s\r\n' % status)
             for header in response_headers:
                 sys.stdout.write('%s: %s\r\n' % header)
