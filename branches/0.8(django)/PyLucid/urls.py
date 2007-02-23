@@ -1,15 +1,23 @@
 from django.conf.urls.defaults import *
 
-urlpatterns = patterns('',
-    # Example:
-    # (r'^PyLucid/', include('PyLucid.apps.foo.urls.foo')),
-    (r'^_inspectdb/$', 'PyLucid.install.views.inspectdb'),
-    (r'^_syncdb/$', 'PyLucid.install.views.syncdb'),
-    (r'^_createuser/$', 'PyLucid.install.views.create_user'),
-    (r'^_update/$', 'PyLucid.install.views_install.update'),
-    (r'^_info/(.*?)$', 'PyLucid.install.views.info'),
-    (r'^_install/(.*?)$', 'PyLucid.install.views.index'),
-    (r'^_admin/', include('django.contrib.admin.urls')),
+from PyLucid.install.urls import get_urls
 
-    (r'^(.*?)$', 'PyLucid.display_page.display_page'),
+urls = (
+
+    #~ (r'^_inspectdb/$', 'PyLucid.install.views.inspectdb'),
+    #~ (r'^_syncdb/$', 'PyLucid.install.views.syncdb'),
+    #~ (r'^_createuser/$', 'PyLucid.install.views.create_user'),
+    #~ (r'^_update/$', 'PyLucid.install.views_install.update'),
+    #~ (r'^_info/(.*?)$', 'PyLucid.install.views.info'),
+
+    (r'^_admin/', include('django.contrib.admin.urls')),
 )
+
+urls += get_urls(base_url='^_install/([^/]*?)/%s/(.*?)$')
+
+urls += (
+    (r'^_install/?(.*?)/?$', 'PyLucid.install.index.index'),
+    (r'^(.*?)$', 'PyLucid.index.index'),
+)
+
+urlpatterns = patterns('', *urls)

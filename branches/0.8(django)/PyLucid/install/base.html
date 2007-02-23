@@ -46,10 +46,9 @@ a:hover {
     background-color: #F4F4D2;
 }
 </style>
-%(addCodeTag)s
 </head>
 <body>
-<h3>%(info)s - Setup @ <a href="%(base_url)s">%(base_url)s</a></h3>
+<h3>%(info)s - Setup @ <a href="{% url PyLucid.index.index . %}">{% url PyLucid.index.index . %}</a></h3>
 <lucidTag:page_msg/>
 {% block content %}{% endblock %}
 <hr />

@@ -14,9 +14,10 @@ AddHandler cgi-script .py .cgi
 
 #AddHandler fastcgi-script .fcgi
 AddHandler fcgid-script .fcgi
-#RewriteEngine On
-#RewriteCond %{REQUEST_FILENAME} !-f
-#RewriteRule ^(.*)$ mysite.fcgi/$1 [QSA,L]
+
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^(.*)$ index.py/$1 [QSA,L]
 
 # Sehr wichtig! Damit niemand einfach per URL das install-Passwort
 # vom Apache angezeigt bekommt!

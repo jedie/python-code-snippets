@@ -41,7 +41,7 @@ MEDIA_URL = ''
 ADMIN_MEDIA_PREFIX = '/media/'
 
 # Make this unique, and don't share it with anybody.
-SECRET_KEY = '8%_3$-fo=2a7w449^nvtio81qp@l5#8_z&!9r-d4m6r*d#=yab'
+SECRET_KEY = 'a SECRET_KEY ?'
 
 # List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (
@@ -81,3 +81,4 @@ INSTALLED_APPS = (
 # PyLucid settings
 
 TABLE_PREFIX = "pylucid_"
+INSTALL_PASS = "12345678"

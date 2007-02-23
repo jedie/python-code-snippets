@@ -16,7 +16,10 @@ from PyLucid.system.detect_page import get_current_page_obj
 
 from django.contrib.sites.models import Site
 
-def display_page(request, url):
+def index(request, url):
+    """
+    The main index method. Display a requested CMS Page.
+    """
     request.page_msg = PageMsgBuffer(request, handle_stdout=True)
     response = PyLucidResponse(request)
 
