@@ -31,14 +31,15 @@ import posixpath
 
 from django.contrib.sites.models import Site
 
+from PyLucid.db import DB_Wrapper
+
+
 class PyLucidBaseModule(object):
-
-
-
     def __init__(self, request, response):
         self.request    = request
         self.response   = response
 
+        self.db = DB_Wrapper(request.page_msg)
         self.page_msg = request.page_msg
 
     #~ def absolute_link(self, url):

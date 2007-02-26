@@ -19,7 +19,7 @@ license:
 """
 
 
-#~ import sys, os, glob, imp, cgi, urllib
+import sys, traceback
 
 #~ from PyLucid.system.exceptions import PyLucidException
 
@@ -55,7 +55,7 @@ def handleTag(module_name, request, response):
 
     response.write("TAG: %s" % module_name)
 
-    if module_name != "page_style":
+    if not module_name in ("page_style", "main_menu"):
         return
 
     print "-"*79
@@ -74,16 +74,27 @@ def handleTag(module_name, request, response):
         #~ return
 
     print plugin_data
+    package_name = plugin.package_name
 
     try:
-        module_class=get_module_class(plugin.package_name, module_name)
+        module_class=get_module_class(package_name, module_name)
     except Exception, e:
-        print "Import Error:", e
+        request.page_msg.red("Import Error:", e)
         return
 
     class_instance = make_instance(module_class, request, response)
     unbound_method = get_unbound_method(class_instance, method_name)
-    unbound_method()
+    try:
+        unbound_method()
+    except Exception:
+        request.page_msg.red("Run Module %s Error:" % package_name)
+        etype, value, tb = sys.exc_info()
+        tb = tb.tb_next
+        tb_lines = traceback.format_exception(etype, value, tb)
+
+        request.page_msg("-"*50, "<pre>")
+        request.page_msg.data += tb_lines
+        request.page_msg("</pre>", "-"*50)
 
     return "OK"
 

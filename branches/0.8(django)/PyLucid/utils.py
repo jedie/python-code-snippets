@@ -3,17 +3,27 @@ from django.http import Http404
 
 from PyLucid import settings
 
+debug = True
+#~ debug = False
+
 def check_pass(install_pass):
+    password = install_pass.split("/",1)[0]
+
     def error(msg):
-        raise Http404("*** install password error: %s! ***" % msg)
+        msg = "*** install password error: %s! ***" % msg
+        if debug:
+            msg += " [Debug: '%s' != '%s']" % (
+                password, settings.INSTALL_PASS
+            )
+        raise Http404(msg)
         #~ from django.core.exceptions import ObjectDoesNotExist
         #~ raise ObjectDoesNotExist(msg)
 
-    if install_pass == "":
+    if password == "":
         error("no password in URL")
 
-    if len(install_pass)<8:
+    if len(password)<8:
         error("password to short")
 
-    if install_pass != settings.INSTALL_PASS:
+    if password != settings.INSTALL_PASS:
         error("wrong password")
