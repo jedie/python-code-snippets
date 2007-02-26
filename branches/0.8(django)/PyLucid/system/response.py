@@ -31,9 +31,13 @@ ignore_tag = ("page_msg", "script_duration")
 
 
 class PyLucidResponse(HttpResponse):
-    def __init__(self, request):
-        super(PyLucidResponse, self).__init__()
+    def __init__(self, request, *args, **kwargs):
+        super(PyLucidResponse, self).__init__(*args, **kwargs)
         self.request = request
+        self.request.tag_info = {}
+        
+    def isatty(self):
+        return False
 
     def write(self, txt):
         assert isinstance(txt, basestring)
@@ -91,6 +95,8 @@ class PyLucidResponse(HttpResponse):
 
     def handleTag(self, tag):
         if tag in ignore_tag:
+            # save tag position for a later replace, see self.replace_tag()
+            self.request.tag_info[tag] = len(self._container)
             self._container.append("<lucidTag:%s/>" % tag)
             return
 
@@ -106,6 +112,13 @@ class PyLucidResponse(HttpResponse):
     def handleFunction(self, function, function_info):
         print ">>>", function, function_info
         return handleFunction(function, function_info)
+
+    def replace_tag(self, tag, txt):
+        """
+        Replace a saved Tag
+        """
+        position = self.request.tag_info[tag]
+        self._container[position] = txt
 
 
 '''

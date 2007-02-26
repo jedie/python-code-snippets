@@ -13,10 +13,10 @@ urls = (
     (r'^_admin/', include('django.contrib.admin.urls')),
 )
 
-urls += get_urls(base_url='^_install/([^/]*?)/%s/(.*?)$')
+urls += get_urls(base_url='^_install/(?P<install_pass>[^/]*?)/%s/(.*?)$')
 
 urls += (
-    (r'^_install/?(.*?)/?$', 'PyLucid.install.index.index'),
+    (r'^_install/?(?P<install_pass>[^/]*?)/?$', 'PyLucid.install.index.index'),
     (r'^(.*?)$', 'PyLucid.index.index'),
 )
 

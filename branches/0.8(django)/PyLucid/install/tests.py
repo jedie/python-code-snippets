@@ -3,11 +3,13 @@
 2. some tests
 """
 
+import inspect, pprint
+
 from PyLucid.utils import check_pass
+from PyLucid import settings
 
 from django.http import HttpResponse
 from django.template import Template, Context, loader
-
 
 inspectdb_template = """
 {% extends "PyLucid/install/base.html" %}
@@ -18,7 +20,7 @@ inspectdb_template = """
 </pre>
 {% endblock %}
 """
-def inspectdb(request, install_pass, path_info=None):
+def inspectdb(request, install_pass):
     """
     1. inspect the database
     """
@@ -38,6 +40,33 @@ info_template = """
 {% extends "PyLucid/install/base.html" %}
 {% block content %}
 <h1>Info</h1>
+<ul>
+    <li><a href="#db_info">db info</a></li>
+    <li><a href="#settings">settings</a></li>
+    <li><a href="#request">request objects</a></li>
+    <li><a href="#environ">environ info</a></li>
+</ul>
+<a name="db_info"></a>
+<h2>db info</h2>
+<dl>
+{% for item in db_info %}
+  <dt>{{ item.0 }}</dt>
+  <dd>{{ item.1 }}</dd>
+{% endfor %}
+</dl>
+
+<a name="settings"></a>
+<a href="#top">&#x5E; top</a>
+<h2>current settings</h2>
+<dl>
+{% for item in current_settings %}
+  <dt>{{ item.0 }}</dt>
+  <dd><pre>{{ item.1|pprint }}</pre></dd>
+{% endfor %}
+</dl>
+
+<a name="request"></a>
+<a href="#top">&#x5E; top</a>
 <h2>request objects:</h2>
 <ul>
 {% for item in objects %}
@@ -45,6 +74,8 @@ info_template = """
 {% endfor %}
 </ul>
 
+<a name="environ"></a>
+<a href="#top">&#x5E; top</a>
 <h2>environ info:</h2>
 <ul>
 {% for item in environ_info %}
@@ -53,11 +84,23 @@ info_template = """
 </ul>
 {% endblock %}
 """
-def info(request, install_pass, url_info):
+def info(request, install_pass):
     """
     2. Display some information (for developers)
     """
     check_pass(install_pass)
+
+    from PyLucid.db import DB_Wrapper
+    import sys
+    db = DB_Wrapper(sys.stderr)#request.page_msg)
+    db_info = [
+        ("API", "%s v%s" % (db.dbapi.__name__, db.dbapi.__version__)),
+        ("Server Version", "%s (%s)" % (db.server_version, db.RAWserver_version)),
+        ("paramstyle", db.paramstyle),
+        ("placeholder", db.placeholder),
+        ("table prefix", db.tableprefix),
+    ]
+
     objects = []
     for item in dir(request):
         if not item.startswith("__"):
@@ -69,8 +112,22 @@ def info(request, install_pass, url_info):
             (key,request.environ[key])
         )
 
+    current_settings = []
+    for obj_name in dir(settings):
+        if obj_name.startswith("_"):
+            continue
+        obj = getattr(settings, obj_name)
+        if not isinstance(obj, (basestring, int, tuple, bool, dict)):
+            #~ print ">>>Skip:", obj_name, type(obj)
+            continue
+        current_settings.append((obj_name, obj))
+    current_settings.sort()
+
+
     t = Template(info_template)
     c = Context({
+        "db_info": db_info,
+        "current_settings": current_settings,
         "objects": objects,
         "environ_info": environ_info,
     })
@@ -92,7 +149,7 @@ url_info_template = """
 {% endblock %}
 """
 from django.contrib.sites.models import Site
-def url_info(request, install_pass, url_info):
+def url_info(request, install_pass):
     """
     3. Display the current used urlpatterns
     """

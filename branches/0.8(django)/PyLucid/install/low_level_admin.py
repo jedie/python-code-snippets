@@ -10,16 +10,19 @@ import sys
 
 import os
 
-
+from PyLucid.utils import check_pass
 from PyLucid.settings import TABLE_PREFIX
+from PyLucid.system.response import PyLucidResponse
 
 from django.http import HttpResponse
 
-def syncdb(request):
+def syncdb(request, install_pass):
     """
     django syncdb
     """
-    response = HttpResponse(mimetype="text/plain")
+    check_pass(install_pass)
+
+    response = PyLucidResponse(request, mimetype="text/plain")
     old_stdout = sys.stdout
     old_stderr = sys.stderr
     sys.stdout = response
@@ -39,6 +42,9 @@ def syncdb(request):
     return response
 
 def create_user(request):
+    """
+    Create Test superuser
+    """
     response = HttpResponse(mimetype="text/plain")
     response.write("Create a 'test' superuser...")
     from django.contrib.auth.models import User

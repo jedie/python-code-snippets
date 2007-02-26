@@ -77,7 +77,6 @@ class PageMsgBuffer(object):
         self.request = request
         self.handle_stdout = handle_stdout
         self.data = []
-        self.reset()
 
         if self.handle_stdout:
             self.redirect_stdout()
@@ -94,19 +93,7 @@ class PageMsgBuffer(object):
 
     #_________________________________________________________________________
 
-    def reset(self):
-        old_msg = self.request.user.get_and_delete_messages()
-        if old_msg == []:
-            return
-
-        self.red("Old messages:")
-        for line in old_msg:
-            self.red(line)
-        self.red("-"*40)
-
-    #_________________________________________________________________________
-
-    def put_into_page(self, page):
+    def get_page_msg(self):
         """
         Replace <lucidTag:page_msg/> and insert every user messages.
         """
@@ -114,9 +101,13 @@ class PageMsgBuffer(object):
         if self.handle_stdout:
             self.restore_stdout()
 
-        #~ page_msg = self.request.user.get_and_delete_messages()
-        #~ page_msg.reverse()
-        #~ page_msg = "".join(page_msg)
+        user_msg = self.request.user.get_and_delete_messages()
+        if user_msg != []:
+            user_msg.reverse()
+            self.red("user messages:")
+            for line in old_msg:
+                self.red(line)
+            self.red("-"*40)
 
         page_msg = "".join(self.data)
         self.data = []
@@ -126,8 +117,9 @@ class PageMsgBuffer(object):
             '%s'
             '\n</fieldset>'
         ) % page_msg
-        page = page.replace("<lucidTag:page_msg/>", page_msg)
-        return page
+        return page_msg
+        #~ page = page.replace("<lucidTag:page_msg/>", page_msg)
+        #~ return page
 
     #_________________________________________________________________________
 
@@ -149,6 +141,11 @@ class PageMsgBuffer(object):
 
     def red(self, *msg):
         self.append_color_data("red", *msg)
+
+    #_________________________________________________________________________
+
+    def __str__(self):
+        return "<PageMsgBuffer: %s>" % "|".join(self.data)
 
     #_________________________________________________________________________
 

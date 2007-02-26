@@ -18,6 +18,9 @@ FMT = (
 )
 
 class PageStatsMiddleware(object):
+    def __init__(self):
+        self.bla = 1
+
     def process_view(self, request, view_func, view_args, view_kwargs):
         start_time = time()
 
