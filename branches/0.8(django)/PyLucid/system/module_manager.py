@@ -55,7 +55,7 @@ def handleTag(module_name, request, response):
 
     response.write("TAG: %s" % module_name)
 
-    if not module_name in ("page_style", "main_menu"):
+    if not module_name in ("page_style", "main_menu", "page_update_list"):
         return
 
     print "-"*79
@@ -85,18 +85,18 @@ def handleTag(module_name, request, response):
     class_instance = make_instance(module_class, request, response)
     unbound_method = get_unbound_method(class_instance, method_name)
     try:
-        unbound_method()
+        output = unbound_method()
     except Exception:
         request.page_msg.red("Run Module %s Error:" % package_name)
         etype, value, tb = sys.exc_info()
         tb = tb.tb_next
         tb_lines = traceback.format_exception(etype, value, tb)
-
         request.page_msg("-"*50, "<pre>")
         request.page_msg.data += tb_lines
         request.page_msg("</pre>", "-"*50)
+    else:
+        return output
 
-    return "OK"
 
 def handleFunction(function, function_info):
     print "FUNCTION:", function, function_info

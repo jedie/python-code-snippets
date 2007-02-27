@@ -27,13 +27,16 @@ __version__= "$Rev$"
 
 
 
+from django.template import Template, Context
+from django.template.loader import get_template
+
 from PyLucid.system.BaseModule import PyLucidBaseModule
 
 
 class page_update_list(PyLucidBaseModule):
 
     def lucidTag(self):
-        self.write_list(10)
+        return self.generate_list(10)
 
     def lucidFunction(self, count):
         try:
@@ -43,17 +46,22 @@ class page_update_list(PyLucidBaseModule):
             self.page_msg(msg)
             return "[%s]" % msg
 
-        self.write_list(count)
+        return self.generate_list(count)
 
-    def write_list(self, count):
-        page_updates = self.db.get_page_update_info(10)
+    def generate_list(self, count):
+        page_updates = self.db.get_page_update_info(self.request, 10)
 
         context = {
             "page_updates" : page_updates
         }
         #~ self.page_msg(context)
 
-        self.templates.write("PageUpdateTable", context)
+        #~ self.templates.write("PageUpdateTable", context)
+
+        t = get_template("PyLucid/buildin_plugins/page_update_list/PageUpdateTable.html")
+        c = Context(context)
+        html = t.render(c)
+        return html
 
 
 

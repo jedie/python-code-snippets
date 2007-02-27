@@ -3,7 +3,7 @@
 2. some tests
 """
 
-import inspect, pprint
+import inspect, cgi
 
 from PyLucid.utils import check_pass
 from PyLucid import settings
@@ -43,8 +43,10 @@ info_template = """
 <ul>
     <li><a href="#db_info">db info</a></li>
     <li><a href="#settings">settings</a></li>
+    <li><a href="#user_info">user info</a></li>
     <li><a href="#request">request objects</a></li>
-    <li><a href="#environ">environ info</a></li>
+    <li><a href="#request_meta">request.META</a></li>
+    <li><a href="#request_context">request context</a></li>
 </ul>
 <a name="db_info"></a>
 <h2>db info</h2>
@@ -65,6 +67,16 @@ info_template = """
 {% endfor %}
 </dl>
 
+<a name="user_info"></a>
+<a href="#top">&#x5E; top</a>
+<h2>user info</h2>
+<dl>
+{% for item in user_info %}
+  <dt>{{ item.0 }}</dt>
+  <dd><pre>{{ item.1|pprint }}</pre></dd>
+{% endfor %}
+</dl>
+
 <a name="request"></a>
 <a href="#top">&#x5E; top</a>
 <h2>request objects:</h2>
@@ -74,14 +86,20 @@ info_template = """
 {% endfor %}
 </ul>
 
-<a name="environ"></a>
+<a name="request_meta"></a>
 <a href="#top">&#x5E; top</a>
-<h2>environ info:</h2>
+<h2>request meta:</h2>
 <ul>
-{% for item in environ_info %}
+{% for item in request_meta %}
     <li>{{ item.0 }}: {{ item.1|escape }}</li>
 {% endfor %}
 </ul>
+
+<a name="request_context"></a>
+<a href="#top">&#x5E; top</a>
+<h2>request context:</h2>
+<p><pre>{{ request_context|pprint }}</pre></p>
+
 {% endblock %}
 """
 def info(request, install_pass):
@@ -106,30 +124,47 @@ def info(request, install_pass):
         if not item.startswith("__"):
             objects.append("request.%s" % item)
 
-    environ_info = []
-    for key in sorted(request.environ):
-        environ_info.append(
-            (key,request.environ[key])
+    request_meta = []
+    for key in sorted(request.META):
+        request_meta.append(
+            (key, request.META[key])
         )
 
-    current_settings = []
-    for obj_name in dir(settings):
-        if obj_name.startswith("_"):
-            continue
-        obj = getattr(settings, obj_name)
-        if not isinstance(obj, (basestring, int, tuple, bool, dict)):
-            #~ print ">>>Skip:", obj_name, type(obj)
-            continue
-        current_settings.append((obj_name, obj))
-    current_settings.sort()
+    def get_obj_infos(obj):
+        info = []
+        for obj_name in dir(obj):
+            if obj_name.startswith("_"):
+                continue
 
+            try:
+                current_obj = getattr(obj, obj_name)
+            except Exception, e:
+                etype = sys.exc_info()[0]
+                info.append((obj_name, "[%s: %s]" % (etype, cgi.escape(str(e)))))
+                continue
+
+            if not isinstance(current_obj, (basestring, int, tuple, bool, dict)):
+                #~ print ">>>Skip:", obj_name, type(current_obj)
+                continue
+            info.append((obj_name, current_obj))
+        info.sort()
+        return info
+
+    current_settings = get_obj_infos(settings)
+    user_info = get_obj_infos(request.user)
+    #~ print request.user.is_superuser
+
+    from django.template import RequestContext
+    request_context = RequestContext(request)
 
     t = Template(info_template)
     c = Context({
         "db_info": db_info,
         "current_settings": current_settings,
+        "user_info": user_info,
         "objects": objects,
-        "environ_info": environ_info,
+        "request_meta": request_meta,
+        "request_context": request_context
     })
     html = t.render(c)
     return HttpResponse(html)
