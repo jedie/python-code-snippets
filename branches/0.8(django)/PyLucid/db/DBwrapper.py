@@ -240,7 +240,7 @@ class IterableDictCursor(object):
                   .replace('?', self._placeholder)
 
     def execute(self, sql, values=(), do_prepare=True):
-        assert isinstance(values, tuple), \
+        assert isinstance(values, (tuple, list)), \
             "SQL value must be a tuple! Value: '%s' is type: %s" % (
                 values, type(values)
             )
@@ -257,7 +257,7 @@ class IterableDictCursor(object):
             #~ raise Exception(e)
 
     def execute_raw(self, sql, values=()):
-        assert isinstance(values, tuple), \
+        assert isinstance(values, (tuple, list)), \
             "SQL value must be a tuple! Value: '%s' is type: %s" % (
                 values, type(values)
             )
@@ -295,7 +295,7 @@ class IterableDictCursor(object):
         return self._cursor.fetchall()
 
     def raw_processone(self, SQLcommand, values=()):
-        assert isinstance(values, tuple), \
+        assert isinstance(values, (tuple, list)), \
             "SQL value must be a tuple! Value: '%s' is type: %s" % (
                 values, type(values)
             )
@@ -346,9 +346,9 @@ class SQL_Wrapper(Database):
         """ kombiniert execute und fetchall """
         #~ self.outObject("DEBUG:", SQLcommand)
 
-        assert isinstance(SQL_values, tuple), \
+        assert isinstance(SQL_values, (tuple,list)), \
             "SQL value must be a tuple! Value: '%s' is type: %s" % (
-                values, type(values)
+                SQL_values, type(SQL_values)
             )
 
         #~ try:

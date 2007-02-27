@@ -35,7 +35,7 @@ class PyLucidResponse(HttpResponse):
         super(PyLucidResponse, self).__init__(*args, **kwargs)
         self.request = request
         self.request.tag_info = {}
-        
+
     def isatty(self):
         return False
 
@@ -100,9 +100,11 @@ class PyLucidResponse(HttpResponse):
             self._container.append("<lucidTag:%s/>" % tag)
             return
 
-        return handleTag(tag, self.request, self)
-        print tag
-        return
+        output = handleTag(tag, self.request, self)
+        if not isinstance(output, basestring):
+            self.request.page_msg("Plugin '%s' Output: %s" % (tag, output))
+        else:
+            self._container.append(output)
 
         #~ elif tag in self.staticTags:
             #~ self.response.append(self.staticTags[tag])

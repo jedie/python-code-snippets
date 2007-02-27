@@ -78,13 +78,14 @@ class PassiveStatements(SQL_Wrapper):
     #_________________________________________________________________________
     # Spezielle lucidCMS Funktionen, die von Modulen gebraucht werden
 
-    def get_page_update_info(self, count=10):
+    def get_page_update_info(self, request, count=10):
         """
         Informationen über die letzten >count< Seiten updates.
         Nutzt: list_of_new_sides und der RSSfeedGenerator
         """
         where_rules = [("showlinks",1)]
-        if not self.session.get("isadmin", False):
+        #~ if not self.session.get("isadmin", False):
+        if request.user.username != "":
             # Ist kein Admin -> darf nur öffentliche Seiten sehen.
             where_rules.append(("permitViewPublic",1))
 
@@ -92,7 +93,7 @@ class PassiveStatements(SQL_Wrapper):
             select_items    = [
                 "id", "name", "title", "lastupdatetime", "lastupdateby"
             ],
-            from_table      = "pages",
+            from_table      = "page",
             where           = where_rules,
             order           = ( "lastupdatetime", "DESC" ),
             limit           = ( 0, 10 )
@@ -109,14 +110,14 @@ class PassiveStatements(SQL_Wrapper):
         where = ["(id=%s)" for i in userlist]
         where = " or ".join(where)
 
-        SQLcommand = "SELECT id,name FROM $$md5users WHERE %s" % where
+        SQLcommand = "SELECT id,name FROM $$md5user WHERE %s" % where
         users = self.process_statement(SQLcommand, userlist)
         users = self.indexResult(users, "id")
 
         # Daten ergänzen
         for item in page_updates:
             item["link"] = self.get_page_link_by_id(item["id"])
-            item["absoluteLink"] = self.URLs.absoluteLink(item["link"])
+            item["absoluteLink"] = "/%s" % item["link"]#self.URLs.absoluteLink(item["link"])
 
             pageName = item["name"]
             pageTitle = item["title"]
@@ -127,7 +128,8 @@ class PassiveStatements(SQL_Wrapper):
             else:
                 item["name_title"] = "%s - %s" % (pageName, pageTitle)
 
-            item["date"] = self.tools.locale_datetime(item["lastupdatetime"])
+            #~ item["date"] = self.tools.locale_datetime(item["lastupdatetime"])
+            item["date"] = item["lastupdatetime"]
             user_id = item["lastupdateby"]
             try:
                 item["user"] = users[user_id]["name"]
@@ -142,7 +144,7 @@ class PassiveStatements(SQL_Wrapper):
         """
         return self.select(
             select_items    = ["id"],
-            from_table      = "pages",
+            from_table      = "page",
             order           = ("parent","ASC"),
             limit           = 1
         )[0]["id"]
@@ -155,7 +157,7 @@ class PassiveStatements(SQL_Wrapper):
                     "markup", "name", "shortcut", "title",
                     "lastupdatetime","keywords","description"
                 ],
-            from_table      = "pages",
+            from_table      = "page",
             where           = ( "id", page_id )
         )[0]
         #~ except Exception, e:
@@ -165,7 +167,7 @@ class PassiveStatements(SQL_Wrapper):
                             #~ "markup", "name", "title",
                             #~ "lastupdatetime","keywords","description"
                         #~ ],
-                    #~ from_table      = "pages",
+                    #~ from_table      = "page",
                     #~ where           = ( "id", page_id )
                 #~ )
 
@@ -206,7 +208,7 @@ class PassiveStatements(SQL_Wrapper):
         """
         shortcutList = self.select(
             select_items    = ["id", "shortcut"],
-            from_table      = "pages"
+            from_table      = "page"
         )
         if page_id!=None:
             page_shortcut = None
@@ -227,7 +229,7 @@ class PassiveStatements(SQL_Wrapper):
     def get_content_and_markup(self, page_id):
         data = self.select(
             select_items    = ["content", "markup"],
-            from_table      = "pages",
+            from_table      = "page",
             where           = ("id", page_id)
         )
         data = data[0]
@@ -243,7 +245,7 @@ class PassiveStatements(SQL_Wrapper):
 
         template_id = self.select(
             select_items    = ["template"],
-            from_table      = "pages",
+            from_table      = "page",
             where           = ("id",page_id)
         )
         try:
@@ -292,7 +294,7 @@ class PassiveStatements(SQL_Wrapper):
         "Liefert die Side-ID anhand des >page_name< zurück"
         result = self.select(
                 select_items    = ["id"],
-                from_table      = "pages",
+                from_table      = "page",
                 where           = ("name",page_name)
             )
         if not result:
@@ -307,7 +309,7 @@ class PassiveStatements(SQL_Wrapper):
         "Liefert den Page-Name anhand der >page_id< zurück"
         return self.select(
                 select_items    = ["name"],
-                from_table      = "pages",
+                from_table      = "page",
                 where           = ("id",page_id)
             )[0]["name"]
 
@@ -318,7 +320,7 @@ class PassiveStatements(SQL_Wrapper):
         # Anhand des Seitennamens wird die aktuelle SeitenID und den ParentID ermittelt
         return self.select(
                 select_items    = ["parent"],
-                from_table      = "pages",
+                from_table      = "page",
                 where           = ("name",page_name)
             )[0]["parent"]
 
@@ -328,7 +330,7 @@ class PassiveStatements(SQL_Wrapper):
         """
         return self.select(
             select_items    = ["parent"],
-            from_table      = "pages",
+            from_table      = "page",
             where           = ("id",page_id)
         )[0]["parent"]
 
@@ -336,7 +338,7 @@ class PassiveStatements(SQL_Wrapper):
         "Liefert den Page-Title anhand der >page_id< zurück"
         return self.select(
                 select_items    = ["title"],
-                from_table      = "pages",
+                from_table      = "page",
                 where           = ("id",page_id)
             )[0]["title"]
 
@@ -345,7 +347,7 @@ class PassiveStatements(SQL_Wrapper):
         def get_id(page_id):
             return self.select(
                     select_items    = ["style"],
-                    from_table      = "pages",
+                    from_table      = "page",
                     where           = ("id",page_id)
             )[0]["style"]
         try:
@@ -376,7 +378,7 @@ class PassiveStatements(SQL_Wrapper):
         "Liefert die Daten zum Rendern der Seite zurück"
         data = self.select(
                 select_items    = ["content", "markup"],
-                from_table      = "pages",
+                from_table      = "page",
                 where           = ("id", page_id)
             )[0]
 
@@ -388,7 +390,7 @@ class PassiveStatements(SQL_Wrapper):
         "Allgemein: Daten zu einer Seite"
         page_items = self.select(
             select_items    = item_list,
-            from_table      = "pages",
+            from_table      = "page",
             where           = ("id", page_id)
         )
         page_items = page_items[0]
@@ -401,7 +403,7 @@ class PassiveStatements(SQL_Wrapper):
         """ Alle Daten die für`s Sitemap benötigt werden """
         return self.select(
                 select_items    = ["id","name","shortcut","title","parent"],
-                from_table      = "pages",
+                from_table      = "page",
                 where           = [("showlinks",1), ("permitViewPublic",1)],
                 order           = ("position","ASC"),
             )
@@ -411,7 +413,7 @@ class PassiveStatements(SQL_Wrapper):
         parend_id = self.parentID_by_id(page_id)
         return self.select(
             select_items    = ["id","name","title","parent","position"],
-            from_table      = "pages",
+            from_table      = "page",
             where           = ("parent", parend_id),
             order           = ("position","ASC"),
         )
@@ -1016,7 +1018,7 @@ class PassiveStatements(SQL_Wrapper):
     def get_permitViewPublic(self, page_id):
         return self.select(
                 select_items    = [ "permitViewPublic" ],
-                from_table      = "pages",
+                from_table      = "page",
                 where           = ("id", page_id),
             )[0]["permitViewPublic"]
 

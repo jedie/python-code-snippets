@@ -1,31 +1,31 @@
-#~ import sys, inspect
-#~ class PrintLocator(object):
-    #~ """
-    #~ Very slow! But in some case very helpfully ;)
-    #~ """
-    #~ def __init__(self, out):
-        #~ self.out = out
-        #~ self.oldFileinfo = ""
+import sys, inspect
+class PrintLocator(object):
+    """
+    Very slow! But in some case very helpfully ;)
+    """
+    def __init__(self, out):
+        self.out = out
+        self.oldFileinfo = ""
 
-    #~ def write(self, *txt):
-        #~ # Angaben zur Datei, Zeilennummer, aus dem die Nachricht stammt
-        #~ stack = inspect.stack()[1]
-        #~ fileinfo = (stack[1].split("/")[-1][-40:], stack[2])
+    def write(self, *txt):
+        # Angaben zur Datei, Zeilennummer, aus dem die Nachricht stammt
+        stack = inspect.stack()[1]
+        fileinfo = (stack[1].split("/")[-1][-40:], stack[2])
 
-        #~ if fileinfo != self.oldFileinfo:
-            #~ self.oldFileinfo = fileinfo
-            #~ self.out.write(
-                #~ "<br />[stdout/stderr write from: ...%s, line %s]\n" % fileinfo
-            #~ )
+        if fileinfo != self.oldFileinfo:
+            self.oldFileinfo = fileinfo
+            self.out.write(
+                "<br />[stdout/stderr write from: ...%s, line %s]\n" % fileinfo
+            )
 
-        #~ txt = " ".join([str(i) for i in txt])
-        #~ self.out.write(txt)
+        txt = " ".join([str(i) for i in txt])
+        self.out.write(txt)
 
-    #~ def isatty(self):
-        #~ return False
+    def isatty(self):
+        return False
 
-#~ old_stdout = sys.stdout
-#~ sys.stdout = sys.stderr = PrintLocator(old_stdout)
+old_stdout = sys.stdout
+sys.stdout = sys.stderr = PrintLocator(old_stdout)
 
 import inspect
 
@@ -78,9 +78,9 @@ import os
 
 os.environ["DJANGO_SETTINGS_MODULE"] = "PyLucid.settings"
 
-from PyLucid.urls import urlpatterns
+#~ from PyLucid.urls import urlpatterns
 
-inspect_object(urlpatterns)
+#~ inspect_object(urlpatterns)
 #~ inspect_object(urlpatterns[0])
 
 #~ RegexURLResolver = urlpatterns[0]

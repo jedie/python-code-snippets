@@ -47,7 +47,7 @@ class ActiveStatements(PassiveStatements):
         while page_id != 0:
             result = self.select(
                     select_items    = ["shortcut","parent"],
-                    from_table      = "pages",
+                    from_table      = "page",
                     where           = ("id",page_id)
                 )[0]
             page_id  = result["parent"]
@@ -59,7 +59,7 @@ class ActiveStatements(PassiveStatements):
         #~ data = [urllib.quote_plus(i) for i in data]
 
         link = "/".join(data)
-        link = self.URLs.pageLink(link)
+        #~ link = self.URLs.pageLink(link)
         return link
 
     #_________________________________________________________________________
@@ -71,7 +71,7 @@ class ActiveStatements(PassiveStatements):
             raise IndexError("The last page cannot be deleted!")
 
         self.delete(
-            table = "pages",
+            table = "page",
             where = ("id",page_id_to_del),
             limit=1
         )
@@ -91,7 +91,7 @@ class ActiveStatements(PassiveStatements):
     def insert_new_page(self, page_data):
         page_data = self.__add_data(page_data)
         self.insert(
-            table   = "pages",
+            table   = "page",
             data    = page_data,
         )
         return self.cursor.lastrowid
@@ -178,7 +178,7 @@ class ActiveStatements(PassiveStatements):
 
     def change_page_position(self, page_id, position):
         self.update(
-            table   = "pages",
+            table   = "page",
             data    = {"position":position},
             where   = ("id",page_id),
             limit   = 1
