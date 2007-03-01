@@ -183,8 +183,11 @@ function main = (
 	if abs_path == undefined then (
 	    return false
 	)
-
 	print abs_path
+
+	-- use the filename from the getSaveFileName dialog
+	tokens = filterString abs_path "\\"
+	filename = tokens[tokens.count]
 
 	JPEG.setQuality(90)
 	--image_file = gw.getViewportDib()
