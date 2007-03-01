@@ -189,6 +189,13 @@ function main = (
 	tokens = filterString abs_path "\\"
 	filename = tokens[tokens.count]
 
+    -- check filename (for a valid thunderbird command)
+	tokens = filterString filename ","
+	if tokens.count>0 then (
+		messageBox "Error: Invalid filename. Filename may contain no commas!"
+		return false
+	)
+
 	JPEG.setQuality(90)
 	--image_file = gw.getViewportDib()
 	image_file = getLastRenderedImage()
