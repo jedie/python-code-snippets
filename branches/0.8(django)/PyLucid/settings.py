@@ -51,9 +51,9 @@ TEMPLATE_LOADERS = (
 )
 
 MIDDLEWARE_CLASSES = (
-    #~ 'colubrid.debug.DebuggedApplication',
-    'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
+    'django.middleware.common.CommonMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.middleware.doc.XViewMiddleware',
     'PyLucid.middlewares.pagestats.PageStatsMiddleware',
@@ -81,4 +81,8 @@ INSTALLED_APPS = (
 # PyLucid settings
 
 TABLE_PREFIX = "pylucid_"
+INSTALL_URL_PREFIX = "_install"
+COMMAND_URL_PREFIX = "_command"
 INSTALL_PASS = "12345678"
+PYLUCID_VERSION = (0,8,0,"pre-alpha")
+PYLUCID_VERSION_STRING = "0.8.0pre-alpha"

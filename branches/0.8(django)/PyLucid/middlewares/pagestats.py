@@ -26,7 +26,7 @@ class PageStatsMiddleware(object):
 
         # get number of db queries before we do anything
         old_quaries = len(connection.queries)
-
+        
         # time the view
         response = view_func(request, *view_args, **view_kwargs)
 

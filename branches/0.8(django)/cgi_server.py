@@ -39,8 +39,7 @@ def runcgi():
                 return response_headers
 
         sys.stdout.write('Content-Type: text/html\r\n')
-        sys.stdout.write('Warning: Content Type not send!')
-
+        sys.stdout.write('Warning: Content Type not send!') # Bullshit?!?
 
     def write(data):
         if not headers_set:
@@ -49,7 +48,11 @@ def runcgi():
         elif not headers_sent:
             # Before the first output, send the stored headers
             status, response_headers = headers_sent[:] = headers_set
-            #~ response_headers = send_content_type(response_headers)
+            
+            response_headers = send_content_type(response_headers) # Send Content-Type first
+            
+            if status == "500":
+                sys.stdout.write("Content-type: text/html; charset=utf-8\r\n\r\nHARDCORE DEBUG:\n")
             sys.stdout.write('Status: %s\r\n' % status)
             for header in response_headers:
                 sys.stdout.write('%s: %s\r\n' % header)

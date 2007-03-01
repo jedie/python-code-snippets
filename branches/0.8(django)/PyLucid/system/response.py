@@ -76,7 +76,7 @@ class PyLucidResponse(HttpResponse):
                     function = function.split(":")[1]
                     function_info = None
                     self.page_msg(
-                        "End tag not found for lucidFunction '%s'" % function
+                        _("End tag not found for lucidFunction '%s'") % function
                     )
                 else:
                     function, function_info = function.split(">")
@@ -100,16 +100,19 @@ class PyLucidResponse(HttpResponse):
             self._container.append("<lucidTag:%s/>" % tag)
             return
 
+        if tag in self.request.static_tags:
+            content = self.request.static_tags[tag]
+            assert isinstance(content, basestring), (
+                "static tag returns not a basestring! returns: '%s'"
+            ) % repr(content)
+            self._container.append(content)
+            return
+
         output = handleTag(tag, self.request, self)
         if not isinstance(output, basestring):
             self.request.page_msg("Plugin '%s' Output: %s" % (tag, output))
         else:
             self._container.append(output)
-
-        #~ elif tag in self.staticTags:
-            #~ self.response.append(self.staticTags[tag])
-        #~ else:
-            #~ self.module_manager.run_tag(tag)
 
     def handleFunction(self, function, function_info):
         print ">>>", function, function_info

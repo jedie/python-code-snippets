@@ -19,7 +19,7 @@ def get_members(obj, predicate, skip_names=[]):
     return member_list
 
 
-def get_urls(base_url):
+def get_install_view_urls(base_url):
     """
     generate the django urlpatterns for all install views.
     """

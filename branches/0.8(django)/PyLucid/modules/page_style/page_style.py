@@ -23,8 +23,11 @@ __version__= "$Rev$"
 
 import sys, os, datetime
 
-from PyLucid.system.BaseModule import PyLucidBaseModule
+from django.http import HttpResponse
 
+from PyLucid.models import Style
+
+from PyLucid.system.BaseModule import PyLucidBaseModule
 
 class page_style(PyLucidBaseModule):
 
@@ -35,12 +38,13 @@ class page_style(PyLucidBaseModule):
         # Schreibt den addCode-Tag, damit am Ende noch die CSS/JS Daten
         # von Modulen eingefügt werden können
         #~ self.response.write(self.response.addCode.tag)
+        
+        style_name = self.request.current_page.get_style_name()
+        style_filename = "%s.css" % style_name
 
-        #~ url = self.URLs.actionLink(
-            #~ "sendStyle", "stylesheet.css", addSlash=False
-        #~ )
-        url = "12345"
-        #~ url = self.absolute_link([url, "stylesheet.css"])
+        url = self.URLs.commandLink(
+            "page_style", "sendStyle", style_filename, addSlash=False
+        )
         cssTag = '<link rel="stylesheet" type="text/css" href="%s" />\n' % url
 
         self.response.write(cssTag)
@@ -62,11 +66,28 @@ class page_style(PyLucidBaseModule):
         self.response.write(css)
         self.response.write('</style>')
 
-    def sendStyle(self, function_info):
+    def sendStyle(self, css_filename):
         """
         Sendet das CSS als Datei, da in die Seite nur ein Link eingefügt, der
         jetzt "ausgeführt" wird.
         Dabei wird eine "Browsercache-Anfrage" berücksichtigt.
+        """
+        css_name = css_filename.split(".",1)[0]
+        self.page_msg("css_name:", css_name)
+        
+        try:
+            style = Style.objects.get(name=css_name)
+        except Style.DoesNotExist:
+            raise Http404("Stylesheet '%s' unknown!" % cgi.escape(css_filename))
+        
+        content = style.content
+        
+        response = HttpResponse()
+        response['Content-Type'] = 'text/css; charset=utf-8'
+        response.write(content)
+        
+        return response
+        
         """
         timeFormat = "%a, %d %b %Y %H:%M:%S GMT"
 
@@ -141,7 +162,7 @@ class page_style(PyLucidBaseModule):
 
         return response
 
-
+        """
 
 
 
