@@ -41,10 +41,12 @@ def syncdb(request, install_pass):
 
     return response
 
-def create_user(request):
+def create_user(request, install_pass):
     """
     Create Test superuser
     """
+    check_pass(install_pass)
+    
     response = HttpResponse(mimetype="text/plain")
     response.write("Create a 'test' superuser...")
     from django.contrib.auth.models import User
@@ -70,10 +72,12 @@ def create_user(request):
     return response
 
 
-def update(request):
+def update(request, install_pass):
     """
     update DB tables from v0.7.2 to django PyLucid v0.8
     """
+    check_pass(install_pass)
+    
     response = HttpResponse(mimetype="text/plain")
     response.write("update PyLucid database:\n")
 

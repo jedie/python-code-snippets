@@ -1,22 +1,35 @@
 from django.conf.urls.defaults import *
 
-from PyLucid.install.urls import get_urls
+from PyLucid import settings
+from PyLucid.install.urls import get_install_view_urls
 
 urls = (
-
-    #~ (r'^_inspectdb/$', 'PyLucid.install.views.inspectdb'),
-    #~ (r'^_syncdb/$', 'PyLucid.install.views.syncdb'),
-    #~ (r'^_createuser/$', 'PyLucid.install.views.create_user'),
-    #~ (r'^_update/$', 'PyLucid.install.views_install.update'),
-    #~ (r'^_info/(.*?)$', 'PyLucid.install.views.info'),
-
     (r'^_admin/', include('django.contrib.admin.urls')),
 )
 
-urls += get_urls(base_url='^_install/(?P<install_pass>[^/]*?)/%s/(.*?)$')
+    # insert all available install views
+urls += get_install_view_urls(
+    '^%s/(?P<install_pass>[^/]*?)/%%s/(.*?)$' % settings.INSTALL_URL_PREFIX
+)
 
 urls += (
-    (r'^_install/?(?P<install_pass>[^/]*?)/?$', 'PyLucid.install.index.index'),
+    (
+        (
+            '^%s/'
+            '(?P<install_pass>[^/]*?)/$'
+        ) % settings.INSTALL_URL_PREFIX,
+        'PyLucid.install.index.index'
+    ),
+    (
+        (
+            '^%s/'
+            '(?P<page_id>\d+)/'
+            '(?P<module_name>[^/]*?)/'
+            '(?P<method_name>[^/]*?)/'
+            '(?P<url_info>.*?)$'
+        ) % settings.COMMAND_URL_PREFIX,
+        'PyLucid.index.handle_command'
+    ),
     (r'^(.*?)$', 'PyLucid.index.index'),
 )
 

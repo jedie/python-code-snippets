@@ -36,7 +36,7 @@ class Page(models.Model):
 
     ownerID = models.IntegerField()
     permitEditGroupID = models.IntegerField(null=True, blank=True)
-
+    
     class Meta:
         db_table = '%spage' % TABLE_PREFIX
 
@@ -64,6 +64,17 @@ class Page(models.Model):
 
     def __str__(self):
         return "CMS page '%s'" % self.shortcut
+    
+    def get_style_name(self):
+        """
+        returns the name of the current stylesheet
+        """
+        style_id = self.style
+        style = Style.objects.get(id__exact=style_id)
+        return style.name
+    
+    def get_lastupdatetime_string(self):
+        return self.lastupdatetime.strftime(_("%Y-%m-%d - %H:%M"))
 
 class Archive(models.Model):
     id = models.IntegerField(primary_key=True)

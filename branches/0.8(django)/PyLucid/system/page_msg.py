@@ -73,23 +73,9 @@ class PageMsgBuffer(object):
     raw = False
     debug_mode = debug
 
-    def __init__(self, request, handle_stdout=False):
+    def __init__(self, request):
         self.request = request
-        self.handle_stdout = handle_stdout
         self.data = []
-
-        if self.handle_stdout:
-            self.redirect_stdout()
-    #_________________________________________________________________________
-
-    def redirect_stdout(self):
-        self.old_stdout = sys.stdout
-        self.old_stderr = sys.stderr
-        sys.stdout = sys.stderr = PrintLocator(self)
-
-    def restore_stdout(self):
-        sys.stdout = self.old_stdout
-        sys.stderr = self.old_stderr
 
     #_________________________________________________________________________
 
@@ -97,9 +83,6 @@ class PageMsgBuffer(object):
         """
         Replace <lucidTag:page_msg/> and insert every user messages.
         """
-
-        if self.handle_stdout:
-            self.restore_stdout()
 
         user_msg = self.request.user.get_and_delete_messages()
         if user_msg != []:

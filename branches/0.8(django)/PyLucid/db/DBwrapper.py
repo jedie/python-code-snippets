@@ -71,7 +71,6 @@ class Database(object):
     connection_kwargs = None
 
     def __init__(self, encoding="utf8"):
-        print "Database init"
         # Zum speichern der letzten SQL-Statements (evtl. fÃ¼r Fehlerausgabe)
         self.last_statement = None
 
@@ -337,7 +336,6 @@ class SQL_Wrapper(Database):
     fieldtype_cache = {}
 
     def __init__(self, outObject, *args, **kwargs):
-        print "SQL_Wrapper init"
         super(SQL_Wrapper, self).__init__(*args, **kwargs)
         #~ super(Database, self).__init__(*args, **kwargs)
         self.outObject = outObject
@@ -447,8 +445,8 @@ class SQL_Wrapper(Database):
         mehrfache where Klausel:
         where=[("parent",0),("id",0)] ===> WHERE `parent`="0" and `id`="0"
 
-        maxrows - Anzahl der zurí¤«gegebenen Datensåµºe, =0 alle Datensåµºe
-        how     - Form der zurí¤«gegebenen Daten. =1 -> als Dict, =0 als Tuple
+        maxrows - Anzahl der zur?gegebenen Datensåµºe, =0 alle Datensåµºe
+        how     - Form der zur?gegebenen Daten. =1 -> als Dict, =0 als Tuple
         """
         SQLcommand = "SELECT "
         if isinstance(select_items, str):

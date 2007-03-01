@@ -69,7 +69,7 @@ info_template = """
 
 <a name="user_info"></a>
 <a href="#top">&#x5E; top</a>
-<h2>user info</h2>
+<h2>user info (request.user)</h2>
 <dl>
 {% for item in user_info %}
   <dt>{{ item.0 }}</dt>
