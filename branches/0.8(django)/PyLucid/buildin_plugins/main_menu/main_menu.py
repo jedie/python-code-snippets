@@ -8,59 +8,68 @@ Generiert das komplette Seitenmenü mit Untermenüs in eine Baumansicht
 
 Das Menü wird eingebunden mit dem lucid-Tag:
 <lucidTag:main_menu/>
+
+
+x = {
+    'value':1, 'children': [
+        { 'value': 2, 'children': []},
+        {'value' : 3, 'children': [{ 'value':4, 'children':[] }]}
+]}
+
 """
 
-# Python-Basis Module einbinden
-import re, os, sys, urllib, cgi
+from PyLucid.system.BaseModule import PyLucidBaseModule
+from PyLucid.system.tools.tree_generator import TreeGenerator
+from PyLucid.models import Page
 
 from django.template import Template, Context
 from django.template.loader import get_template
 
-from PyLucid.system.BaseModule import PyLucidBaseModule
+import re, os, sys, urllib, cgi
+
+
 
 class main_menu(PyLucidBaseModule):
 
-    #~ def __init__(self, *args, **kwargs):
-        #~ super(main_menu, self).__init__(*args, **kwargs)
-
     def lucidTag(self):
-        #~ self.URLs.debug()
-
-        #~ self.current_page_id  = self.session["page_id"]
         self.current_page_id  = self.request.current_page.id
+        
+#        "name","shortcut","title"
+        menu_data = Page.objects.values(
+            "id", "parent", "name", "title", "shortcut"
+        ).order_by("position")
+        #self.page_msg(values)
+        menu_data = TreeGenerator().generate(menu_data)
+#        self.page_msg(menu_data)
 
-        # "Startpunkt" für die Menügenerierung feststellen
-        parentID = self.db.select(
-                select_items    = ["parent"],
-                from_table      = "page",
-                where           = ("id",self.current_page_id)
-            )[0]["parent"]
-
-        # Gibt es Untermenupunkte?
-        parentID = self.check_submenu(parentID)
-
-        # Wird von self.create_menudata() "befüllt"
-        self.menudata = []
-        # Füllt self.menudata mit allen relevanten Daten
-        self.create_menudata(parentID)
-
-        # Ebenen umdrehen, damit das Menü auch richtig rum
-        # dargestellt werden kann
-        self.menudata.reverse()
-
-        # Generiert das Menü aus self.menudata
-        menu_data = self.make_menu()
+#        # "Startpunkt" für die Menügenerierung feststellen
+#        parentID = self.request.current_page.parent
+#
+#        # Gibt es Untermenupunkte?
+#        parentID = self.check_submenu(parentID)
+#
+#        # Wird von self.create_menudata() "befüllt"
+#        self.menudata = []
+#        # Füllt self.menudata mit allen relevanten Daten
+#        self.create_menudata(parentID)
+#
+#        # Ebenen umdrehen, damit das Menü auch richtig rum
+#        # dargestellt werden kann
+#        self.menudata.reverse()
+#
+#        # Generiert das Menü aus self.menudata
+#        menu_data = self.make_menu()
         context = {
             "menu_data" : menu_data
         }
-        #~ self.page_msg(context)
 
         #~ self.templates.write("main_menu", )
         t = get_template("PyLucid/buildin_plugins/main_menu/main_menu.html")
         #~ t = Template("main_menu")
         c = Context(context)
         html = t.render(c)
-        return HttpResponse(html)
+        return html
+#        return HttpResponse(html)
 
     def where_filter(self, where_rules):
         """
@@ -87,6 +96,7 @@ class main_menu(PyLucidBaseModule):
                 where           = where_filter,
                 limit           = (0,1)
             )
+        
         if not result:
             # Es gibt keine höhere Ebene (keine Untermenupunkte)
             return parentID
@@ -164,8 +174,8 @@ class main_menu(PyLucidBaseModule):
                     # Es wurde der Menüpunkt erreicht, der das Untermenü
                     # "enthält", deswegen kommt ab hier erstmal das
                     # Untermenü rein
-                    subitems = self.make_menu(menulevel+1, link)
-                    htmlLink["subitems"] = subitems
+                    children = self.make_menu(menulevel+1, link)
+                    htmlLink["children"] = children
 
             result.append(htmlLink)
 

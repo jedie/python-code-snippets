@@ -21,6 +21,7 @@ license:
 """
 
 debug = False
+debug = True
 
 
 import os, sys, cgi, pprint
