@@ -117,7 +117,7 @@ class PyLucidBaseModule(object):
         self.page_msg = request.page_msg
         
         self.URLs = URLs(request)
-        self.URLs.debug()
+#        self.URLs.debug()
 
     #~ def absolute_link(self, url):
         #~ if isinstance(url, list):
