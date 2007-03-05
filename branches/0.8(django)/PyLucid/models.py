@@ -36,7 +36,7 @@ class Page(models.Model):
 
     ownerID = models.IntegerField()
     permitEditGroupID = models.IntegerField(null=True, blank=True)
-    
+
     class Meta:
         db_table = '%spage' % TABLE_PREFIX
 
@@ -64,7 +64,7 @@ class Page(models.Model):
 
     def __str__(self):
         return "CMS page '%s'" % self.shortcut
-    
+
     def get_style_name(self):
         """
         returns the name of the current stylesheet
@@ -72,7 +72,7 @@ class Page(models.Model):
         style_id = self.style
         style = Style.objects.get(id__exact=style_id)
         return style.name
-    
+
     def get_lastupdatetime_string(self):
         return self.lastupdatetime.strftime(_("%Y-%m-%d - %H:%M"))
 
@@ -89,6 +89,7 @@ class Archive(models.Model):
 
     class Meta:
         db_table = '%sarchive' % TABLE_PREFIX
+        verbose_name_plural = 'Archive'
 
 class Group(models.Model):
     id = models.IntegerField(primary_key=True)
@@ -118,6 +119,7 @@ class L10N(models.Model):
 
     class Meta:
         db_table = '%sl10n' % TABLE_PREFIX
+        verbose_name_plural = 'L10N'
 
 class Log(models.Model):
     id = models.IntegerField(primary_key=True)
@@ -163,6 +165,7 @@ class Md5User(models.Model):
 
     class Meta:
         db_table = '%smd5user' % TABLE_PREFIX
+        verbose_name_plural = 'MD5 Users'
 
 class ObjectCache(models.Model):
     id = models.CharField(primary_key=True, maxlength=120)
@@ -176,6 +179,7 @@ class ObjectCache(models.Model):
 
     class Meta:
         db_table = '%sobject_cache' % TABLE_PREFIX
+        verbose_name_plural = 'Object Cache'
 
 class PagesInternal(models.Model):
     name = models.CharField(primary_key=True, maxlength=150)
@@ -277,6 +281,7 @@ class SessionData(models.Model):
 
     class Meta:
         db_table = '%ssession_data' % TABLE_PREFIX
+        verbose_name_plural = 'Session Data'
 
 class Style(models.Model):
     id = models.IntegerField(primary_key=True)
