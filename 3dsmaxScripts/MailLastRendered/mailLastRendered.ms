@@ -191,7 +191,7 @@ function main = (
 
     -- check filename (for a valid thunderbird command)
 	tokens = filterString filename ","
-	if tokens.count>0 then (
+	if tokens.count>1 then (
 		messageBox "Error: Invalid filename. Filename may contain no commas!"
 		return false
 	)
