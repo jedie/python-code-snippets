@@ -41,6 +41,10 @@ class Page(models.Model):
         db_table = '%spage' % TABLE_PREFIX
 
     class Admin:
+        list_display = ("shortcut", "name", "title", "description")
+        list_display_links = ("shortcut",)
+        list_filter = ("permitViewPublic","ownerID")
+        search_fields = ["content","name", "title", "description","keywords"]
         fields = (
             ('basic', {'fields': ('id', 'content','parent','position',)}),
             ('identification', {'fields': ('name','shortcut','title')}),
@@ -58,6 +62,7 @@ class Page(models.Model):
                 ),
             }),
         )
+        date_hierarchy = 'lastupdatetime'
 
     def get_absolute_url(self):
         return "/page/%s" % self.id
