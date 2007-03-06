@@ -30,9 +30,11 @@ license:
 import posixpath, os
 
 from django.contrib.sites.models import Site
+from django.template import Template, Context
 
 from PyLucid import settings
 from PyLucid.db import DB_Wrapper
+from PyLucid.models import PagesInternal
 
 
 class URLs(dict):
@@ -118,6 +120,18 @@ class PyLucidBaseModule(object):
         
         self.URLs = URLs(request)
 #        self.URLs.debug()
+
+    def render_template(self, internal_page_name, context):
+        """
+        return a rendered internal page
+        """
+        internal_page = PagesInternal(name = internal_page_name)
+        content = internal_page.content_html
+        
+        t = Template(content)
+        c = Context(context)
+        html = t.render(c)
+        return html
 
     #~ def absolute_link(self, url):
         #~ if isinstance(url, list):

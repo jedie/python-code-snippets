@@ -1,0 +1,10 @@
+Änderungen von 0.7.x auf 0.8(django):
+
+tags:
+
+
+Plugin API:
+
+	Methoden:
+		alt: self.templates.write("sub_menu", context)
+		neu: return self.render_template("sub_menu", context)
