@@ -103,5 +103,8 @@ def handle_command(request, response, module_name, method_name, url_info):
     """
     handle a _command url request
     """
+    request.page_msg(url_info)
+    if url_info=="":
+        url_info = ()
     output = run(request, response, module_name, method_name, url_info)
     return output
