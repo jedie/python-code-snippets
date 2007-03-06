@@ -3,14 +3,18 @@
 2. some tests
 """
 
-import inspect, cgi
+import inspect, cgi, sys, time, StringIO
 
-from PyLucid.utils import check_pass
 from PyLucid import settings
+from PyLucid.utils import check_pass
+from PyLucid.system.tools.OutBuffer import Redirector
 
 from django.http import HttpResponse
 from django.template import Template, Context, loader
 
+from django import newforms as forms
+
+   
 inspectdb_template = """
 {% extends "PyLucid/install/base.html" %}
 {% block content %}
@@ -201,3 +205,122 @@ def url_info(request, install_pass):
     })
     html = t.render(c)
     return HttpResponse(html)
+
+
+
+
+
+class PythonEvalForm(forms.Form):
+    """
+    django newforms
+    """
+    codeblock = forms.CharField(
+        widget=forms.widgets.Textarea(attrs={"rows":10, "style": "width: 95%;"})
+    )
+    object_access = forms.BooleanField(required=False)
+
+access_deny = """
+{% extends "PyLucid/install/base.html" %}
+{% block content %}
+<h2>Access Error:</h2>
+<h3>Python Webshell is disabled.</h3>
+<p>
+    You must enable this features in your settings.py!
+</p>
+{% endblock %}
+"""
+python_input_form = """
+{% extends "PyLucid/install/base.html" %}
+{% block content %}
+Execute code with Python v{{ sysversion }}:<br />
+
+<form method="post">
+    {{ PythonEvalForm }}
+    <input value="execute" name="execute" type="submit">
+</form>
+<p>
+    With access to pylucid objects you can use this objects:<br />
+    <ul>{% for item in objectlist %}<li>{{ item }}</li>{% endfor %}</ul>
+    Use <em>help(object)</em> for more information ;)
+</p>
+{% if output %}
+<fieldset><legend>executed in {{ duration|stringformat:"0.3f" }}sec.:</legend>
+    <pre>{{ output }}</pre>
+</fieldset>
+{% endif %}
+<br />
+{% endblock %}
+"""
+def evileval(request, install_pass):
+    """
+    4. a Python web-shell
+    """
+    check_pass(install_pass)
+    
+    if not settings.INSTALL_EVILEVAL:
+        # Feature is not enabled.
+        t = Template(access_deny)
+        html = t.render(Context({}))
+        return HttpResponse(html)
+      
+    if "codeblock" in request.POST:
+        # Form has been sended
+        init_values = request.POST.copy()
+    else:
+        # Requested the first time -> insert a init codeblock
+        init_values = {
+            "codeblock": (
+                "# sample code\n"
+                "for i in xrange(5):\n"
+                "    print 'This is cool', i"
+            ),
+        }
+    
+    eval_form = PythonEvalForm(init_values)
+    context = Context({
+        "sysversion": sys.version,
+        "PythonEvalForm": eval_form.as_p(),
+        "objectlist": ["request"],
+    })
+    
+    if "codeblock" in request.POST and eval_form.is_valid():
+        # a codeblock was submited and the form is valid -> run the code
+        codeblock = eval_form.clean_data["codeblock"]
+        codeblock = codeblock.replace("\r\n", "\n") # Windows
+        
+        start_time = time.time()
+
+        stderr = StringIO.StringIO()
+        stdout_redirector = Redirector(stderr)
+        globals = {}
+        locals = {}
+
+        try:
+            code = compile(codeblock, "<stdin>", "exec", 0, 1)
+            if eval_form.clean_data["object_access"]:
+                exec code
+            else:
+                exec code in globals, locals
+        except:
+            import traceback
+            etype, value, tb = sys.exc_info()
+            tb = tb.tb_next
+            msg = ''.join(traceback.format_exception(etype, value, tb))
+            sys.stdout.write(msg)
+
+        output = stdout_redirector.get()
+        stderr = stderr.getvalue()
+        if stderr != "":
+            output += "\n---\nError:" + stderr
+            
+        if output == "":
+            output = "[No output]"
+            
+        context["output"] = cgi.escape(output)
+
+        context["duration"] = time.time() - start_time
+    
+    t = Template(python_input_form)
+    html = t.render(context)
+    return HttpResponse(html)
+    
