@@ -81,8 +81,17 @@ INSTALLED_APPS = (
 # PyLucid settings
 
 TABLE_PREFIX = "pylucid_"
+
+# Some special URL prefixes
 INSTALL_URL_PREFIX = "_install"
 COMMAND_URL_PREFIX = "_command"
+
+# Install Password you should put this in the _install URL
 INSTALL_PASS = "12345678"
+
+# Enable the _install Python Web Shell Feature?
+INSTALL_EVILEVAL = False
+
+# PyLucid Version String
 PYLUCID_VERSION = (0,8,0,"pre-alpha")
 PYLUCID_VERSION_STRING = "0.8.0pre-alpha"
