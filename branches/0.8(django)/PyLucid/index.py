@@ -36,9 +36,6 @@ def index(request, url):
     page = template.replace("<lucidTag:page_body/>", page)
     response.write(page)
 
-    page_msg = request.page_msg.get_page_msg()
-    response.replace_tag("page_msg", page_msg)
-
     return response
 
 def handle_command(request, page_id, module_name, method_name, url_info):
