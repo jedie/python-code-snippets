@@ -323,4 +323,23 @@ def evileval(request, install_pass):
     t = Template(python_input_form)
     html = t.render(context)
     return HttpResponse(html)
+
+
+def test(request, install_pass):
+    """
+    5. experimental
+    """
+    check_pass(install_pass)
     
+    from django.views.generic.list_detail import object_list
+    from PyLucid.models import Page, Preference
+ 
+    pages = Page.objects.all()
+    context = repr(object_list(request, queryset=pages))
+
+    t = Template("<pre>{{ context }}</pre>")
+    context = Context({
+        "context": context
+    })
+    html = t.render(context)
+    return HttpResponse(html)
