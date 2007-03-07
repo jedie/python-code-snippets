@@ -27,6 +27,8 @@ debug = True
 import os, sys, cgi, pprint
 import inspect
 
+
+
 class PrintLocator(object):
     """
     redirect all writes into the page_msg object.
@@ -42,8 +44,19 @@ class PrintLocator(object):
         #~ sys.__stdout__.write(">>>%s<<<\n" % txt)
 
         # Angaben zur Datei, Zeilennummer, aus dem die Nachricht stammt
-        stack = inspect.stack()[1]
-        fileinfo = (stack[1].split("/")[-1][-40:], stack[2])
+        for stack_frame in inspect.stack():
+            # Im stack vorwärts gehen, bis außerhalb dieser Datei
+            filename = stack_frame[1]
+            lineno = stack_frame[2]
+            if filename != __file__:
+                break
+
+        filename = "...%s" % filename[-25:]
+        fileinfo = "%-25s line %3s: " % (filename, lineno)
+        
+        self.page_msg.data.append(
+            "%s - %s" % (filename, __file__)
+        )
 
         if fileinfo != self.oldFileinfo:
             self.oldFileinfo = fileinfo
@@ -153,7 +166,6 @@ class PageMsgBuffer(object):
 
         if self.debug_mode:
             try:
-                import inspect
                 for stack_frame in inspect.stack():
                     # Im stack vorwärts gehen, bis außerhalb dieser Datei
                     filename = stack_frame[1]

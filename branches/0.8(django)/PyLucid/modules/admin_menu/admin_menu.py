@@ -30,19 +30,14 @@ class admin_menu(PyLucidBaseModule):
             "new_page_link": self.URLs.commandLink("pageadmin", "new_page"),
             "sub_menu_link": self.URLs.commandLink("admin_menu", "sub_menu"),
         }
-#        self.templates.write("top_menu", context)
-        
-        t = get_template("PyLucid/modules/admin_menu/top_menu.html")
-        c = Context(context)
-        html = t.render(c)
-        return html
+        self._render_template("top_menu", context)
+        return
 
     def sub_menu(self):
         context = {"commandURLprefix": self.URLs["commandBase"]}
         #~ self.page_msg(context)
 
-#        self.templates.write("sub_menu", context)
-        return self.render_template("sub_menu", context)
+        self._render_template("sub_menu", context)
 
 
 

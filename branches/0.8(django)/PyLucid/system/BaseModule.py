@@ -27,14 +27,14 @@ license:
     http://www.opensource.org/licenses/gpl-license.php
 """
 
-import posixpath, os
+import posixpath, os, pprint, cgi
 
 from django.contrib.sites.models import Site
 from django.template import Template, Context
 
 from PyLucid import settings
 from PyLucid.db import DB_Wrapper
-from PyLucid.models import PagesInternal
+from PyLucid.models import PagesInternal, TemplateEngine
 
 
 class URLs(dict):
@@ -121,17 +121,39 @@ class PyLucidBaseModule(object):
         self.URLs = URLs(request)
 #        self.URLs.debug()
 
-    def render_template(self, internal_page_name, context):
+    def _render_template(self, internal_page_name, context, debug=False):
         """
         return a rendered internal page
         """
-        internal_page = PagesInternal(name = internal_page_name)
+        internal_page = PagesInternal.objects.get(name = internal_page_name)
         content = internal_page.content_html
         
-        t = Template(content)
-        c = Context(context)
-        html = t.render(c)
-        return html
+        if debug:
+            import pprint
+            self.response.write("<fieldset><legend>template debug:</legend>")
+            self.response.write("<legend>template context:</legend>")
+            self.response.write("<pre>")
+            pprint_context = pprint.pformat(context)
+            self.response.write(cgi.escape(pprint_context))
+            self.response.write("</pre>")
+            self.response.write("<legend>rendered page:</legend>")
+            self.response.write("<pre>")
+            self.response.write(cgi.escape(content))
+            self.response.write("</pre></fieldset>")
+        
+        engine_id = internal_page.template_engine
+        engine_name = TemplateEngine.objects.get(id=engine_id).name
+        if engine_name in ("django", "jinja"):
+            t = Template(content)
+            c = Context(context)
+            html = t.render(c)
+        elif engine_name == "string formatting":
+            html = content % context
+        else:
+            self.page_msg("Error: Template Engine '%s' unknown." % engine_name)
+            html = content
+
+        self.response.write(html)
 
     #~ def absolute_link(self, url):
         #~ if isinstance(url, list):

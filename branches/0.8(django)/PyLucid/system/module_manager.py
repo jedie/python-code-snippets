@@ -27,7 +27,10 @@ import sys, traceback
 #~ debug = False
 debug = True
 
+from django.http import HttpResponse
 
+from PyLucid.system.exceptions import *
+from PyLucid.system.LocalModuleResponse import LocalModuleResponse
 from PyLucid.models import Plugin, Plugindata
 
 
@@ -48,23 +51,53 @@ def _run(request, response, module_name, method_name, args=()):
     if isinstance(args, basestring):
         args = (args,)
     
+    local_response = LocalModuleResponse()
+    
     try:
         plugin = Plugin.objects.get(module_name=module_name)
     except Plugin.DoesNotExist:
         msg = "[Error Plugin %s not exists!]" % module_name
-        return msg
         request.page_msg(msg)
-        return
+        local_response.write(msg)
+        return local_response
 
     plugin_data = Plugindata.objects.get(
         plugin_id=plugin.id, method_name=method_name
     )
+    
+    if plugin_data.must_login == True:
+        # User must be login to use this method
+        # http://www.djangoproject.com/documentation/authentication/
+        
+        request.must_login = True # For static_tags an the robot tag
+        
+        if request.user.username == "":
+            # User is not logged in
+            if plugin_data.no_rights_error == True:
+                return local_response, ""
+            else:
+                raise AccessDeny
+    
     module_class=get_module_class(plugin.package_name, module_name)
-    class_instance = module_class(request, response)
+    class_instance = module_class(request, local_response)
     unbound_method = getattr(class_instance, method_name)
     
     output = unbound_method(*args)
-    return output
+    if output == None:
+        return local_response
+    elif isinstance(output, HttpResponse):
+        return output
+    else:
+        msg = (
+            "Error: A Plugin sould return None or a HttpResponse object!"
+            " But %s.%s has returned: %s (%s)"
+        ) % (
+            module_name, method_name,
+            cgi.escape(repr(output)), cgi.escape(str(type(output)))
+        )
+        AssertionError(msg)
+    
+    
 
 
 def run(request, response, module_name, method_name, args=()):
@@ -82,7 +115,7 @@ def run(request, response, module_name, method_name, args=()):
         request.page_msg("-"*50, "<pre>")
         request.page_msg.data += tb_lines
         request.page_msg("</pre>", "-"*50)
-        return "[%s]" % msg
+        return msg
 
 
 def handleTag(module_name, request, response):
@@ -103,8 +136,5 @@ def handle_command(request, response, module_name, method_name, url_info):
     """
     handle a _command url request
     """
-    request.page_msg(url_info)
-    if url_info=="":
-        url_info = ()
     output = run(request, response, module_name, method_name, url_info)
     return output

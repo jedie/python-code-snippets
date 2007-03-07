@@ -20,7 +20,6 @@ from django.http import HttpResponse
 
 import sys, os, re, cgi
 
-
 from PyLucid.system.module_manager import handleTag, handleFunction
 
 lucidSplitRE = re.compile("<lucid(.*?)")
@@ -28,12 +27,16 @@ lucidSplitRE = re.compile("<lucid(.*?)")
 ignore_tag = ("page_msg", "script_duration")
 
 
-
-
 class PyLucidResponse(HttpResponse):
+    """
+    Response object.
+    replace all lucid-Tags and use the module_manager to get the result-content
+    of these tags.
+    """
     def __init__(self, request, *args, **kwargs):
         super(PyLucidResponse, self).__init__(*args, **kwargs)
         self.request = request
+        self.page_msg = request.page_msg
         self.request.tag_info = {}
 
     def isatty(self):
@@ -108,10 +111,13 @@ class PyLucidResponse(HttpResponse):
             self._container.append(content)
             return
 
-        output = handleTag(tag, self.request, self)
-        if not isinstance(output, basestring):
-            self.request.page_msg("Plugin '%s' Output: %s" % (tag, output))
-        else:
+        local_module_response = handleTag(tag, self.request, self)
+        if local_module_response:
+            try:
+                output = local_module_response.get()
+            except Exception, e:
+                output = "[Error get module output: %s" %e
+                
             self._container.append(output)
 
     def handleFunction(self, function, function_info):
