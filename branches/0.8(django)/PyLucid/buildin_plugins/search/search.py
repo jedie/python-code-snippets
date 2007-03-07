@@ -3,31 +3,21 @@
 
 """
 Einfache Suche in CMS Seiten
+
+Last commit info:
+----------------------------------
+$LastChangedDate:$
+$Rev:$
+$Author: JensDiemer $
+
+Created by Jens Diemer
+
+license:
+    GNU General Public License v2 or above
+    http://www.opensource.org/licenses/gpl-license.php
 """
 
-__author__  = "Jens Diemer (www.jensdiemer.de)"
-__license__ = "GNU General Public License (GPL)"
-__url__     = "http://www.PyLucid.org"
-
-__version__="0.4"
-
-__history__="""
-v0.4
-    - Anpassung an colubrid 1.0
-v0.3
-    - Updates für die neue SQL- und URL-Klasse
-v0.3
-    - Nutzt nun self.db.print_internal_page()
-    - Nutzt "get_CGI_data"
-v0.2
-    - Führt eine einfache Gewichtung der Ergebnisse durch, dabei werden die Meta-Daten
-        der Seite herran gezogen.
-v0.1
-    - erste Version
-"""
-
-__todo__ = """
-"""
+__version__= "$Rev:$"
 
 
 import cgi, time, urllib
@@ -38,11 +28,12 @@ class search(PyLucidBaseModule):
 
     def lucidTag(self, search_string=""):
         search_string = cgi.escape(search_string).replace('"',"'")
+        url = self.URLs.commandLink("search", "do_search")
         context = {
-            "url"               : self.URLs.actionLink("do_search"),
+            "url" : url,
             "old_search_string" : search_string
         }
-        self.templates.write("input_form", context)
+        self._render_template("input_form", context)
 
     def do_search(self):
         start_time = time.time()

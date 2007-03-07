@@ -41,7 +41,7 @@ class Page(models.Model):
         db_table = '%spage' % TABLE_PREFIX
 
     class Admin:
-        list_display = ("shortcut", "name", "title", "description")
+        list_display = ("id", "shortcut", "name", "title", "description")
         list_display_links = ("shortcut",)
         list_filter = ("permitViewPublic","ownerID")
         search_fields = ["content","name", "title", "description","keywords"]
@@ -78,8 +78,17 @@ class Page(models.Model):
         style = Style.objects.get(id__exact=style_id)
         return style.name
 
+    def __strftime(self, datetime_obj):
+        if datetime_obj == None:
+            return "[unknown]"
+        else:
+            return datetime_obj.strftime(_("%Y-%m-%d - %H:%M"))
+
+    def get_createtime_string(self):
+        return self.__strftime(self.createtime)
+    
     def get_lastupdatetime_string(self):
-        return self.lastupdatetime.strftime(_("%Y-%m-%d - %H:%M"))
+        return self.__strftime(self.lastupdatetime)
 
 class Archive(models.Model):
     id = models.IntegerField(primary_key=True)
@@ -148,7 +157,8 @@ class Markup(models.Model):
     name = models.CharField(maxlength=150)
 
     class Admin:
-        pass
+        list_display = ("id", "name")
+        list_display_links = ("name",)
 
     class Meta:
         db_table = '%smarkup' % TABLE_PREFIX
@@ -201,10 +211,17 @@ class PagesInternal(models.Model):
     createtime = models.DateTimeField()
 
     class Admin:
-        pass
+        list_display = ("name", "plugin_id", "description")
+        ordering = ('plugin_id',"name")
+        list_filter = ("plugin_id",)
+        date_hierarchy = 'lastupdatetime'
+        search_fields = ["name","content_html","content_js","content_css"]        
 
     class Meta:
         db_table = '%spages_internal' % TABLE_PREFIX
+        
+    def __str__(self):
+        return self.name
 
 class Plugindata(models.Model):
     id = models.IntegerField(primary_key=True)
@@ -221,13 +238,17 @@ class Plugindata(models.Model):
     sys_exit = models.IntegerField()
 
     class Admin:
-        ordering = ('plugin_id','method_name')
+        list_display = ("id", "method_name", "plugin_id")
+        list_display_links = ("method_name",)
+        ordering = ('plugin_id',"method_name")
+        list_filter = ("plugin_id",)
 
     class Meta:
         db_table = '%splugindata' % TABLE_PREFIX
+        verbose_name_plural = 'Plugin Data'
 
     def __str__(self):
-        return "Plugin: %s, method:%s" % (self.plugin_id, self.method_name)
+        return self.method_name
 
     def __repr__(self):
         return "<Plugindata: %s, id:%s>" % (self.method_name, self.plugin_id)
@@ -247,7 +268,9 @@ class Plugin(models.Model):
     plugin_cfg = models.TextField(blank=True)
 
     class Admin:
+        list_display = ("package_name", "description", "version")
         ordering = ('package_name',)
+        list_filter = ("author",)
 
     class Meta:
         db_table = '%splugin' % TABLE_PREFIX
@@ -266,7 +289,11 @@ class Preference(models.Model):
     type = models.CharField(maxlength=90)
 
     class Admin:
-        pass
+        list_display = ("id", "pluginID", "section", "varName", "name", "value", "type", "description")
+        list_display_links = ("varName",)
+        list_filter = ("section",)
+        ordering = ('section',"varName")
+        search_fields = ["varName", "value", "description"]
 
     class Meta:
         db_table = '%spreference' % TABLE_PREFIX
@@ -309,7 +336,8 @@ class TemplateEngine(models.Model):
     name = models.CharField(unique=True, maxlength=150)
 
     class Admin:
-        pass
+        list_display = ("id", "name")
+        list_display_links = ("name",)
 
     class Meta:
         db_table = '%stemplate_engine' % TABLE_PREFIX

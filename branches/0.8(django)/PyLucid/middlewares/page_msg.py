@@ -16,13 +16,15 @@ FMT = (
 class PageMessage(object):
     
     def process_response(self, request, response):
-        
         try:
             page_msg = request.page_msg.get_page_msg()
         except AttributeError:
             # no page_msg object available (install section)
             return response
         
-        response.content = response.content.replace(TAG, page_msg)
+        if TAG in response.content:
+            response.content = response.content.replace(TAG, page_msg)
+        else:
+            response.content += page_msg
 
         return response

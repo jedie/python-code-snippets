@@ -126,7 +126,10 @@ if __name__ == "__main__":
                 continue
 
             alter_table_field(table_name, field_name)
-            patch_field_values(table_name, primary_key, field_name)
+            try:
+                patch_field_values(table_name, primary_key, field_name)
+            except Exception, e:
+                print "Error:", e
 
         print "-"*79
 

@@ -1,10 +1,12 @@
 Änderungen von 0.7.x auf 0.8(django):
 
-tags:
+internes:
+	response.page_msg -> request.page_msg
 
 
 Plugin API:
+	Modules/Plugins should only write to self.response
 
 	Methoden:
 		alt: self.templates.write("sub_menu", context)
-		neu: return self.render_template("sub_menu", context)
+		neu: self._render_template("sub_menu", context)

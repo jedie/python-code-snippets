@@ -13,10 +13,20 @@ class StaticTags(object):
         
         self.tags = {
             "page_title": self.current_page.title,
+            "page_keywords": self.current_page.keywords,
+            "page_description": self.current_page.description,
+            "page_datetime": self.current_page.get_createtime_string(),
             "page_last_modified": self.current_page.get_lastupdatetime_string(),
             "powered_by": self.get_powered_by,
             "script_login": self.get_login_link,
         }
+        
+        if getattr(request, "must_login", False):
+            # The module_manager set this attribute
+            self.tags["robots"] = "NONE,NOARCHIVE"
+        else:
+            self.tags["robots"] = "index,follow"
+
 
     def __contains__(self, key):
         if not key in self.tags:
@@ -30,6 +40,9 @@ class StaticTags(object):
             return value
         else:
             return value()
+        
+    def __setitem__(self, key, value):
+        self.tags[key] = value
     
     def get_powered_by(self):
         html = (
