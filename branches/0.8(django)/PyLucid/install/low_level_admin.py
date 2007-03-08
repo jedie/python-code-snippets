@@ -112,4 +112,65 @@ def update(request, install_pass):
 
     return response
 
+REPLACE_DATA = (
+    ("|escapexml ", "|escape "),
+)
+def _convert_template(content):
+    """
+    simple replace some tags
+    """
+    changed = False
+    for source, destination in REPLACE_DATA:
+        if source in content:
+            old_content = content
+            content = content.replace(source, destination)
+            if old_content != content:
+                changed = True
 
+    if changed:
+        return content
+
+UNSUPPORTED_TAGS = ("{% recurse ",)
+def _display_warnings(response, content):
+    """
+    Waring if there is some unsupportet tags in the template
+    """
+    for tag in UNSUPPORTED_TAGS:
+        if tag in content:
+            response.write("\t - WARNING: unsupportet tag '%s' in Template!\n" % tag)
+    
+def update_templates(request, install_pass):
+    """
+    convert jinja to django templates
+    """
+    check_pass(install_pass)
+
+    response = HttpResponse(mimetype="text/plain")
+    response.write("convert jinja to django templates:\n")
+    
+    from PyLucid.tools.Diff import display_plaintext_diff
+    from PyLucid.models import PagesInternal
+    
+    for internal_page in PagesInternal.objects.all():
+        name = internal_page.name
+        old_content = internal_page.content_html
+        
+        response.write("\n==================[ %s ]==================\n\n" % name)
+        _display_warnings(response, old_content)
+        content = _convert_template(old_content)
+        if not content:
+            response.write("\t - Nothing to change.\n")
+            continue
+        
+        response.write("\t - changed!\n\nthe diff:\n")
+        display_plaintext_diff(old_content, content, response)
+        
+        internal_page.content_html = content
+        internal_page.save()
+        response.write("\t - updated and saved.\n")
+        
+        response.write("\n\n")
+        
+        
+    return response
+        
