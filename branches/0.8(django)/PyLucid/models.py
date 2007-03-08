@@ -147,7 +147,14 @@ class Log(models.Model):
     status = models.CharField(maxlength=36)
 
     class Admin:
-        pass
+        list_display = (
+            "timestamp", "user_name", "ip", "domain", "message",
+            "typ", "status"
+        )
+        list_display_links = ("message",)
+        list_filter = ("sid","user_name", "ip", "domain", "typ", "status")
+        ordering = ("-timestamp",)
+        date_hierarchy = 'timestamp'
 
     class Meta:
         db_table = '%slog' % TABLE_PREFIX
@@ -326,7 +333,8 @@ class Style(models.Model):
     content = models.TextField()
 
     class Admin:
-        pass
+        list_display = ("id", "name", "description")
+        list_display_links = ("name",)
 
     class Meta:
         db_table = '%sstyle' % TABLE_PREFIX
@@ -352,7 +360,8 @@ class Template(models.Model):
     createtime = models.DateTimeField()
 
     class Admin:
-        pass
+        list_display = ("id", "name", "description")
+        list_display_links = ("name",)
 
     class Meta:
         db_table = '%stemplate' % TABLE_PREFIX
