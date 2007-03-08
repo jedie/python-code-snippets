@@ -22,6 +22,10 @@ class PageMessage(object):
             # no page_msg object available (install section)
             return response
         
+        if page_msg == "":
+            # There is no messages to display ;)
+            return response
+        
         if TAG in response.content:
             response.content = response.content.replace(TAG, page_msg)
         else:
