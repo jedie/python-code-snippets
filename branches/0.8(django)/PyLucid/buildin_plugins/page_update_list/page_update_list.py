@@ -25,18 +25,13 @@ license:
 
 __version__= "$Rev$"
 
-
-
-from django.template import Template, Context
-from django.template.loader import get_template
-
 from PyLucid.system.BaseModule import PyLucidBaseModule
 
 
 class page_update_list(PyLucidBaseModule):
 
     def lucidTag(self):
-        return self.generate_list(10)
+        self.generate_list(10)
 
     def lucidFunction(self, count):
         try:
@@ -44,9 +39,10 @@ class page_update_list(PyLucidBaseModule):
         except Exception, e:
             msg = "lucidFunction is not a int number: %s" % e
             self.page_msg(msg)
-            return "[%s]" % msg
+            self.response.write("[%s]" % msg)
+            return
 
-        return self.generate_list(count)
+        self.generate_list(count)
 
     def generate_list(self, count):
         page_updates = self.db.get_page_update_info(self.request, 10)
@@ -54,14 +50,9 @@ class page_update_list(PyLucidBaseModule):
         context = {
             "page_updates" : page_updates
         }
-        #~ self.page_msg(context)
-
-        #~ self.templates.write("PageUpdateTable", context)
-
-        t = get_template("PyLucid/buildin_plugins/page_update_list/PageUpdateTable.html")
-        c = Context(context)
-        html = t.render(c)
-        return html
+#        self.page_msg(context)
+        
+        self._render_template("PageUpdateTable", context)
 
 
 
