@@ -1,22 +1,31 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 
-# by jensdiemer.de (steht unter GPL-License)
-
 """
 Generiert das komplette Seitenmenü mit Untermenüs in eine Baumansicht
 
 Das Menü wird eingebunden mit dem lucid-Tag:
 <lucidTag:main_menu/>
 
+ToDo: Use the Template to generate the Sitemap. But there is no recuse-Tag
+    in the django template engine :(
+    - http://www.python-forum.de/topic-9655.html
+    - http://groups.google.com/group/django-users/browse_thread/thread/3bd2812a3d0f7700/14f61279e0e9fd90
 
-x = {
-    'value':1, 'children': [
-        { 'value': 2, 'children': []},
-        {'value' : 3, 'children': [{ 'value':4, 'children':[] }]}
-]}
+Last commit info:
+----------------------------------
+$LastChangedDate:$
+$Rev:$
+$Author: JensDiemer $
 
+Created by Jens Diemer
+
+license:
+    GNU General Public License v2 or above
+    http://www.opensource.org/licenses/gpl-license.php
 """
+
+__version__= "$Rev:$"
 
 from PyLucid.system.BaseModule import PyLucidBaseModule
 from PyLucid.system.tools.tree_generator import TreeGenerator

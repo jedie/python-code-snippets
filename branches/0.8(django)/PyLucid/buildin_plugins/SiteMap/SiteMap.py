@@ -1,33 +1,32 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 
-# by jensdiemer.de (steht unter GPL-License)
-
 """
 Generiert das SiteMap
 <lucidTag:SiteMap/>
+
+ToDo: Use the Template to generate the Sitemap. But there is no recuse-Tag
+    in the django template engine :(
+    - http://www.python-forum.de/topic-9655.html
+    - http://groups.google.com/group/django-users/browse_thread/thread/3bd2812a3d0f7700/14f61279e0e9fd90
+
+Last commit info:
+----------------------------------
+$LastChangedDate:$
+$Rev:$
+$Author: JensDiemer $
+
+Created by Jens Diemer
+
+license:
+    GNU General Public License v2 or above
+    http://www.opensource.org/licenses/gpl-license.php
 """
 
-__version__="0.2"
+__version__= "$Rev:$"
 
-__history__="""
-v0.2
-    - Benutzt ein jinja-Template
-v0.1
-    - PyLucid["URLs"]
-    - Anpassung an neuen ModuleManager
-v0.0.5
-    - Link wird nun auch vom ModulManager verwendet.
-    - Testet page-title auch auf None
-v0.0.4
-    - Anpassung an neuen ModulManager
-v0.0.3
-    - Neue Tags für CSS
-v0.0.2
-    - "must_login" und "must_admin" für Module-Manager hinzugefügt
-v0.0.1
-    - erste Version
-"""
+from PyLucid.system.tools.tree_generator import TreeGenerator
+from PyLucid.models import Page
 
 from PyLucid.system.BaseModule import PyLucidBaseModule
 
@@ -35,52 +34,65 @@ class SiteMap(PyLucidBaseModule):
 
     def lucidTag(self):
         """ Baut die SiteMap zusammen """
-        self.data = self.db.get_sitemap_data()
+        
+        sitemap_data = Page.objects.values(
+            "id", "parent", "name", "title", "shortcut"
+        ).order_by("position")
+        #self.page_msg(values)
+        sitemap_data = TreeGenerator().generate(sitemap_data)
+        
+        html = self.get_html(sitemap_data)
+        self.response.write(html)
 
-        self.parent_list = self.get_parent_list()
-
-        sitemap = self.make_sitemap()
-
-        context = {
-            "sitemap" : sitemap
-        }
-        #~ self.page_msg(context)
-
-        self.templates.write("SiteMap", context)
-
-    def get_parent_list(self):
-        parents = []
-        for site in self.data:
-            if not site["parent"] in parents:
-                parents.append(site["parent"])
-        return parents
-
-    def make_sitemap(self, parentname = "", id = 0, deep = 0):
-        result = []
-
-        for site in self.data:
-            if site["parent"] == id:
-                link = "%s/%s" % (parentname, site["shortcut"])
-                linkURL = self.URLs.pageLink(link)
-
-                if site["title"] in ("", None):
-                    site["title"] == site["name"]
-
-                page_data = {
-                    "href"  : linkURL,
-                    "name"  : site["name"],
-                    "title" : site["title"],
-                    "id"    : site["id"],
-                    "deep"  : deep,
-                }
-
-                if site["id"] in self.parent_list:
-                    subitems = self.make_sitemap(link, site["id"], deep +1)
-                    page_data["subitems"] = subitems
-
-                result.append(page_data)
-
-        return result
+    def get_html(self, menu_data, parent=None):
+        """
+        [{'id': 1L,
+          'level': 1,
+          'name': 'index',
+          'parent': 0L,
+          'shortcut': 'Index',
+          'title': 'index'},
+         {'id': 10L,
+          'level': 1,
+          'name': 'Designs',
+          'parent': 0L,
+          'shortcut': 'Designs',
+          'subitems': [{'id': 13L,
+                        'level': 2,
+                        'name': 'elementary',
+                        'parent': 10L,
+                        'shortcut': 'Elementary',
+                        'title': 'elementary'},
+                       {'id': 12L,
+                        'level': 2,
+                        'name': 'old defaul
+        """
+        html = (
+            '<li>'
+            '<a href="%(href)s" title="%(title)s">%(name)s</a>'
+            '</li>'
+        )
+        result = ["<ul>"]
+        
+        for entry in menu_data:
+            href = []
+            if parent:
+                href.append(parent)
+                
+            href.append(entry["shortcut"])
+            
+            href = "/".join(href)
+            entry["href"] = "%s/%s/" % (self.URLs["absoluteIndex"], href)
+                
+            result.append(html % entry)
+            
+            if entry.has_key("subitems"):
+                result.append(
+                    self.get_html(entry["subitems"], parent=href)
+                )
+                
+        result.append("</ul>")
+        return "\n".join(result)
 
 
 
