@@ -51,6 +51,36 @@ class pageadmin(PyLucidBaseModule):
         """
         Einstiegs Methode wenn man auf "edit page" klickt
         """
+#        http://192.168.6.2:8081/_admin/PyLucid/page/14/
+        from django.http import HttpResponseRedirect
+#        return HttpResponseRedirect(
+
+        self.URLs.debug()
+        
+        edit_url = "%s/_admin/PyLucid/page/%s/" % (
+            self.URLs["scriptRoot"], self.request.current_page_id
+        )
+        return HttpResponseRedirect(edit_url)
+        
+        
+        
+            
+        from django.views.generic.create_update import update_object
+        
+        from PyLucid.models import Page
+#        page = Page.objects.get(id=self.request.current_page_id)
+        
+        response = update_object(
+            self.request, Page, object_id=self.request.current_page_id,
+#            template_name="modules/pageadmin/edit_page.html",
+            login_required=True
+        )
+        html = response.content
+        self.response.write(html)
+#        request, model, object_id=
+        
+        
+        """
         if debug: self.debug()
 
         if "preview" in self.request.form:
@@ -65,6 +95,7 @@ class pageadmin(PyLucidBaseModule):
             # Die aktuelle Seite soll editiert werden
             page_data = self.get_page_data(self.session["page_id"])
             return self.editor_page(page_data)
+        """
 
     def select_edit_page(self):
         """
