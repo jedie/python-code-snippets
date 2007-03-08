@@ -65,7 +65,7 @@ def handle_command(request, page_id, module_name, method_name, url_info):
     hanlde a _command request
     """
     # ToDo: Should i check here, if the page_id exists?!?
-    request.current_page_id = page_id
+    request.current_page_id = int(page_id)
     
     request.page_msg = PageMsgBuffer(request)
     response = PyLucidResponse(request)

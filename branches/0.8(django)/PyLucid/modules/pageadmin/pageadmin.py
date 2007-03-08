@@ -29,7 +29,9 @@ import sys, cgi, time, pickle, urllib, datetime
 debug = False
 #~ debug = True
 
-
+from django import newforms as forms
+       
+from PyLucid.models import Page     
 from PyLucid.system.BaseModule import PyLucidBaseModule
 
 
@@ -55,30 +57,47 @@ class pageadmin(PyLucidBaseModule):
         from django.http import HttpResponseRedirect
 #        return HttpResponseRedirect(
 
-        self.URLs.debug()
+#        self.URLs.debug()
         
         edit_url = "%s/_admin/PyLucid/page/%s/" % (
             self.URLs["scriptRoot"], self.request.current_page_id
         )
-        return HttpResponseRedirect(edit_url)
+        self.response.write('<a href="%s">django panel edit</a>' % edit_url)
+#        return HttpResponseRedirect(edit_url)
+    
+        page = Page.objects.get(id=self.request.current_page_id)
+        
+#        PageForm = forms.models.form_for_model(Page)
+        PageForm = forms.models.form_for_instance(page)
+        
+        # http://www.djangoproject.com/documentation/newforms/
+        # http://code.djangoproject.com/browser/django/trunk/tests/regressiontests/forms/tests.py
+        
+        PageForm.base_fields['id'].help_text = "This is the page ID."
+        from django.newforms.extras.widgets import SelectDateWidget
+#        PageForm.base_fields['lastupdatetime'].widget = SelectDateWidget()
+        
+        disable_dict = {"disabled":"disabled"}
+        for field_name in ('id', "ownerID", 'lastupdatetime', 'lastupdateby'):
+            PageForm.base_fields[field_name].widget.attrs.update(disable_dict)
         
         
         
-            
-        from django.views.generic.create_update import update_object
+#        .choices = 
         
-        from PyLucid.models import Page
-#        page = Page.objects.get(id=self.request.current_page_id)
+        form = PageForm()
         
-        response = update_object(
-            self.request, Page, object_id=self.request.current_page_id,
-#            template_name="modules/pageadmin/edit_page.html",
-            login_required=True
-        )
-        html = response.content
+        html_form = form.as_p()
+        
+        html = (
+            '<form action="." method="post">'
+            '  <table class="form">'
+            '    %s'
+            '  </table>'
+            '  <input type="submit" value="speichern" />'
+            '</form>'
+        ) % html_form
         self.response.write(html)
-#        request, model, object_id=
-        
         
         """
         if debug: self.debug()
