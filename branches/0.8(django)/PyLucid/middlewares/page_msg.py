@@ -5,7 +5,9 @@ Put the page_msg in the page
 replace the tag and put a fieldset with the page messages in the cms page.
 """
 
-TAG = "<lucidTag:page_msg/>"
+from PyLucid.system.response import PyLucidResponse
+
+TAG = "page_msg"
 
 FMT = (
     '\n<fieldset id="page_msg"><legend>page message</legend>\n'
@@ -25,9 +27,9 @@ class PageMessage(object):
         if page_msg == "":
             # There is no messages to display ;)
             return response
-        
-        if TAG in response.content:
-            response.content = response.content.replace(TAG, page_msg)
+            
+        if isinstance(response, PyLucidResponse):
+            response.replace_tag(TAG, page_msg)
         else:
             response.content += page_msg
 
