@@ -131,7 +131,7 @@ class PyLucidResponse(HttpResponse):
     def replace_tag(self, tag, txt):
         """
         Replace a saved Tag
-        Used the middlewares to put "page_msg" and "script_duration"
+        Used by the middlewares to put "page_msg" and "script_duration"
         """
         position = self.request.tag_info[tag]
         self._container[position] = txt

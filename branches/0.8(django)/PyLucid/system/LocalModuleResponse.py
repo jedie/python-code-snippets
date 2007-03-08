@@ -19,7 +19,7 @@ class LocalModuleResponse(object):
     """
     A local response object for all Modules/Plugins.
     """
-    def __init__(self):
+    def __init__(self):      
         self._container = []
         
     def write(self, txt):
