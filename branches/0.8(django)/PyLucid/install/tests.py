@@ -7,7 +7,7 @@ import inspect, cgi, sys, time, StringIO
 
 from PyLucid import settings
 from PyLucid.utils import check_pass
-from PyLucid.system.tools.OutBuffer import Redirector
+from PyLucid.tools.OutBuffer import Redirector
 
 from django.http import HttpResponse
 from django.template import Template, Context, loader

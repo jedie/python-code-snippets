@@ -28,7 +28,7 @@ license:
 __version__= "$Rev:$"
 
 from PyLucid.system.BaseModule import PyLucidBaseModule
-from PyLucid.system.tools.tree_generator import TreeGenerator
+from PyLucid.tools.tree_generator import TreeGenerator
 from PyLucid.models import Page
 
 from django.template import Template, Context
