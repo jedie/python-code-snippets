@@ -7,9 +7,11 @@ from operator import add
 from time import time
 from django.db import connection
 
+from PyLucid.system.response import PyLucidResponse
+
 start_overall = time()
 
-TAG = "<lucidTag:script_duration/>"
+TAG = "script_duration"
 
 FMT = (
     ' time: %(total_time).3f -'
@@ -29,17 +31,18 @@ class PageStatsMiddleware(object):
         
         # time the view
         response = view_func(request, *view_args, **view_kwargs)
-
-        # compute the db time for the queries just run
-        queries = len(connection.queries) - old_quaries
-
-        # replace the comment if found
-        if response and response.content:
-            stat_info = FMT % {
-                'total_time' : time() - start_time,
-                'overall_time' : time() - start_overall,
-                'queries' : queries,
-            }
-            response.content = response.content.replace(TAG, stat_info)
+        
+        if isinstance(response, PyLucidResponse):
+            # compute the db time for the queries just run
+            queries = len(connection.queries) - old_quaries
+    
+            # replace the comment if found
+            if response and response.content:
+                stat_info = FMT % {
+                    'total_time' : time() - start_time,
+                    'overall_time' : time() - start_overall,
+                    'queries' : queries,
+                }
+                response.replace_tag(TAG, stat_info)
 
         return response

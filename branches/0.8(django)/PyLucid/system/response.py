@@ -24,7 +24,7 @@ from PyLucid.system.module_manager import handleTag
 
 lucidSplitRE = re.compile("<lucid(.*?)")
 
-ignore_tag = ("page_msg", "script_duration")
+MIDDLEWARE_TAGS = ("page_msg", "script_duration")
 
 
 class PyLucidResponse(HttpResponse):
@@ -90,7 +90,7 @@ class PyLucidResponse(HttpResponse):
                 
 
     def handleTag(self, tag):
-        if tag in ignore_tag:
+        if tag in MIDDLEWARE_TAGS:
             # save tag position for a later replace, see self.replace_tag()
             self.request.tag_info[tag] = len(self._container)
             self._container.append("<lucidTag:%s/>" % tag)
@@ -131,6 +131,7 @@ class PyLucidResponse(HttpResponse):
     def replace_tag(self, tag, txt):
         """
         Replace a saved Tag
+        Used the middlewares to put "page_msg" and "script_duration"
         """
         position = self.request.tag_info[tag]
         self._container[position] = txt
