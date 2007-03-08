@@ -106,6 +106,10 @@ class PageMsgBuffer(object):
                 self.red(line)
             self.red("-"*40)
 
+        if self.data == []:
+            # There is no messages to display ;)
+            return ""
+        
         page_msg = "".join(self.data)
         self.data = []
 
