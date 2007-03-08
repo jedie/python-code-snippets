@@ -55,7 +55,7 @@ def index(request, url):
     response = PyLucidResponse(request)
 
     request.current_page = get_current_page_obj(request, url)
-#    request.page_msg("Page ID:", request.current_page.id)
+    request.current_page_id = request.current_page.id
     
     return render_cms_page(request, response)
 
@@ -64,6 +64,9 @@ def handle_command(request, page_id, module_name, method_name, url_info):
     """
     hanlde a _command request
     """
+    # ToDo: Should i check here, if the page_id exists?!?
+    request.current_page_id = page_id
+    
     request.page_msg = PageMsgBuffer(request)
     response = PyLucidResponse(request)
     

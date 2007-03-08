@@ -63,7 +63,7 @@ class URLs(dict):
         self["absoluteIndex"] = self["hostname"] + self["scriptRoot"]
         
         self["commandBase"] = posixpath.join(
-            self["scriptRoot"], settings.COMMAND_URL_PREFIX
+            self["scriptRoot"], settings.COMMAND_URL_PREFIX, str(self.request.current_page_id)
         )
 
     #__________________________________________________________________________
@@ -71,7 +71,7 @@ class URLs(dict):
     def commandLink(self, modulename, methodname="", args="", addSlash=True):
         args = self._prepage_args(args)
         link = posixpath.join(
-            self["commandBase"], str(self.request.current_page.id), modulename, methodname, args
+            self["commandBase"], modulename, methodname, args
         )
 
         if addSlash:
@@ -121,7 +121,7 @@ class PyLucidBaseModule(object):
         self.URLs = URLs(request)
 #        self.URLs.debug()
 
-    def _render_template(self, internal_page_name, context, debug=False):
+    def _get_rendered_template(self, internal_page_name, context, debug=False):
         """
         return a rendered internal page
         """
@@ -157,7 +157,14 @@ class PyLucidBaseModule(object):
         else:
             self.page_msg("Error: Template Engine '%s' unknown." % engine_name)
             html = content
-
+            
+        return html
+            
+    def _render_template(self, internal_page_name, context, debug=False):
+        """
+        render a template and write it into the response object
+        """
+        html = self._get_rendered_template(internal_page_name, context, debug)
         self.response.write(html)
 
     #~ def absolute_link(self, url):
