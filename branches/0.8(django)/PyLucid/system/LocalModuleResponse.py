@@ -15,6 +15,8 @@ license:
     http://www.opensource.org/licenses/gpl-license.php
 """
 
+import cgi
+
 class LocalModuleResponse(object):
     """
     A local response object for all Modules/Plugins.
@@ -23,6 +25,12 @@ class LocalModuleResponse(object):
         self._container = []
         
     def write(self, txt):
+        if not isinstance(txt, basestring):
+            txt = (
+                "<p>"
+                "[Error: response.write only with Strings! You write a %s]"
+                "</p><p>%s</p>"
+            ) % (cgi.escape(str(type(txt))), cgi.escape(repr(txt)))
         self._container.append(txt)
     
     def get(self):

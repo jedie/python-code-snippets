@@ -9,33 +9,33 @@ class Page(models.Model):
     """
     id = models.IntegerField(primary_key=True)
 
-    content = models.TextField(blank=True)
+    content = models.TextField(blank=True, help_text="The CMS page content.")
 
-    parent = models.IntegerField()
-    position = models.IntegerField()
+    parent = models.IntegerField(help_text="the id of the father page")
+    position = models.IntegerField(help_text="ordering (number between -10 and 10)")
 
-    name = models.CharField(maxlength=150)
-    shortcut = models.CharField(unique=True, maxlength=150)
-    title = models.CharField(blank=True, maxlength=150)
+    name = models.CharField(maxlength=150, help_text="A short page name")
+    shortcut = models.CharField(unique=True, maxlength=150, help_text="shortcut to built the URLs")
+    title = models.CharField(blank=True, maxlength=150, help_text="A long page title")
 
-    template = models.IntegerField()
-    style = models.IntegerField()
-    markup = models.CharField(blank=True, maxlength=150)
+    template = models.IntegerField(help_text="ID of the used template.")
+    style = models.IntegerField(help_text="ID of the used stylesheet.")
+    markup = models.CharField(blank=True, maxlength=150, help_text="ID of the used markup language.")
 
-    keywords = models.TextField(blank=True, maxlength=255)
-    description = models.TextField(blank=True, maxlength=255)
+    keywords = models.TextField(blank=True, maxlength=255, help_text="Keywords for the html header.")
+    description = models.TextField(blank=True, maxlength=255, help_text="Text for the html header.")
 
     createtime = models.DateTimeField()
     lastupdatetime = models.DateTimeField(null=True, blank=True)
     lastupdateby = models.IntegerField(null=True, blank=True)
 
-    showlinks = models.IntegerField()
+    showlinks = models.IntegerField(help_text="Put the Link to this page into Menu/Sitemap etc.?")
 
-    permitViewPublic = models.IntegerField()
-    permitViewGroupID = models.IntegerField(null=True, blank=True)
+    permitViewPublic = models.IntegerField(help_text="Does anomymous user see this page?")
+    permitViewGroupID = models.IntegerField(null=True, blank=True, help_text="Usergroup how can see this page, if permitViewPublic denied.")
 
     ownerID = models.IntegerField()
-    permitEditGroupID = models.IntegerField(null=True, blank=True)
+    permitEditGroupID = models.IntegerField(null=True, blank=True, help_text="Usergroup how can edit this page.")
 
     class Meta:
         db_table = '%spage' % TABLE_PREFIX
