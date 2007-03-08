@@ -13,8 +13,9 @@ Erzeugt das Administration-Menü
 Sollte im Template für jede Seite eingebunden werden.
 """
 
-from django.template import Template, Context
-from django.template.loader import get_template
+from StringIO import StringIO
+
+from PyLucid.system.tinyTextile import TinyTextileParser
 
 from PyLucid.system.BaseModule import PyLucidBaseModule
 
@@ -36,7 +37,12 @@ class admin_menu(PyLucidBaseModule):
         context = {"commandURLprefix": self.URLs["commandBase"]}
         #~ self.page_msg(context)
 
-        self._render_template("sub_menu", context)
+        html = self._get_rendered_template("sub_menu", context)
+        
+        p = TinyTextileParser(self.response, self.request, self.response)
+        p.parse(html)
+
+        
 
 
 
