@@ -20,7 +20,7 @@ from django.http import HttpResponse
 
 import sys, os, re, cgi
 
-from PyLucid.system.module_manager import handleTag, handleFunction
+from PyLucid.system.module_manager import handleTag
 
 lucidSplitRE = re.compile("<lucid(.*?)")
 
@@ -43,58 +43,51 @@ class PyLucidResponse(HttpResponse):
         return False
 
     def write(self, txt):
-        assert isinstance(txt, basestring)
+        """
+        Parse the text and replace lucidTag
+        """
+        self.append_parsed(txt)
 
+    def append_parsed(self, txt):
+        """
+        replace alle lucidTag in the content and append it to the container
+        """
+        assert isinstance(txt, basestring)
+        
         if not "<lucid" in txt:
             self._container.append(txt)
             return
 
         txt = lucidSplitRE.split(txt)
         for part in txt:
-            if part.startswith("Tag:"):
-                # Bsp part => Tag:page_body/><p>jau</p>
-
-                tag, post = part.split(">",1)
-                # tag  => Tag:page_body/
-                # post => <p>jau</p>
-
-                tag = tag[4:].rstrip("/")
-
-                # Tag über Module-Manager ausführen
-                self.handleTag(tag)
-
-                # Teil hinter dem Tag schreiben
-                self._container.append(post)
-            elif part.startswith("Function:"):
-                # Bsp part:
-                # Function:IncludeRemote>http://www.google.de</lucidFunction><p>jau</p>
-
-                try:
-                    function, post = part.split("</lucidFunction>",1)
-                    # function  => Function:IncludeRemote>http://www.google.de
-                    # post      => <p>jau</p>
-                except ValueError:
-                    # Der End-Tag wurde vergessen -> work-a-round
-                    function, post = part.split(">",1)
-                    function = function.split(":")[1]
-                    function_info = None
-                    self.page_msg(
-                        _("End tag not found for lucidFunction '%s'") % function
-                    )
+            if not part.startswith("Tag:"):
+                if part.startswith("Function:"):
+                    # Obsolete!
+                    self.page_msg("lucidFunction's are obsolete!")
                 else:
-                    function, function_info = function.split(">")
-                    # function      => Function:IncludeRemote
-                    # function_info => http://www.google.de
+                    self._container.append(part)
+                continue
+            
+            # Handle a lucidTag
+            
+            # Bsp part => Tag:page_body/><p>jau</p>
+            tag, post = part.split(">",1)
+            # tag  => Tag:page_body/
+            # post => <p>jau</p>
 
-                    function = function.split(":")[1]
-                    # function => IncludeRemote
+            tag = tag[4:].rstrip("/")
 
-                self.handleFunction(function, function_info)
+            # Tag über Module-Manager ausführen
+            try:
+                self.handleTag(tag)
+            except Exception, e:
+                msg = "Handle Tag %s Error: %s" % (tag, e)
+                self.page_msg(msg)
+                self._container.append("[%s]" % msg)
 
-                # Teil hinter dem Tag schreiben
-                self._container.append(post)
-            else:
-                self._container.append(part)
+            # Teil hinter dem Tag schreiben
+            self._container.append(post)
+                
 
     def handleTag(self, tag):
         if tag in ignore_tag:
@@ -104,25 +97,36 @@ class PyLucidResponse(HttpResponse):
             return
 
         if tag in self.request.static_tags:
-            content = self.request.static_tags[tag]
-            assert isinstance(content, basestring), (
-                "static tag returns not a basestring! returns: '%s'"
-            ) % repr(content)
-            self._container.append(content)
+            content = self.request.static_tags[tag]            
+            if tag == "page_body":
+                # replace 
+                self.append_parsed(content)
+            else:
+                assert isinstance(content, basestring), (
+                    "static tag returns not a basestring! returns: '%s'"
+                ) % repr(content)
+                self._container.append(content)
             return
 
         local_module_response = handleTag(tag, self.request, self)
         if local_module_response:
-            try:
-                output = local_module_response.get()
-            except Exception, e:
-                output = "[Error get module output: %s" %e
+            if isinstance(local_module_response, basestring):
+                output = local_module_response
+            else:
+                try:
+                    output = local_module_response.get()
+                except Exception, e:
+                    output = (
+                        "[Error get module output: %s"
+                        " - type: %s, repr: %s"
+                    ) % (
+                        e, cgi.escape(str(type(local_module_response))),
+                        cgi.escape(repr(local_module_response))
+                    )
+                    
+                    raise ValueError(output)
                 
             self._container.append(output)
-
-    def handleFunction(self, function, function_info):
-        print ">>>", function, function_info
-        return handleFunction(function, function_info)
 
     def replace_tag(self, tag, txt):
         """
@@ -130,70 +134,3 @@ class PyLucidResponse(HttpResponse):
         """
         position = self.request.tag_info[tag]
         self._container[position] = txt
-
-
-'''
-OBSOLETE?!?!
-
-    def get(self):
-        "zurückliefern der bisher geschriebene Daten"
-        content = self.response
-        # FIXME: unicode-Fehler sollten irgendwie angezeigt werden!
-        result = ""
-        for line in content:
-            if type(line)!=unicode:
-                line = unicode(line, errors="replace")
-            result += line
-
-        self.response = []
-        return result
-
-    def startFileResponse(self, filename, contentLen=None, \
-                    content_type='application/octet-stream; charset=utf-8'):
-        """
-        Gibt einen Header aus, um einen octet-stream zu "erzeugen"
-
-        Bsp:
-        self.response.startFileResponse(filename, buffer_len)
-        self.response.write(content)
-        return self.response
-        """
-        if sys.platform == "win32":
-            # force Windows input/output to binary
-            try:
-                import msvcrt
-                msvcrt.setmode(sys.stdin.fileno(), os.O_BINARY)
-                msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
-            except:
-                pass
-
-        self.response = [] # Evtl. schon gemachte "Ausgaben" verwerfen
-        #~ print "reset:", self.response
-
-        self.headers['Content-Disposition'] = \
-            'attachment; filename="%s"' % filename
-        if contentLen:
-            self.headers['Content-Length'] = '%s' % contentLen
-        self.headers['Content-Transfer-Encoding'] = '8bit' #'binary'
-        self.headers['Content-Type'] = content_type
-
-    def startFreshResponse(self, content_type='text/html; charset=utf-8'):
-        """
-        Eine neue leere Seite ausgeben
-
-        Bsp:
-        self.response.startFreshResponse()
-        self.response.write(
-            '<?xml version="1.0" encoding="UTF-8"?>\n'
-            '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"'
-            ' "xhtml1-strict.dtd">\n'
-            '<html xmlns="http://www.w3.org/1999/xhtml">\n'
-            '<head><title>BSP</title></head>\n'
-            '<body><h1>Text</h1></body></html>\n'
-        )
-        return self.response
-        """
-        self.response = [] # Evtl. schon gemachte "Ausgaben" verwerfen
-        self.headers['Content-Type'] = content_type
-
-'''
