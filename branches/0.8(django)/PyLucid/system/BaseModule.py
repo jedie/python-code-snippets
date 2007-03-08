@@ -144,9 +144,23 @@ class PyLucidBaseModule(object):
         engine_id = internal_page.template_engine
         engine_name = TemplateEngine.objects.get(id=engine_id).name
         if engine_name in ("django", "jinja"):
-            t = Template(content)
-            c = Context(context)
-            html = t.render(c)
+            if "escapexml" in content:
+                # convert jinja to django on-tha-fly
+                content = content.replace("escapexml", "escape")
+                self.page_msg(
+                    (
+                        "Warning:"
+                        " Internal Page '%s' used a obsolete Tag: escapexml!"
+                    ) % internal_page_name
+                )
+            try:
+                t = Template(content)
+                c = Context(context)
+                html = t.render(c)
+            except Exception, e:
+                html = "[Error, render the django Template '%s': %s]" % (
+                    internal_page_name, e
+                )
         elif engine_name == "string formatting":
             html = content % context
         else:

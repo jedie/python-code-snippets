@@ -74,7 +74,7 @@ def _run(request, response, module_name, method_name, args=()):
         if request.user.username == "":
             # User is not logged in
             if plugin_data.no_rights_error == True:
-                return local_response, ""
+                return local_response
             else:
                 raise AccessDeny
     
@@ -115,7 +115,7 @@ def run(request, response, module_name, method_name, args=()):
         request.page_msg("-"*50, "<pre>")
         request.page_msg.data += tb_lines
         request.page_msg("</pre>", "-"*50)
-        return msg
+        return msg + "(Look in the page_msg)"
 
 
 def handleTag(module_name, request, response):
@@ -123,13 +123,6 @@ def handleTag(module_name, request, response):
     handle a lucidTag
     """
     output = run(request, response, module_name, method_name = "lucidTag")
-    return output
-
-def handleFunction(function, function_info):
-    """
-    handle a lucidFunction
-    """
-    output = run(request, response, module_name, method_name, function_info)
     return output
 
 def handle_command(request, response, module_name, method_name, url_info):

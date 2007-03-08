@@ -28,6 +28,7 @@ def render_cms_page(request, response, page_content=None):
     request.static_tags = StaticTags(request)
     
     if not page_content:
+        # get the current page data from the db
         page_content = request.current_page.content
         markup_id = request.current_page.markup
         markup = Markup.objects.get(id=markup_id).name
@@ -54,7 +55,7 @@ def index(request, url):
     response = PyLucidResponse(request)
 
     request.current_page = get_current_page_obj(request, url)
-    request.page_msg("Page ID:", request.current_page.id)
+#    request.page_msg("Page ID:", request.current_page.id)
     
     return render_cms_page(request, response)
 

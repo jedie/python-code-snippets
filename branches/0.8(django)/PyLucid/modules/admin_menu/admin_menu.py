@@ -31,7 +31,6 @@ class admin_menu(PyLucidBaseModule):
             "sub_menu_link": self.URLs.commandLink("admin_menu", "sub_menu"),
         }
         self._render_template("top_menu", context)
-        return
 
     def sub_menu(self):
         context = {"commandURLprefix": self.URLs["commandBase"]}
