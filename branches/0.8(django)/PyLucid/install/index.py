@@ -7,12 +7,8 @@ from django.db import connection
 from django.template import Template, Context, loader
 
 from PyLucid.models import Page
-#~ import __init__ as install_package
-from PyLucid import install as install_package
-
-
-
 from PyLucid.utils import check_pass
+from PyLucid import install as install_package
 
 
 
@@ -63,6 +59,7 @@ menu_template = """
     </li>
 {% endfor %}
 </ul>
+<hr />
 <h1>URL Info for '{{ domain }}':</h1>
 <table>
 {% for item in url_info %}
