@@ -8,8 +8,7 @@ except ImportError:
     print 'Sorry, you have to install the "MySQLdb" Package for Python'
 
 from PyLucid import settings
-from django.core.management import syncdb, disable_termcolors, _check_for_validation_errors, _get_table_list, \
-                        _get_installed_models, _emit_post_sync_signal, load_data
+from django.core.management import syncdb
 from django.utils import termcolors
 
 connection = MySQLdb.Connect(
