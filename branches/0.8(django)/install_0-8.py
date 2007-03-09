@@ -2,14 +2,8 @@
 # -*- coding: UTF-8 -*-
 
 import datetime, os
-try:
-    import MySQLdb
-except ImportError:
-    print 'Sorry, you have to install the "MySQLdb" Package for Python'
-
 
 os.environ['DJANGO_SETTINGS_MODULE'] = "PyLucid.settings"
-
 
 from PyLucid import settings
 from django.core.management import syncdb
@@ -44,7 +38,7 @@ def install_0_7_sql(command):
             try:
                 cursor.execute(SQLcommand)
             except Exception, e:
-                print "Error: '%s' in SQL-command!" % e
+                print "Error: '%s'" % e
                 return False
         return True
 
@@ -128,26 +122,29 @@ def patch_field_values(table_name, primary_key, field_name):
 
 if __name__ == "__main__":
     syncdb()
-    # install 0_7
     install_0_7_sql(v0_7_sql_data)
-    table_names = get_all_tables()
-    for table_name in table_names:
-        print "---", table_name
-        fields = get_table_fields(table_name)
 
-        date_fields = []
-        primary_key = None
-        for field in fields:
-            field_name = field[0]
-            field_type = field[1]
-            field_flag = field[3]
-            if field_flag == "PRI":
-                primary_key = field_name
-            if field_type != "datetime":
-                continue
+    # maybe dont' run it? ... it's not compatible with sqlite...
+    # or is it only a MySQL-Database fix?
+    if settings.DATABASE_ENGINE in ['mysql']:
+        table_names = get_all_tables()
+        for table_name in table_names:
+            print "---", table_name
+            fields = get_table_fields(table_name)
 
-            alter_table_field(table_name, field_name)
-            try:
-                patch_field_values(table_name, primary_key, field_name)
-            except Exception, e:
-                print 'Error %s' % e
+            date_fields = []
+            primary_key = None
+            for field in fields:
+                field_name = field[0]
+                field_type = field[1]
+                field_flag = field[3]
+                if field_flag == "PRI":
+                    primary_key = field_name
+                if field_type != "datetime":
+                    continue
+
+                alter_table_field(table_name, field_name)
+                try:
+                    patch_field_values(table_name, primary_key, field_name)
+                except Exception, e:
+                    print 'Error %s' % e
