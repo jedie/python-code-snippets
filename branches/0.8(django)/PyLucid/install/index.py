@@ -16,12 +16,14 @@ from PyLucid.utils import check_pass
 
 
 
-def get_members(obj, predicate, skip_name=[]):
+def get_members(obj, predicate, skip_name=[], skip_secret=True):
     result = []
 
     module_list = inspect.getmembers(obj, predicate)
     module_list = [i[0] for i in module_list]
     for module_name in module_list:
+        if skip_secret and module_name.startswith("_"):
+            continue
         if module_name in skip_name:
             continue
 
