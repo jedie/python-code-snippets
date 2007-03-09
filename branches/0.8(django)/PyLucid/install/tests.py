@@ -31,7 +31,7 @@ def inspectdb(request, install_pass):
     check_pass(install_pass)
     from django.core.management import inspectdb
 
-    # ToDo: anders drüber interieren und mit try-except umschließen.
+    # ToDo: anders interieren und mit try-except umschliessen.
     try:
         inspectdb_data = list(inspectdb())
     except Exception, e:
@@ -327,3 +327,45 @@ def evileval(request, install_pass):
     t = Template(python_input_form)
     html = t.render(context)
     return HttpResponse(html)
+
+def experiment1(request, install_pass):
+    """
+    temp experiment 1
+    """
+    check_pass(install_pass)
+    response = HttpResponse(mimetype= "text/plain")
+    
+    from pprint import pprint
+    
+    from django.core.management import dump_data
+    data = dump_data(app_labels = [], format="python")
+    
+    response.write(pprint(repr(data)))
+    return response
+
+def experiment2(request, install_pass):
+    """
+    temp experiment 2
+    """
+    check_pass(install_pass)
+    
+    response = HttpResponse(mimetype= "text/plain")
+    
+    from django.db.models import get_app, get_apps, get_models
+    from django.core import serializers
+    
+    app_list = get_apps()
+    
+    objects = []
+    for app in app_list:
+        for model in get_models(app):
+            query = model.objects.all()
+                
+            try:                
+                response.write(repr(query))
+            except Exception, e:
+                response.write("**** Error: %s" % e)
+                
+            response.write("\n\n")
+            
+    return response
