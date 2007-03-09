@@ -35,7 +35,7 @@ def inspectdb(request, install_pass):
     try:
         inspectdb_data = list(inspectdb())
     except Exception, e:
-        inspectdb_data = "inspect db error: %s" % e
+        inspectdb_data = ["inspect db error: %s" % e]
 
     t = Template(inspectdb_template)
     c = Context({
