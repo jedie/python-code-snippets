@@ -31,7 +31,11 @@ def inspectdb(request, install_pass):
     check_pass(install_pass)
     from django.core.management import inspectdb
 
-    inspectdb_data = list(inspectdb())
+    # ToDo: anders drüber interieren und mit try-except umschließen.
+    try:
+        inspectdb_data = list(inspectdb())
+    except Exception, e:
+        inspectdb_data = "inspect db error: %s" % e
 
     t = Template(inspectdb_template)
     c = Context({
