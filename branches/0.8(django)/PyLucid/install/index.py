@@ -6,6 +6,7 @@ from django.http import HttpResponse
 from django.db import connection
 from django.template import Template, Context, loader
 
+from PyLucid import settings
 from PyLucid.models import Page
 from PyLucid.utils import check_pass
 from PyLucid import install as install_package
@@ -59,17 +60,6 @@ menu_template = """
     </li>
 {% endfor %}
 </ul>
-<hr />
-<h1>URL Info for '{{ domain }}':</h1>
-<table>
-{% for item in url_info %}
-    <tr>
-        <td>{{ item.0|escape }}</td>
-        <td>{{ item.1|escape }}</td>
-    </tr>
-{% endfor %}
-</table>
-
 {% endblock %}
 """
 #
@@ -95,12 +85,10 @@ def index(request, install_pass):
 
         module_list[no]["views"] = members
 
-    from PyLucid.urls import urls
-
     t = Template(menu_template)
     c = Context({
         "module_list": module_list,
-        "url_info": urls,
+        "version": settings.PYLUCID_VERSION_STRING,
     })
     html = t.render(c)
     return HttpResponse(html)
