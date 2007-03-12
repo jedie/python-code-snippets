@@ -14,7 +14,7 @@ from django.template import Template, Context, loader
 
 from django import newforms as forms
 
-   
+
 inspectdb_template = """
 {% extends "PyLucid/install/base.html" %}
 {% block content %}
@@ -260,13 +260,13 @@ def evileval(request, install_pass):
     4. a Python web-shell
     """
     check_pass(install_pass)
-    
+
     if not settings.INSTALL_EVILEVAL:
         # Feature is not enabled.
         t = Template(access_deny)
         html = t.render(Context({}))
         return HttpResponse(html)
-      
+
     if "codeblock" in request.POST:
         # Form has been sended
         init_values = request.POST.copy()
@@ -279,19 +279,19 @@ def evileval(request, install_pass):
                 "    print 'This is cool', i"
             ),
         }
-    
+
     eval_form = PythonEvalForm(init_values)
     context = Context({
         "sysversion": sys.version,
         "PythonEvalForm": eval_form.as_p(),
         "objectlist": ["request"],
     })
-    
+
     if "codeblock" in request.POST and eval_form.is_valid():
         # a codeblock was submited and the form is valid -> run the code
         codeblock = eval_form.clean_data["codeblock"]
         codeblock = codeblock.replace("\r\n", "\n") # Windows
-        
+
         start_time = time.time()
 
         stderr = StringIO.StringIO()
@@ -307,23 +307,20 @@ def evileval(request, install_pass):
                 exec code in globals, locals
         except:
             import traceback
-            etype, value, tb = sys.exc_info()
-            tb = tb.tb_next
-            msg = ''.join(traceback.format_exception(etype, value, tb))
-            sys.stdout.write(msg)
+            sys.stdout.write(traceback.format_exc())
 
         output = stdout_redirector.get()
         stderr = stderr.getvalue()
         if stderr != "":
             output += "\n---\nError:" + stderr
-            
+
         if output == "":
             output = "[No output]"
-            
+
         context["output"] = cgi.escape(output)
 
         context["duration"] = time.time() - start_time
-    
+
     t = Template(python_input_form)
     html = t.render(context)
     return HttpResponse(html)
@@ -334,12 +331,12 @@ def experiment1(request, install_pass):
     """
     check_pass(install_pass)
     response = HttpResponse(mimetype= "text/plain")
-    
+
     from pprint import pprint
-    
+
     from django.core.management import dump_data
     data = dump_data(app_labels = [], format="python")
-    
+
     response.write(pprint(repr(data)))
     return response
 
@@ -348,24 +345,24 @@ def experiment2(request, install_pass):
     temp experiment 2
     """
     check_pass(install_pass)
-    
+
     response = HttpResponse(mimetype= "text/plain")
-    
+
     from django.db.models import get_app, get_apps, get_models
     from django.core import serializers
-    
+
     app_list = get_apps()
-    
+
     objects = []
     for app in app_list:
         for model in get_models(app):
             query = model.objects.all()
-                
-            try:                
+
+            try:
                 response.write(repr(query))
             except Exception, e:
                 response.write("**** Error: %s" % e)
-                
+
             response.write("\n\n")
-            
+
     return response
