@@ -90,6 +90,8 @@ class Page(models.Model):
     def get_lastupdatetime_string(self):
         return self.__strftime(self.lastupdatetime)
 
+#______________________________________________________________________________
+
 class Archive(models.Model):
     id = models.IntegerField(primary_key=True)
     userID = models.IntegerField()
@@ -104,6 +106,8 @@ class Archive(models.Model):
     class Meta:
         db_table = '%sarchive' % TABLE_PREFIX
         verbose_name_plural = 'Archive'
+
+#______________________________________________________________________________
 
 class Group(models.Model):
     id = models.IntegerField(primary_key=True)
@@ -121,43 +125,7 @@ class Group(models.Model):
     class Meta:
         db_table = '%sgroup' % TABLE_PREFIX
 
-class L10N(models.Model):
-    id = models.IntegerField(primary_key=True)
-    lang = models.TextField()
-    varName = models.CharField(maxlength=150)
-    value = models.CharField(maxlength=255)
-    description = models.CharField(maxlength=255)
-
-    class Admin:
-        pass
-
-    class Meta:
-        db_table = '%sl10n' % TABLE_PREFIX
-        verbose_name_plural = 'L10N'
-
-class Log(models.Model):
-    id = models.IntegerField(primary_key=True)
-    timestamp = models.DateTimeField(null=True, blank=True)
-    sid = models.CharField(maxlength=150)
-    user_name = models.CharField(blank=True, maxlength=150)
-    ip = models.CharField(blank=True, maxlength=150)
-    domain = models.CharField(blank=True, maxlength=150)
-    message = models.CharField(maxlength=255)
-    typ = models.CharField(maxlength=150)
-    status = models.CharField(maxlength=36)
-
-    class Admin:
-        list_display = (
-            "timestamp", "user_name", "ip", "domain", "message",
-            "typ", "status"
-        )
-        list_display_links = ("message",)
-        list_filter = ("sid","user_name", "ip", "domain", "typ", "status")
-        ordering = ("-timestamp",)
-        date_hierarchy = 'timestamp'
-
-    class Meta:
-        db_table = '%slog' % TABLE_PREFIX
+#______________________________________________________________________________
 
 class Markup(models.Model):
     id = models.IntegerField(primary_key=True)
@@ -169,6 +137,8 @@ class Markup(models.Model):
 
     class Meta:
         db_table = '%smarkup' % TABLE_PREFIX
+
+#______________________________________________________________________________
 
 class Md5User(models.Model):
     id = models.IntegerField(primary_key=True)
@@ -189,6 +159,8 @@ class Md5User(models.Model):
         db_table = '%smd5user' % TABLE_PREFIX
         verbose_name_plural = 'MD5 Users'
 
+#______________________________________________________________________________
+
 class ObjectCache(models.Model):
     id = models.CharField(primary_key=True, maxlength=120)
     expiry_time = models.DateTimeField()
@@ -202,6 +174,8 @@ class ObjectCache(models.Model):
     class Meta:
         db_table = '%sobject_cache' % TABLE_PREFIX
         verbose_name_plural = 'Object Cache'
+
+#______________________________________________________________________________
 
 class PagesInternal(models.Model):
     name = models.CharField(primary_key=True, maxlength=150)
@@ -229,6 +203,8 @@ class PagesInternal(models.Model):
         
     def __str__(self):
         return self.name
+
+#______________________________________________________________________________
 
 class Plugindata(models.Model):
     id = models.IntegerField(primary_key=True)
@@ -260,6 +236,8 @@ class Plugindata(models.Model):
     def __repr__(self):
         return "<Plugindata: %s, id:%s>" % (self.method_name, self.plugin_id)
 
+#______________________________________________________________________________
+
 class Plugin(models.Model):
     id = models.IntegerField(primary_key=True)
     package_name = models.CharField(maxlength=255)
@@ -285,6 +263,8 @@ class Plugin(models.Model):
     def __str__(self):
         return self.package_name
 
+#______________________________________________________________________________
+
 class Preference(models.Model):
     id = models.IntegerField(primary_key=True)
     pluginID = models.IntegerField()
@@ -308,19 +288,7 @@ class Preference(models.Model):
     def __str__(self):
         return "%s (%s)" % (self.varName, self.name)
 
-class SessionData(models.Model):
-    session_id = models.CharField(maxlength=96)
-    expiry_time = models.DateTimeField()
-    ip = models.CharField(maxlength=45)
-    domain_name = models.CharField(maxlength=150)
-    session_data = models.TextField()
-
-    class Admin:
-        pass
-
-    class Meta:
-        db_table = '%ssession_data' % TABLE_PREFIX
-        verbose_name_plural = 'Session Data'
+#______________________________________________________________________________
 
 class Style(models.Model):
     id = models.IntegerField(primary_key=True)
@@ -339,6 +307,8 @@ class Style(models.Model):
     class Meta:
         db_table = '%sstyle' % TABLE_PREFIX
 
+#______________________________________________________________________________
+
 class TemplateEngine(models.Model):
     id = models.IntegerField(primary_key=True)
     name = models.CharField(unique=True, maxlength=150)
@@ -349,6 +319,8 @@ class TemplateEngine(models.Model):
 
     class Meta:
         db_table = '%stemplate_engine' % TABLE_PREFIX
+
+#______________________________________________________________________________
 
 class Template(models.Model):
     id = models.IntegerField(primary_key=True)
@@ -366,16 +338,3 @@ class Template(models.Model):
     class Meta:
         db_table = '%stemplate' % TABLE_PREFIX
 
-class UserGroup(models.Model):
-    id = models.IntegerField(primary_key=True)
-    userID = models.IntegerField()
-    groupID = models.IntegerField()
-    lastupdatetime = models.DateTimeField()
-    lastupdateby = models.IntegerField(null=True, blank=True)
-    createtime = models.DateTimeField()
-
-    class Admin:
-        pass
-
-    class Meta:
-        db_table = '%suser_group' % TABLE_PREFIX

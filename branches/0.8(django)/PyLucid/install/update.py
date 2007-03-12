@@ -52,10 +52,35 @@ def update(request, install_pass):
     check_pass(install_pass)
     
     response = HttpResponse(mimetype="text/plain")
-    response.write("update PyLucid database:\n")
+    response.write("\nupdate PyLucid database:\n")
 
     from django.db import connection
     cursor = connection.cursor()
+    
+    def display_info(txt):
+        response.write("\n\n")
+        response.write("%s:\n" % txt)
+        response.write("-"*79)
+        response.write("\n")
+        
+    
+    def verbose_execute(SQLcommand):
+        response.write("%s..." % SQLcommand)
+        try:
+            cursor.execute(SQLcommand)
+        except Exception, e:
+            response.write("Error: %s\n" % e)
+        else:
+            response.write("OK\n")
+
+    display_info("Drop obsolete tables")
+
+    for tablename in ("l10n", "user_group", "log", "session_data"):
+        tablename = TABLE_PREFIX + tablename
+        SQLcommand = "DROP TABLE %s;" % tablename
+        verbose_execute(SQLcommand)
+        
+    display_info("rename tables")
 
     tablenames = (
         ("pages",  "page"),
@@ -75,13 +100,9 @@ def update(request, install_pass):
         destination = TABLE_PREFIX + destination
 
         SQLcommand = "RENAME TABLE %s TO %s;" % (source, destination)
-        response.write("%s..." % SQLcommand)
-        try:
-            cursor.execute(SQLcommand)
-        except Exception, e:
-            response.write("Error: %s\n" % e)
-        else:
-            response.write("OK\n")
+        verbose_execute(SQLcommand)
+
+    response.write("\n\nupdate done. (Please go back)")
 
     return response
 
