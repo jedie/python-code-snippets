@@ -43,6 +43,15 @@ class PageStatsMiddleware(object):
                     'overall_time' : time() - start_overall,
                     'queries' : queries,
                 }
-                response.replace_tag(TAG, stat_info)
+                try:
+                    response.replace_tag(TAG, stat_info)
+                except KeyError:
+                    # _install section
+                    mimetype = response.headers['Content-Type']
+                    if mimetype == "text/html":
+                        info = "\n<hr /><small><p>%s</p></small>\n" % stat_info
+                    else:
+                        info = "\n---\n%s\n" % stat_info
+                    response.write(info)
 
         return response

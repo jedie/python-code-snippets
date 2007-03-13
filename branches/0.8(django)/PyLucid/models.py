@@ -1,7 +1,13 @@
+from datetime import datetime
+
 from django.db import models
 
 from PyLucid.settings import TABLE_PREFIX
 
+def lazy_date(obj):
+    if isinstance(obj, datetime):
+        return obj
+    return models.LazyDate()
 
 class Page(models.Model):
     """
@@ -117,7 +123,16 @@ class Group(models.Model):
     description = models.CharField(maxlength=150)
     lastupdatetime = models.DateTimeField()
     lastupdateby = models.IntegerField(null=True, blank=True)
-    createtime = models.DateTimeField()
+    createtime = models.DateTimeField(default=models.LazyDate())
+
+    def save(self):
+        print "save..."
+        print self.lastupdatetime
+        print self.createtime
+        self.lastupdatetime = lazy_date(self.lastupdatetime)
+        self.createtime = lazy_date(self.createtime)
+
+        super(Group, self).save()
 
     class Admin:
         pass
@@ -148,9 +163,9 @@ class Md5User(models.Model):
     md5checksum = models.CharField(maxlength=192)
     salt = models.IntegerField()
     admin = models.IntegerField()
-    lastupdatetime = models.DateTimeField()
+    lastupdatetime = models.DateTimeField(null=True)
     lastupdateby = models.IntegerField(null=True, blank=True)
-    createtime = models.DateTimeField()
+    createtime = models.DateTimeField(null=True)
 
     class Admin:
         pass
@@ -163,7 +178,7 @@ class Md5User(models.Model):
 
 class ObjectCache(models.Model):
     id = models.CharField(primary_key=True, maxlength=120)
-    expiry_time = models.DateTimeField()
+    expiry_time = models.DateTimeField(null=True)
     request_ip = models.CharField(blank=True, maxlength=45)
     user_id = models.IntegerField(null=True, blank=True)
     pickled_data = models.TextField(blank=True)
@@ -183,13 +198,13 @@ class PagesInternal(models.Model):
     method_id = models.IntegerField()
     template_engine = models.IntegerField(null=True, blank=True)
     markup = models.IntegerField(null=True, blank=True)
-    lastupdatetime = models.DateTimeField()
+    lastupdatetime = models.DateTimeField(null=True)
     lastupdateby = models.IntegerField()
     content_html = models.TextField()
     content_js = models.TextField()
     content_css = models.TextField()
     description = models.TextField()
-    createtime = models.DateTimeField()
+    createtime = models.DateTimeField(null=True)
 
     class Admin:
         list_display = ("name", "plugin_id", "description")
@@ -292,8 +307,8 @@ class Preference(models.Model):
 
 class Style(models.Model):
     id = models.IntegerField(primary_key=True)
-    createtime = models.DateTimeField()
-    lastupdatetime = models.DateTimeField()
+    createtime = models.DateTimeField(null=True)
+    lastupdatetime = models.DateTimeField(null=True)
     lastupdateby = models.IntegerField()
     plugin_id = models.IntegerField(null=True, blank=True)
     name = models.CharField(unique=True, maxlength=150)
@@ -328,8 +343,8 @@ class Template(models.Model):
     lastupdateby = models.IntegerField()
     description = models.TextField()
     content = models.TextField()
-    lastupdatetime = models.DateTimeField()
-    createtime = models.DateTimeField()
+    lastupdatetime = models.DateTimeField(null=True)
+    createtime = models.DateTimeField(null=True)
 
     class Admin:
         list_display = ("id", "name", "description")

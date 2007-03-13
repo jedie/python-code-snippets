@@ -36,7 +36,11 @@ class PyLucidResponse(HttpResponse):
     def __init__(self, request, *args, **kwargs):
         super(PyLucidResponse, self).__init__(*args, **kwargs)
         self.request = request
-        self.page_msg = request.page_msg
+        try:
+            self.page_msg = request.page_msg
+        except AttributeError:
+            # Install?`
+            self.page_msg = sys.stderr
         self.request.tag_info = {}
 
     def isatty(self):

@@ -325,44 +325,34 @@ def evileval(request, install_pass):
     html = t.render(context)
     return HttpResponse(html)
 
-def experiment1(request, install_pass):
+
+
+def sql_info(request, install_pass):
     """
-    temp experiment 1
-    """
-    check_pass(install_pass)
-    response = HttpResponse(mimetype= "text/plain")
-
-    from pprint import pprint
-
-    from django.core.management import dump_data
-    data = dump_data(app_labels = [], format="python")
-
-    response.write(pprint(repr(data)))
-    return response
-
-def experiment2(request, install_pass):
-    """
-    temp experiment 2
+    SQL info
     """
     check_pass(install_pass)
 
     response = HttpResponse(mimetype= "text/plain")
-
-    from django.db.models import get_app, get_apps, get_models
-    from django.core import serializers
+    
+    from django.core.management import get_sql_create, get_custom_sql, get_sql_indexes
+    from django.db.models import get_apps
 
     app_list = get_apps()
+    
+    def write_lines(lines):
+        for line in lines:
+            response.write("%s\n" % line)
 
-    objects = []
     for app in app_list:
-        for model in get_models(app):
-            query = model.objects.all()
+        response.write("**** sql_create:\n")
+        write_lines(get_sql_create(app))
+        response.write("**** get_custom_sql:\n")
+        write_lines(get_custom_sql(app))
+        response.write("**** get_sql_indexes:\n")
+        write_lines(get_sql_indexes(app))
 
-            try:
-                response.write(repr(query))
-            except Exception, e:
-                response.write("**** Error: %s" % e)
-
-            response.write("\n\n")
+        response.write("-"*79)
+        response.write("\n\n")
 
     return response
