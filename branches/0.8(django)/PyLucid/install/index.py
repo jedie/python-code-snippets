@@ -78,7 +78,7 @@ def index(request, install_pass):
         module_obj = getattr(install_package, module_name)
         members = get_members(
             obj=module_obj, predicate=inspect.isfunction,
-            skip_name=["check_pass"]
+            skip_name=["check_pass", "render"]
         )
 
         module_list[no]["views"] = members
