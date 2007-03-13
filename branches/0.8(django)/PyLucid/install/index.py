@@ -1,11 +1,9 @@
 
 import os, sys, cgi, inspect
 
-
-from django.http import HttpResponse
 from django.db import connection
-from django.template import Template, Context, loader
 
+from PyLucid.install.tools import render
 from PyLucid import settings
 from PyLucid.models import Page
 from PyLucid.utils import check_pass
@@ -72,7 +70,7 @@ def index(request, install_pass):
 
     module_list = get_members(
         obj=install_package, predicate=inspect.ismodule,
-        skip_name=["urls", "index"]
+        skip_name=["urls", "index", "tools"]
     )
     for no, module_data in enumerate(module_list):
         module_name = module_data["name"]
@@ -85,13 +83,10 @@ def index(request, install_pass):
 
         module_list[no]["views"] = members
 
-    t = Template(menu_template)
-    c = Context({
-        "module_list": module_list,
-        "version": settings.PYLUCID_VERSION_STRING,
-    })
-    html = t.render(c)
-    return HttpResponse(html)
+    context = {
+        "module_list": module_list
+    }
+    return render(context, menu_template)
 
 
 

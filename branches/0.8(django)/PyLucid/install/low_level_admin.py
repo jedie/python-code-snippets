@@ -8,12 +8,11 @@ http://code.djangoproject.com/wiki/CookBookScriptsMiniFlush
 
 import sys, os, StringIO, pickle
 
+from PyLucid.install.tools import render
 from PyLucid.utils import check_pass
 from PyLucid.settings import TABLE_PREFIX
 from PyLucid.system.response import PyLucidResponse
 
-from django.http import HttpResponse
-from django.template import Template, Context, loader
 from django import newforms as forms
 
 from django.core import serializers
@@ -65,13 +64,12 @@ def dump(request, install_pass):
     dump_form = DumpForm(init_values)
     dump_form_html = dump_form.as_p()
     
+    context = {
+        "DumpForm": dump_form_html,
+    }
     if (not "format" in request.POST) or (not dump_form.is_valid()):
-        context = Context({
-            "DumpForm": dump_form_html,
-        })
-        t = Template(dump_template)
-        html = t.render(context)
-        return HttpResponse(html)
+        # Requested the first time -> display the form
+        return render(context, dump_template)
     
     format = dump_form.clean_data["format"]
     write_file = dump_form.clean_data["write_file"]
@@ -86,6 +84,7 @@ def dump(request, install_pass):
     serializers.get_serializer(format)
     
     fixture_filename = "PyLucid/fixtures/initial_data.%s" % format
+    context["file_name"] = fixture_filename
     if write_file:
         output = ["Open output file '%s'..." % fixture_filename]
         try:
@@ -130,12 +129,6 @@ def dump(request, install_pass):
         response.write(db_data)
         return response
 
-    context = Context({
-        "DumpForm": dump_form_html,
-        "output": "".join(output),
-        "file_name": fixture_filename,
-    })
-    t = Template(dump_template)
-    html = t.render(context)
-    return HttpResponse(html)
+    context["output"] = "".join(output)
+    return render(context, dump_template)
 
