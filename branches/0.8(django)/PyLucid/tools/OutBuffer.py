@@ -59,6 +59,9 @@ class OutBuffer(object):
 
     def flush(self):
         return
+    
+    def isatty(self):
+        return False
 
 
 class Redirector(object):
