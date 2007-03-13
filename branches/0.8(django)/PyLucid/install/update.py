@@ -1,6 +1,6 @@
 
 """
-update
+2. update
 
 sollte ich mir mal ansehen:
 http://code.djangoproject.com/wiki/CookBookScriptsMiniFlush
@@ -16,38 +16,13 @@ from PyLucid.system.response import PyLucidResponse
 
 from django.http import HttpResponse
 
-#______________________________________________________________________________
 
-def syncdb(request, install_pass):
-    """
-    django syncdb
-    """
-    check_pass(install_pass)
-
-    response = PyLucidResponse(request, mimetype="text/plain")
-    old_stdout = sys.stdout
-    old_stderr = sys.stderr
-    sys.stdout = response
-    sys.stderr = response
-    print "django syncdb..."
-    try:
-        from django.core import management
-        management.syncdb(verbosity=2, interactive=False)
-    except Exception, e:
-        sys.stderr.write("Error: %s\n" % e)
-
-    print "done."
-
-    sys.stdout = old_stdout
-    sys.stderr = old_stderr
-
-    return response
 
 #______________________________________________________________________________
 
 def update(request, install_pass):
     """
-    update DB tables from v0.7.2 to django PyLucid v0.8
+    1. update DB tables from v0.7.2 to django PyLucid v0.8
     """
     check_pass(install_pass)
     
@@ -137,7 +112,7 @@ def _display_warnings(response, content):
     
 def update_templates(request, install_pass):
     """
-    convert jinja to django templates
+    2. convert jinja to django templates
     """
     check_pass(install_pass)
 

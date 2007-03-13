@@ -1,2 +1,2 @@
 
-from PyLucid.install import tests, low_level_admin, update
+from PyLucid.install import install, tests, low_level_admin, update
