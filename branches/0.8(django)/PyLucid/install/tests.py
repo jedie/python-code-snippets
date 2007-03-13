@@ -1,6 +1,6 @@
 
 """
-2. some tests
+4. some tests
 """
 
 import inspect, cgi, sys, time, StringIO
