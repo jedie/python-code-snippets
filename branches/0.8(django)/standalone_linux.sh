@@ -1,14 +1,12 @@
 #!/bin/sh
 
-# Startet einen lokalen Test-Server.
-
 #export DJANGO_SETTINGS_MODULE=PyLucid.settings
 
 while :
 do
-    echo 'Starte Webserver...'
+    echo 'Starting django development server...'
 
-    django-admin.py runserver --settings=PyLucid.settings --pythonpath=${PWD}
+    python ./django/bin/django-admin.py runserver --settings=PyLucid.settings --pythonpath=.
 
     ping localhost -n 1>NUL
 

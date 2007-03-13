@@ -1,20 +1,11 @@
 @echo off
 
-REM Startet einen lokalen Test-Server.
-
-REM Evtl. muß der Pfad zur python.exe angepasst werden, wenn
-REM der Python-Interpreter nicht im Pfad ist!
-
 REM ~ set DJANGO_SETTINGS_MODULE=PyLucid.settings
 
 :loop
-    echo Starte Webserver...
+    echo Starting django development server...
 
-    REM für Python 2.4:
-    python .\django\bin\django-admin.py runserver --settings=PyLucid.settings
-
-    REM für Python <2.4:
-    REM python PyLucid_app_withBackports.py
+    python .\django\bin\django-admin.py runserver --settings=PyLucid.settings --pythonpath=.
 
     echo.
     echo Restart des Server:
