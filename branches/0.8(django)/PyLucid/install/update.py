@@ -28,7 +28,7 @@ def update(request, install_pass):
     
     response = HttpResponse(mimetype="text/plain")
     response.write("\nupdate PyLucid database:\n")
-
+    
     from django.db import connection
     cursor = connection.cursor()
     
@@ -48,9 +48,12 @@ def update(request, install_pass):
         else:
             response.write("OK\n")
 
+    SQLcommand = "ALTER TABLE pylucid_plugin DROP plugin_cfg;"
+    verbose_execute(SQLcommand)
+
     display_info("Drop obsolete tables")
 
-    for tablename in ("l10n", "user_group", "log", "session_data"):
+    for tablename in ("l10n", "group", "user_group", "log", "session_data"):
         tablename = TABLE_PREFIX + tablename
         SQLcommand = "DROP TABLE %s;" % tablename
         verbose_execute(SQLcommand)

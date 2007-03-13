@@ -31,7 +31,7 @@ class Page(models.Model):
     keywords = models.TextField(blank=True, maxlength=255, help_text="Keywords for the html header.")
     description = models.TextField(blank=True, maxlength=255, help_text="Text for the html header.")
 
-    createtime = models.DateTimeField()
+    createtime = models.DateTimeField(null=True, blank=True)
     lastupdatetime = models.DateTimeField(null=True, blank=True)
     lastupdateby = models.IntegerField(null=True, blank=True)
 
@@ -115,30 +115,30 @@ class Archive(models.Model):
 
 #______________________________________________________________________________
 
-class Group(models.Model):
-    id = models.IntegerField(primary_key=True)
-    pluginID = models.IntegerField()
-    name = models.CharField(unique=True, maxlength=150)
-    section = models.CharField(maxlength=150)
-    description = models.CharField(maxlength=150)
-    lastupdatetime = models.DateTimeField()
-    lastupdateby = models.IntegerField(null=True, blank=True)
-    createtime = models.DateTimeField(default=models.LazyDate())
-
-    def save(self):
-        print "save..."
-        print self.lastupdatetime
-        print self.createtime
-        self.lastupdatetime = lazy_date(self.lastupdatetime)
-        self.createtime = lazy_date(self.createtime)
-
-        super(Group, self).save()
-
-    class Admin:
-        pass
-
-    class Meta:
-        db_table = '%sgroup' % TABLE_PREFIX
+#class Group(models.Model):
+#    id = models.IntegerField(primary_key=True)
+#    pluginID = models.IntegerField()
+#    name = models.CharField(unique=True, maxlength=150)
+#    section = models.CharField(maxlength=150)
+#    description = models.CharField(maxlength=150)
+#    lastupdatetime = models.DateTimeField()
+#    lastupdateby = models.IntegerField(null=True, blank=True)
+#    createtime = models.DateTimeField(default=models.LazyDate())
+#
+#    def save(self):
+#        print "save..."
+#        print self.lastupdatetime
+#        print self.createtime
+#        self.lastupdatetime = lazy_date(self.lastupdatetime)
+#        self.createtime = lazy_date(self.createtime)
+#
+#        super(Group, self).save()
+#
+#    class Admin:
+#        pass
+#
+#    class Meta:
+#        db_table = '%sgroup' % TABLE_PREFIX
 
 #______________________________________________________________________________
 
@@ -225,9 +225,9 @@ class Plugindata(models.Model):
     id = models.IntegerField(primary_key=True)
     plugin_id = models.IntegerField()
     method_name = models.CharField(maxlength=150)
-    internal_page_info = models.CharField(blank=True, maxlength=255)
-    menu_section = models.CharField(blank=True, maxlength=255)
-    menu_description = models.CharField(blank=True, maxlength=255)
+    internal_page_info = models.CharField(null=True, blank=True, maxlength=255)
+    menu_section = models.CharField(null=True, blank=True, maxlength=255)
+    menu_description = models.CharField(null=True, blank=True, maxlength=255)
     must_admin = models.IntegerField()
     must_login = models.IntegerField()
     has_Tags = models.IntegerField()
@@ -264,8 +264,7 @@ class Plugin(models.Model):
     long_description = models.TextField(blank=True)
     active = models.IntegerField()
     debug = models.IntegerField()
-    SQL_deinstall_commands = models.TextField(blank=True)
-    plugin_cfg = models.TextField(blank=True)
+    SQL_deinstall_commands = models.TextField(null=True, blank=True)
 
     class Admin:
         list_display = ("package_name", "description", "version")
@@ -312,7 +311,7 @@ class Style(models.Model):
     lastupdateby = models.IntegerField()
     plugin_id = models.IntegerField(null=True, blank=True)
     name = models.CharField(unique=True, maxlength=150)
-    description = models.TextField(blank=True)
+    description = models.TextField(null=True, blank=True)
     content = models.TextField()
 
     class Admin:
