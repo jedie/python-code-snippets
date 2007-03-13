@@ -80,20 +80,26 @@ INSTALLED_APPS = (
 )
 
 #_____________________________________________________________________________
-# PyLucid settings
-
-TABLE_PREFIX = "pylucid_"
+# PyLucid settings - does not have to be changed!
 
 # Some special URL prefixes
 INSTALL_URL_PREFIX = "_install"
 COMMAND_URL_PREFIX = "_command"
 
-# Install Password you should put this in the _install URL
-INSTALL_PASS = "12345678"
-
-# Enable the _install Python Web Shell Feature?
-INSTALL_EVILEVAL = False
+# How are the DB initial data fixtures stored?
+INSTALL_DATA_DIR = "PyLucid/fixtures"
 
 # PyLucid Version String
 PYLUCID_VERSION = (0,8,0,"pre-alpha")
 PYLUCID_VERSION_STRING = "0.8.0pre-alpha"
+
+#_____________________________________________________________________________
+# PyLucid settings - can be changed!
+
+TABLE_PREFIX = "pylucid_"
+
+# Enable the _install Python Web Shell Feature?
+INSTALL_EVILEVAL = False
+
+# Install Password you should put this in the _install URL
+INSTALL_PASS = "12345678"
