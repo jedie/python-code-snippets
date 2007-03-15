@@ -3,46 +3,68 @@
 4. some tests
 """
 
-import inspect, cgi, sys, time, StringIO
-
-from PyLucid import settings
-from PyLucid.utils import check_pass
+from PyLucid.install.BaseInstall import BaseInstall
 from PyLucid.tools.OutBuffer import Redirector
-
-from django.http import HttpResponse
-from django.template import Template, Context, loader
 
 from django import newforms as forms
 
+import inspect, cgi, sys, time, StringIO
 
-inspectdb_template = """
-{% extends "PyLucid/install/base.html" %}
-{% block content %}
-<h1>inspectdb</h1>
-<pre>
-{% for line in inspectdb %}{{ line }}<br />{% endfor %}
-</pre>
-{% endblock %}
-"""
+
+
+#______________________________________________________________________________
+
+class InspectDB(BaseInstall):
+    def view(self):
+        from django.core.management import inspectdb
+    
+        # ToDo: anders interieren und mit try-except umschliessen.
+        try:
+            output = "\n".join(inspectdb())
+        except Exception, e:
+            output = "inspect db error: %s" % e
+    
+        return self._simple_render(output, headline="inspectdb")
+
 def inspectdb(request, install_pass):
     """
     1. inspect the database
     """
-    check_pass(install_pass)
-    from django.core.management import inspectdb
+    return InspectDB(request, install_pass).view()
+    
+#______________________________________________________________________________
 
-    # ToDo: anders interieren und mit try-except umschliessen.
-    try:
-        inspectdb_data = list(inspectdb())
-    except Exception, e:
-        inspectdb_data = ["inspect db error: %s" % e]
+class SQLInfo(BaseInstall):
+    def view(self):
+        output = []
+        
+        from django.core.management import get_sql_create, get_custom_sql, get_sql_indexes
+        from django.db.models import get_apps
+    
+        app_list = get_apps()
+        
+        def write_lines(lines):
+            for line in lines:
+                output.append("%s\n" % line)
+    
+        for app in app_list:
+            output.append("**** sql_create:\n")
+            write_lines(get_sql_create(app))
+            output.append("**** get_custom_sql:\n")
+            write_lines(get_custom_sql(app))
+            output.append("**** get_sql_indexes:\n")
+            write_lines(get_sql_indexes(app))
+    
+            output.append("-"*79)
+            output.append("\n\n")
+            
+        return self._simple_render(output, headline="SQL info")
+    
+def sql_info(request, install_pass):
+    "2. SQL info"
+    return SQLInfo(request, install_pass).view()
 
-    t = Template(inspectdb_template)
-    c = Context({
-        "inspectdb": inspectdb_data,
-    })
-    html = t.render(c)
-    return HttpResponse(html)
+#______________________________________________________________________________
 
 info_template = """
 {% extends "PyLucid/install/base.html" %}
@@ -110,72 +132,67 @@ info_template = """
 
 {% endblock %}
 """
+class Info(BaseInstall):
+    def view(self):
+        from PyLucid import settings
+#        from PyLucid.db import DB_Wrapper
+#        import sys
+#        db = DB_Wrapper(sys.stderr)#request.page_msg)
+#        db_info = [
+#            ("API", "%s v%s" % (db.dbapi.__name__, db.dbapi.__version__)),
+#            ("Server Version", "%s (%s)" % (db.server_version, db.RAWserver_version)),
+#            ("paramstyle", db.paramstyle),
+#            ("placeholder", db.placeholder),
+#            ("table prefix", db.tableprefix),
+#        ]
+    
+        self.context["objects"] = []
+        for item in dir(self.request):
+            if not item.startswith("__"):
+                self.context["objects"].append("request.%s" % item)
+    
+        self.context["request_meta"] = []
+        for key in sorted(self.request.META):
+            self.context["request_meta"].append(
+                (key, self.request.META[key])
+            )
+    
+        def get_obj_infos(obj):
+            info = []
+            for obj_name in dir(obj):
+                if obj_name.startswith("_"):
+                    continue
+    
+                try:
+                    current_obj = getattr(obj, obj_name)
+                except Exception, e:
+                    etype = sys.exc_info()[0]
+                    info.append((obj_name, "[%s: %s]" % (etype, cgi.escape(str(e)))))
+                    continue
+    
+                if not isinstance(current_obj, (basestring, int, tuple, bool, dict)):
+                    #~ print ">>>Skip:", obj_name, type(current_obj)
+                    continue
+                info.append((obj_name, current_obj))
+            info.sort()
+            return info
+        self.context["current_settings"] = get_obj_infos(settings)
+        
+        self.context["user_info"] = get_obj_infos(self.request.user)
+    
+        from django.template import RequestContext
+        self.context["request_context"] = RequestContext(self.request)
+    
+        return self._render(info_template)
+
 def info(request, install_pass):
     """
-    2. Display some information (for developers)
+    3. Display some information (for developers)
     """
-    check_pass(install_pass)
+    return Info(request, install_pass).view()
 
-    from PyLucid.db import DB_Wrapper
-    import sys
-    db = DB_Wrapper(sys.stderr)#request.page_msg)
-    db_info = [
-        ("API", "%s v%s" % (db.dbapi.__name__, db.dbapi.__version__)),
-        ("Server Version", "%s (%s)" % (db.server_version, db.RAWserver_version)),
-        ("paramstyle", db.paramstyle),
-        ("placeholder", db.placeholder),
-        ("table prefix", db.tableprefix),
-    ]
 
-    objects = []
-    for item in dir(request):
-        if not item.startswith("__"):
-            objects.append("request.%s" % item)
-
-    request_meta = []
-    for key in sorted(request.META):
-        request_meta.append(
-            (key, request.META[key])
-        )
-
-    def get_obj_infos(obj):
-        info = []
-        for obj_name in dir(obj):
-            if obj_name.startswith("_"):
-                continue
-
-            try:
-                current_obj = getattr(obj, obj_name)
-            except Exception, e:
-                etype = sys.exc_info()[0]
-                info.append((obj_name, "[%s: %s]" % (etype, cgi.escape(str(e)))))
-                continue
-
-            if not isinstance(current_obj, (basestring, int, tuple, bool, dict)):
-                #~ print ">>>Skip:", obj_name, type(current_obj)
-                continue
-            info.append((obj_name, current_obj))
-        info.sort()
-        return info
-
-    current_settings = get_obj_infos(settings)
-    user_info = get_obj_infos(request.user)
-    #~ print request.user.is_superuser
-
-    from django.template import RequestContext
-    request_context = RequestContext(request)
-
-    t = Template(info_template)
-    c = Context({
-        "db_info": db_info,
-        "current_settings": current_settings,
-        "user_info": user_info,
-        "objects": objects,
-        "request_meta": request_meta,
-        "request_context": request_context
-    })
-    html = t.render(c)
-    return HttpResponse(html)
+#______________________________________________________________________________
 
 url_info_template = """
 {% extends "PyLucid/install/base.html" %}
@@ -191,28 +208,26 @@ url_info_template = """
 </table>
 {% endblock %}
 """
-from django.contrib.sites.models import Site
+class URL_Info(BaseInstall):
+    def view(self):
+        from django.contrib.sites.models import Site
+        from PyLucid.urls import urls
+        
+        self.context["url_info"] = urls
+            
+        current_site = Site.objects.get_current()
+        domain = current_site.domain
+        self.context["domain"] = domain
+
+        return self._render(url_info_template)
+    
 def url_info(request, install_pass):
     """
-    3. Display the current used urlpatterns
+    4. Display the current used urlpatterns
     """
-    check_pass(install_pass)
-    from PyLucid.urls import urls
+    return URL_Info(request, install_pass).view()
 
-    current_site = Site.objects.get_current()
-    domain = current_site.domain
-
-    t = Template(url_info_template)
-    c = Context({
-        "domain": domain,
-        "url_info": urls,
-    })
-    html = t.render(c)
-    return HttpResponse(html)
-
-
-
-
+#______________________________________________________________________________
 
 class PythonEvalForm(forms.Form):
     """
@@ -255,104 +270,73 @@ Execute code with Python v{{ sysversion }}:<br />
 <br />
 {% endblock %}
 """
+class EvilEval(BaseInstall):
+    def view(self):  
+        from PyLucid.settings import INSTALL_EVILEVAL
+        if not INSTALL_EVILEVAL:
+            # Feature is not enabled.
+            return self._render(access_deny)
+    
+        if "codeblock" in self.request.POST:
+            # Form has been sended
+            init_values = self.request.POST.copy()
+        else:
+            # Requested the first time -> insert a init codeblock
+            init_values = {
+                "codeblock": (
+                    "# sample code\n"
+                    "for i in xrange(5):\n"
+                    "    print 'This is cool', i"
+                ),
+            }
+    
+        eval_form = PythonEvalForm(init_values)
+        self.context.update({
+            "sysversion": sys.version,
+            "PythonEvalForm": eval_form.as_p(),
+            "objectlist": ["request"],
+        })
+    
+        if "codeblock" in self.request.POST and eval_form.is_valid():
+            # a codeblock was submited and the form is valid -> run the code
+            codeblock = eval_form.clean_data["codeblock"]
+            codeblock = codeblock.replace("\r\n", "\n") # Windows
+    
+            start_time = time.time()
+    
+            stderr = StringIO.StringIO()
+            stdout_redirector = Redirector(stderr)
+            globals = {}
+            locals = {}
+    
+            try:
+                code = compile(codeblock, "<stdin>", "exec", 0, 1)
+                if eval_form.clean_data["object_access"]:
+                    exec code
+                else:
+                    exec code in globals, locals
+            except:
+                import traceback
+                sys.stdout.write(traceback.format_exc())
+    
+            output = stdout_redirector.get()
+            stderr = stderr.getvalue()
+            if stderr != "":
+                output += "\n---\nError:" + stderr
+    
+            if output == "":
+                output = "[No output]"
+    
+            self.context["output"] = cgi.escape(output)
+    
+            self.context["duration"] = time.time() - start_time
+    
+        return self._render(python_input_form)
+
 def evileval(request, install_pass):
     """
-    4. a Python web-shell
+    5. a Python web-shell
     """
-    check_pass(install_pass)
-
-    if not settings.INSTALL_EVILEVAL:
-        # Feature is not enabled.
-        t = Template(access_deny)
-        html = t.render(Context({}))
-        return HttpResponse(html)
-
-    if "codeblock" in request.POST:
-        # Form has been sended
-        init_values = request.POST.copy()
-    else:
-        # Requested the first time -> insert a init codeblock
-        init_values = {
-            "codeblock": (
-                "# sample code\n"
-                "for i in xrange(5):\n"
-                "    print 'This is cool', i"
-            ),
-        }
-
-    eval_form = PythonEvalForm(init_values)
-    context = Context({
-        "sysversion": sys.version,
-        "PythonEvalForm": eval_form.as_p(),
-        "objectlist": ["request"],
-    })
-
-    if "codeblock" in request.POST and eval_form.is_valid():
-        # a codeblock was submited and the form is valid -> run the code
-        codeblock = eval_form.clean_data["codeblock"]
-        codeblock = codeblock.replace("\r\n", "\n") # Windows
-
-        start_time = time.time()
-
-        stderr = StringIO.StringIO()
-        stdout_redirector = Redirector(stderr)
-        globals = {}
-        locals = {}
-
-        try:
-            code = compile(codeblock, "<stdin>", "exec", 0, 1)
-            if eval_form.clean_data["object_access"]:
-                exec code
-            else:
-                exec code in globals, locals
-        except:
-            import traceback
-            sys.stdout.write(traceback.format_exc())
-
-        output = stdout_redirector.get()
-        stderr = stderr.getvalue()
-        if stderr != "":
-            output += "\n---\nError:" + stderr
-
-        if output == "":
-            output = "[No output]"
-
-        context["output"] = cgi.escape(output)
-
-        context["duration"] = time.time() - start_time
-
-    t = Template(python_input_form)
-    html = t.render(context)
-    return HttpResponse(html)
+    return EvilEval(request, install_pass).view()
 
 
-
-def sql_info(request, install_pass):
-    """
-    SQL info
-    """
-    check_pass(install_pass)
-
-    response = HttpResponse(mimetype= "text/plain")
-    
-    from django.core.management import get_sql_create, get_custom_sql, get_sql_indexes
-    from django.db.models import get_apps
-
-    app_list = get_apps()
-    
-    def write_lines(lines):
-        for line in lines:
-            response.write("%s\n" % line)
-
-    for app in app_list:
-        response.write("**** sql_create:\n")
-        write_lines(get_sql_create(app))
-        response.write("**** get_custom_sql:\n")
-        write_lines(get_custom_sql(app))
-        response.write("**** get_sql_indexes:\n")
-        write_lines(get_sql_indexes(app))
-
-        response.write("-"*79)
-        response.write("\n\n")
-
-    return response

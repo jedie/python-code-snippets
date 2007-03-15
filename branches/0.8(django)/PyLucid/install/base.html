@@ -50,9 +50,12 @@ a:hover {
 <body>
 <a name="top"></a>
 <h3>PyLucid v{{ version }} - Setup @ <a href="{% url PyLucid.index.index . %}">{% url PyLucid.index.index . %}</a></h3>
+{% if install_pass %}<p><a href="{% url PyLucid.install.index.index install_pass %}">&#xAB; back to menu</a></p>{% endif %}
 <lucidTag:page_msg/>
 {% block content %}{% endblock %}
+{% if install_pass %}<p><a href="{% url PyLucid.install.index.index install_pass %}">&#xAB; back to menu</a> |{% endif %}
 <a href="#top">&#x5E; top</a>
+{% if install_pass %}</p>{% endif %}
 <hr />
 <small>
 <p>Rendertime: <lucidTag:script_duration/></p>
