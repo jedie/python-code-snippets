@@ -1,14 +1,12 @@
 
-import os, sys, cgi, inspect
+from PyLucid import install as install_package
+from PyLucid import settings
+from PyLucid.install.BaseInstall import BaseInstall
+from PyLucid.models import Page
 
 from django.db import connection
 
-from PyLucid.install.tools import render
-from PyLucid import settings
-from PyLucid.models import Page
-from PyLucid.utils import check_pass
-from PyLucid import install as install_package
-
+import os, sys, cgi, inspect
 
 
 def get_members(obj, predicate, skip_name=[], skip_secret=True):
@@ -40,9 +38,7 @@ def get_members(obj, predicate, skip_name=[], skip_secret=True):
 
 
 
-menu_template = """
-{% extends "PyLucid/install/base.html" %}
-
+menu_template = """{% extends "PyLucid/install/base.html" %}
 {% block content %}
 <h1>menu</h1>
 <ul>
@@ -60,33 +56,45 @@ menu_template = """
 </ul>
 {% endblock %}
 """
-#
-def index(request, install_pass):
+class Index(BaseInstall):
     """
     Generate and display the install section menu
     """
-    check_pass(install_pass)
-    menu_data = {}
-
-    module_list = get_members(
-        obj=install_package, predicate=inspect.ismodule,
-        skip_name=["urls", "index", "tools"]
-    )
-    for no, module_data in enumerate(module_list):
-        module_name = module_data["name"]
-
-        module_obj = getattr(install_package, module_name)
-        members = get_members(
-            obj=module_obj, predicate=inspect.isfunction,
-            skip_name=["check_pass", "render"]
+    def view(self):
+        menu_data = {}
+    
+        module_list = get_members(
+            obj=install_package, predicate=inspect.ismodule,
+            skip_name=install_package.SKIP_MODULES
         )
+        for no, module_data in enumerate(module_list):
+            module_name = module_data["name"]
+    
+            module_obj = getattr(install_package, module_name)
+            members = get_members(
+                obj=module_obj, predicate=inspect.isfunction,
+                skip_name=[]
+            )
+    
+            module_list[no]["views"] = members
+    
+        self.context["module_list"] = module_list
+        
+        # The install_pass variable was set in BaseInstall.__init__
+        # If we delete it from the context, the "back to menu"-Links does
+        # not rendered ;)
+        del self.context["install_pass"]
+        
+        return self._render(menu_template)
 
-        module_list[no]["views"] = members
 
-    context = {
-        "module_list": module_list
-    }
-    return render(context, menu_template)
+def index(request, install_pass):
+    "index view"
+    return Index(request, install_pass).view()
+    
+    
+    
+
 
 
 
