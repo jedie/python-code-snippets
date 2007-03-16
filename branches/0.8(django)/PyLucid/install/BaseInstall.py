@@ -4,17 +4,19 @@ A base class for every _install view.
 """
 
 from PyLucid.settings import PYLUCID_VERSION_STRING, INSTALL_PASS
-from PyLucid.utils import check_pass
 
 from django.http import HttpResponse, Http404
-from django.template import Template, Context
+from django.template import Template, Context, loader
+# The loader must be import, even if it is not used directly!!!
+# Note: The loader makes this: add_to_builtins('django.template.loader_tags')
+# In loader_tags are 'block', 'extends' and 'include' defined.
 
 
 # Warning: If debug is on, the install password is in the traceback!!!
 #debug = True
-debug = False
+DEBUG = False
 
-simple_render_template = """
+SIMPLE_RENDER_TEMPLATE = """
 {% extends "PyLucid/install/base.html" %}
 {% block content %}
 {% if headline %}<h1>{{ headline|escape }}</h1>{% endif %}
@@ -52,7 +54,7 @@ class BaseInstall(object):
         self.context["output"] = "".join(output)
         if headline:
             self.context["headline"] = headline
-        return self._render(simple_render_template)
+        return self._render(SIMPLE_RENDER_TEMPLATE)
 
 
     def _check_pass(self, install_pass):
@@ -60,17 +62,15 @@ class BaseInstall(object):
         Check if the _install password is right.
         raise a Http404 if the password is wrong.
         """
-        password = install_pass.split("/",1)[0]
+        password = install_pass.split("/", 1)[0]
     
         def error(msg):
             msg = "*** install password error: %s! ***" % msg
-            if debug:
+            if DEBUG:
                 msg += " [Debug: '%s' != '%s']" % (
                     password, INSTALL_PASS
                 )
             raise Http404(msg)
-            #~ from django.core.exceptions import ObjectDoesNotExist
-            #~ raise ObjectDoesNotExist(msg)
     
         if password == "":
             error("no password in URL")
