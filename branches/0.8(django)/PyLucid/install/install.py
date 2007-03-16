@@ -138,7 +138,7 @@ def _init_db(request, install_pass):# deactivated with the unterscore!
 
 class Options(object):
     """ Fake optparse options """
-    datadir = 'datadir'
+    datadir = 'PyLucid/db_dump_datadir'
     verbose = True
     stdout = None
     remain = None
