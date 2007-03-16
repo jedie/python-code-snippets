@@ -1,12 +1,13 @@
 
+"""
+The index view
+ - generate the _install section menu
+"""
+
 from PyLucid import install as install_package
-from PyLucid import settings
 from PyLucid.install.BaseInstall import BaseInstall
-from PyLucid.models import Page
 
-from django.db import connection
-
-import os, sys, cgi, inspect
+import inspect
 
 
 def get_members(obj, predicate, skip_name=[], skip_secret=True):
@@ -38,7 +39,9 @@ def get_members(obj, predicate, skip_name=[], skip_secret=True):
 
 
 
-menu_template = """{% extends "PyLucid/install/base.html" %}
+menu_template = """
+{% if bla %}blub{% endif %}
+{% extends "PyLucid/install/base.html" %}
 {% block content %}
 <h1>menu</h1>
 <ul>

@@ -19,7 +19,7 @@ license:
 """
 
 
-import sys, traceback
+import sys, cgi, traceback
 
 #~ from PyLucid.system.exceptions import PyLucidException
 
