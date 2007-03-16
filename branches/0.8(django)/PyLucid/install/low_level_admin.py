@@ -7,13 +7,13 @@ http://code.djangoproject.com/wiki/CookBookScriptsMiniFlush
 """
 
 from PyLucid.install.BaseInstall import BaseInstall
-from PyLucid.settings import TABLE_PREFIX
-from PyLucid.system.response import PyLucidResponse
+#from PyLucid.settings import TABLE_PREFIX
+#from PyLucid.system.response import PyLucidResponse
 
 from django import newforms as forms
 from django.core import serializers
 
-import sys, os, StringIO, pickle
+import pickle
 
 
 

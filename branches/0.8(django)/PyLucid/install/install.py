@@ -8,15 +8,11 @@ http://code.djangoproject.com/wiki/CookBookScriptsMiniFlush
 
 from PyLucid import settings
 from PyLucid.install.BaseInstall import BaseInstall
-from PyLucid.settings import TABLE_PREFIX
-from PyLucid.system.response import PyLucidResponse
 from PyLucid.tools.OutBuffer import Redirector
 
 from django import newforms as forms
 
-import sys, os, StringIO
-
-
+import sys, os
 
 #______________________________________________________________________________
 

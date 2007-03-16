@@ -8,9 +8,6 @@ http://code.djangoproject.com/wiki/CookBookScriptsMiniFlush
 
 from PyLucid.install.BaseInstall import BaseInstall
 from PyLucid.settings import TABLE_PREFIX
-from PyLucid.system.response import PyLucidResponse
-
-import sys, os
 
 
 

@@ -8,7 +8,7 @@ from PyLucid.tools.OutBuffer import Redirector
 
 from django import newforms as forms
 
-import inspect, cgi, sys, time, StringIO
+import cgi, sys, time, StringIO
 
 
 
