@@ -129,11 +129,47 @@ class Init_DB(BaseInstall):
         self.context["output"] = "".join(output)
         return self._render(dump_template)
 
-def init_db(request, install_pass):
+def _init_db(request, install_pass):# deactivated with the unterscore!
     """
     2. init DB data
     """
     return Init_DB(request, install_pass).view()
+#______________________________________________________________________________
+
+class Options(object):
+    """ Fake optparse options """
+    datadir = 'datadir'
+    verbose = True
+    stdout = None
+    remain = None
+    settings = "PyLucid.settings"
+
+class Init_DB2(BaseInstall):
+    def view(self):
+        import sys, StringIO
+        from PyLucid.tools.OutBuffer import Redirector
+        from PyLucid.tools.db_dump import loaddb
+        apps = []
+        
+        redirect = StringIO.StringIO()
+        old_stdout = sys.stdout
+        sys.stdout = redirect
+        try:
+            loaddb(apps, 'py', Options())
+        finally:
+            sys.stdout = old_stdout
+            output = [redirect.getvalue()]
+            
+        return self._simple_render(
+            output, headline="init DB (using db_dump.py)"
+        )
+        
+def init_db2(request, install_pass):
+    """
+    2. init DB data (using db_dump.py)
+    """
+    return Init_DB2(request, install_pass).view()
+
 #______________________________________________________________________________
 
 create_user_template = """

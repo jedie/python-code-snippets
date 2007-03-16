@@ -128,8 +128,44 @@ class Dump_DB(BaseInstall):
         self.context["output"] = "".join(output)
         return render(dump_template)
 
-def dump_db(request, install_pass):
+def _dump_db(request, install_pass):# deactivated with the unterscore!
     """
-    dump db data
+    dump db data (using fixture)
     """
     return Dump_DB(request, install_pass).view()
+
+#______________________________________________________________________________
+
+class Options(object):
+    """ Fake optparse options """
+    datadir = 'datadir'
+    verbose = True
+    stdout = None
+    remain = None
+    settings = "PyLucid.settings"
+
+class Dump_DB2(BaseInstall):
+    def view(self):
+        import sys, StringIO
+        from PyLucid.tools.OutBuffer import Redirector
+        from PyLucid.tools.db_dump import dumpdb
+        apps = []
+        
+        redirect = StringIO.StringIO()
+        old_stdout = sys.stdout
+        sys.stdout = redirect
+        try:
+            dumpdb(apps, 'py', Options())
+        finally:
+            sys.stdout = old_stdout
+            output = [redirect.getvalue()]
+            
+        return self._simple_render(
+            output, headline="DB dump (using db_dump.py)"
+        )
+        
+def dump_db2(request, install_pass):
+    """
+    dump db data (using db_dump.py)
+    """
+    return Dump_DB2(request, install_pass).view()
