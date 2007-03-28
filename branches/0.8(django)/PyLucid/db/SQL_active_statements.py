@@ -27,6 +27,7 @@ import pickle, sys, datetime, md5
 
 from PyLucid.db.SQL_passive_statements import PassiveStatements
 #~ from PyLucid.system.exceptions import *
+from PyLucid.models import Page
 
 debug = False
 
@@ -41,22 +42,15 @@ class ActiveStatements(PassiveStatements):
     #_________________________________________________________________________
 
     def get_page_link_by_id(self, page_id):
-        """ Generiert den absolut-Link zur Seite """
+        """ Create the absolute page link """
         data = []
 
         while page_id != 0:
-            result = self.select(
-                    select_items    = ["shortcut","parent"],
-                    from_table      = "page",
-                    where           = ("id",page_id)
-                )[0]
-            page_id  = result["parent"]
-            data.append(result["shortcut"])
+            page = Page.objects.get(id=page_id)
+            page_id  = page.parent
+            data.append(page.shortcut)
 
-        # Liste umdrehen
         data.reverse()
-
-        #~ data = [urllib.quote_plus(i) for i in data]
 
         link = "/".join(data)
         #~ link = self.URLs.pageLink(link)
