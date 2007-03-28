@@ -26,6 +26,9 @@ import urllib, pickle, sys, time
 #~ from PyLucid.system.exceptions import *
 from PyLucid.db.DBwrapper import SQL_Wrapper
 
+from PyLucid.models import Page
+from django.contrib.auth.models import User
+
 debug = False
 
 class PassiveStatements(SQL_Wrapper):
@@ -80,41 +83,22 @@ class PassiveStatements(SQL_Wrapper):
 
     def get_page_update_info(self, request, count=10):
         """
-        Informationen über die letzten >count< Seiten updates.
-        Nutzt: list_of_new_sides und der RSSfeedGenerator
+        get the last >count< page updates.
+        Used by page_update_list and the RSSfeedGenerator
         """
-        where_rules = [("showlinks",1)]
-        #~ if not self.session.get("isadmin", False):
+        page_updates = Page.objects.filter(showlinks__exact=1)
         if request.user.username != "":
-            # Ist kein Admin -> darf nur öffentliche Seiten sehen.
-            where_rules.append(("permitViewPublic",1))
-
-        page_updates = self.select(
-            select_items    = [
-                "id", "name", "title", "lastupdatetime", "lastupdateby"
-            ],
-            from_table      = "page",
-            where           = where_rules,
-            order           = ( "lastupdatetime", "DESC" ),
-            limit           = ( 0, 10 )
-        )
-        #~ self.page_msg(page_updates)
-
-        # Nur die user aus der DB holen, die auch updates gemacht haben:
-        userlist = [item["lastupdateby"] for item in page_updates]
-        tmp = {}
-        for user in userlist:
-            tmp[user] = None
-        userlist = tmp.keys()
-
-        where = ["(id=%s)" for i in userlist]
-        where = " or ".join(where)
-
-        SQLcommand = "SELECT id,name FROM $$md5user WHERE %s" % where
-        users = self.process_statement(SQLcommand, userlist)
-        users = self.indexResult(users, "id")
-
-        # Daten ergänzen
+            page_updates = page_updates.filter(permitViewPublic__exact=1)
+            
+        page_updates = page_updates.order_by('-lastupdatetime')
+        
+        page_updates = page_updates.values(
+            "id", "name", "title", "lastupdatetime", "lastupdateby"
+        )[:count]
+      
+        userlist = list(set([item["lastupdateby"] for item in page_updates]))
+        userlist = User.objects.in_bulk(userlist)
+        
         for item in page_updates:
             item["link"] = self.get_page_link_by_id(item["id"])
             item["absoluteLink"] = "/%s" % item["link"]#self.URLs.absoluteLink(item["link"])
@@ -128,13 +112,9 @@ class PassiveStatements(SQL_Wrapper):
             else:
                 item["name_title"] = "%s - %s" % (pageName, pageTitle)
 
-            #~ item["date"] = self.tools.locale_datetime(item["lastupdatetime"])
-            item["date"] = item["lastupdatetime"]
-            user_id = item["lastupdateby"]
-            try:
-                item["user"] = users[user_id]["name"]
-            except KeyError:
-                item["user"] = "(unknown userid %s)" % user_id
+            item["date"] = item["lastupdatetime"].strftime(_("%Y-%m-%d - %H:%M"))
+            
+            item["user"] = userlist.get("lastupdateby", "[%s]" % _("unknown"))
 
         return page_updates
 
