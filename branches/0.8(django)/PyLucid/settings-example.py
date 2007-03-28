@@ -9,11 +9,11 @@ ADMINS = (
 
 MANAGERS = ADMINS
 
-DATABASE_ENGINE = 'mysql'           # 'postgresql', 'mysql', 'sqlite3' or 'ado_mssql'.
-DATABASE_NAME = 'DatabaseName'             # Or path to database file if using sqlite3.
-DATABASE_USER = 'UserName'             # Not used with sqlite3.
-DATABASE_PASSWORD = 'Password'         # Not used with sqlite3.
-DATABASE_HOST = 'localhost'             # Set to empty string for localhost. Not used with sqlite3.
+DATABASE_ENGINE = 'sqlite3'    # 'postgresql', 'mysql', 'sqlite3' or 'ado_mssql'.
+DATABASE_NAME = 'PyLucid.db3'  # Or path to database file if using sqlite3.
+DATABASE_USER = ''             # Not used with sqlite3.
+DATABASE_PASSWORD = ''         # Not used with sqlite3.
+DATABASE_HOST = ''             # Set to empty string for localhost. Not used with sqlite3.
 DATABASE_PORT = ''             # Set to empty string for default. Not used with sqlite3.
 
 # Local time zone for this installation. All choices can be found here:
@@ -86,12 +86,15 @@ INSTALLED_APPS = (
 INSTALL_URL_PREFIX = "_install"
 COMMAND_URL_PREFIX = "_command"
 
+# The PyLucid install instrucion page:
+INSTALL_HELP_URL = "http://www.pylucid.org/index.py/InstallPyLucid/"
+
 # How are the DB initial data fixtures stored?
 INSTALL_DATA_DIR = "PyLucid/fixtures"
 
 # PyLucid Version String
-PYLUCID_VERSION = (0,8,0,"pre-alpha")
-PYLUCID_VERSION_STRING = "0.8.0pre-alpha"
+PYLUCID_VERSION = (0,8,0,"alpha1")
+PYLUCID_VERSION_STRING = "0.8.0alpha1"
 
 #_____________________________________________________________________________
 # PyLucid settings - can be changed!

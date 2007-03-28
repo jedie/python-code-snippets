@@ -20,13 +20,23 @@ debug = False
 
 from PyLucid.models import Page, Preference
 
+from django.core.exceptions import ImproperlyConfigured
 from django.http import Http404
 
 def get_default_page_id():
     """
     returns the default page id
     """
-    default_page = Preference.objects.get(varName__exact="defaultPage")
+    try:
+        default_page = Preference.objects.get(varName__exact="defaultPage")
+    except Exception, e:
+        from PyLucid.settings import INSTALL_HELP_URL
+        msg = (
+           "Can't get the default page ID: '%s'"
+           " - Did you install PyLucid correctly?"
+           " Please look at: %s"
+        ) % (e, INSTALL_HELP_URL)
+        raise ImproperlyConfigured(msg)
     id = default_page.value
     return id
 
