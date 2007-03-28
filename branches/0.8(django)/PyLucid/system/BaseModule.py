@@ -120,6 +120,19 @@ class PyLucidBaseModule(object):
         
         self.URLs = URLs(request)
 #        self.URLs.debug()
+    
+    def _debug_context(self, context, template):
+        import pprint
+        self.response.write("<fieldset><legend>template debug:</legend>")
+        self.response.write("<legend>context:</legend>")
+        self.response.write("<pre>")
+        pprint_context = pprint.pformat(context)
+        self.response.write(cgi.escape(pprint_context))
+        self.response.write("</pre>")
+        self.response.write("<legend>template:</legend>")
+        self.response.write("<pre>")
+        self.response.write(cgi.escape(template))
+        self.response.write("</pre></fieldset>")
 
     def _get_rendered_template(self, internal_page_name, context, debug=False):
         """
@@ -127,20 +140,9 @@ class PyLucidBaseModule(object):
         """
         internal_page = PagesInternal.objects.get(name = internal_page_name)
         content = internal_page.content_html
-        
-        if debug:
-            import pprint
-            self.response.write("<fieldset><legend>template debug:</legend>")
-            self.response.write("<legend>template context:</legend>")
-            self.response.write("<pre>")
-            pprint_context = pprint.pformat(context)
-            self.response.write(cgi.escape(pprint_context))
-            self.response.write("</pre>")
-            self.response.write("<legend>rendered page:</legend>")
-            self.response.write("<pre>")
-            self.response.write(cgi.escape(content))
-            self.response.write("</pre></fieldset>")
-        
+
+        if debug: self._debug_context(context, content)
+
         engine_id = internal_page.template_engine
         engine_name = TemplateEngine.objects.get(id=engine_id).name
         if engine_name in ("django", "jinja"):
@@ -165,6 +167,18 @@ class PyLucidBaseModule(object):
         render a template and write it into the response object
         """
         html = self._get_rendered_template(internal_page_name, context, debug)
+        self.response.write(html)
+        
+    def _render_string_template(self, template, context, debug=False):
+        """
+        Render a string-template with the given context and
+        returns the result as a HttpResponse object.
+        """
+        if debug: self._debug_context(context, template)
+        
+        c = Context(context)
+        t = Template(template)
+        html = t.render(c)
         self.response.write(html)
 
     #~ def absolute_link(self, url):
