@@ -8,7 +8,7 @@ from PyLucid.tools.OutBuffer import Redirector
 
 from django import newforms as forms
 
-import cgi, sys, time, StringIO
+import cgi, sys, time, StringIO, re
 
 
 
@@ -35,6 +35,7 @@ def inspectdb(request, install_pass):
 #______________________________________________________________________________
 
 class SQLInfo(BaseInstall):
+    __remove_esc_re = re.compile(r"\033\[.*?m")
     def view(self):
         output = []
         
@@ -45,6 +46,7 @@ class SQLInfo(BaseInstall):
         
         def write_lines(lines):
             for line in lines:
+                line = self._remove_esc(line)
                 output.append("%s\n" % line)
     
         for app in app_list:
@@ -59,6 +61,11 @@ class SQLInfo(BaseInstall):
             output.append("\n\n")
             
         return self._simple_render(output, headline="SQL info")
+    
+    def _remove_esc(self, txt):
+        """ Remove escape sequence from a string """
+        txt = self.__remove_esc_re.sub("", txt)
+        return txt
     
 def sql_info(request, install_pass):
     "2. SQL info"
