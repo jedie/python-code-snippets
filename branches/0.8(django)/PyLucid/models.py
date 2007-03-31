@@ -31,8 +31,8 @@ class Page(models.Model):
     keywords = models.TextField(blank=True, maxlength=255, help_text="Keywords for the html header.")
     description = models.TextField(blank=True, maxlength=255, help_text="Text for the html header.")
 
-    createtime = models.DateTimeField(null=True, blank=True)
-    lastupdatetime = models.DateTimeField(null=True, blank=True)
+    createtime = models.DateTimeField(auto_now_add=True)
+    lastupdatetime = models.DateTimeField(auto_now=True)
     lastupdateby = models.IntegerField(null=True, blank=True)
 
     showlinks = models.IntegerField(help_text="Put the Link to this page into Menu/Sitemap etc.?")
@@ -163,9 +163,11 @@ class Md5User(models.Model):
     md5checksum = models.CharField(maxlength=192)
     salt = models.IntegerField()
     admin = models.IntegerField()
-    lastupdatetime = models.DateTimeField(null=True)
+
+    createtime = models.DateTimeField(auto_now_add=True)
+    lastupdatetime = models.DateTimeField(auto_now=True)
+
     lastupdateby = models.IntegerField(null=True, blank=True)
-    createtime = models.DateTimeField(null=True)
 
     class Admin:
         pass
@@ -198,13 +200,15 @@ class PagesInternal(models.Model):
     method_id = models.IntegerField()
     template_engine = models.IntegerField(null=True, blank=True)
     markup = models.IntegerField(null=True, blank=True)
-    lastupdatetime = models.DateTimeField(null=True)
+
+    createtime = models.DateTimeField(auto_now_add=True)
+    lastupdatetime = models.DateTimeField(auto_now=True)
+
     lastupdateby = models.IntegerField()
     content_html = models.TextField()
     content_js = models.TextField()
     content_css = models.TextField()
     description = models.TextField()
-    createtime = models.DateTimeField(null=True)
 
     class Admin:
         list_display = ("name", "plugin_id", "description")
@@ -306,8 +310,10 @@ class Preference(models.Model):
 
 class Style(models.Model):
     id = models.IntegerField(primary_key=True)
-    createtime = models.DateTimeField(null=True)
-    lastupdatetime = models.DateTimeField(null=True)
+
+    createtime = models.DateTimeField(auto_now_add=True)
+    lastupdatetime = models.DateTimeField(auto_now=True)
+
     lastupdateby = models.IntegerField()
     plugin_id = models.IntegerField(null=True, blank=True)
     name = models.CharField(unique=True, maxlength=150)
@@ -342,8 +348,9 @@ class Template(models.Model):
     lastupdateby = models.IntegerField()
     description = models.TextField()
     content = models.TextField()
-    lastupdatetime = models.DateTimeField(null=True)
-    createtime = models.DateTimeField(null=True)
+
+    createtime = models.DateTimeField(auto_now_add=True)
+    lastupdatetime = models.DateTimeField(auto_now=True)
 
     class Admin:
         list_display = ("id", "name", "description")
