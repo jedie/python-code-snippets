@@ -39,7 +39,7 @@ class page_style(PyLucidBaseModule):
         # von Modulen eingefügt werden können
         #~ self.response.write(self.response.addCode.tag)
         
-        style_name = self.request.current_page.get_style_name()
+        style_name = self.request.current_page.style.name
         style_filename = "%s.css" % style_name
 
         url = self.URLs.commandLink(

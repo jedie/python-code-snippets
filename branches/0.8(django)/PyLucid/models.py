@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from django.db import models
+from django.contrib.auth.models import User, Group
 
 from PyLucid.settings import TABLE_PREFIX
 
@@ -17,31 +18,31 @@ class Page(models.Model):
 
     content = models.TextField(blank=True, help_text="The CMS page content.")
 
-    parent = models.IntegerField(help_text="the id of the father page")
+    parent = models.ForeignKey("Page", to_field="id", help_text="the father page")
     position = models.IntegerField(help_text="ordering (number between -10 and 10)")
 
     name = models.CharField(maxlength=150, help_text="A short page name")
     shortcut = models.CharField(unique=True, maxlength=150, help_text="shortcut to built the URLs")
     title = models.CharField(blank=True, maxlength=150, help_text="A long page title")
 
-    template = models.IntegerField(help_text="ID of the used template.")
-    style = models.IntegerField(help_text="ID of the used stylesheet.")
-    markup = models.CharField(blank=True, maxlength=150, help_text="ID of the used markup language.")
+    template = models.ForeignKey("Template", to_field="id", help_text="the used template for this page")   
+    style = models.ForeignKey("Style", to_field="id", help_text="the used stylesheet for this page")   
+    markup = models.ForeignKey("Markup", to_field="id", help_text="the used markup language for this page")
 
     keywords = models.TextField(blank=True, maxlength=255, help_text="Keywords for the html header.")
     description = models.TextField(blank=True, maxlength=255, help_text="Text for the html header.")
 
     createtime = models.DateTimeField(auto_now_add=True)
     lastupdatetime = models.DateTimeField(auto_now=True)
-    lastupdateby = models.IntegerField(null=True, blank=True)
+    lastupdateby = models.ForeignKey(User)
 
     showlinks = models.IntegerField(help_text="Put the Link to this page into Menu/Sitemap etc.?")
 
     permitViewPublic = models.IntegerField(help_text="Does anomymous user see this page?")
-    permitViewGroupID = models.IntegerField(null=True, blank=True, help_text="Usergroup how can see this page, if permitViewPublic denied.")
+    permitViewGroup = models.ForeignKey(Group, blank=True, help_text="Usergroup how can see this page, if permitViewPublic denied.")
 
-    ownerID = models.IntegerField()
-    permitEditGroupID = models.IntegerField(null=True, blank=True, help_text="Usergroup how can edit this page.")
+    owner = models.ForeignKey(User, help_text="The owner of this page (only information.)")
+    permitEditGroup = models.ForeignKey(Group, blank=True, help_text="Usergroup how can edit this page.")
 
     class Meta:
         db_table = '%spage' % TABLE_PREFIX
@@ -49,7 +50,7 @@ class Page(models.Model):
     class Admin:
         list_display = ("id", "shortcut", "name", "title", "description")
         list_display_links = ("shortcut",)
-        list_filter = ("permitViewPublic","ownerID")
+        list_filter = ("permitViewPublic","owner")
         search_fields = ["content","name", "title", "description","keywords"]
         fields = (
             ('basic', {'fields': ('id', 'content','parent','position',)}),
@@ -63,8 +64,8 @@ class Page(models.Model):
             ('Advanced options', {
                 'classes': 'collapse',
                 'fields' : (
-                    'showlinks', 'permitViewPublic', 'permitViewGroupID',
-                    'ownerID', 'permitEditGroupID'
+                    'showlinks', 'permitViewPublic', 'permitViewGroup',
+                    'owner', 'permitEditGroup'
                 ),
             }),
         )
@@ -74,7 +75,7 @@ class Page(models.Model):
         return "/page/%s" % self.id
 
     def __str__(self):
-        return "CMS page '%s'" % self.shortcut
+        return self.shortcut
 
     def get_style_name(self):
         """
@@ -152,6 +153,9 @@ class Markup(models.Model):
 
     class Meta:
         db_table = '%smarkup' % TABLE_PREFIX
+        
+    def __str__(self):
+        return self.name
 
 #______________________________________________________________________________
 
@@ -326,6 +330,9 @@ class Style(models.Model):
 
     class Meta:
         db_table = '%sstyle' % TABLE_PREFIX
+        
+    def __str__(self):
+        return self.name
 
 #______________________________________________________________________________
 
@@ -339,6 +346,9 @@ class TemplateEngine(models.Model):
 
     class Meta:
         db_table = '%stemplate_engine' % TABLE_PREFIX
+        
+    def __str__(self):
+        return self.name
 
 #______________________________________________________________________________
 
@@ -359,3 +369,5 @@ class Template(models.Model):
     class Meta:
         db_table = '%stemplate' % TABLE_PREFIX
 
+    def __str__(self):
+        return self.name
