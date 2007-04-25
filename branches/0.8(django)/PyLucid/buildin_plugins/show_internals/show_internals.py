@@ -22,7 +22,7 @@ __version__= "$Rev$"
 # Python-Basis Module einbinden
 import cgi, sys, imp, time
 
-from PyLucid.tools.formatter import filesizeformat
+#from PyLucid.tools.formatter import filesizeformat
 
 from PyLucid.system.BaseModule import PyLucidBaseModule
 
@@ -33,7 +33,8 @@ class show_internals(PyLucidBaseModule):
     #_______________________________________________________________________
 
     def lucidTag(self):
-        url = self.URLs.actionLink("menu")
+#        url = self.URLs.actionLink("menu")
+        url = "FIXME"
         self.response.write('<a href="%s">show internals</a>' % url)
 
     def menu(self):

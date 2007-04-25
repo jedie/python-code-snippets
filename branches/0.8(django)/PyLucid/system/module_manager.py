@@ -19,7 +19,7 @@ license:
 """
 
 
-import sys, cgi, traceback
+import os, sys, cgi, traceback
 
 #~ from PyLucid.system.exceptions import PyLucidException
 
@@ -29,6 +29,7 @@ debug = True
 
 from django.http import HttpResponse
 
+from PyLucid import settings
 from PyLucid.system.exceptions import *
 from PyLucid.system.LocalModuleResponse import LocalModuleResponse
 from PyLucid.models import Plugin, Plugindata
@@ -131,3 +132,54 @@ def handle_command(request, response, module_name, method_name, url_info):
     """
     output = run(request, response, module_name, method_name, url_info)
     return output
+
+#_____________________________________________________________________________
+# some routines aound modules/plugins
+
+def file_check(module_path, dir_item):
+    """
+    Test if the given module_path/dir_item can be a PyLucid Plugin.
+    """
+    for item in ("__init__.py", "%s.py", "%s_cfg.py"):
+        if "%s" in item:
+            item = item % dir_item
+        item = os.path.join(module_path, dir_item, item)
+        if not os.path.isfile(item):
+            return False
+    return True
+        
+def get_module_list(module_path):
+    """
+    Return a dict-list with module_info for the given path.
+    """
+    module_list = []
+    for dir_item in os.listdir(module_path):
+        abs_path = os.path.join(module_path, dir_item)
+        if not os.path.isdir(abs_path) or not file_check(module_path, dir_item):
+            continue
+        
+        module_list.append(dir_item)
+        
+    return module_list
+
+def get_module_dict():
+    module_paths = settings.PYLUCID_MODULE_PATHS
+    
+    module_info = {}
+    for path in module_paths:
+        module_info[path] = get_module_list(path)
+    
+    return module_info
+
+def get_module_config(modulename):
+    pass
+
+def install_base_modules():
+    module_dict = get_module_dict()
+    for module_path in module_dict:
+        for module_name in module_dict[module_path]:
+            print module_path, module_dict
+
+
+
+
