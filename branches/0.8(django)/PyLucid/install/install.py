@@ -24,7 +24,7 @@ syncdb_template = """
 {% endblock %}
 """
 class Sync_DB(BaseInstall):
-    def view(self):
+    def view(self):      
         out = Redirector(sys.stderr)
         output = ["django syncdb..."]
         try:
@@ -172,6 +172,32 @@ def init_db2(request, install_pass):
 
 #______________________________________________________________________________
 
+install_modules_template = """
+{% extends "PyLucid/install/base.html" %}
+{% block content %}
+<h1>Install base modules/plugins</h1>
+<pre>{{ output|escape }}</pre>
+{% endblock %}
+"""
+class InstallModules(BaseInstall):
+    def view(self):
+        output = []
+        from PyLucid.system import module_manager
+        output.append(
+                str(module_manager.install_base_modules())
+            )        
+
+        self.context["output"] = "".join(output)
+        return self._render(install_modules_template)
+
+def install_modules(request, install_pass):
+    """
+    3. install base modules/plugins
+    """
+    return InstallModules(request, install_pass).view()
+
+#______________________________________________________________________________
+
 create_user_template = """
 {% extends "PyLucid/install/base.html" %}
 {% block content %}
@@ -207,10 +233,8 @@ class CreateTestUser(BaseInstall):
 
 def create_test_user(request, install_pass):
     """
-    3. create test superuser
+    4. create test superuser
     """
     return CreateTestUser(request, install_pass).view()
-
-
 
     

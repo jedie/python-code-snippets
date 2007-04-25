@@ -36,8 +36,29 @@ class Update(BaseInstall):
             else:
                 output.append("OK\n")
     
-        SQLcommand = "ALTER TABLE pylucid_plugin DROP plugin_cfg;"
+        SQLcommand = "ALTER TABLE %(p)splugin DROP %(p)scfg;" % {
+            "p": TABLE_PREFIX
+        }
         verbose_execute(SQLcommand)
+        
+        display_info("Change some column names (for SQL constraints)")
+        column_rename = (
+            ("page", "parent parent_id INT( 11 ) NOT NULL DEFAULT '0'"),
+            ("page", "template template_id INT( 11 ) NOT NULL DEFAULT '0'"),
+            ("page", "style style_id INT( 11 ) NOT NULL DEFAULT '0'"),
+            ("page", "markup markup_id INT( 11 ) NOT NULL DEFAULT '0'"),
+            ("page", "lastupdateby lastupdateby_id INT( 11 ) NOT NULL DEFAULT '0'"),
+            ("page", "ownerID owner_id INT( 11 ) NOT NULL DEFAULT '0'"),
+            ("page", "permitEditGroupID permitEditGroup_id INT( 11 ) NULL"),
+            ("page", "permitViewGroupID permitViewGroup_id INT( 11 ) NULL"),
+        )
+        for item in column_rename:
+            SQLcommand = (
+                "ALTER TABLE %s%s"
+                " CHANGE %s;"
+            ) % (TABLE_PREFIX, item[0], item[1])
+            verbose_execute(SQLcommand)
+        
     
         display_info("Drop obsolete tables")
     

@@ -30,8 +30,8 @@ def render_cms_page(request, response, page_content=None):
     if not page_content:
         # get the current page data from the db
         page_content = request.current_page.content
-        markup_id = request.current_page.markup
-        markup = Markup.objects.get(id=markup_id).name
+        markup = request.current_page.markup
+        markup = markup.name
         if markup == "textile":
             out_obj = StringIO()
             p = TinyTextileParser(out_obj, request, response)
@@ -40,8 +40,8 @@ def render_cms_page(request, response, page_content=None):
         
     request.static_tags["page_body"] = page_content
 
-    template_id = request.current_page.template
-    template_content = Template.objects.get(id=template_id).content
+    template = request.current_page.template
+    template_content = template.content
     
     response.write(template_content)
 
