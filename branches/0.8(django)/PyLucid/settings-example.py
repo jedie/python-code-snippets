@@ -80,24 +80,11 @@ INSTALLED_APPS = (
 )
 
 #_____________________________________________________________________________
-# PyLucid settings - does not have to be changed!
-
-# Some special URL prefixes
-INSTALL_URL_PREFIX = "_install"
-COMMAND_URL_PREFIX = "_command"
-
-# The PyLucid install instrucion page:
-INSTALL_HELP_URL = "http://www.pylucid.org/index.py/InstallPyLucid/"
-
-# How are the DB initial data fixtures stored?
-INSTALL_DATA_DIR = "PyLucid/fixtures"
-
-# PyLucid Version String
-PYLUCID_VERSION = (0,8,0,"alpha1")
-PYLUCID_VERSION_STRING = "0.8.0alpha1"
+# import basic adjustments, witch don't have to be changed.
+from system.base_settings import *
 
 #_____________________________________________________________________________
-# PyLucid settings - can be changed!
+# PyLucid settings - you can/should change!
 
 TABLE_PREFIX = "pylucid_"
 
