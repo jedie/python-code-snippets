@@ -177,9 +177,10 @@ def get_module_config(modulename):
 def install_base_modules():
     module_dict = get_module_dict()
     for module_path in module_dict:
+        print "---", module_path
         for module_name in module_dict[module_path]:
-            print module_path, module_dict
-
+            print module_name
+    raise NotImplementedError("under construction...")
 
 
 
