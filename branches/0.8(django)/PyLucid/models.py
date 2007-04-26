@@ -18,31 +18,63 @@ class Page(models.Model):
 
     content = models.TextField(blank=True, help_text="The CMS page content.")
 
-    parent = models.ForeignKey("Page", to_field="id", help_text="the father page")
-    position = models.IntegerField(help_text="ordering (number between -10 and 10)")
+    parent = models.ForeignKey(
+        "self", to_field="id", help_text="the higher-ranking father page"
+    )
+    position = models.IntegerField(
+        help_text="ordering (number between -10 and 10)"
+    )
 
     name = models.CharField(maxlength=150, help_text="A short page name")
-    shortcut = models.CharField(unique=True, maxlength=150, help_text="shortcut to built the URLs")
-    title = models.CharField(blank=True, maxlength=150, help_text="A long page title")
+    
+    shortcut = models.CharField(
+        unique=True, maxlength=150, help_text="shortcut to built the URLs"
+    )
+    title = models.CharField(
+        blank=True, maxlength=150, help_text="A long page title"
+    )
 
-    template = models.ForeignKey("Template", to_field="id", help_text="the used template for this page")   
-    style = models.ForeignKey("Style", to_field="id", help_text="the used stylesheet for this page")   
-    markup = models.ForeignKey("Markup", to_field="id", help_text="the used markup language for this page")
+    template = models.ForeignKey(
+        "Template", to_field="id", help_text="the used template for this page"
+    )
+    style = models.ForeignKey(
+        "Style", to_field="id", help_text="the used stylesheet for this page"
+    )
+    markup = models.ForeignKey(
+        "Markup", to_field="id",
+        help_text="the used markup language for this page"
+    )
 
-    keywords = models.TextField(blank=True, maxlength=255, help_text="Keywords for the html header.")
-    description = models.TextField(blank=True, maxlength=255, help_text="Text for the html header.")
+    keywords = models.TextField(
+        blank=True, maxlength=255, help_text="Keywords for the html header."
+    )
+    description = models.TextField(
+        blank=True, maxlength=255, help_text="Text for the html header."
+    )
 
     createtime = models.DateTimeField(auto_now_add=True)
     lastupdatetime = models.DateTimeField(auto_now=True)
-    lastupdateby = models.ForeignKey(User)
+    lastupdateby = models.ForeignKey(User, related_name="page_lastupdateby")
 
-    showlinks = models.IntegerField(help_text="Put the Link to this page into Menu/Sitemap etc.?")
+    showlinks = models.IntegerField(
+        help_text="Put the Link to this page into Menu/Sitemap etc.?"
+    )
 
-    permitViewPublic = models.IntegerField(help_text="Does anomymous user see this page?")
-    permitViewGroup = models.ForeignKey(Group, blank=True, help_text="Usergroup how can see this page, if permitViewPublic denied.")
+    permitViewPublic = models.IntegerField(
+        help_text="Does anomymous user see this page?"
+    )
+    permitViewGroup = models.ForeignKey(
+        Group, related_name="page_permitViewGroup", blank=True,
+        help_text="Usergroup how can see this page, if permitViewPublic denied."
+    )
 
-    owner = models.ForeignKey(User, help_text="The owner of this page (only information.)")
-    permitEditGroup = models.ForeignKey(Group, blank=True, help_text="Usergroup how can edit this page.")
+    owner = models.ForeignKey(
+        User, help_text="The owner of this page (only information.)"
+    )
+    permitEditGroup = models.ForeignKey(
+        Group, related_name="page_permitEditGroup", blank=True,
+        help_text="Usergroup how can edit this page."
+    )
 
     class Meta:
         db_table = '%spage' % TABLE_PREFIX
@@ -200,24 +232,37 @@ class ObjectCache(models.Model):
 
 class PagesInternal(models.Model):
     name = models.CharField(primary_key=True, maxlength=150)
-    plugin_id = models.IntegerField()
+    plugin = models.ForeignKey(
+        "Plugin", to_field="id",
+        help_text="The associated plugin"
+    )
+    
     method_id = models.IntegerField()
-    template_engine = models.IntegerField(null=True, blank=True)
-    markup = models.IntegerField(null=True, blank=True)
+    
+    template = models.ForeignKey(
+        "Template", to_field="id",
+        help_text="the used template for this internal page"
+    )
+    markup = models.ForeignKey(
+        "Markup", to_field="id",
+        help_text="the used markup language for this page"
+    )
 
     createtime = models.DateTimeField(auto_now_add=True)
     lastupdatetime = models.DateTimeField(auto_now=True)
-
-    lastupdateby = models.IntegerField()
+    lastupdateby = models.ForeignKey(
+        User, related_name="page_internal_lastupdateby"
+    )
+    
     content_html = models.TextField()
     content_js = models.TextField()
     content_css = models.TextField()
     description = models.TextField()
 
     class Admin:
-        list_display = ("name", "plugin_id", "description")
-        ordering = ('plugin_id',"name")
-        list_filter = ("plugin_id",)
+        list_display = ("name", "description")
+        #ordering = ('plugin',"name")
+        list_filter = ("plugin",)
         date_hierarchy = 'lastupdatetime'
         search_fields = ["name","content_html","content_js","content_css"]        
 
@@ -283,7 +328,7 @@ class Plugin(models.Model):
         db_table = '%splugin' % TABLE_PREFIX
 
     def __str__(self):
-        return self.package_name
+        return self.module_name.replace("_"," ")
 
 #______________________________________________________________________________
 
@@ -317,8 +362,8 @@ class Style(models.Model):
 
     createtime = models.DateTimeField(auto_now_add=True)
     lastupdatetime = models.DateTimeField(auto_now=True)
-
-    lastupdateby = models.IntegerField()
+    lastupdateby = models.ForeignKey(User, related_name="style_lastupdateby")
+    
     plugin_id = models.IntegerField(null=True, blank=True)
     name = models.CharField(unique=True, maxlength=150)
     description = models.TextField(null=True, blank=True)
@@ -355,12 +400,13 @@ class TemplateEngine(models.Model):
 class Template(models.Model):
     id = models.IntegerField(primary_key=True)
     name = models.CharField(unique=True, maxlength=150)
-    lastupdateby = models.IntegerField()
-    description = models.TextField()
-    content = models.TextField()
 
     createtime = models.DateTimeField(auto_now_add=True)
     lastupdatetime = models.DateTimeField(auto_now=True)
+    lastupdateby = models.ForeignKey(User, related_name="template_lastupdateby")
+        
+    description = models.TextField()
+    content = models.TextField()
 
     class Admin:
         list_display = ("id", "name", "description")

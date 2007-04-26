@@ -47,10 +47,35 @@ class Update(BaseInstall):
             ("page", "template template_id INT( 11 ) NOT NULL DEFAULT '0'"),
             ("page", "style style_id INT( 11 ) NOT NULL DEFAULT '0'"),
             ("page", "markup markup_id INT( 11 ) NOT NULL DEFAULT '0'"),
-            ("page", "lastupdateby lastupdateby_id INT( 11 ) NOT NULL DEFAULT '0'"),
+            (
+                "page",
+                "lastupdateby lastupdateby_id INT( 11 ) NOT NULL DEFAULT '0'"
+            ),
             ("page", "ownerID owner_id INT( 11 ) NOT NULL DEFAULT '0'"),
             ("page", "permitEditGroupID permitEditGroup_id INT( 11 ) NULL"),
             ("page", "permitViewGroupID permitViewGroup_id INT( 11 ) NULL"),
+            
+            (
+                "pages_internal",
+                "template_engine template_id INT( 11 ) NOT NULL DEFAULT '0'"
+            ),
+            (
+                "pages_internal",
+                "lastupdateby lastupdateby_id INT( 11 ) NOT NULL DEFAULT '0'"
+            ),
+            (
+                "pages_internal",
+                "markup markup_id INT( 11 ) NOT NULL DEFAULT '0'"
+            ),
+            
+            (
+                "style",
+                "lastupdateby lastupdateby_id INT( 11 ) NOT NULL DEFAULT '0'"
+            ),
+            (
+                "template",
+                "lastupdateby lastupdateby_id INT( 11 ) NOT NULL DEFAULT '0'"
+            ),
         )
         for item in column_rename:
             SQLcommand = (
