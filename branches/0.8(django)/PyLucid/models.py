@@ -191,6 +191,8 @@ class Markup(models.Model):
 
 #______________________________________________________________________________
 
+"""
+obsolete???
 class Md5User(models.Model):
     id = models.IntegerField(primary_key=True)
     name = models.CharField(unique=True, maxlength=150)
@@ -211,9 +213,12 @@ class Md5User(models.Model):
     class Meta:
         db_table = '%smd5user' % TABLE_PREFIX
         verbose_name_plural = 'MD5 Users'
+"""
 
 #______________________________________________________________________________
 
+"""
+obsolete???
 class ObjectCache(models.Model):
     id = models.CharField(primary_key=True, maxlength=120)
     expiry_time = models.DateTimeField(null=True)
@@ -227,6 +232,7 @@ class ObjectCache(models.Model):
     class Meta:
         db_table = '%sobject_cache' % TABLE_PREFIX
         verbose_name_plural = 'Object Cache'
+"""
 
 #______________________________________________________________________________
 
@@ -274,6 +280,8 @@ class PagesInternal(models.Model):
 
 #______________________________________________________________________________
 
+"""
+obsolete???
 class Plugindata(models.Model):
     id = models.IntegerField(primary_key=True)
     plugin_id = models.IntegerField()
@@ -303,6 +311,7 @@ class Plugindata(models.Model):
 
     def __repr__(self):
         return "<Plugindata: %s, id:%s>" % (self.method_name, self.plugin_id)
+"""
 
 #______________________________________________________________________________
 

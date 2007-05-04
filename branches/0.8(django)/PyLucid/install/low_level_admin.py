@@ -169,3 +169,35 @@ def dump_db2(request, install_pass):
     dump db data (using db_dump.py)
     """
     return Dump_DB2(request, install_pass).view()
+
+#______________________________________________________________________________
+
+class CleanupDjangoTables(BaseInstall):
+    def view(self):
+        from django.db.models import get_app, get_models
+        from django.db import connection
+        output = []
+        app_label = "PyLucid"
+        
+        cursor = connection.cursor()
+        cursor.execute("SELECT id, model FROM django_content_type WHERE app_label = %s", [app_label])
+        db_types = cursor.fetchall()
+        output.append("db_types: %s\n" % repr(db_types))
+
+        app = get_app(app_label)
+        
+        model_names = []
+        for model in get_models(app):
+          model_names.append(model._meta.object_name)
+        
+        output.append("model_names: %s\n" % repr(model_names))
+        
+        return self._simple_render(
+            output, headline="cleanup django tables"
+        )
+        
+def cleanup_django_tables(request, install_pass):
+    """
+    cleanup django tables (unfinished!)
+    """
+    return CleanupDjangoTables(request, install_pass).view()
