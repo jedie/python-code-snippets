@@ -179,18 +179,55 @@ class CleanupDjangoTables(BaseInstall):
         output = []
         app_label = "PyLucid"
         
+        output.append("Delete obsolete django 'content types'...\n\n")
+        
         cursor = connection.cursor()
         cursor.execute("SELECT id, model FROM django_content_type WHERE app_label = %s", [app_label])
-        db_types = cursor.fetchall()
+        db_types = {}
+        for id, model in cursor.fetchall():
+            db_types[model] = id
         output.append("db_types: %s\n" % repr(db_types))
 
         app = get_app(app_label)
         
         model_names = []
         for model in get_models(app):
-          model_names.append(model._meta.object_name)
-        
+            model = model._meta.object_name
+            model = model.lower()
+            model_names.append(model)
         output.append("model_names: %s\n" % repr(model_names))
+
+        db_type_names = set(db_types.keys())
+        model_names = set(model_names)
+        
+        obsolete_names = db_type_names - model_names
+        output.append("obsolete_names: %s\n" % repr(obsolete_names))
+        for model in obsolete_names:
+            id = db_types[model]
+            output.append("delete: %s - id: %s\n" % (model, id))
+            cursor.execute("DELETE FROM django_content_type WHERE id = %s;", [id])
+        
+        
+        output.append("\n\nDelete obsolete django 'permissions'...\n\n")
+        
+        cursor.execute("SELECT id FROM django_content_type;")
+        db_content_ids = [i[0] for i in cursor.fetchall()]
+        output.append("db_content_ids: %s\n" % repr(db_content_ids))
+        
+        cursor.execute("SELECT content_type_id, codename FROM auth_permission;")
+        db_permissions = {}
+        for id, permission in cursor.fetchall():
+            if not id in db_permissions:
+                db_permissions[id] = []
+            db_permissions[id].append(permission)
+        output.append("db_permissions: %s\n" % repr(db_permissions))
+        
+        for id, permission in db_permissions.iteritems():
+            if id in db_content_ids:
+                continue
+            output.append("obsolete permissions: %s: %s\n" % (id, permission))
+            cursor.execute("DELETE FROM auth_permission WHERE content_type_id = %s;", [id])
+
         
         return self._simple_render(
             output, headline="cleanup django tables"
