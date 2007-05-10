@@ -316,21 +316,19 @@ class Plugindata(models.Model):
 #______________________________________________________________________________
 
 class Plugin(models.Model):
-    id = models.IntegerField(primary_key=True)
+    #id = models.IntegerField(primary_key=True)
     package_name = models.CharField(maxlength=255)
-    module_name = models.CharField(maxlength=90)
-    version = models.CharField(blank=True, maxlength=45)
+    module_name = models.CharField(maxlength=90, unique=True)
+    version = models.CharField(null=True, blank=True, maxlength=45)
     author = models.CharField(blank=True, maxlength=150)
     url = models.CharField(blank=True, maxlength=255)
     description = models.CharField(blank=True, maxlength=255)
     long_description = models.TextField(blank=True)
-    active = models.IntegerField()
-    debug = models.IntegerField()
-    SQL_deinstall_commands = models.TextField(null=True, blank=True)
+    active = models.BooleanField()
 
     class Admin:
-        list_display = ("package_name", "description", "version")
-        ordering = ('package_name',)
+        list_display = ("active", "module_name", "description", "version")
+        ordering = ('package_name',"module_name")
         list_filter = ("author",)
 
     class Meta:

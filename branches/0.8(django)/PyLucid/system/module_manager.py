@@ -27,12 +27,17 @@ import os, sys, cgi, traceback
 #~ debug = False
 debug = True
 
+from PyLucid import settings
+
+if __name__ == "__main__": # init django for local test
+    from django.core.management import setup_environ
+    setup_environ(settings)
+
 from django.http import HttpResponse
 
-from PyLucid import settings
 from PyLucid.system.exceptions import *
 from PyLucid.system.LocalModuleResponse import LocalModuleResponse
-from PyLucid.models import Plugin, Plugindata
+from PyLucid.models import Plugin
 
 
 def get_module_class(package_name, module_name):
@@ -162,7 +167,7 @@ def get_module_list(module_path):
         
     return module_list
 
-def get_module_dict():
+def get_all_modules():
     module_paths = settings.PYLUCID_MODULE_PATHS
     
     module_info = {}
@@ -171,16 +176,84 @@ def get_module_dict():
     
     return module_info
 
-def get_module_config(modulename):
-    pass
+def get_module_config(package_name, module_name):
+    """
+    imports the plugin and the config module and returns a merge config-object
+    """
+    config_name = "%s_cfg" % module_name  
+    
+    def _import(name, from_name):
+        print "from %s import %s" % (name, from_name)
+        try:
+            return __import__(name, {}, {}, [from_name])
+        except ImportError, e:
+            raise ImportError, "Can't import %s from %s: %s" % (
+                from_name, name, e
+            )
+    
+    plugin_module = _import(
+        name = ".".join([package_name, module_name, module_name]),
+        from_name = module_name
+    )
+    config_module = _import(
+        name = ".".join([package_name, module_name, config_name]),
+        from_name = config_name
+    )
+    module_version = getattr(plugin_module, "__version__", None)
+    if module_version:
+        module_version = module_version.strip("$ ") # SVN Revision
+    config_module.__version__ = module_version
+    
+    return config_module
 
+def install_module(package_name, module_name, module_config, active=False):  
+    print package_name, module_name
+    m = Plugin.objects.create(
+        package_name = package_name,
+        module_name = module_name,
+        version = module_config.__version__,
+        author = module_config.__author__,
+        url = module_config.__url__,
+        description = module_config.__description__,
+        long_description = module_config.__long_description__,
+        active = active,
+    )
+    print "ID:", m.id
+#    print "save...",
+#    m.save()
+#    print "OK"
+    
 def install_base_modules():
-    module_dict = get_module_dict()
+    Plugin.objects.all().delete()    # delete all installed Plugins
+    
+    module_dict = get_all_modules()
     for module_path in module_dict:
         print "---", module_path
+        package_name = module_path.replace("/", ".")
         for module_name in module_dict[module_path]:
-            print module_name
-    raise NotImplementedError("under construction...")
+            print module_name,
+            try:
+                module_config = get_module_config(package_name, module_name)
+            except ImportError, e:
+                print "ImportError:", e
+                continue
+            
+            print
+            print getattr(module_config, "__important_buildin__", False)
+            print getattr(module_config, "__essential_buildin__", False)
+            must_install = (
+                getattr(module_config, "__important_buildin__", False) or
+                getattr(module_config, "__essential_buildin__", False)
+            )
+            if not must_install:
+                print "module is not important or essential, skip."
+                continue
+            
+            install_module(
+                package_name, module_name, module_config, active=True
+            )
 
-
+if __name__ == "__main__":
+    os.chdir("../..") # go into root dir
+    install_base_modules()
 
