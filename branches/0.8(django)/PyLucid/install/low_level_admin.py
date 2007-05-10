@@ -146,23 +146,14 @@ class Options(object):
 
 class Dump_DB2(BaseInstall):
     def view(self):
-        import sys, StringIO
-        from PyLucid.tools.OutBuffer import Redirector
         from PyLucid.tools.db_dump import dumpdb
         apps = []
         
-        redirect = StringIO.StringIO()
-        old_stdout = sys.stdout
-        sys.stdout = redirect
-        try:
-            dumpdb(apps, 'py', Options())
-        finally:
-            sys.stdout = old_stdout
-            output = [redirect.getvalue()]
-            
-        return self._simple_render(
-            output, headline="DB dump (using db_dump.py)"
+        self._redirect_execute(
+            dumpdb, apps, 'py', Options()
         )
+            
+        return self._simple_render(headline="DB dump (using db_dump.py)")
         
 def dump_db2(request, install_pass):
     """

@@ -24,21 +24,15 @@ syncdb_template = """
 {% endblock %}
 """
 class Sync_DB(BaseInstall):
-    def view(self):      
-        out = Redirector(sys.stderr)
-        output = ["django syncdb..."]
-        try:
-            from django.core import management
-            management.syncdb(verbosity=2, interactive=False)
-        except Exception, e:
-            sys.stderr.write("Error: %s\n" % e)
-        
-        output.append(out.get())
-        output.append("done.")
-        
-        self.context["output"] = "".join(output)
+    def view(self):
+        from django.core import management
+
+        output = self._redirect_execute(
+            management.syncdb, verbosity=2, interactive=False
+        )
+
         return self._render(syncdb_template)
-    
+
 def syncdb(request, install_pass):
     """
     1. install Db tables (syncdb)
@@ -53,7 +47,7 @@ class InitDBForm(forms.Form):
     from glob import glob
     fnmatch = os.path.join(settings.INSTALL_DATA_DIR, "initial_data.*")
     fixture_filenames = glob(fnmatch)
-        
+
     fixture_file = forms.ChoiceField(
         choices=[(i,i) for i in fixture_filenames],
         widget=forms.RadioSelect,
@@ -85,18 +79,18 @@ class Init_DB(BaseInstall):
         else:
             # Requested the first time -> insert a init codeblock
             init_values = None
-            
+
         init_db_form = InitDBForm(init_values)
         init_db_html = init_db_form.as_p()
-        
+
         self.context["FormData"] = init_db_html
-        
+
         output = []
         if "fixture_file" in self.request.POST and init_db_form.is_valid():
             fixture_file = init_db_form.clean_data["fixture_file"]
             format = fixture_file.rsplit(".",1)[1]
             self.context["file_name"] = fixture_file
-            
+
             output.append("Read fixture file '%s'..." % fixture_file)
             try:
                 f = file(fixture_file, "rb")
@@ -110,11 +104,11 @@ class Init_DB(BaseInstall):
                 output.append("Error: %s" % e)
             else:
                 output.append("OK\n")
-                
+
                 from django.core import serializers
-        
+
                 objects = serializers.deserialize(format, fixture)
-                
+
                 count = 0
                 for object in objects:
                     try:
@@ -123,9 +117,9 @@ class Init_DB(BaseInstall):
                         output.append("Error: %s\n" % e)
                     else:
                         count += 1
-                    
+
                 output.append("%s objects restored\n" % count)
-        
+
         self.context["output"] = "".join(output)
         return self._render(dump_template)
 
@@ -146,11 +140,11 @@ class Options(object):
 
 class Init_DB2(BaseInstall):
     def view(self):
-        import sys, StringIO
+
         from PyLucid.tools.OutBuffer import Redirector
         from PyLucid.tools.db_dump import loaddb
         apps = []
-        
+
         redirect = StringIO.StringIO()
         old_stdout = sys.stdout
         sys.stdout = redirect
@@ -159,11 +153,15 @@ class Init_DB2(BaseInstall):
         finally:
             sys.stdout = old_stdout
             output = [redirect.getvalue()]
-            
+
+        output = self._redirect_execute(
+            loaddb(apps, 'py', Options())
+        )
+
         return self._simple_render(
             output, headline="init DB (using db_dump.py)"
         )
-        
+
 def init_db2(request, install_pass):
     """
     2. init DB data (using db_dump.py)
@@ -183,11 +181,10 @@ class InstallModules(BaseInstall):
     def view(self):
         output = []
         from PyLucid.system import module_manager
-        output.append(
-                str(module_manager.install_base_modules())
-            )        
 
-        self.context["output"] = "".join(output)
+        output = self._redirect_execute(module_manager.install_base_modules)
+
+        self.context["output"] = output
         return self._render(install_modules_template)
 
 def install_modules(request, install_pass):
@@ -215,7 +212,7 @@ class CreateTestUser(BaseInstall):
             output.append("ERROR: %s\n" % e)
         else:
             output.append("OK\n")
-    
+
         output.append("\nSetup rights...")
         try:
             user = User.objects.get(username__exact='test')
@@ -237,4 +234,4 @@ def create_test_user(request, install_pass):
     """
     return CreateTestUser(request, install_pass).view()
 
-    
+
