@@ -3,6 +3,8 @@
 A base class for every _install view.
 """
 
+import sys, StringIO
+
 from PyLucid.settings import PYLUCID_VERSION_STRING, INSTALL_PASS
 
 from django.http import HttpResponse, Http404
@@ -36,6 +38,23 @@ class BaseInstall(object):
             "install_pass": install_pass,
         }
 
+    def _redirect_execute(self, method, *args, **kwargs):
+    	"""
+    	run a method an redirect stdout writes (print) into a Buffer.
+	puts the redirected outputs into self.context["output"].
+    	usefull to run django management functions.
+    	"""
+        redirect = StringIO.StringIO()
+        old_stdout = sys.stdout
+        sys.stdout = redirect
+        try:
+            method(*args, **kwargs)
+        finally:
+            sys.stdout = old_stdout
+            
+        self.context["output"] = redirect.getvalue()
+        
+
     def _render(self, template):
         """
         Render a string-template with the given context and
@@ -46,12 +65,13 @@ class BaseInstall(object):
         html = t.render(c)
         return HttpResponse(html)
 
-    def _simple_render(self, output, headline=None):
+    def _simple_render(self, output=None, headline=None):
         """
         a simple way to render a output.
         Use simple_render_template.
         """
-        self.context["output"] = "".join(output)
+        if output:
+            self.context["output"] += "".join(output)
         if headline:
             self.context["headline"] = headline
         return self._render(SIMPLE_RENDER_TEMPLATE)
