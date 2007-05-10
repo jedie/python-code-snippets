@@ -35,12 +35,41 @@ class Update(BaseInstall):
                 output.append("Error: %s\n" % e)
             else:
                 output.append("OK\n")
+
+        #_______________________________________________________________________
+        display_info("Drop obsolete tables")
     
-        SQLcommand = "ALTER TABLE %(p)splugin DROP %(p)scfg;" % {
-            "p": TABLE_PREFIX
-        }
-        verbose_execute(SQLcommand)
-        
+        tables = (
+            "l10n", "groups", "user_group", "log", "session_data", "plugindata"
+        )
+        for tablename in tables:
+            tablename = TABLE_PREFIX + tablename
+            SQLcommand = "DROP TABLE %s;" % tablename
+            verbose_execute(SQLcommand)
+
+        #_______________________________________________________________________
+        display_info("rename tables")
+    
+        tablenames = (
+            ("pages",  "page"),
+            ("styles", "style"),
+            ("templates", "template"),
+            ("markups", "markup"),
+            ("md5users", "md5user"),
+            ("plugins", "plugin"),
+            ("preferences", "preference"),
+            ("styles", "style"),
+            ("template_engines", "template_engine"),
+            ("templates", "template"),
+        )
+        for source, destination in tablenames:
+            source = TABLE_PREFIX + source
+            destination = TABLE_PREFIX + destination
+    
+            SQLcommand = "RENAME TABLE %s TO %s;" % (source, destination)
+            verbose_execute(SQLcommand)
+
+        #_______________________________________________________________________
         display_info("Change some column names (for SQL constraints)")
         column_rename = (
             ("page", "parent parent_id INT( 11 ) NOT NULL DEFAULT '0'"),
@@ -83,40 +112,17 @@ class Update(BaseInstall):
                 " CHANGE %s;"
             ) % (TABLE_PREFIX, item[0], item[1])
             verbose_execute(SQLcommand)
+
+        #_______________________________________________________________________
+        display_info("Delete plugin table (must be recreated with 'syncdb'!)")
         
-    
-        display_info("Drop obsolete tables")
-    
-        for tablename in ("l10n", "group", "user_group", "log", "session_data"):
-            tablename = TABLE_PREFIX + tablename
-            SQLcommand = "DROP TABLE %s;" % tablename
-            verbose_execute(SQLcommand)
-            
-        display_info("rename tables")
-    
-        tablenames = (
-            ("pages",  "page"),
-            ("styles", "style"),
-            ("templates", "template"),
-            ("groups", "group"),
-            ("markups", "markup"),
-            ("md5users", "md5user"),
-            ("plugins", "plugin"),
-            ("preferences", "preference"),
-            ("styles", "style"),
-            ("template_engines", "template_engine"),
-            ("templates", "template"),
-        )
-        for source, destination in tablenames:
-            source = TABLE_PREFIX + source
-            destination = TABLE_PREFIX + destination
-    
-            SQLcommand = "RENAME TABLE %s TO %s;" % (source, destination)
-            verbose_execute(SQLcommand)
-    
-        output.append("\n\nupdate done. (Please go back)")
+        verbose_execute("DROP TABLE %splugin" % TABLE_PREFIX)
+
+        #_______________________________________________________________________
+        output.append("\n\nupdate done.\nYou must execute 'syncdb'!")
     
         return self._simple_render(output, headline="syncdb")
+
 
 def update(request, install_pass):
     """
