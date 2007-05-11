@@ -53,7 +53,7 @@ class PrintLocator(object):
 
         filename = "...%s" % filename[-25:]
         fileinfo = "%-25s line %3s: " % (filename, lineno)
-        
+
         self.page_msg.data.append(
             "%s - %s" % (filename, __file__)
         )
@@ -109,7 +109,7 @@ class PageMsgBuffer(object):
         if self.data == []:
             # There is no messages to display ;)
             return ""
-        
+
         page_msg = "".join(self.data)
         self.data = []
 
@@ -174,7 +174,7 @@ class PageMsgBuffer(object):
                     # Im stack vorwärts gehen, bis außerhalb dieser Datei
                     filename = stack_frame[1]
                     lineno = stack_frame[2]
-                    if filename != __file__:
+                    if os.path.basename(filename) != os.path.basename(__file__):
                         break
 
                 filename = "...%s" % filename[-25:]
