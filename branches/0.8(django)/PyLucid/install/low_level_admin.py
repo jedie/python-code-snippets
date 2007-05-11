@@ -57,28 +57,28 @@ class Dump_DB(BaseInstall):
                 "format": serializer_formats[0],
                 "write_file": False,
             }
-        
+
         dump_form = DumpForm(init_values)
-        
+
         dump_form_html = dump_form.as_p()
         self.context["DumpForm"] = dump_form_html
-        
+
         if (not "format" in self.request.POST) or (not dump_form.is_valid()):
             # Requested the first time -> display the form
             return self._render(dump_template)
-        
+
         format = dump_form.clean_data["format"]
         write_file = dump_form.clean_data["write_file"]
-        
+
         from django.db.models import get_app, get_apps, get_models
         from django.core import serializers
-     
+
         app_list = get_apps()
-     
+
         # Check that the serialization format exists; this is a shortcut to
         # avoid collating all the objects and _then_ failing.
         serializers.get_serializer(format)
-        
+
         fixture_filename = "PyLucid/fixtures/initial_data.%s" % format
         self.context["file_name"] = fixture_filename
         if write_file:
@@ -90,15 +90,15 @@ class Dump_DB(BaseInstall):
                 return response
             else:
                 output.append("OK\n")
-        
+
         objects = []
         for app in app_list:
             for model in get_models(app):
                 model_objects = model.objects.all()
                 objects.extend(model_objects)
-            
+
         db_data = serializers.serialize(format, objects)
-        
+
         if write_file:
             output.append("Write to file...")
             if format=="python":
@@ -124,7 +124,7 @@ class Dump_DB(BaseInstall):
             response = HttpResponse(mimetype=mimetype)
             response.write(db_data)
             return response
-    
+
         self.context["output"] = "".join(output)
         return render(dump_template)
 
@@ -148,13 +148,13 @@ class Dump_DB2(BaseInstall):
     def view(self):
         from PyLucid.tools.db_dump import dumpdb
         apps = []
-        
+
         self._redirect_execute(
             dumpdb, apps, 'py', Options()
         )
-            
+
         return self._simple_render(headline="DB dump (using db_dump.py)")
-        
+
 def dump_db2(request, install_pass):
     """
     dump db data (using db_dump.py)
@@ -165,67 +165,19 @@ def dump_db2(request, install_pass):
 
 class CleanupDjangoTables(BaseInstall):
     def view(self):
-        from django.db.models import get_app, get_models
-        from django.db import connection
-        output = []
-        app_label = "PyLucid"
-        
-        output.append("Delete obsolete django 'content types'...\n\n")
-        
-        cursor = connection.cursor()
-        cursor.execute("SELECT id, model FROM django_content_type WHERE app_label = %s", [app_label])
-        db_types = {}
-        for id, model in cursor.fetchall():
-            db_types[model] = id
-        output.append("db_types: %s\n" % repr(db_types))
-
-        app = get_app(app_label)
-        
-        model_names = []
-        for model in get_models(app):
-            model = model._meta.object_name
-            model = model.lower()
-            model_names.append(model)
-        output.append("model_names: %s\n" % repr(model_names))
-
-        db_type_names = set(db_types.keys())
-        model_names = set(model_names)
-        
-        obsolete_names = db_type_names - model_names
-        output.append("obsolete_names: %s\n" % repr(obsolete_names))
-        for model in obsolete_names:
-            id = db_types[model]
-            output.append("delete: %s - id: %s\n" % (model, id))
-            cursor.execute("DELETE FROM django_content_type WHERE id = %s;", [id])
-        
-        
-        output.append("\n\nDelete obsolete django 'permissions'...\n\n")
-        
-        cursor.execute("SELECT id FROM django_content_type;")
-        db_content_ids = [i[0] for i in cursor.fetchall()]
-        output.append("db_content_ids: %s\n" % repr(db_content_ids))
-        
-        cursor.execute("SELECT content_type_id, codename FROM auth_permission;")
-        db_permissions = {}
-        for id, permission in cursor.fetchall():
-            if not id in db_permissions:
-                db_permissions[id] = []
-            db_permissions[id].append(permission)
-        output.append("db_permissions: %s\n" % repr(db_permissions))
-        
-        for id, permission in db_permissions.iteritems():
-            if id in db_content_ids:
-                continue
-            output.append("obsolete permissions: %s: %s\n" % (id, permission))
-            cursor.execute("DELETE FROM auth_permission WHERE content_type_id = %s;", [id])
-
-        
-        return self._simple_render(
-            output, headline="cleanup django tables"
+        from PyLucid.tools.clean_tables import clean_contenttypes, clean_permissions
+        self._redirect_execute(
+            clean_contenttypes, debug=False
         )
-        
+        self.context["output"] += "\n\n"
+        self._redirect_execute(
+            clean_permissions, debug=False
+        )
+        return self._simple_render(headline="Cleanup django tables")
+
+
 def cleanup_django_tables(request, install_pass):
     """
-    cleanup django tables (unfinished!)
+    cleanup django tables
     """
     return CleanupDjangoTables(request, install_pass).view()

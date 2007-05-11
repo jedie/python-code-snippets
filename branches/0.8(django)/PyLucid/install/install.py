@@ -27,10 +27,10 @@ class Sync_DB(BaseInstall):
     def view(self):
         from django.core import management
 
-        output = self._redirect_execute(
-            management.syncdb, verbosity=2, interactive=False
+        self._redirect_execute(
+            management.syncdb,
+            verbosity=2, interactive=False
         )
-
         return self._render(syncdb_template)
 
 def syncdb(request, install_pass):
@@ -143,24 +143,13 @@ class Init_DB2(BaseInstall):
 
         from PyLucid.tools.OutBuffer import Redirector
         from PyLucid.tools.db_dump import loaddb
-        apps = []
 
-        redirect = StringIO.StringIO()
-        old_stdout = sys.stdout
-        sys.stdout = redirect
-        try:
-            loaddb(apps, 'py', Options())
-        finally:
-            sys.stdout = old_stdout
-            output = [redirect.getvalue()]
-
-        output = self._redirect_execute(
-            loaddb(apps, 'py', Options())
+        self._redirect_execute(
+            loaddb,
+            app_labels = [], format = "py", options = Options()
         )
 
-        return self._simple_render(
-            output, headline="init DB (using db_dump.py)"
-        )
+        return self._simple_render(headline="init DB (using db_dump.py)")
 
 def init_db2(request, install_pass):
     """
