@@ -171,9 +171,8 @@ class InstallModules(BaseInstall):
         output = []
         from PyLucid.system import module_manager
 
-        output = self._redirect_execute(module_manager.install_base_modules)
+        self._redirect_execute(module_manager.install_base_modules)
 
-        self.context["output"] = output
         return self._render(install_modules_template)
 
 def install_modules(request, install_pass):

@@ -34,16 +34,16 @@ from django.template import Template, Context
 
 from PyLucid import settings
 from PyLucid.db import DB_Wrapper
-from PyLucid.models import PagesInternal, TemplateEngine
+from PyLucid.models import PagesInternal
 
 
 class URLs(dict):
     def __init__(self, request):
         self.request = request
         self.page_msg = request.page_msg
-              
+
         self.setup_URLs()
-        
+
     def setup_URLs(self):
         """
         Pfad für Links festlegen
@@ -61,7 +61,7 @@ class URLs(dict):
         self["docRoot"] = self.addSlash(posixpath.split(self["scriptRoot"])[0])
 
         self["absoluteIndex"] = self["hostname"] + self["scriptRoot"]
-        
+
         self["commandBase"] = posixpath.join(
             self["scriptRoot"], settings.COMMAND_URL_PREFIX, str(self.request.current_page_id)
         )
@@ -91,7 +91,7 @@ class URLs(dict):
             return path+"/"
         else:
             return path
-            
+
 
     def _prepage_args(self, args):
         if isinstance(args, (list, tuple)):
@@ -117,10 +117,10 @@ class PyLucidBaseModule(object):
 
         self.db = DB_Wrapper(request.page_msg)
         self.page_msg = request.page_msg
-        
+
         self.URLs = URLs(request)
 #        self.URLs.debug()
-    
+
     def _debug_context(self, context, template):
         import pprint
         self.response.write("<fieldset><legend>template debug:</legend>")
@@ -134,48 +134,52 @@ class PyLucidBaseModule(object):
         self.response.write(cgi.escape(template))
         self.response.write("</pre></fieldset>")
 
+    def _get_template(self, internal_page_name):
+        module_name = self.__class__.__name__ # Get the superior class name
+
+        internal_page_name = ".".join([module_name, internal_page_name])
+
+        try:
+            return PagesInternal.objects.get(name = internal_page_name)
+        except PagesInternal.DoesNotExist, e:
+            msg = "internal page '%s' not found! (%s)" % (internal_page_name, e)
+            raise PagesInternal.DoesNotExist(msg)
+
     def _get_rendered_template(self, internal_page_name, context, debug=False):
         """
         return a rendered internal page
         """
-        internal_page = PagesInternal.objects.get(name = internal_page_name)
+        internal_page = self._get_template(internal_page_name)
+
         content = internal_page.content_html
 
         if debug: self._debug_context(context, content)
 
-        engine_id = internal_page.template_engine
-        engine_name = TemplateEngine.objects.get(id=engine_id).name
-        if engine_name in ("django", "jinja"):
-            try:
-                t = Template(content)
-                c = Context(context)
-                html = t.render(c)
-            except Exception, e:
-                html = "[Error, render the django Template '%s': %s]" % (
-                    internal_page_name, e
-                )
-        elif engine_name == "string formatting":
-            html = content % context
-        else:
-            self.page_msg("Error: Template Engine '%s' unknown." % engine_name)
-            html = content
-            
+        try:
+            t = Template(content)
+            c = Context(context)
+            html = t.render(c)
+        except Exception, e:
+            html = "[Error, render the django Template '%s': %s]" % (
+                internal_page_name, e
+            )
+
         return html
-            
+
     def _render_template(self, internal_page_name, context, debug=False):
         """
         render a template and write it into the response object
         """
         html = self._get_rendered_template(internal_page_name, context, debug)
         self.response.write(html)
-        
+
     def _render_string_template(self, template, context, debug=False):
         """
         Render a string-template with the given context and
         returns the result as a HttpResponse object.
         """
         if debug: self._debug_context(context, template)
-        
+
         c = Context(context)
         t = Template(template)
         html = t.render(c)
