@@ -170,11 +170,12 @@ class PageMsgBuffer(object):
 
         if self.debug_mode:
             try:
+                self_basename = os.path.basename(__file__)
                 for stack_frame in inspect.stack():
-                    # Im stack vorwärts gehen, bis außerhalb dieser Datei
+                    # go forward in the stack, to outside of this file.
                     filename = stack_frame[1]
                     lineno = stack_frame[2]
-                    if os.path.basename(filename) != os.path.basename(__file__):
+                    if os.path.basename(filename) != self_basename:
                         break
 
                 filename = "...%s" % filename[-25:]
