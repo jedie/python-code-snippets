@@ -34,6 +34,7 @@ class BaseInstall(object):
         self.request = request
         self._check_pass(install_pass)
         self.context = {
+            "output": "",
             "version": PYLUCID_VERSION_STRING,
             "install_pass": install_pass,
         }
@@ -41,7 +42,7 @@ class BaseInstall(object):
     def _redirect_execute(self, method, *args, **kwargs):
     	"""
     	run a method an redirect stdout writes (print) into a Buffer.
-	puts the redirected outputs into self.context["output"].
+	    puts the redirected outputs into self.context["output"].
     	usefull to run django management functions.
     	"""
         redirect = StringIO.StringIO()
@@ -51,9 +52,9 @@ class BaseInstall(object):
             method(*args, **kwargs)
         finally:
             sys.stdout = old_stdout
-            
-        self.context["output"] = redirect.getvalue()
-        
+
+        self.context["output"] += redirect.getvalue()
+
 
     def _render(self, template):
         """
@@ -83,7 +84,7 @@ class BaseInstall(object):
         raise a Http404 if the password is wrong.
         """
         password = install_pass.split("/", 1)[0]
-    
+
         def error(msg):
             msg = "*** install password error: %s! ***" % msg
             if DEBUG:
@@ -91,13 +92,13 @@ class BaseInstall(object):
                     password, INSTALL_PASS
                 )
             raise Http404(msg)
-    
+
         if password == "":
             error("no password in URL")
-    
+
         if len(password)<8:
             error("password to short")
-    
+
         if password != INSTALL_PASS:
             error("wrong password")
 
