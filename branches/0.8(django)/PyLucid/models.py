@@ -26,7 +26,7 @@ class Page(models.Model):
     )
 
     name = models.CharField(maxlength=150, help_text="A short page name")
-    
+
     shortcut = models.CharField(
         unique=True, maxlength=150, help_text="shortcut to built the URLs"
     )
@@ -125,7 +125,7 @@ class Page(models.Model):
 
     def get_createtime_string(self):
         return self.__strftime(self.createtime)
-    
+
     def get_lastupdatetime_string(self):
         return self.__strftime(self.lastupdatetime)
 
@@ -185,7 +185,7 @@ class Markup(models.Model):
 
     class Meta:
         db_table = '%smarkup' % TABLE_PREFIX
-        
+
     def __str__(self):
         return self.name
 
@@ -239,27 +239,21 @@ class ObjectCache(models.Model):
 class PagesInternal(models.Model):
     name = models.CharField(primary_key=True, maxlength=150)
     plugin = models.ForeignKey(
-        "Plugin", to_field="id",
+        "Plugin", #to_field="id",
         help_text="The associated plugin"
     )
-    
-    method_id = models.IntegerField()
-    
-    template = models.ForeignKey(
-        "Template", to_field="id",
-        help_text="the used template for this internal page"
-    )
     markup = models.ForeignKey(
-        "Markup", to_field="id",
+        "Markup", #to_field="id",
         help_text="the used markup language for this page"
     )
 
     createtime = models.DateTimeField(auto_now_add=True)
     lastupdatetime = models.DateTimeField(auto_now=True)
     lastupdateby = models.ForeignKey(
-        User, related_name="page_internal_lastupdateby"
+        User, related_name="page_internal_lastupdateby",
+        null=True, blank=True,
     )
-    
+
     content_html = models.TextField()
     content_js = models.TextField()
     content_css = models.TextField()
@@ -270,11 +264,11 @@ class PagesInternal(models.Model):
         #ordering = ('plugin',"name")
         list_filter = ("plugin",)
         date_hierarchy = 'lastupdatetime'
-        search_fields = ["name","content_html","content_js","content_css"]        
+        search_fields = ["name","content_html","content_js","content_css"]
 
     class Meta:
         db_table = '%spages_internal' % TABLE_PREFIX
-        
+
     def __str__(self):
         return self.name
 
@@ -370,7 +364,7 @@ class Style(models.Model):
     createtime = models.DateTimeField(auto_now_add=True)
     lastupdatetime = models.DateTimeField(auto_now=True)
     lastupdateby = models.ForeignKey(User, related_name="style_lastupdateby")
-    
+
     plugin_id = models.IntegerField(null=True, blank=True)
     name = models.CharField(unique=True, maxlength=150)
     description = models.TextField(null=True, blank=True)
@@ -382,25 +376,25 @@ class Style(models.Model):
 
     class Meta:
         db_table = '%sstyle' % TABLE_PREFIX
-        
+
     def __str__(self):
         return self.name
 
 #______________________________________________________________________________
-
-class TemplateEngine(models.Model):
-    id = models.IntegerField(primary_key=True)
-    name = models.CharField(unique=True, maxlength=150)
-
-    class Admin:
-        list_display = ("id", "name")
-        list_display_links = ("name",)
-
-    class Meta:
-        db_table = '%stemplate_engine' % TABLE_PREFIX
-        
-    def __str__(self):
-        return self.name
+# obsolete?
+#class TemplateEngine(models.Model):
+#    id = models.IntegerField(primary_key=True)
+#    name = models.CharField(unique=True, maxlength=150)
+#
+#    class Admin:
+#        list_display = ("id", "name")
+#        list_display_links = ("name",)
+#
+#    class Meta:
+#        db_table = '%stemplate_engine' % TABLE_PREFIX
+#
+#    def __str__(self):
+#        return self.name
 
 #______________________________________________________________________________
 
@@ -411,7 +405,7 @@ class Template(models.Model):
     createtime = models.DateTimeField(auto_now_add=True)
     lastupdatetime = models.DateTimeField(auto_now=True)
     lastupdateby = models.ForeignKey(User, related_name="template_lastupdateby")
-        
+
     description = models.TextField()
     content = models.TextField()
 

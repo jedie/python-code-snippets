@@ -16,17 +16,17 @@ from PyLucid.settings import TABLE_PREFIX
 class Update(BaseInstall):
     def view(self):
         output = ["\nupdate PyLucid database:\n"]
-        
+
         from django.db import connection
         cursor = connection.cursor()
-        
+
         def display_info(txt):
             output.append("\n\n")
             output.append("%s:\n" % txt)
             output.append("-"*79)
             output.append("\n")
-            
-        
+
+
         def verbose_execute(SQLcommand):
             output.append("%s..." % SQLcommand)
             try:
@@ -38,9 +38,10 @@ class Update(BaseInstall):
 
         #_______________________________________________________________________
         display_info("Drop obsolete tables")
-    
+
         tables = (
-            "l10n", "groups", "user_group", "log", "session_data", "plugindata"
+            "l10n", "group", "groups", "user_group", "log", "session_data",
+            "plugindata", "template_engines", "template_engine"
         )
         for tablename in tables:
             tablename = TABLE_PREFIX + tablename
@@ -49,7 +50,7 @@ class Update(BaseInstall):
 
         #_______________________________________________________________________
         display_info("rename tables")
-    
+
         tablenames = (
             ("pages",  "page"),
             ("styles", "style"),
@@ -59,13 +60,12 @@ class Update(BaseInstall):
             ("plugins", "plugin"),
             ("preferences", "preference"),
             ("styles", "style"),
-            ("template_engines", "template_engine"),
             ("templates", "template"),
         )
         for source, destination in tablenames:
             source = TABLE_PREFIX + source
             destination = TABLE_PREFIX + destination
-    
+
             SQLcommand = "RENAME TABLE %s TO %s;" % (source, destination)
             verbose_execute(SQLcommand)
 
@@ -83,7 +83,7 @@ class Update(BaseInstall):
             ("page", "ownerID owner_id INT( 11 ) NOT NULL DEFAULT '0'"),
             ("page", "permitEditGroupID permitEditGroup_id INT( 11 ) NULL"),
             ("page", "permitViewGroupID permitViewGroup_id INT( 11 ) NULL"),
-            
+
             (
                 "pages_internal",
                 "template_engine template_id INT( 11 ) NOT NULL DEFAULT '0'"
@@ -96,7 +96,7 @@ class Update(BaseInstall):
                 "pages_internal",
                 "markup markup_id INT( 11 ) NOT NULL DEFAULT '0'"
             ),
-            
+
             (
                 "style",
                 "lastupdateby lastupdateby_id INT( 11 ) NOT NULL DEFAULT '0'"
@@ -114,13 +114,20 @@ class Update(BaseInstall):
             verbose_execute(SQLcommand)
 
         #_______________________________________________________________________
-        display_info("Delete plugin table (must be recreated with 'syncdb'!)")
-        
+
+        display_info(
+            "Delete 'plugin' table (must be recreated with 'syncdb'!)"
+        )
         verbose_execute("DROP TABLE %splugin" % TABLE_PREFIX)
+
+        display_info(
+            "Delete 'pages_internal' table (must be recreated with 'syncdb'!)"
+        )
+        verbose_execute("DROP TABLE %spages_internal" % TABLE_PREFIX)
 
         #_______________________________________________________________________
         output.append("\n\nupdate done.\nYou must execute 'syncdb'!")
-    
+
         return self._simple_render(output, headline="syncdb")
 
 
@@ -164,28 +171,28 @@ class UpdateTemplates(BaseInstall):
     def view(self):
         from PyLucid.tools.Diff import display_plaintext_diff
         from PyLucid.models import PagesInternal
-        
+
         output = []
         for internal_page in PagesInternal.objects.all():
             name = internal_page.name
             old_content = internal_page.content_html
-            
+
             output.append("\n==================[ %s ]==================\n\n" % name)
             _display_warnings(output, old_content)
             content = _convert_template(old_content)
             if not content:
                 output.append("\t - Nothing to change.\n")
                 continue
-            
+
             output.append("\t - changed!\n\nthe diff:\n")
             display_plaintext_diff(old_content, content, response)
-            
+
             internal_page.content_html = content
             internal_page.save()
             output.append("\t - updated and saved.\n")
-            
+
             output.append("\n\n")
-            
+
         return self._simple_render(output, headline="update templates")
 
 def update_templates(request, install_pass):

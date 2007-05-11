@@ -171,11 +171,18 @@ class PageMsgBuffer(object):
         if self.debug_mode:
             try:
                 self_basename = os.path.basename(__file__)
+                if self_basename.endswith(".pyc"):
+                    # cut: ".pyc" -> ".py"
+                    self_basename = self_basename[:-1]
+#                result.append("1%s1" % self_basename)
+
                 for stack_frame in inspect.stack():
                     # go forward in the stack, to outside of this file.
                     filename = stack_frame[1]
                     lineno = stack_frame[2]
+#                    result.append("2%s2" % os.path.basename(filename))
                     if os.path.basename(filename) != self_basename:
+#                        result.append("\n")
                         break
 
                 filename = "...%s" % filename[-25:]
