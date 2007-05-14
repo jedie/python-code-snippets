@@ -38,19 +38,9 @@ class admin_menu(PyLucidBaseModule):
 
     def sub_menu(self):
         context = {"commandURLprefix": self.URLs["commandBase"]}
-        self.page_msg(context)
+#        self.page_msg(context)
 
         html = self._get_rendered_template("sub_menu", context)
 
         p = TinyTextileParser(self.response, self.request, self.response)
         p.parse(html)
-
-
-
-
-
-
-
-
-
-
