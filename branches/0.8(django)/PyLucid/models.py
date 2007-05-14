@@ -58,11 +58,11 @@ class Page(models.Model):
     lastupdatetime = models.DateTimeField(auto_now=True)
     lastupdateby = models.ForeignKey(User, related_name="page_lastupdateby")
 
-    showlinks = models.IntegerField(
+    showlinks = models.BooleanField( default=True,
         help_text="Put the Link to this page into Menu/Sitemap etc.?"
     )
 
-    permitViewPublic = models.IntegerField(
+    permitViewPublic = models.BooleanField( default=True,
         help_text="Does anomymous user see this page?"
     )
     permitViewGroup = models.ForeignKey(
