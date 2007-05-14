@@ -47,12 +47,12 @@ class sub_menu(PyLucidBaseModule):
         )
         if self.request.user.username != "":
             sub_pages = sub_pages.filter(permitViewPublic__exact=1)
-            
+
         sub_pages = sub_pages.order_by('position')
-            
+
         sub_pages = sub_pages.values("name", "shortcut", "title")
 
-        prelink = self.db.get_page_link_by_id(current_page_id)
+        prelink = self.db.page.get_link_by_id(current_page_id)
 
         context = {
             "sub_pages": sub_pages,

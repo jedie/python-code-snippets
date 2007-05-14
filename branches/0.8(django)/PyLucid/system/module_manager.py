@@ -156,6 +156,7 @@ def run(request, response, module_name, method_name, args=()):
     """
     run the plugin with errorhandling
     """
+    return _run(request, response, module_name, method_name, args)
     try:
         return _run(request, response, module_name, method_name, args)
     except Exception:

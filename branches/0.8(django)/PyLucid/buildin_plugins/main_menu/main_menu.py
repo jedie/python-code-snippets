@@ -42,7 +42,7 @@ class main_menu(PyLucidBaseModule):
 
     def lucidTag(self):
         self.current_page_id  = self.request.current_page.id
-        
+
 #        "name","shortcut","title"
         menu_data = Page.objects.values(
             "id", "parent", "name", "title", "shortcut"
@@ -107,27 +107,27 @@ class main_menu(PyLucidBaseModule):
             '</li>'
         )
         result = ["<ul>"]
-        
+
         for entry in menu_data:
             href = []
             if parent:
                 href.append(parent)
-                
+
             href.append(entry["shortcut"])
-            
             href = "/".join(href)
-            entry["href"] = "%s/%s/" % (self.URLs["absoluteIndex"], href)
-                
+
+            entry["href"] = "".join((self.URLs["absoluteIndex"], href))
+
             result.append(html % entry)
-            
+
             if entry.has_key("subitems"):
                 result.append(
                     self.get_html(entry["subitems"], parent=href)
                 )
-                
+
         result.append("</ul>")
         return "\n".join(result)
-            
+
 
     def where_filter(self, where_rules):
         """
@@ -154,7 +154,7 @@ class main_menu(PyLucidBaseModule):
                 where           = where_filter,
                 limit           = (0,1)
             )
-        
+
         if not result:
             # Es gibt keine höhere Ebene (keine Untermenupunkte)
             return parentID
