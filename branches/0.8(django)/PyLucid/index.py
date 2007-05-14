@@ -59,7 +59,7 @@ def index(request, url):
     request.current_page_id = request.current_page.id
 
     request.URLs = URLs(request)
-    request.URLs.debug()
+#    request.URLs.debug()
 
     return render_cms_page(request, response)
 

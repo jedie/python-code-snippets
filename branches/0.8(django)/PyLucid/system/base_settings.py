@@ -12,6 +12,7 @@ PYLUCID_MODULE_PATHS = (
 # Some special URL prefixes
 INSTALL_URL_PREFIX = "_install"
 COMMAND_URL_PREFIX = "_command"
+ADMIN_URL_PREFIX = "_admin"
 
 # The PyLucid install instrucion page:
 INSTALL_HELP_URL = "http://www.pylucid.org/index.py/InstallPyLucid/"
