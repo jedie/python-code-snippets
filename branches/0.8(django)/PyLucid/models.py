@@ -13,8 +13,10 @@ def lazy_date(obj):
 class Page(models.Model):
     """
     A CMS Page Object
+
+    TODO: We need a cache system for the parent relation.
     """
-    id = models.IntegerField(primary_key=True)
+#    id = models.IntegerField(primary_key=True)
 
     content = models.TextField(blank=True, help_text="The CMS page content.")
 
@@ -85,7 +87,7 @@ class Page(models.Model):
         list_filter = ("permitViewPublic","owner")
         search_fields = ["content","name", "title", "description","keywords"]
         fields = (
-            ('basic', {'fields': ('id', 'content','parent','position',)}),
+            ('basic', {'fields': ('content','parent','position',)}),
             ('identification', {'fields': ('name','shortcut','title')}),
             ('internal', {'fields': ('template','style','markup')}),
             ('meta', {'fields': ('keywords', 'description')}),
@@ -104,7 +106,11 @@ class Page(models.Model):
         date_hierarchy = 'lastupdatetime'
 
     def get_absolute_url(self):
-        return "/page/%s" % self.id
+        """
+        permanent link?
+        """
+        return "/_goto/%s" % self.shortcut
+
 
     def __str__(self):
         return self.shortcut

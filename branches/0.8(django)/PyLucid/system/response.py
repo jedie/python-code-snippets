@@ -57,7 +57,7 @@ class PyLucidResponse(HttpResponse):
         replace alle lucidTag in the content and append it to the container
         """
         assert isinstance(txt, basestring)
-        
+
         if not "<lucid" in txt:
             self._container.append(txt)
             return
@@ -71,9 +71,9 @@ class PyLucidResponse(HttpResponse):
                 else:
                     self._container.append(part)
                 continue
-            
+
             # Handle a lucidTag
-            
+
             # Bsp part => Tag:page_body/><p>jau</p>
             tag, post = part.split(">",1)
             # tag  => Tag:page_body/
@@ -82,16 +82,16 @@ class PyLucidResponse(HttpResponse):
             tag = tag[4:].rstrip("/")
 
             # Tag über Module-Manager ausführen
-            try:
-                self.handleTag(tag)
-            except Exception, e:
-                msg = "Handle Tag %s Error: %s" % (tag, e)
-                self.page_msg(msg)
-                self._container.append("[%s]" % msg)
+#            try:
+            self.handleTag(tag)
+#            except Exception, e:
+#                msg = "Handle Tag %s Error: %s" % (tag, e)
+#                self.page_msg(msg)
+#                self._container.append("[%s]" % msg)
 
             # Teil hinter dem Tag schreiben
             self._container.append(post)
-                
+
 
     def handleTag(self, tag):
         if tag in MIDDLEWARE_TAGS:
@@ -101,9 +101,9 @@ class PyLucidResponse(HttpResponse):
             return
 
         if tag in self.request.static_tags:
-            content = self.request.static_tags[tag]            
+            content = self.request.static_tags[tag]
             if tag == "page_body":
-                # replace 
+                # replace
                 self.append_parsed(content)
             else:
                 assert isinstance(content, basestring), (
@@ -127,9 +127,9 @@ class PyLucidResponse(HttpResponse):
                         e, cgi.escape(str(type(local_module_response))),
                         cgi.escape(repr(local_module_response))
                     )
-                    
+
                     raise ValueError(output)
-                
+
             self._container.append(output)
 
     def replace_tag(self, tag, txt):

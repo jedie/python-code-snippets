@@ -10,91 +10,78 @@ Created by Jens Diemer
 GPL-License
 """
 
-
-
-import cgitb;cgitb.enable()
-
-# Python-Basis Module einbinden
-import re, os, sys, cgi, urllib
-
-indexSide = "Start"
+import cgi
 
 from PyLucid.system.BaseModule import PyLucidBaseModule
 
+from PyLucid.models import Page
+
 class back_links(PyLucidBaseModule):
-
-    def __init__(self, *args, **kwargs):
-        super(back_links, self).__init__(*args, **kwargs)
-
-        self.indexlink = '<a href="%s">Index</a>' % (
-            self.URLs.pageLink("/")
-        )
-
-        self.backlink  = '<a href="%(url)s">%(title)s</a>'
-
-        self.current_page_id  = self.request.session["page_id"]
+    indexlink = '<a href="/">Index</a>'
+    backlink  = '<a href="%(url)s">%(title)s</a>'
 
     def lucidTag( self ):
-        "Backlinks generieren"
-        if self.current_page_id == self.preferences["core"]["defaultPage"]:
-            # Die aktuelle Seite ist die Index-Seite, also auch keinen
-            # indexLink generieren
+        """
+        generate the backlinks
+        """
+        try:
+            parent_page = self.request.current_page.parent
+        except Page.DoesNotExist:
+            # The parent id is 0 and there is no page with id 0
             return ""
 
-        # aktuelle parent-ID ermitteln
-        parent_id = self.db.select(
-                select_items    = ["parent"],
-                from_table      = "pages",
-                where           = ("id",self.current_page_id)
-            )[0]["parent"]
-
-        if parent_id == 0:
-            # Keine Unterseite vorhanden -> keine back-Links ;)
-            return self.indexlink
+        if parent_page.id == 0: # No higher-ranking page
+            return ""
 
         try:
             # Link-Daten aus der DB hohlen
-            data = self.backlink_data( parent_id )
+            data = self.backlink_data(parent_page.id)
         except IndexError, e:
             self.response.write("[back links error: %s]" % e)
             return
 
         self.make_links( data )
 
-    def backlink_data( self, page_id ):
-        """ Holt die Links von der aktuellen Seite bis zur Index-Seite aus der DB """
+    def backlink_data(self, page_id):
+        """
+        get the link data from the db
+        """
         data = []
-        while page_id != 0:
-            result = self.db.select(
-                    select_items    = ["name","title","parent"],
-                    from_table      = "pages",
-                    where           = ("id",page_id)
-                )[0]
-            page_id  = result["parent"]
-            data.append( result )
+        urls = [""]
 
-        # Liste umdrehen
+        while page_id != 0:
+            page = Page.objects.get(id=page_id)
+            urls.append(page.shortcut)
+
+            title = page.title
+            if title in (None, ""):
+                title = page.name
+
+            data.append({
+                    "title": title,
+                    "url": "/".join(urls),
+            })
+
+            try:
+                page_id = page.parent.id
+            except Page.DoesNotExist:
+                # The parent id is 0 and there is no page with id 0
+                break
+
         data.reverse()
 
         return data
 
     def make_links( self, data ):
-        """ Generiert aus den Daten eine Link-Zeile """
+        """
+        write the links directly into the page
+        """
         self.response.write(self.indexlink)
 
-        oldurl = ""
         for link_data in data:
-            url = oldurl + "/" + urllib.quote_plus(link_data["name"])
-            oldurl = url
-            url = self.URLs.pageLink(url)
-
-            title = link_data["title"]
-            if (title == None) or (title == ""):
-                title = link_data["name"]
-
             link = self.backlink % {
-                "url": url,
-                "title": cgi.escape( title ),
+                "url": link_data["url"],
+                "title": cgi.escape( link_data["title"] ),
             }
             self.response.write(" &lt; %s" % link)
 

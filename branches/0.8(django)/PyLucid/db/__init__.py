@@ -1,2 +1,8 @@
+#!/usr/bin/python
+# -*- coding: UTF-8 -*-
 
-from PyLucid.db.SQL_active_statements import ActiveStatements as DB_Wrapper
+"""
+shared DB Objects.
+"""
+
+import page

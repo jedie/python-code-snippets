@@ -27,84 +27,14 @@ license:
     http://www.opensource.org/licenses/gpl-license.php
 """
 
-import posixpath, os, pprint, cgi
+import os, pprint, cgi
 
 from django.contrib.sites.models import Site
 from django.template import Template, Context
 
 from PyLucid import settings
-from PyLucid.db import DB_Wrapper
+from PyLucid import db
 from PyLucid.models import PagesInternal
-
-
-class URLs(dict):
-    def __init__(self, request):
-        self.request = request
-        self.page_msg = request.page_msg
-
-        self.setup_URLs()
-
-    def setup_URLs(self):
-        """
-        Pfad für Links festlegen
-        """
-        self["cwd"] = os.getcwdu()
-        self["host"] = self.request.META['HTTP_HOST']
-        self["hostname"] = "%s://%s" % (
-            self.request.META.get('wsgi.url_scheme', "http"),
-            self["host"],
-        )
-
-        self["scriptRoot"] = self.request.META.get("SCRIPT_NAME", "/")
-        if self["scriptRoot"] == "": self["scriptRoot"] = "/"
-
-        self["docRoot"] = self.addSlash(posixpath.split(self["scriptRoot"])[0])
-
-        self["absoluteIndex"] = self["hostname"] + self["scriptRoot"]
-
-        self["commandBase"] = posixpath.join(
-            self["scriptRoot"], settings.COMMAND_URL_PREFIX, str(self.request.current_page_id)
-        )
-
-    #__________________________________________________________________________
-
-    def commandLink(self, modulename, methodname="", args="", addSlash=True):
-        args = self._prepage_args(args)
-        link = posixpath.join(
-            self["commandBase"], modulename, methodname, args
-        )
-
-        if addSlash:
-            link = self.addSlash(link)
-        return link
-
-    #__________________________________________________________________________
-
-    def addSlash(self, path):
-        """
-        >>> addSlash("/noSlash")
-        '/noSlash/'
-        >>> addSlash("/hasSlash/")
-        '/hasSlash/'
-        """
-        if path=="" or path[-1]!="/":
-            return path+"/"
-        else:
-            return path
-
-
-    def _prepage_args(self, args):
-        if isinstance(args, (list, tuple)):
-            return "/".join([str(i) for i in args])
-        else:
-            return str(args)
-
-    #__________________________________________________________________________
-
-    def debug(self):
-        self.page_msg("URLs debug:")
-        for k,v in self.items():
-            self.page_msg(" - %15s: '%s'" % (k,v))
 
 
 #______________________________________________________________________________
@@ -115,10 +45,10 @@ class PyLucidBaseModule(object):
         self.request    = request
         self.response   = response
 
-        self.db = DB_Wrapper(request.page_msg)
+        self.db = db
         self.page_msg = request.page_msg
 
-        self.URLs = URLs(request)
+        self.URLs = request.URLs
 #        self.URLs.debug()
 
     def _debug_context(self, context, template):
