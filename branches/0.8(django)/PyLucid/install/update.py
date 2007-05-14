@@ -81,6 +81,10 @@ class Update(BaseInstall):
                 "lastupdateby lastupdateby_id INT( 11 ) NOT NULL DEFAULT '0'"
             ),
             ("page", "ownerID owner_id INT( 11 ) NOT NULL DEFAULT '0'"),
+
+            ("page", "showlinks showlinks bool NOT NULL"),
+            ("page", "permitViewPublic permitViewPublic bool NOT NULL"),
+
             ("page", "permitEditGroupID permitEditGroup_id INT( 11 ) NULL"),
             ("page", "permitViewGroupID permitViewGroup_id INT( 11 ) NULL"),
 
