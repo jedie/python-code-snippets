@@ -17,13 +17,13 @@ import cgi, sys, time, StringIO, re
 class InspectDB(BaseInstall):
     def view(self):
         from django.core.management import inspectdb
-    
+
         # ToDo: anders interieren und mit try-except umschliessen.
         try:
             output = "\n".join(inspectdb())
         except Exception, e:
             output = "inspect db error: %s" % e
-    
+
         return self._simple_render(output, headline="inspectdb")
 
 def inspectdb(request, install_pass):
@@ -31,24 +31,25 @@ def inspectdb(request, install_pass):
     1. inspect the database
     """
     return InspectDB(request, install_pass).view()
-    
+
 #______________________________________________________________________________
 
 class SQLInfo(BaseInstall):
     __remove_esc_re = re.compile(r"\033\[.*?m")
     def view(self):
         output = []
-        
+
         from django.core.management import get_sql_create, get_custom_sql, get_sql_indexes
         from django.db.models import get_apps
-    
+
         app_list = get_apps()
-        
+#        output.append("App list: %s" % app_list)
+
         def write_lines(lines):
             for line in lines:
                 line = self._remove_esc(line)
                 output.append("%s\n" % line)
-    
+
         for app in app_list:
             output.append("**** sql_create:\n")
             write_lines(get_sql_create(app))
@@ -56,17 +57,17 @@ class SQLInfo(BaseInstall):
             write_lines(get_custom_sql(app))
             output.append("**** get_sql_indexes:\n")
             write_lines(get_sql_indexes(app))
-    
+
             output.append("-"*79)
             output.append("\n\n")
-            
+
         return self._simple_render(output, headline="SQL info")
-    
+
     def _remove_esc(self, txt):
         """ Remove escape sequence from a string """
         txt = self.__remove_esc_re.sub("", txt)
         return txt
-    
+
 def sql_info(request, install_pass):
     "2. SQL info"
     return SQLInfo(request, install_pass).view()
@@ -78,6 +79,7 @@ info_template = """
 {% block content %}
 <h1>Info</h1>
 <ul>
+    <li><a href="#app_info">apps/models list</a></li>
     <li><a href="#db_info">db info</a></li>
     <li><a href="#settings">settings</a></li>
     <li><a href="#user_info">user info</a></li>
@@ -85,7 +87,23 @@ info_template = """
     <li><a href="#request_meta">request.META</a></li>
     <li><a href="#request_context">request context</a></li>
 </ul>
+
+<a name="app_info"></a>
+<a href="#top">&#x5E; top</a>
+<h2>apps/models list</h2>
+<ul>
+{% for app in apps_info %}
+    <li>{{ app.name }}</li>
+    <ul>
+    {% for model in app.models %}
+        <li>{{ model }}</li>
+    {% endfor %}
+    </ul>
+{% endfor %}
+</ul>
+
 <a name="db_info"></a>
+<a href="#top">&#x5E; top</a>
 <h2>db info</h2>
 <dl>
 {% for item in db_info %}
@@ -152,31 +170,44 @@ class Info(BaseInstall):
 #            ("placeholder", db.placeholder),
 #            ("table prefix", db.tableprefix),
 #        ]
-    
+
+        from django.db.models import get_apps, get_models
+
+        apps_info = []
+        for app in get_apps():
+            models = [model._meta.object_name for model in get_models(app)]
+            apps_info.append({
+                    "name": app.__name__,
+                    "models": models,
+            })
+
+        self.context["apps_info"] = apps_info
+
+
         self.context["objects"] = []
         for item in dir(self.request):
             if not item.startswith("__"):
                 self.context["objects"].append("request.%s" % item)
-    
+
         self.context["request_meta"] = []
         for key in sorted(self.request.META):
             self.context["request_meta"].append(
                 (key, self.request.META[key])
             )
-    
+
         def get_obj_infos(obj):
             info = []
             for obj_name in dir(obj):
                 if obj_name.startswith("_"):
                     continue
-    
+
                 try:
                     current_obj = getattr(obj, obj_name)
                 except Exception, e:
                     etype = sys.exc_info()[0]
                     info.append((obj_name, "[%s: %s]" % (etype, cgi.escape(str(e)))))
                     continue
-    
+
                 if not isinstance(current_obj, (basestring, int, tuple, bool, dict)):
                     #~ print ">>>Skip:", obj_name, type(current_obj)
                     continue
@@ -184,12 +215,12 @@ class Info(BaseInstall):
             info.sort()
             return info
         self.context["current_settings"] = get_obj_infos(settings)
-        
+
         self.context["user_info"] = get_obj_infos(self.request.user)
-    
+
         from django.template import RequestContext
         self.context["request_context"] = RequestContext(self.request)
-    
+
         return self._render(info_template)
 
 def info(request, install_pass):
@@ -219,15 +250,15 @@ class URL_Info(BaseInstall):
     def view(self):
         from django.contrib.sites.models import Site
         from PyLucid.urls import urls
-        
+
         self.context["url_info"] = urls
-            
+
         current_site = Site.objects.get_current()
         domain = current_site.domain
         self.context["domain"] = domain
 
         return self._render(url_info_template)
-    
+
 def url_info(request, install_pass):
     """
     4. Display the current used urlpatterns
@@ -278,12 +309,12 @@ Execute code with Python v{{ sysversion }}:<br />
 {% endblock %}
 """
 class EvilEval(BaseInstall):
-    def view(self):  
+    def view(self):
         from PyLucid.settings import INSTALL_EVILEVAL
         if not INSTALL_EVILEVAL:
             # Feature is not enabled.
             return self._render(access_deny)
-    
+
         if "codeblock" in self.request.POST:
             # Form has been sended
             init_values = self.request.POST.copy()
@@ -296,26 +327,26 @@ class EvilEval(BaseInstall):
                     "    print 'This is cool', i"
                 ),
             }
-    
+
         eval_form = PythonEvalForm(init_values)
         self.context.update({
             "sysversion": sys.version,
             "PythonEvalForm": eval_form.as_p(),
             "objectlist": ["request"],
         })
-    
+
         if "codeblock" in self.request.POST and eval_form.is_valid():
             # a codeblock was submited and the form is valid -> run the code
             codeblock = eval_form.clean_data["codeblock"]
             codeblock = codeblock.replace("\r\n", "\n") # Windows
-    
+
             start_time = time.time()
-    
+
             stderr = StringIO.StringIO()
             stdout_redirector = Redirector(stderr)
             globals = {}
             locals = {}
-    
+
             try:
                 code = compile(codeblock, "<stdin>", "exec", 0, 1)
                 if eval_form.clean_data["object_access"]:
@@ -325,19 +356,19 @@ class EvilEval(BaseInstall):
             except:
                 import traceback
                 sys.stdout.write(traceback.format_exc())
-    
+
             output = stdout_redirector.get()
             stderr = stderr.getvalue()
             if stderr != "":
                 output += "\n---\nError:" + stderr
-    
+
             if output == "":
                 output = "[No output]"
-    
+
             self.context["output"] = cgi.escape(output)
-    
+
             self.context["duration"] = time.time() - start_time
-    
+
         return self._render(python_input_form)
 
 def evileval(request, install_pass):
