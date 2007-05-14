@@ -34,11 +34,14 @@ class URLs(dict):
         self["absoluteIndex"] = self.addSlash(
             "".join((self["hostname"], self["scriptRoot"]))
         )
-        self.page_msg("Absolute Index: '%s'" % self["absoluteIndex"])
+#        self.page_msg("Absolute Index: '%s'" % self["absoluteIndex"])
 
         self["commandBase"] = "/".join((
             self["scriptRoot"], settings.COMMAND_URL_PREFIX,
             str(self.request.current_page_id)
+        ))
+        self["adminBase"] = "/".join((
+            self["scriptRoot"], settings.ADMIN_URL_PREFIX
         ))
 
     #__________________________________________________________________________
@@ -51,6 +54,12 @@ class URLs(dict):
 
         if addSlash:
             link = self.addSlash(link)
+        return link
+
+    def adminLink(self, url):
+        link = "/".join((
+            self["adminBase"], url
+        ))
         return link
 
     #__________________________________________________________________________
