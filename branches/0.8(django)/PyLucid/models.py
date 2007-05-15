@@ -261,8 +261,8 @@ class PagesInternal(models.Model):
     )
 
     content_html = models.TextField()
-    content_js = models.TextField()
-    content_css = models.TextField()
+    content_js = models.TextField(blank=True)
+    content_css = models.TextField(blank=True)
     description = models.TextField()
 
     class Admin:
