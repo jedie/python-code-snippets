@@ -41,7 +41,8 @@ import re, os, sys, urllib, cgi
 class main_menu(PyLucidBaseModule):
 
     def lucidTag(self):
-        self.current_page_id  = self.request.current_page.id
+        current_page = self.context["PAGE"]
+        self.current_page_id  = current_page.id
 
 #        "name","shortcut","title"
         menu_data = Page.objects.values(

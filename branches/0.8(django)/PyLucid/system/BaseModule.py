@@ -35,21 +35,24 @@ from django.template import Template, Context
 from PyLucid import settings
 from PyLucid import db
 from PyLucid.models import PagesInternal
+from PyLucid.tools.apply_markups import apply_markup
 
 
 #______________________________________________________________________________
 
 
 class PyLucidBaseModule(object):
-    def __init__(self, request, response):
-        self.request    = request
+    TRANSFER_KEYS = ("request", "page_msg", "URLs")
+    def __init__(self, context, response):
+        self.context    = context
         self.response   = response
 
-        self.db = db
-        self.page_msg = request.page_msg
-
-        self.URLs = request.URLs
+        self.request    = context["request"]
+        self.page_msg   = context["page_msg"]
+        self.URLs       = context["URLs"]
 #        self.URLs.debug()
+
+        self.db = db
 
     def _debug_context(self, context, template):
         import pprint
@@ -83,16 +86,10 @@ class PyLucidBaseModule(object):
 
         content = internal_page.content_html
 
-        if debug: self._debug_context(context, content)
+        html = self.__render(content, context)
 
-        try:
-            t = Template(content)
-            c = Context(context)
-            html = t.render(c)
-        except Exception, e:
-            html = "[Error, render the django Template '%s': %s]" % (
-                internal_page_name, e
-            )
+        markup_object = internal_page.markup
+        html = apply_markup(html, markup_object)
 
         return html
 
@@ -108,17 +105,37 @@ class PyLucidBaseModule(object):
         Render a string-template with the given context and
         returns the result as a HttpResponse object.
         """
-        if debug: self._debug_context(context, template)
+        html = self.__render(template, context)
 
-        c = Context(context)
-        t = Template(template)
-        html = t.render(c)
         self.response.write(html)
 
-    #~ def absolute_link(self, url):
-        #~ if isinstance(url, list):
-            #~ url = "/".join(url)
+    def __render(self, content, context, debug=False):
+        """
+        render the string with the given context
+        -debug the context, if debug is on.
+        -prepare the context
+        -retunted the rendered page
+        """
+        if debug:
+            self._debug_context(context, content)
 
-        #~ url = posixpath.join(Site.objects.get_current().domain, url)
+#        try:
+        t = Template(content)
+        c = self.__prepare_context(context)
+        html = t.render(c)
+#        except Exception, e:
+#            html = "[Error, render the django Template '%s': %s]" % (
+#                internal_page_name, e
+#            )
+        return html
 
-        #~ return 'http://%s' % url
+    def __prepare_context(self, context):
+        """
+        -transfer some objects from the global context into the local dict
+        -returns a django context object
+        """
+        for key in self.TRANSFER_KEYS:
+            context[key] = self.context[key]
+
+        c = Context(context)
+        return c

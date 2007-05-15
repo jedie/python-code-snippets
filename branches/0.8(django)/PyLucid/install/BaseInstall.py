@@ -3,7 +3,11 @@
 A base class for every _install view.
 """
 
-import sys, StringIO
+import sys
+try:
+    import cStringIO as StringIO
+except ImportError:
+    import StringIO
 
 from PyLucid.settings import PYLUCID_VERSION_STRING, INSTALL_PASS
 
@@ -54,7 +58,6 @@ class BaseInstall(object):
             sys.stdout = old_stdout
 
         self.context["output"] += redirect.getvalue()
-
 
     def _render(self, template):
         """

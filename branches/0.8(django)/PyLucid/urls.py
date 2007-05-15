@@ -22,7 +22,7 @@ urls += (
             '(?P<page_id>\d+)/'
             '(?P<module_name>[^/]*?)/'
             '(?P<method_name>[^/]*?)/'
-            '(?P<url_info>.*?)$'
+            '(?P<url_args>.*?)$'
         ) % settings.COMMAND_URL_PREFIX,
         'PyLucid.index.handle_command'
     ),

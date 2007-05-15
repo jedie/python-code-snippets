@@ -2,9 +2,19 @@
 # -*- coding: UTF-8 -*-
 
 """
-Speichert Nachrichten die in der Seite angezeigt werden sollen
-Wird am Ende des Reuqestes durch ein Replace Middleware in die
-Seite eingesetzt.
+A small Wrapper aound djangos user messages system:
+http://www.djangoproject.com/documentation/authentication/#messages
+
+enhanced features:
+  - easy callable to print a messages
+  - simple color output: self.page_msg.green()
+  - use pprint for dicts and lists
+  - special debug mode: Inserts informationen, where from the message has come.
+
+In PyLucid modules/plugins, you can use the old system, but it use the django
+messages to store the data:
+  self.page_msg("I am a new django user message in the old PyLucid style ;)")
+  self.page_msg.red("Alert!")
 
 
 Last commit info:
@@ -20,107 +30,67 @@ license:
     http://www.opensource.org/licenses/gpl-license.php
 """
 
-debug = False
-debug = True
-
+from PyLucid.settings import DEBUG
 
 import os, sys, cgi, pprint
 import inspect
 
 
-
-class PrintLocator(object):
-    """
-    redirect all writes into the page_msg object.
-    """
-    def __init__(self, page_msg):
-        self.page_msg = page_msg
-        self.oldFileinfo = ""
-
-    def write(self, *txt):
-        """
-        write into the page-messages
-        """
-        #~ sys.__stdout__.write(">>>%s<<<\n" % txt)
-
-        # Angaben zur Datei, Zeilennummer, aus dem die Nachricht stammt
-        for stack_frame in inspect.stack():
-            # Im stack vorwärts gehen, bis außerhalb dieser Datei
-            filename = stack_frame[1]
-            lineno = stack_frame[2]
-            if filename != __file__:
-                break
-
-        filename = "...%s" % filename[-25:]
-        fileinfo = "%-25s line %3s: " % (filename, lineno)
-
-        self.page_msg.data.append(
-            "%s - %s" % (filename, __file__)
-        )
-
-        if fileinfo != self.oldFileinfo:
-            self.oldFileinfo = fileinfo
-            self.page_msg.data.append(
-                "<br />[stdout/stderr from ...%s, line %s:] " % fileinfo
-            )
-
-        txt = " ".join([str(i) for i in txt])
-        txt = cgi.escape(txt)
-        txt = txt.replace("\n", "<br />")
-
-        self.page_msg.data.append(txt)
+#class PrintLocator(object):
+#    """
+#    redirect all writes into the page_msg object.
+#    """
+#    def __init__(self, page_msg):
+#        self.page_msg = page_msg
+#        self.oldFileinfo = ""
+#
+#    def write(self, *txt):
+#        """
+#        write into the page-messages
+#        """
+#        #~ sys.__stdout__.write(">>>%s<<<\n" % txt)
+#
+#        # Angaben zur Datei, Zeilennummer, aus dem die Nachricht stammt
+#        for stack_frame in inspect.stack():
+#            # Im stack vorwärts gehen, bis außerhalb dieser Datei
+#            filename = stack_frame[1]
+#            lineno = stack_frame[2]
+#            if filename != __file__:
+#                break
+#
+#        filename = "...%s" % filename[-25:]
+#        fileinfo = "%-25s line %3s: " % (filename, lineno)
+#
+#        self.page_msg.data.append(
+#            "%s - %s" % (filename, __file__)
+#        )
+#
+#        if fileinfo != self.oldFileinfo:
+#            self.oldFileinfo = fileinfo
+#            self.page_msg.data.append(
+#                "<br />[stdout/stderr from ...%s, line %s:] " % fileinfo
+#            )
+#
+#        txt = " ".join([str(i) for i in txt])
+#        txt = cgi.escape(txt)
+#        txt = txt.replace("\n", "<br />")
+#
+#        self.page_msg.data.append(txt)
 
 #_____________________________________________________________________________
 
-class PageMsgBuffer(object):
+class PageMessages(object):
     """
-    Kleine Klasse um die Seiten-Nachrichten zu verwalten
-    page_msg wird in index.py den PyLucid-Objekten hinzugefugt.
-    mit PyLucid["page_msg"]("Eine neue Nachrichtenzeile") wird Zeile
-    für Zeile Nachrichten eingefügt.
-    Die Nachrichten werden ganz zum Schluß in der index.py in die
-    generierten Seite eingeblendet. Dazu dient der Tag <lucidTag:page_msg/>
-
     self.raw - Für Ausgaben ohne <br />
+
+    http://www.djangoproject.com/documentation/authentication/#messages
 
     """
     raw = False
-    debug_mode = debug
+    debug_mode = DEBUG
 
-    def __init__(self, request):
-        self.request = request
-        self.data = []
-
-    #_________________________________________________________________________
-
-    def get_page_msg(self):
-        """
-        Replace <lucidTag:page_msg/> and insert every user messages.
-        """
-
-        user_msg = self.request.user.get_and_delete_messages()
-        if user_msg != []:
-            user_msg.reverse()
-            self.red("user messages:")
-            for line in old_msg:
-                self.red(line)
-            self.red("-"*40)
-
-        if self.data == []:
-            # There is no messages to display ;)
-            return ""
-
-        page_msg = "".join(self.data)
-        self.data = []
-
-        page_msg = (
-            '\n<fieldset id="page_msg"><legend>page message</legend>\n'
-            '%s'
-            '\n</fieldset>'
-        ) % page_msg
-        return page_msg
-        #~ page = page.replace("<lucidTag:page_msg/>", page_msg)
-        #~ return page
+    def __init__(self, context):
+        self.messages = context["messages"]
 
     #_________________________________________________________________________
 
@@ -131,7 +101,7 @@ class PageMsgBuffer(object):
         """ Alte Methode um Daten "auszugeben", Text ist dann schwarz """
         self.append_color_data("blue", *msg)
 
-    def debug(self, *msg):
+    def DEBUG(self, *msg):
         self.append_color_data("gray", *msg)
 
     def black(self, *msg):
@@ -142,11 +112,6 @@ class PageMsgBuffer(object):
 
     def red(self, *msg):
         self.append_color_data("red", *msg)
-
-    #_________________________________________________________________________
-
-    def __str__(self):
-        return "<PageMsgBuffer: %s>" % "|".join(self.data)
 
     #_________________________________________________________________________
 
@@ -161,11 +126,13 @@ class PageMsgBuffer(object):
             )
 
         #~ self.request.user.message_set.create(message=msg)
-
-        self.data.append(msg)
+        self.messages.append(msg)
 
     def prepare(self, *msg):
-        """ Fügt eine neue Zeile mit einer Nachricht hinzu """
+        """
+        -if debug_mode is on: insert a info from where the message sended.
+        -for dict, list use pprint ;)
+        """
         result = []
 
         if self.debug_mode:
@@ -203,8 +170,6 @@ class PageMsgBuffer(object):
             else:
                 result.append(self.encode_and_prepare(item))
                 result.append(" ")
-
-        result.append("<br />")
 
         return "".join(result)
 

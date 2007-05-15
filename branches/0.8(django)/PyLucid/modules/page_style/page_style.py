@@ -38,8 +38,9 @@ class page_style(PyLucidBaseModule):
         # Schreibt den addCode-Tag, damit am Ende noch die CSS/JS Daten
         # von Modulen eingefügt werden können
         #~ self.response.write(self.response.addCode.tag)
-        
-        style_name = self.request.current_page.style.name
+
+        current_page = self.context["PAGE"]
+        style_name = current_page.style.name
         style_filename = "%s.css" % style_name
 
         url = self.URLs.commandLink(
@@ -73,21 +74,20 @@ class page_style(PyLucidBaseModule):
         Dabei wird eine "Browsercache-Anfrage" berücksichtigt.
         """
         css_name = css_filename.split(".",1)[0]
-        self.page_msg("css_name:", css_name)
-        
+
         try:
             style = Style.objects.get(name=css_name)
         except Style.DoesNotExist:
             raise Http404("Stylesheet '%s' unknown!" % cgi.escape(css_filename))
-        
+
         content = style.content
-        
+
         response = HttpResponse()
         response['Content-Type'] = 'text/css; charset=utf-8'
         response.write(content)
-        
+
         return response
-        
+
         """
         timeFormat = "%a, %d %b %Y %H:%M:%S GMT"
 

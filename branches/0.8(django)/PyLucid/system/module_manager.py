@@ -90,20 +90,16 @@ def get_module_config(package_name, module_name, dissolve_version_string=False,
 
     return config_module
 
-def _run(request, response, module_name, method_name, args=()):
+def _run(context, local_response, module_name, method_name, url_args, method_kwargs):
     """
     get the module and call the method
     """
-    if isinstance(args, basestring):
-        args = (args,)
-
-    local_response = LocalModuleResponse()
-
+#    context["page_msg"](module_name, method_name)
     try:
         plugin = Plugin.objects.get(module_name=module_name)
     except Plugin.DoesNotExist:
         msg = "[Error Plugin %s not exists!]" % module_name
-        request.page_msg(msg)
+        context["page_msg"](msg)
         local_response.write(msg)
         return local_response
 
@@ -113,80 +109,75 @@ def _run(request, response, module_name, method_name, args=()):
         module_name = plugin.module_name,
         dissolve_version_string=False
     )
-#    request.page_msg(module_config.module_manager_data)
+#    context["page_msg"](module_config.module_manager_data)
     method_cfg = module_config.module_manager_data[method_name]
-#    request.page_msg(method_cfg)
+#    context["page_msg"](method_cfg)
 
     if method_cfg["must_login"]:
         # User must be login to use this method
         # http://www.djangoproject.com/documentation/authentication/
 
-        request.must_login = True # For static_tags an the robot tag
+        context["request"].must_login = True # For static_tags an the robot tag
 
-        if request.user.username == "":
+        if context["request"].user.username == "":
             # User is not logged in
-            if method_cfg.get("no_rights_error", false) == True:
+            if method_cfg.get("no_rights_error", False) == True:
                 return local_response
             else:
                 raise AccessDeny
 
     module_class=get_module_class(plugin.package_name, module_name)
-    class_instance = module_class(request, local_response)
+    class_instance = module_class(context, local_response)
     unbound_method = getattr(class_instance, method_name)
 
-    output = unbound_method(*args)
-    if output == None:
-        return local_response
-    elif isinstance(output, HttpResponse):
-        return output
-    else:
-        msg = (
-            "Error: A Plugin sould return None or a HttpResponse object!"
-            " But %s.%s has returned: %s (%s)"
-        ) % (
-            module_name, method_name,
-            cgi.escape(repr(output)), cgi.escape(str(type(output)))
-        )
-        AssertionError(msg)
+    output = unbound_method(*url_args, **method_kwargs)
+    return output
 
 
 
-
-def run(request, response, module_name, method_name, args=()):
+def run(context, response, module_name, method_name, url_args=(), method_kwargs={}):
     """
     run the plugin with errorhandling
     """
-    return _run(request, response, module_name, method_name, args)
-    try:
-        return _run(request, response, module_name, method_name, args)
-    except Exception:
-        msg = "Run Module %s.%s Error" % (module_name, method_name)
-        request.page_msg.red("%s:" % msg)
-        etype, value, tb = sys.exc_info()
-        tb = tb.tb_next
-        tb_lines = traceback.format_exception(etype, value, tb)
-        request.page_msg("-"*50, "<pre>")
-        request.page_msg.data += tb_lines
-        request.page_msg("</pre>", "-"*50)
-        return msg + "(Look in the page_msg)"
+    if settings.DEBUG:
+        return _run(
+            context, response, module_name, method_name,
+            url_args, method_kwargs
+        )
+    else:
+        try:
+            return _run(
+                context, response, module_name, method_name,
+                url_args, method_kwargs
+            )
+        except Exception:
+            msg = "Run Module %s.%s Error" % (module_name, method_name)
+            context["page_msg"].red("%s:" % msg)
+            etype, value, tb = sys.exc_info()
+            tb = tb.tb_next
+            tb_lines = traceback.format_exception(etype, value, tb)
+            context["page_msg"]("-"*50, "<pre>")
+            context["page_msg"](tb_lines)
+            context["page_msg"]("</pre>", "-"*50)
+            return msg + "(Look in the page_msg)"
 
 
-def handleTag(module_name, request, response):
-    """
-    handle a lucidTag
-    """
-    output = run(request, response, module_name, method_name = "lucidTag")
-    return output
+#def handleTag(module_name, request, response):
+#    """
+#    handle a lucidTag
+#    """
+#    output = run(request, response, module_name, method_name = "lucidTag")
+#    return output
 
-def handle_command(request, response, module_name, method_name, url_info):
+def handle_command(context, response, module_name, method_name, url_args):
     """
     handle a _command url request
     """
-    output = run(request, response, module_name, method_name, url_info)
+    output = run(context, response, module_name, method_name, url_args)
     return output
 
 #_____________________________________________________________________________
-# some routines aound modules/plugins
+# some routines around modules/plugins
 
 def file_check(module_path, dir_item):
     """

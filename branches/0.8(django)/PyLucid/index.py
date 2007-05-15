@@ -3,100 +3,131 @@
 Display a PyLucid CMS Page
 """
 
-from StringIO import StringIO
+try:
+    import cStringIO as StringIO
+except ImportError:
+    import StringIO
 
-from django.http import Http404
-from django.http import HttpResponse
+#if __name__ == "__main__": # A local test. THIS SHOULD BE COMMENTED!!!
+#    import os
+#    os.environ["DJANGO_SETTINGS_MODULE"] = "PyLucid.settings"
+#    from PyLucid import settings
+#    from django.core import management
+#    management.setup_environ(settings) # init django
 
-from PyLucid.system.response import PyLucidResponse
 
-from PyLucid import settings
+from django.http import Http404, HttpResponse
+from django.template import Template, RequestContext
+
+from PyLucid import models, settings
+
+from PyLucid.system import module_manager
 from PyLucid.system.exceptions import *
-from PyLucid.system.page_msg import PageMsgBuffer
+from PyLucid.system.page_msg import PageMessages
 from PyLucid.system.template import get_template_content
 from PyLucid.system.detect_page import get_current_page_obj
-from PyLucid.system.static_tags import StaticTags
-from PyLucid.system import module_manager
 from PyLucid.system.URLs import URLs
-from PyLucid.system.tinyTextile import TinyTextileParser
 from PyLucid.system.LocalModuleResponse import LocalModuleResponse
 
-from PyLucid.models import Page, Template, Markup
+from PyLucid.tools.apply_markups import apply_markup
 
 #from django.contrib.sites.models import Site
 
-def render_cms_page(request, response, page_content=None):
-    request.static_tags = StaticTags(request)
+def render_cms_page(context, page_content=None):
+    current_page = context["PAGE"]
 
-    if not page_content:
+    if page_content:
+        # The page content comes e.g. from the _command module/plugin
+        current_page.content = page_content
+    else:
         # get the current page data from the db
-        page_content = request.current_page.content
-        markup = request.current_page.markup
-        markup = markup.name
-        if markup == "textile":
-            out_obj = StringIO()
-            p = TinyTextileParser(out_obj, request, response)
-            p.parse(page_content)
-            page_content = out_obj.getvalue()
+        page_content = current_page.content
 
-    request.static_tags["page_body"] = page_content
+        markup_object = current_page.markup
+        current_page.content = apply_markup(page_content, markup_object)
 
-    template = request.current_page.template
+    # TODO:
+    # {{ PAGE.content }} muß nochmal druch django template gejagt werden!!!
+    # Aus BaseModule die routinen dazu auslagern in tools und auch hier verwenden!
+
+
+    template = current_page.template
     template_content = template.content
 
-    response.write(template_content)
+    t = Template(template_content)
+    html = t.render(context)
 
-    return response
+#    import cgi, pprint
+#    print context
+#    debug = "<hr/><pre>%s</pre></html>" % cgi.escape(pprint.pformat(context))
+#    html = html.replace("</html>", debug)
+
+    return HttpResponse(html)
 
 def index(request, url):
     """
     The main index method. Display a requested CMS Page.
     """
-    request.page_msg = PageMsgBuffer(request)
-    response = PyLucidResponse(request)
+    context = RequestContext(request)
+    context["page_msg"] = PageMessages(context)
+    context["PAGE"] = get_current_page_obj(request, url)
+    context["URLs"] = URLs(context)
+#    context["URLs"].debug()
 
-    request.current_page = get_current_page_obj(request, url)
-    request.current_page_id = request.current_page.id
-
-    request.URLs = URLs(request)
-#    request.URLs.debug()
-
-    return render_cms_page(request, response)
+    return render_cms_page(context)
 
 
-def handle_command(request, page_id, module_name, method_name, url_info):
+def handle_command(request, page_id, module_name, method_name, url_args):
     """
     hanlde a _command request
     """
-    request.page_msg = PageMsgBuffer(request)
-    response = PyLucidResponse(request)
+    context = RequestContext(request)
+    context["page_msg"] = PageMessages(context)
 
-    # ToDo: Should i check here, if the page_id exists?!?
-    request.current_page_id = int(page_id)
+    # TODO: Should i check here, if the page_id exists?!?
+    context["PAGE"] = models.Page.objects.get(id=int(page_id))
 
-    request.URLs = URLs(request)
+    context["URLs"] = URLs(context)
+#    context["URLs"].debug()
 
-    if url_info=="":
-        url_info = ()
+    local_response = StringIO.StringIO()
+
+    if url_args == "":
+        url_args = ()
+    else:
+        url_args = (url_args,)
 
     try:
         output = module_manager.handle_command(
-            request, response, module_name, method_name, url_info
+            context, local_response, module_name, method_name, url_args
         )
     except AccessDeny:
         page_content = "[Permission Deny!]"
     else:
-        if isinstance(output, HttpResponse):
+        if output == None:
+            # Plugin/Module has retuned the locale StringIO response object
+            page_content = local_response.getvalue()
+        elif isinstance(output, basestring):
+            page_content = output
+        elif isinstance(output, HttpResponse):
+            # e.g. send a file directly back to the client
             return output
+        else:
+            msg = (
+                "Error: Wrong output from Plugin!"
+                " - It should be write into the response object"
+                " or return a String/HttpResponse object!"
+                " - But %s.%s has returned: %s (%s)"
+            ) % (
+                module_name, method_name,
+                cgi.escape(repr(output)), cgi.escape(str(type(output)))
+            )
+            raise AssertionError(msg)
 
-        # It's a LocalModuleResponse object
-        try:
-            page_content = output.get()
-        except AttributeError, e:
-            page_content = "[Error: %s - output: %s]" % (e, repr(output))
+#    print module_name, method_name
+#    print page_content
+#    print "---"
 
-    request.current_page = Page.objects.get(id=page_id)
-
-    return render_cms_page(request, response, page_content)
+    return render_cms_page(context, page_content)
 
 

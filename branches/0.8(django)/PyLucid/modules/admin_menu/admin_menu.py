@@ -11,24 +11,20 @@ the administration top menu
 TODO: edit_page_link should use pageadmin.edit_page - a inline editing
 """
 
-from StringIO import StringIO
-
-from PyLucid.system.tinyTextile import TinyTextileParser
-
 from PyLucid.system.BaseModule import PyLucidBaseModule
 
 class admin_menu(PyLucidBaseModule):
 
-    def lucidTag( self ):
+    def lucidTag(self):
         """
         Front menu anzeigen
         """
-        edit_link = self.URLs.adminLink(
-            "PyLucid/page/%s/" % self.request.current_page_id
-        )
+        current_page = self.context["PAGE"]
+        current_page_id  = current_page.id
+        edit_link = self.URLs.adminLink("PyLucid/page/%s/" % current_page_id)
 
         context = {
-            "login": self.request.static_tags.get_login_link(),
+            "login": self.context["login_link"],
 #            "edit_page_link": self.URLs.commandLink("pageadmin", "edit_page"),
             "edit_page_link": edit_link,
             "new_page_link": self.URLs.adminLink("/_admin/PyLucid/page/add/"),
@@ -40,7 +36,7 @@ class admin_menu(PyLucidBaseModule):
         context = {"commandURLprefix": self.URLs["commandBase"]}
 #        self.page_msg(context)
 
-        html = self._get_rendered_template("sub_menu", context)
+        html = self._render_template("sub_menu", context)
 
-        p = TinyTextileParser(self.response, self.request, self.response)
-        p.parse(html)
+
+

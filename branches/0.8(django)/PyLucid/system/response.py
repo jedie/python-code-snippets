@@ -81,8 +81,8 @@ class PyLucidResponse(HttpResponse):
 
             tag = tag[4:].rstrip("/")
 
-            if "</lucidTag>" in post:
-                raise NotImplementedError
+#            if "</lucidTag>" in post:
+#                raise NotImplementedError
 
             # Tag über Module-Manager ausführen
 #            try:
