@@ -32,14 +32,14 @@ import sys, re, cgi
 
 
 class TinyTextileParser:
-    def __init__(self, out_obj, request, response, newline="\n"):
+    def __init__(self, out_obj, newline="\n"): #, request, response
         self.out        = out_obj
 
-        self.request    = request
-        self.response   = response
+#        self.request    = request
+#        self.response   = response
         #self.URLs       = request.URLs
         #self.tools      = request.tools
-        self.page_msg   = request.page_msg
+#        self.page_msg   = request.page_msg
         #self.render     = self.request.render
 
         self.newline    = newline

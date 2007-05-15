@@ -61,7 +61,9 @@ class SQLInfo(BaseInstall):
             output.append("-"*79)
             output.append("\n\n")
 
-        return self._simple_render(output, headline="SQL info")
+        return self._simple_render(
+            output, headline="SQL create Statements from the current models"
+        )
 
     def _remove_esc(self, txt):
         """ Remove escape sequence from a string """

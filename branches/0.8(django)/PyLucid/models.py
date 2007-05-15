@@ -21,10 +21,12 @@ class Page(models.Model):
     content = models.TextField(blank=True, help_text="The CMS page content.")
 
     parent = models.ForeignKey(
-        "self", to_field="id", help_text="the higher-ranking father page"
+        "self", null=True, blank=True,
+        to_field="id", help_text="the higher-ranking father page",
     )
     position = models.IntegerField(
-        help_text="ordering (number between -10 and 10)"
+        default = 0,
+        help_text = "ordering (number between -10 and 10)"
     )
 
     name = models.CharField(maxlength=150, help_text="A short page name")

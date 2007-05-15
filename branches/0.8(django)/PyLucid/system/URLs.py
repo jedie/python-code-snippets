@@ -10,9 +10,10 @@ import os, posixpath
 from PyLucid import settings
 
 class URLs(dict):
-    def __init__(self, request):
-        self.request = request
-        self.page_msg = request.page_msg
+    def __init__(self, context):
+        self.context     = context
+        self.request     = context["request"]
+        self.page_msg    = context["page_msg"]
 
         self.setup_URLs()
 
@@ -38,7 +39,7 @@ class URLs(dict):
 
         self["commandBase"] = "/".join((
             self["scriptRoot"], settings.COMMAND_URL_PREFIX,
-            str(self.request.current_page_id)
+            str(self.context["PAGE"].id)
         ))
         self["adminBase"] = "/".join((
             self["scriptRoot"], settings.ADMIN_URL_PREFIX

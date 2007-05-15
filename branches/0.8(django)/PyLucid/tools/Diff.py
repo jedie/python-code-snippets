@@ -51,50 +51,50 @@ def display_html_diff(content1, content2, response):
     """
     diff = make_diff(content1, content2, mode="HtmlDiff")
     response.write(diff)
-    
-def display_plaintext_diff(content1, content2, response):
+
+def display_plaintext_diff(content1, content2):
     """
     Display a diff without pygments.
     """
     diff = make_diff(content1, content2)
-    
+
     def is_diff_line(line):
         for char in ("-","+","?"):
             if line.startswith(char):
                 return True
         return False
-    
-    response.write("line | text\n-------------------------------------------\n")
+
+    print "line | text\n-------------------------------------------"
     old_line = ""
     in_block = False
     old_lineno = lineno = 0
     for line in diff:
         if line.startswith(" ") or line.startswith("+"):
             lineno += 1
-            
+
         if old_lineno == lineno:
-            display_line = "%4s | %s\n" % ("", line.rstrip())
+            display_line = "%4s | %s" % ("", line.rstrip())
         else:
-            display_line = "%4s | %s\n" % (lineno, line.rstrip())
-            
+            display_line = "%4s | %s" % (lineno, line.rstrip())
+
         if is_diff_line(line):
             if not in_block:
-                response.write("...\n")
+                print "..."
                 # Display previous line
-                response.write(old_line)
+                print old_line
                 in_block = True
-                
-            response.write(display_line)
-            
+
+            print display_line
+
         else:
             if in_block:
                 # Display the next line aber a diff-block
-                response.write(display_line)
+                print display_line
             in_block = False
-        
+
         old_line = display_line
         old_lineno = lineno
-    response.write("...\n")
+    print "..."
 
 def get_diff(content1, content2):
     """
