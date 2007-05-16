@@ -119,7 +119,7 @@ if DEBUG:
                 self.header_send = True
 
             self.send_info()
-            self.out.write(txt)
+            self.out.write("<pre>%s</pre>" % txt)
 
     old_stdout = sys.stdout
     sys.stdout = HeaderChecker(old_stdout)
