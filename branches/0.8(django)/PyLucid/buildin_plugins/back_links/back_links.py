@@ -25,32 +25,23 @@ class back_links(PyLucidBaseModule):
         generate the backlinks
         """
         current_page = self.context["PAGE"]
-        try:
-            parent_page = current_page.parent
-        except Page.DoesNotExist:
-            # The parent id is 0 and there is no page with id 0
+        parent_page = current_page.parent
+        if not parent_page: # No higher-ranking page
             return ""
 
-        if parent_page.id == 0: # No higher-ranking page
-            return ""
+        data = self.backlink_data(parent_page)
+        data.reverse()
+        self.make_links(data)
 
-        try:
-            # Link-Daten aus der DB hohlen
-            data = self.backlink_data(parent_page.id)
-        except IndexError, e:
-            self.response.write("[back links error: %s]" % e)
-            return
-
-        self.make_links( data )
-
-    def backlink_data(self, page_id):
+    def backlink_data(self, parent_page):
         """
         get the link data from the db
         """
         data = []
         urls = [""]
 
-        while page_id != 0:
+        while parent_page:
+            page_id = parent_page.id
             page = Page.objects.get(id=page_id)
             urls.append(page.shortcut)
 
@@ -62,18 +53,10 @@ class back_links(PyLucidBaseModule):
                     "title": title,
                     "url": "/".join(urls),
             })
-
-            try:
-                page_id = page.parent.id
-            except Page.DoesNotExist:
-                # The parent id is 0 and there is no page with id 0
-                break
-
-        data.reverse()
-
+            parent_page = page.parent
         return data
 
-    def make_links( self, data ):
+    def make_links(self, data):
         """
         write the links directly into the page
         """
