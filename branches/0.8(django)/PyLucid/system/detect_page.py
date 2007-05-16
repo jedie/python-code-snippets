@@ -40,6 +40,18 @@ def get_default_page_id():
     id = default_page.value
     return id
 
+def get_default_page(request):
+    page_id = get_default_page_id()
+    try:
+        page = Page.objects.get(id__exact=page_id)
+    except Exception, e:
+        # The defaultPage-ID from the Preferences is wrong!
+        page = Page.objects.all()[:1]
+        print page
+        page = page[0]
+        print page
+    return page
+
 def get_current_page_obj(request, url_info):
     """
     returns the page object
@@ -53,9 +65,7 @@ def get_current_page_obj(request, url_info):
 
     if page_name == "":
         # Index Seite wurde aufgerufen. Zumindest bei poor-modrewrite
-        page_id = get_default_page_id()
-        page = Page.objects.get(id__exact=page_id)
-        return page
+        return get_default_page(request)
 
     # bsp/und%2Foder -> ['bsp', 'und%2Foder']
     shortcuts = page_name.split("/")
