@@ -112,6 +112,7 @@ def handle_command(request, page_id, module_name, method_name, url_args):
             # e.g. send a file directly back to the client
             return output
         else:
+            import cgi
             msg = (
                 "Error: Wrong output from Plugin!"
                 " - It should be write into the response object"
