@@ -27,7 +27,7 @@ class admin_menu(PyLucidBaseModule):
             "login": self.context["login_link"],
 #            "edit_page_link": self.URLs.commandLink("pageadmin", "edit_page"),
             "edit_page_link": edit_link,
-            "new_page_link": self.URLs.adminLink("/_admin/PyLucid/page/add/"),
+            "new_page_link": self.URLs.adminLink("PyLucid/page/add/"),
             "sub_menu_link": self.URLs.commandLink("admin_menu", "sub_menu"),
         }
         self._render_template("top_menu", context)
