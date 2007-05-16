@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 import os
 os.chdir("..") # go into PyLucid App root folder

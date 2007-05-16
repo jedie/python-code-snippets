@@ -1,4 +1,12 @@
-# Django settings for PyLucid project.
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+Django settings for PyLucid project.
+
+You must copy this file:
+    settings-example.py -> settings.py
+"""
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
@@ -57,7 +65,7 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.middleware.doc.XViewMiddleware',
-    'PyLucid.middlewares.page_msg.PageMessage',
+#    'PyLucid.middlewares.page_msg.PageMessage',
     'PyLucid.middlewares.pagestats.PageStatsMiddleware',
 )
 
