@@ -1,5 +1,11 @@
 Änderungen von 0.7.x auf 0.8(django):
 
+allgemein:
+	Lauffähig nur im URL root:
+		Alle Page Links fangen mit / an!
+		benutzten von mod_rewrite nötig.
+		Evtl. geht auch CGI ohne rewrite und /index.py ???
+
 internes:
 	response.page_msg -> request.page_msg
 
