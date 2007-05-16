@@ -2,28 +2,36 @@
 
 """
 index CGI file.
+
+If settings.DEBUG is ON:
+  - all write to stdout+stderr are checked. It's slow!
+  - Its guaranteed that a HTML Header would be send first.
 """
 
 #print "Content-type: text/html; charset=utf-8\r\n\r\nHARDCORE DEBUG:\n"
 #print "Content-type: text/plain; charset=utf-8\r\n\r\nHARDCORE DEBUG:\n"
+#import cgitb;cgitb.enable()
 
 import os
 
-#~ from django.core.servers.cgi import runcgi
-from cgi_server import runcgi
+# Set the DJANGO_SETTINGS_MODULE environment variable.
+os.environ['DJANGO_SETTINGS_MODULE'] = "PyLucid.settings"
 
 try:
     from PyLucid.settings import DEBUG
-except ImportError:
+except Exception, e:
     print "Content-type: text/plain; charset=utf-8\r\n\r\n"
     print "Low-Level-Error!"
     print
-    print "Can't import 'settings'!"
+    print "Can't import 'settings':", e
     print
     print "You must rename ./PyLucid/settings-example.py to ./PyLucid/settings.py"
     print
     print "You must setup this file for your config!"
-    import sys
+    print
+    print "-"*80
+    import sys, traceback
+    print traceback.format_exc()
     sys.exit()
 
 if DEBUG:
@@ -34,16 +42,13 @@ if DEBUG:
         Base class for HeaderChecker and StdErrorHandler
         -global header_send variable
         """
-        header_send = False
         oldFileinfo = ""
-
+        header_send = False
         def send_info(self):
-            # Angaben zur Datei, Zeilennummer, aus dem die Nachricht stammt
             """
             Write information about the file and line number, from which the
             message comes from.
             """
-#            self.header_send = True
             stack = inspect.stack()[1]
             fileinfo = (stack[1].split("/")[-1][-40:], stack[2])
 
@@ -129,7 +134,7 @@ if DEBUG:
 # Switch to the directory of your project. (Optional.)
 # os.chdir("/home/user/django/myproject/")
 
-# Set the DJANGO_SETTINGS_MODULE environment variable.
-os.environ['DJANGO_SETTINGS_MODULE'] = "PyLucid.settings"
+#~ from django.core.servers.cgi import runcgi
+from cgi_server import runcgi
 
 runcgi()
