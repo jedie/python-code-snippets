@@ -94,15 +94,22 @@ def _run(context, local_response, module_name, method_name, url_args, method_kwa
     """
     get the module and call the method
     """
+    def error(msg):
+        msg = "Error run module/plugin '%s.%s: %s" % (
+            module_name, method_name, msg
+        )
+        context["page_msg"](msg)
+        msg2 = '<i title="(Error details in page messages.)">["%s.%s" error.]</i>' % (
+            module_name, method_name
+        )
+        local_response.write(msg2)
+
 #    context["page_msg"](module_name, method_name)
     try:
         plugin = Plugin.objects.get(module_name=module_name)
     except Plugin.DoesNotExist:
-        msg = "[Error Plugin %s not exists!]" % module_name
-        context["page_msg"](msg)
-        local_response.write(msg)
-        return local_response
-
+        error("Plugin not exists in database.")
+        return
 
     module_config = get_module_config(
         package_name = plugin.package_name,
@@ -110,9 +117,13 @@ def _run(context, local_response, module_name, method_name, url_args, method_kwa
         dissolve_version_string=False
     )
 #    context["page_msg"](module_config.module_manager_data)
-    method_cfg = module_config.module_manager_data[method_name]
-#    context["page_msg"](method_cfg)
+    try:
+        method_cfg = module_config.module_manager_data[method_name]
+    except KeyError:
+        error("Can't get config for the method '%s'." % method_name)
+        return
 
+#    context["page_msg"](method_cfg)
     if method_cfg["must_login"]:
         # User must be login to use this method
         # http://www.djangoproject.com/documentation/authentication/
