@@ -137,4 +137,22 @@ if DEBUG:
 #~ from django.core.servers.cgi import runcgi
 from cgi_server import runcgi
 
-runcgi()
+try:
+    runcgi()
+except Exception, e:
+    print "Content-type: text/plain; charset=utf-8\r\n\r\n"
+    print "Low-Level-Error:", e
+    print
+    print "-"*80
+    import traceback
+    print traceback.format_exc()
+    print "-"*80
+    print
+    if str(e) == "no such table: django_session":
+        print "You must install PyLucid first. Go into the _install section."
+        print
+        print "Deactivate temporaly the MIDDLEWARE_CLASSES:"
+        print " - django.contrib.sessions.middleware.SessionMiddleware"
+        print " - django.contrib.auth.middleware.AuthenticationMiddleware"
+        print
+        print "After 'syncdb' you must activate the middleware classes!"
