@@ -23,6 +23,9 @@ def get_link_by_id(page_id):
         except Page.DoesNotExist:
             # The parent id is 0 and there is no page with id 0
             break
+        if parent_page == None:
+            # No parent_page -> a root page
+            break
         page_id = parent_page.id
 
     data.reverse()
@@ -31,19 +34,22 @@ def get_link_by_id(page_id):
     link = "/".join(data)
     return link
 
-def get_absolute_link_by_id(request, page_id):
+def get_absolute_link_by_id(context, page_id):
     """
     return the absolute URL to the given page ID.
     """
-    index = request.URLs["absoluteIndex"] # Has end-slash!
+    URLs = context["URLs"]
+    index = URLs["absoluteIndex"] # Has end-slash!
     url = get_link_by_id(page_id)
     return "".join((index, url))
 
-def get_update_info(request, count=10):
+def get_update_info(context, count=10):
     """
     get the last >count< page updates.
     Used by page_update_list and the RSSfeedGenerator
     """
+    request = context["request"]
+
     page_updates = Page.objects.filter(showlinks__exact=1)
     if request.user.username != "":
         page_updates = page_updates.filter(permitViewPublic__exact=1)
@@ -58,7 +64,7 @@ def get_update_info(request, count=10):
     userlist = User.objects.in_bulk(userlist)
 
     for item in page_updates:
-        item["link"] = get_absolute_link_by_id(request, item["id"])
+        item["link"] = get_absolute_link_by_id(context, item["id"])
 #        item["absoluteLink"] = "/%s" % item["link"]#self.URLs.absoluteLink(item["link"])
 
         pageName = item["name"]

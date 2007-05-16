@@ -45,7 +45,7 @@ class page_update_list(PyLucidBaseModule):
         self.generate_list(count)
 
     def generate_list(self, count):
-        page_updates = self.db.page.get_update_info(self.request, 10)
+        page_updates = self.db.page.get_update_info(self.context, 10)
 
         context = {
             "page_updates" : page_updates
