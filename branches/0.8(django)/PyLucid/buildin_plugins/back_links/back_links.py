@@ -24,8 +24,9 @@ class back_links(PyLucidBaseModule):
         """
         generate the backlinks
         """
+        current_page = self.context["PAGE"]
         try:
-            parent_page = self.request.current_page.parent
+            parent_page = current_page.parent
         except Page.DoesNotExist:
             # The parent id is 0 and there is no page with id 0
             return ""
