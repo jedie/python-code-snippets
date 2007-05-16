@@ -5,9 +5,10 @@ from django.template import Template, Context
 
 from PyLucid.system.tinyTextile import TinyTextileParser
 
-
-CONTEXT_TRANSFER_KEYS = ("request", "page_msg", "URLs")
-
+from django.template import add_to_builtins
+# use the undocumented django function to add the "lucidTag" to the tag library.
+# see ./PyLucid/defaulttags/__init__.py
+add_to_builtins('PyLucid.defaulttags')
 
 def apply_markup(content, markup_object):
     """
@@ -35,11 +36,12 @@ def render_template(content, global_context, local_context={}):
 
 def prepare_context(global_context, local_context):
     """
-    -transfer some objects from the global context into the local dict
+    -transfer objects from the global context into the local dict
     -returns a django context object
+    TODO: Should we made a copy from the global context?
     """
-    for key in CONTEXT_TRANSFER_KEYS:
-        local_context[key] = global_context[key]
 
-    c = Context(local_context)
+    global_context.update(local_context)
+
+    c = Context(global_context)
     return c

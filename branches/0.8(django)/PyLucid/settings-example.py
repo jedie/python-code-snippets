@@ -65,7 +65,6 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.middleware.doc.XViewMiddleware',
-#    'PyLucid.middlewares.page_msg.PageMessage',
     'PyLucid.middlewares.pagestats.PageStatsMiddleware',
 )
 
