@@ -18,9 +18,3 @@ AddHandler fcgid-script .fcgi
 RewriteEngine On
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^(.*)$ index.py/$1 [QSA,L]
-
-# Sehr wichtig! Damit niemand einfach per URL das install-Passwort
-# vom Apache angezeigt bekommt!
-<Files install_lock.txt>
-    Deny from all
-</Files>
