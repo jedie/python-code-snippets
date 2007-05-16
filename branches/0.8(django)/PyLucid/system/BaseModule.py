@@ -30,19 +30,18 @@ license:
 import os, pprint, cgi
 
 from django.contrib.sites.models import Site
-from django.template import Template, Context
 
 from PyLucid import settings
 from PyLucid import db
 from PyLucid.models import PagesInternal
-from PyLucid.tools.apply_markups import apply_markup
+from PyLucid.tools.content_processors import apply_markup, render_template
 
 
 #______________________________________________________________________________
 
 
 class PyLucidBaseModule(object):
-    TRANSFER_KEYS = ("request", "page_msg", "URLs")
+
     def __init__(self, context, response):
         self.context    = context
         self.response   = response
@@ -118,6 +117,9 @@ class PyLucidBaseModule(object):
         """
         if debug:
             self._debug_context(context, content)
+
+        html = render_template(content, self.context, context)
+        return html
 
 #        try:
         t = Template(content)
