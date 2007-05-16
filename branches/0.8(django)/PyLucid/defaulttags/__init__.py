@@ -40,25 +40,25 @@ class lucidTagNode(template.Node):
         if isinstance(output, basestring):
             content = output
         else:
-            try:
-                # StringIO Object
-                content = local_response.getvalue()
-            except Exception, e:
-                msg = (
-                    "Error: Wrong output from inline Plugin!"
-                    " - It should be write into the response object"
-                    " or return a String!"
-                    " - But %s.%s has returned: %s (%s)"
-                    " - Original Error: %s"
-                ) % (
-                    self.module_name, self.method_name,
-                    repr(output), type(output), e
-                )
-                raise AssertionError(msg)
+#            try:
+            # StringIO Object
+            content = local_response.getvalue()
+#            except Exception, e:
+#                msg = (
+#                    "Error: Wrong output from inline Plugin!"
+#                    " - It should be write into the response object"
+#                    " or return a String!"
+#                    " - But %s.%s has returned: %s (%s)"
+#                    " - Original Error: %s"
+#                ) % (
+#                    self.module_name, self.method_name,
+#                    repr(output), type(output), e
+#                )
+#                raise AssertionError(msg)
 
-        print self.module_name, self.method_name
-        print content
-        print "---"
+#        print self.module_name, self.method_name
+#        print content
+#        print "---"
 
         return content
 

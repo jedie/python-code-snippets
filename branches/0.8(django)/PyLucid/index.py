@@ -48,7 +48,7 @@ def render_cms_page(context, page_content=None):
         markup_object = current_page.markup
         current_page.content = apply_markup(page_content, markup_object)
 
-    render_template(current_page.content, context)
+    current_page.content = render_template(current_page.content, context)
 
     template = current_page.template
     template_content = template.content
