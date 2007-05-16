@@ -17,26 +17,34 @@ from PyLucid.settings import TABLE_PREFIX
 
 class Update(BaseInstall):
     def view(self):
-        output = ["\nupdate PyLucid database:\n"]
+        self._redirect_execute(self.update_structure)
+        self._redirect_execute(self.update_data)
+        self.context["output"] += (
+            "\nupdate done.\n"
+            "You must execute 'syncdb'!"
+        )
+        return self._simple_render(headline="Update PyLucid tables.")
+
+    def update_structure(self):
+        print "update PyLucid database:"
 
         from django.db import connection
         cursor = connection.cursor()
 
         def display_info(txt):
-            output.append("\n\n")
-            output.append("%s:\n" % txt)
-            output.append("-"*79)
-            output.append("\n")
-
+            print "\n"
+            print "%s:" % txt
+            print "-"*79
+            print
 
         def verbose_execute(SQLcommand):
-            output.append("%s..." % SQLcommand)
+            print "%s..." % SQLcommand,
             try:
                 cursor.execute(SQLcommand)
             except Exception, e:
-                output.append("Error: %s\n" % e)
+                print "Error: %s" % e
             else:
-                output.append("OK\n")
+                print "OK"
 
         #_______________________________________________________________________
         display_info("Drop obsolete tables")
@@ -136,10 +144,33 @@ class Update(BaseInstall):
         )
         verbose_execute("DROP TABLE %spages_internal" % TABLE_PREFIX)
 
-        #_______________________________________________________________________
-        output.append("\n\nupdate done.\nYou must execute 'syncdb'!")
+    #____________________________________________________________________________
 
-        return self._simple_render(output, headline="syncdb")
+    def update_data(self):
+        """
+        Update some data in tables
+        -parent relation:
+            old model: root parent = 0
+            new model: root parent = None
+        """
+        from PyLucid.models import Page
+        print
+        print "="*80
+        print " *** Update some PyLucid table data ***"
+        print "="*80
+        print
+        for page in Page.objects.all():
+            print page
+            # Update parent relation
+            try:
+                parent = page.parent
+            except Page.DoesNotExist:
+                print " - Update parent page to None"
+                page.parent = None
+                page.save()
+            else:
+                print " - Parent relation OK"
+            print
 
 
 def update(request, install_pass):
@@ -221,7 +252,7 @@ class UpdateTemplates(BaseInstall):
         model_objects = model.objects.all()
         for model_item in model_objects:
             name = model_item.name
-            print "\n==================[ %s ]==================" % name
+            print "\n================[ %s ]================" % name
 
             old_content = getattr(model_item, content_attr_name)
 

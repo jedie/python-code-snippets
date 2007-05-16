@@ -31,9 +31,7 @@ class TreeGenerator(object):
         """
         parent_dict = self.make_dict(data, "parent")
 
-        root_id = min(parent_dict.keys())
-
-        root = parent_dict.pop(root_id)
+        root = parent_dict.pop(None)
         root = self.insert_level(root, self.start_level)
 
         tree = self.gen(root, parent_dict, level=self.start_level+1)
@@ -56,17 +54,17 @@ class TreeGenerator(object):
 
 if __name__ == "__main__":
     from pprint import pprint
-    
+
     data = [
-        {'id': 1,   'parent': 0,  'name': '1. Entry'},
+        {'id': 1,   'parent': None,  'name': '1. Entry'},
         {'id': 2,   'parent': 1,  'name': '1.1. first subitem'},
         {'id': 3,   'parent': 1,  'name': '1.2. second subitem'},
         {'id': 4,   'parent': 2,  'name': '1.2.1 first sub-subitem'},
         {'id': 5,   'parent': 2,  'name': '1.2.2 second sub-subitem'},
-        {'id': 6,   'parent': 0,  'name': '2. Entry'},
+        {'id': 6,   'parent': None,  'name': '2. Entry'},
         {'id': 7,   'parent': 6,  'name': '2.1. first subitem'},
     ]
-    
+
     tree = TreeGenerator().generate(data)
     pprint(tree)
 
