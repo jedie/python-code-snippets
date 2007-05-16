@@ -5,10 +5,7 @@
 Display a PyLucid CMS Page
 """
 
-try:
-    import cStringIO as StringIO
-except ImportError:
-    import StringIO
+import cStringIO as StringIO
 
 #if __name__ == "__main__": # A local test. THIS SHOULD BE COMMENTED!!!
 #    import os
@@ -20,6 +17,7 @@ except ImportError:
 
 from django.http import Http404, HttpResponse
 from django.template import Template, RequestContext
+#from django.contrib.sites.models import Site
 
 from PyLucid import models, settings
 
@@ -33,7 +31,6 @@ from PyLucid.system.LocalModuleResponse import LocalModuleResponse
 
 from PyLucid.tools.content_processors import apply_markup, render_template
 
-#from django.contrib.sites.models import Site
 
 def render_cms_page(context, page_content=None):
     current_page = context["PAGE"]
@@ -53,8 +50,7 @@ def render_cms_page(context, page_content=None):
     template = current_page.template
     template_content = template.content
 
-    t = Template(template_content)
-    html = t.render(context)
+    html = render_template(template_content, context)
 
 #    import cgi, pprint
 #    print context
@@ -62,6 +58,7 @@ def render_cms_page(context, page_content=None):
 #    html = html.replace("</html>", debug)
 
     return HttpResponse(html)
+
 
 def index(request, url):
     """
