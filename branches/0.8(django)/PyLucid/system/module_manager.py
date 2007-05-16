@@ -164,12 +164,8 @@ def run(context, response, module_name, method_name, url_args=(), method_kwargs=
         except Exception:
             msg = "Run Module %s.%s Error" % (module_name, method_name)
             context["page_msg"].red("%s:" % msg)
-            etype, value, tb = sys.exc_info()
-            tb = tb.tb_next
-            tb_lines = traceback.format_exception(etype, value, tb)
-            context["page_msg"]("-"*50, "<pre>")
-            context["page_msg"](tb_lines)
-            context["page_msg"]("</pre>", "-"*50)
+            import sys, traceback
+            context["page_msg"]("<pre>%s</pre>" % traceback.format_exc())
             return msg + "(Look in the page_msg)"
 
 
