@@ -6,6 +6,8 @@ sollte ich mir mal ansehen:
 http://code.djangoproject.com/wiki/CookBookScriptsMiniFlush
 """
 
+from datetime import datetime
+
 from PyLucid.install.BaseInstall import BaseInstall
 from PyLucid.settings import TABLE_PREFIX
 
@@ -224,15 +226,23 @@ class UpdateTemplates(BaseInstall):
             old_content = getattr(model_item, content_attr_name)
 
             content = self._update_content(old_content)
-            if content == old_content:
-                print "\t - Nothing to change."
-                continue
+
+            if model_item.createtime == None:
+                # Should be normaly not None :)
+                # Is from a old PyLucid installation
+                model_item.createtime = datetime.now()
+                print "Update 'createtime' to now. (Time was not set.)"
+            else:
+                if content == old_content:
+                    print "\t - Nothing to change."
+                    continue
 
             print "\t - changed!\n\nthe diff:"
             display_plaintext_diff(old_content, content)
 
             # assign new content to model
             setattr(model_item, content_attr_name, content)
+
             # save the new content
             model_item.save()
 
