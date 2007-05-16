@@ -1,6 +1,8 @@
 table = 'pylucid_markup'
 fields = ['id', 'name']
+#default item format: "fieldname":("type", "value")
+default = {}
 records = [
-[1, 'None']
-[2, 'textile']
+[1L, 'None']
+[2L, 'textile']
 ]
