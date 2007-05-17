@@ -6,14 +6,14 @@ sollte ich mir mal ansehen:
 http://code.djangoproject.com/wiki/CookBookScriptsMiniFlush
 """
 
+import pickle
+
+from PyLucid import settings
+
 from PyLucid.install.BaseInstall import BaseInstall
-#from PyLucid.settings import TABLE_PREFIX
-#from PyLucid.system.response import PyLucidResponse
 
 from django import newforms as forms
 from django.core import serializers
-
-import pickle
 
 
 
@@ -140,11 +140,12 @@ import pickle
 
 class Options(object):
     """ Fake optparse options """
-    datadir = 'PyLucid/db_dump_datadir'
-    verbose = True
-    stdout = None
-    remain = None
-    settings = "PyLucid.settings"
+    def __init__(self):
+        self.datadir = settings.INSTALL_DATA_DIR
+        self.verbose = True
+        self.stdout = None
+        self.remain = None
+        self.settings = "PyLucid.settings"
 
 class Dump_DB(BaseInstall):
     def view(self):

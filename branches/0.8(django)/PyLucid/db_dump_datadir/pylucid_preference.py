@@ -3,7 +3,7 @@ fields = ['id', 'pluginID', 'section', 'varName', 'name', 'description', 'value'
 #default item format: "fieldname":("type", "value")
 default = {}
 records = [
-[1L, 0L, 'core', 'defaultPage', 'Default Page', 'This is the default page that a site visitor will see if they arrive at your CMS without specifying a particular page.', '1', 'pageSelect']
+[1L, 0L, 'core', 'defaultPage', 'Default Page', 'This This is the default page that a site visitor will see if they arrive at your index.php without specifying a particular page.', '1', 'pageSelect']
 [2L, 0L, 'core', 'defaultMarkup', 'Preferred Text Markup', 'This specifies what the default text markup parser will be for new pages. You can set it to the name of a plugin markup parser ("textile" and "markdown" are currently available), or "none".', 'textile', 'markupSelect']
 [3L, 0L, 'core', 'defaultTemplate', 'Default Template Name', 'This is the template that will be assigned to new pages when they are created.', '1', 'templateSelect']
 [4L, 0L, 'core', 'defaultStyle', 'Default Style Name', 'This is the stylesheet taht will be assigned to new pages when they are created.', '1', 'styleSelect']

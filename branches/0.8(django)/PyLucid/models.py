@@ -64,12 +64,9 @@ class Page(models.Model):
         help_text="Put the Link to this page into Menu/Sitemap etc.?"
     )
 
-    permitViewPublic = models.BooleanField( default=True,
-        help_text="Does anomymous user see this page?"
-    )
     permitViewGroup = models.ForeignKey(
-        Group, related_name="page_permitViewGroup", blank=True,
-        help_text="Usergroup how can see this page, if permitViewPublic denied."
+        Group, related_name="page_permitViewGroup", null=True, blank=True,
+        help_text="Limit viewable to a group?"
     )
 
     owner = models.ForeignKey(
@@ -86,7 +83,7 @@ class Page(models.Model):
     class Admin:
         list_display = ("id", "shortcut", "name", "title", "description")
         list_display_links = ("shortcut",)
-        list_filter = ("permitViewPublic","owner")
+        list_filter = ("owner",)
         search_fields = ["content","name", "title", "description","keywords"]
         fields = (
             ('basic', {'fields': ('content','parent','position',)}),

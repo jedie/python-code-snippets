@@ -26,7 +26,10 @@ ADMIN_URL_PREFIX = "_admin"
 INSTALL_HELP_URL = "http://www.pylucid.org/index.py/InstallPyLucid/"
 
 # How are the DB initial data fixtures stored?
-INSTALL_DATA_DIR = "PyLucid/fixtures"
+INSTALL_DATA_DIR = 'PyLucid/db_dump_datadir'
+
+# Prefix for the PyLucid tables
+TABLE_PREFIX = "pylucid_"
 
 # PyLucid Version String
 PYLUCID_VERSION = (0,8,0,"alpha1")
