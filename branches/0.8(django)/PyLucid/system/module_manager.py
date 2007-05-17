@@ -133,7 +133,9 @@ def _run(context, local_response, module_name, method_name, url_args, method_kwa
         if context["request"].user.username == "":
             # User is not logged in
             if method_cfg.get("no_rights_error", False) == True:
-                return local_response
+                # No error message should be displayed for this plugin.
+                # e.g. admin_menu
+                return ""
             else:
                 raise AccessDeny
 
@@ -146,10 +148,12 @@ def _run(context, local_response, module_name, method_name, url_args, method_kwa
 
 
 
-def run(context, response, module_name, method_name, url_args=(), method_kwargs={}):
+def run(context, response, module_name, method_name, url_args=(),
+                                                                                        method_kwargs={}):
     """
     run the plugin with errorhandling
     """
+#    print "module_manager.run():", module_name, method_name, url_args, method_kwargs
     if settings.DEBUG:
         return _run(
             context, response, module_name, method_name,
@@ -168,13 +172,6 @@ def run(context, response, module_name, method_name, url_args=(), method_kwargs=
             context["page_msg"]("<pre>%s</pre>" % traceback.format_exc())
             return msg + "(Look in the page_msg)"
 
-
-#def handleTag(module_name, request, response):
-#    """
-#    handle a lucidTag
-#    """
-#    output = run(request, response, module_name, method_name = "lucidTag")
-#    return output
 
 def handle_command(context, response, module_name, method_name, url_args):
     """

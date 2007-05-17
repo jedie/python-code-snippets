@@ -26,6 +26,8 @@ class lucidTagNode(template.Node):
         )
 
     def render(self, context):
+#        print "lucidTag.render():", self.module_name, self.method_name
+
         local_response = StringIO.StringIO()
         output = run(
             context, local_response,
@@ -47,7 +49,6 @@ class lucidTagNode(template.Node):
             )
             raise AssertionError(msg)
 
-#        print self.module_name, self.method_name
 #        print content
 #        print "---"
 
