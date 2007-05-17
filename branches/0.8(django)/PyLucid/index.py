@@ -64,7 +64,23 @@ def index(request, url):
     """
     The main index method. Display a requested CMS Page.
     """
-    context = RequestContext(request)
+    try:
+        context = RequestContext(request)
+    except AttributeError, e:
+        if str(e) == "'WSGIRequest' object has no attribute 'user'":
+            # The auth middleware is not
+            msg = (
+                "The auth middleware is not activatet in your settings.py"
+                " - Did you install PyLucid correctly?"
+                " Please look at: %s"
+                " - Original Error: %s"
+            ) % (settings.INSTALL_HELP_URL, e)
+            from django.core.exceptions import ImproperlyConfigured
+            raise ImproperlyConfigured(msg)
+        else:
+            # other error
+            raise AttributeError(e)
+
     context["page_msg"] = PageMessages(context)
     context["PAGE"] = get_current_page_obj(request, url)
     context["URLs"] = URLs(context)

@@ -59,11 +59,13 @@ TEMPLATE_LOADERS = (
 #     'django.template.loaders.eggs.load_template_source',
 )
 
+# After "syncdb" you must activate 'SessionMiddleware' and
+# 'AuthenticationMiddleware'!!!
 MIDDLEWARE_CLASSES = (
-    'django.contrib.sessions.middleware.SessionMiddleware',
+#    'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
+#    'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.middleware.doc.XViewMiddleware',
     'PyLucid.middlewares.pagestats.PageStatsMiddleware',
 )
@@ -93,7 +95,9 @@ from system.base_settings import *
 #_____________________________________________________________________________
 # PyLucid settings - you can/should change!
 
-TABLE_PREFIX = "pylucid_"
+"""
+Note, you must edit MIDDLEWARE_CLASSES above, after installation!!!
+"""
 
 # Enable the _install Python Web Shell Feature?
 INSTALL_EVILEVAL = False

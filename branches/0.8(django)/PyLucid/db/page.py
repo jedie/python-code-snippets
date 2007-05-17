@@ -51,8 +51,9 @@ def get_update_info(context, count=10):
     request = context["request"]
 
     page_updates = Page.objects.filter(showlinks__exact=1)
-    if request.user.username != "":
-        page_updates = page_updates.filter(permitViewPublic__exact=1)
+    # TODO:
+#    if request.user.username != "":
+#        page_updates = page_updates.filter(permitViewPublic__exact=1)
 
     page_updates = page_updates.order_by('-lastupdatetime')
 

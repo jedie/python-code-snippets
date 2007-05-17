@@ -21,7 +21,9 @@ class lucidTagNode(template.Node):
         self.method_kwargs = method_kwargs
 
     def __repr__(self):
-        return "<lucidTag node>"
+        return "<lucidTag node ('%s.%s' kwargs:%s)>" % (
+            self.module_name, self.method_name, self.method_kwargs
+        )
 
     def render(self, context):
         local_response = StringIO.StringIO()

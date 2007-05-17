@@ -80,6 +80,19 @@ class Update(BaseInstall):
             verbose_execute(SQLcommand)
 
         #_______________________________________________________________________
+        display_info("Drop some obsolete columns")
+
+        column_delete = (
+            ("page", "permitViewPublic"),
+        )
+
+        for item in column_delete:
+            SQLcommand = "ALTER TABLE %s%s DROP COLUMN %s;" % (
+                TABLE_PREFIX, item[0], item[1]
+            )
+            verbose_execute(SQLcommand)
+
+        #_______________________________________________________________________
         display_info("Change some column names (for SQL constraints)")
         column_rename = (
             # Because of the development version are here "double" Statements.
@@ -108,7 +121,6 @@ class Update(BaseInstall):
             ("page", "permitViewGroup_id permitViewGroup_id INTEGER NULL"),
 
             ("page", "showlinks showlinks bool NOT NULL"),
-            ("page", "permitViewPublic permitViewPublic bool NOT NULL"),
 
             ("pages_internal", "template_engine template_id INTEGER NOT NULL"),
             ("pages_internal", "template_id template_id INTEGER NOT NULL"),
@@ -126,10 +138,9 @@ class Update(BaseInstall):
             ("template", "lastupdateby_id lastupdateby_id INTEGER NOT NULL"),
         )
         for item in column_rename:
-            SQLcommand = (
-                "ALTER TABLE %s%s"
-                " CHANGE %s;"
-            ) % (TABLE_PREFIX, item[0], item[1])
+            SQLcommand = "ALTER TABLE %s%s CHANGE %s;" % (
+                TABLE_PREFIX, item[0], item[1]
+            )
             verbose_execute(SQLcommand)
 
         #_______________________________________________________________________

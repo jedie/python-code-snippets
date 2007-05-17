@@ -52,10 +52,13 @@ class BaseInstall(object):
         redirect = StringIO.StringIO()
         old_stdout = sys.stdout
         sys.stdout = redirect
+        old_stderr = sys.stderr
+        sys.stderr = redirect
         try:
             method(*args, **kwargs)
         finally:
             sys.stdout = old_stdout
+            sys.stderr = old_stderr
 
         self.context["output"] += redirect.getvalue()
 
