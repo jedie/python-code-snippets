@@ -93,13 +93,9 @@ class Page(models.Model):
             ('update information', {
                 'fields': ('createtime','lastupdatetime','lastupdateby')
             }),
-
             ('Advanced options', {
-                'classes': 'collapse',
-                'fields' : (
-                    'showlinks', 'permitViewPublic', 'permitViewGroup',
-                    'owner', 'permitEditGroup'
-                ),
+                #'classes': 'collapse',
+                'fields' : ('showlinks', 'permitViewGroup', 'owner', 'permitEditGroup'),
             }),
         )
         date_hierarchy = 'lastupdatetime'
