@@ -35,7 +35,7 @@ class admin_menu(PyLucidBaseModule):
         context = {"commandURLprefix": self.URLs["commandBase"]}
 #        self.page_msg(context)
 
-        html = self._render_template("sub_menu", context)
+        self._render_template("sub_menu", context)
 
 
 
