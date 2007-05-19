@@ -14,7 +14,7 @@ start_overall = time()
 TAG = "<!-- script_duration -->"
 
 FMT = (
-    ' time: %(total_time).3f -'
+    'render  time: %(total_time).3f -'
     ' overall: %(overall_time).1f -'
     ' Queries: %(queries)d'
 )

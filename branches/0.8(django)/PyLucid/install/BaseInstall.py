@@ -37,6 +37,7 @@ class BaseInstall(object):
         self._check_pass(install_pass)
         self.context = {
             "output": "",
+            "http_host": request.META.get("HTTP_HOST","cms page"),
             "version": PYLUCID_VERSION_STRING,
             "install_pass": install_pass,
         }
