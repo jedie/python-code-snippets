@@ -4,6 +4,7 @@ setup some "static" variables
 """
 
 from PyLucid import settings
+from PyLucid import PYLUCID_VERSION_STRING
 
 def static(request):
     context_extras = {}
@@ -12,7 +13,7 @@ def static(request):
 
     context_extras['powered_by'] = (
         '<a href="http://www.pylucid.org">PyLucid v%s</a>'
-    ) % settings.PYLUCID_VERSION_STRING
+    ) % PYLUCID_VERSION_STRING
 
     #___________________________________________________________________________
 

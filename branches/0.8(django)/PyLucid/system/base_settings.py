@@ -13,9 +13,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     "PyLucid.system.context_processors.static",
 )
 
-PYLUCID_MODULE_PATHS = (
-    "PyLucid/modules", "PyLucid/buildin_plugins", "PyLucid/plugins"
-)
+PYLUCID_MODULE_PATHS = ("PyLucid/plugins_internal", "PyLucid/plugins_external")
 
 # Some special URL prefixes
 INSTALL_URL_PREFIX = "_install"
@@ -30,7 +28,3 @@ INSTALL_DATA_DIR = 'PyLucid/db_dump_datadir'
 
 # Prefix for the PyLucid tables
 TABLE_PREFIX = "pylucid_"
-
-# PyLucid Version String
-PYLUCID_VERSION = (0,8,0,"alpha1")
-PYLUCID_VERSION_STRING = "0.8.0alpha1"
