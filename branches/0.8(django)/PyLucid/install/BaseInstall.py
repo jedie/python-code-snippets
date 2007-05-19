@@ -4,12 +4,10 @@ A base class for every _install view.
 """
 
 import sys
-try:
-    import cStringIO as StringIO
-except ImportError:
-    import StringIO
+import cStringIO as StringIO
 
-from PyLucid.settings import PYLUCID_VERSION_STRING, INSTALL_PASS
+from PyLucid.settings import INSTALL_PASS
+from PyLucid import PYLUCID_VERSION_STRING
 
 from django.http import HttpResponse, Http404
 from django.template import Template, Context, loader
