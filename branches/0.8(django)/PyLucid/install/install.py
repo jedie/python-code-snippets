@@ -162,24 +162,24 @@ def init_db2(request, install_pass):
 install_modules_template = """
 {% extends "PyLucid/install/base.html" %}
 {% block content %}
-<h1>Install base modules/plugins</h1>
+<h1>Install all internal plugins:</h1>
 <pre>{{ output|escape }}</pre>
 {% endblock %}
 """
-class InstallModules(BaseInstall):
+class InstallPlugins(BaseInstall):
     def view(self):
         output = []
         from PyLucid.system import module_manager
 
-        self._redirect_execute(module_manager.install_base_modules)
+        self._redirect_execute(module_manager.install_internal_plugins)
 
         return self._render(install_modules_template)
 
-def install_modules(request, install_pass):
+def install_plugins(request, install_pass):
     """
-    3. install base modules/plugins
+    3. install internal plugins
     """
-    return InstallModules(request, install_pass).view()
+    return InstallPlugins(request, install_pass).view()
 
 #______________________________________________________________________________
 

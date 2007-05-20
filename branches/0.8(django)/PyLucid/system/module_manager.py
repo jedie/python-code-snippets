@@ -312,9 +312,9 @@ def install_internalpage(plugin, package_name, module_name, module_config):
         )
         print "OK"
 
-def install_base_modules():
+def install_internal_plugins():
     """
-    Install all modules/plugin how are markt as important or essential.
+    Install all internal plugin how are markt as important or essential.
     """
     Plugin.objects.all().delete()    # delete all installed Plugins
 
@@ -323,7 +323,7 @@ def install_base_modules():
         print "---", module_path
         package_name = module_path.replace("/", ".")
         for module_name in module_dict[module_path]:
-            print "\n\ninstall module: *** %s ***\n" % module_name
+            print "\n\ninstall plugin: *** %s ***\n" % module_name
             try:
                 module_config = get_module_config(
                     package_name, module_name,
@@ -338,7 +338,7 @@ def install_base_modules():
                 getattr(module_config, "__essential_buildin__", False)
             )
             if not must_install:
-                print "module is not important or essential, skip."
+                print "plugin is not important or essential, skip."
                 continue
 
             plugin = install_module(
@@ -347,9 +347,9 @@ def install_base_modules():
             install_internalpage(
                 plugin, package_name, module_name, module_config
             )
-            print "OK, module/plugin installed."
+            print "OK, plugins installed."
 
 if __name__ == "__main__":
     os.chdir("../..") # go into root dir
-    install_base_modules()
+    install_internal_plugins()
 
