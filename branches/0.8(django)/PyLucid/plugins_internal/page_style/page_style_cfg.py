@@ -8,12 +8,12 @@ __author__              = "Jens Diemer"
 __url__                 = "http://www.PyLucid.org"
 __description__         = "Stylesheet module"
 __long_description__ = """Puts the Stylesheet into the CMS page."""
-__essential_buildin__   = True
+__can_deinstall__ = False
 
 #___________________________________________________________________________________________________
 # Module-Manager Daten
 
-module_manager_data = {
+plugin_manager_data = {
     "lucidTag" : {
         "must_login"    : False,
         "must_admin"    : False,

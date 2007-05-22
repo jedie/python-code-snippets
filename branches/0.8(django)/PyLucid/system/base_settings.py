@@ -13,7 +13,8 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     "PyLucid.system.context_processors.static",
 )
 
-PYLUCID_MODULE_PATHS = ("PyLucid/plugins_internal", "PyLucid/plugins_external")
+INTERNAL_PLUGIN_PATH = "PyLucid/plugins_internal"
+EXTERNAL_PLUGIN_PATH = "PyLucid/plugins_external"
 
 # Some special URL prefixes
 INSTALL_URL_PREFIX = "_install"

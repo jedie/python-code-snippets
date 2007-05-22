@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 
 """
-Module Manager
+plugin Manager
 
 Last commit info:
 ----------------------------------
@@ -36,7 +36,6 @@ if __name__ == "__main__": # init django for local test
 from django.http import HttpResponse
 
 from PyLucid.system.exceptions import *
-from PyLucid.system.LocalModuleResponse import LocalModuleResponse
 from PyLucid.models import Plugin, Markup, PagesInternal
 
 def _import(form_name, object_name):
@@ -50,75 +49,75 @@ def _import(form_name, object_name):
             object_name, form_name, e
         )
 
-def get_module_class(package_name, module_name):
+def get_plugin_class(package_name, plugin_name):
     """
-    import the module/plugin and returns the class object
+    import the plugin/plugin and returns the class object
     """
-    module = _import(
-        form_name = ".".join([package_name, module_name, module_name]),
-        object_name = module_name
+    plugin = _import(
+        form_name = ".".join([package_name, plugin_name, plugin_name]),
+        object_name = plugin_name
     )
-    module_class = getattr(module, module_name)
-    return module_class
+    plugin_class = getattr(plugin, plugin_name)
+    return plugin_class
 
-def get_module_config(package_name, module_name, dissolve_version_string=False,
+def get_plugin_config(package_name, plugin_name, dissolve_version_string=False,
                                                             print_debug=False):
     """
-    imports the plugin and the config module and returns a merge config-object
+    imports the plugin and the config plugin and returns a merge config-object
 
     dissolve_version_string == True -> get the version string (__version__)
-        from the module and put it into the config object
+        from the plugin and put it into the config object
     """
-    config_name = "%s_cfg" % module_name
+    config_name = "%s_cfg" % plugin_name
 
-    def get_module(object_name):
-        from_name = ".".join([package_name, module_name, object_name])
+    def get_plugin(object_name):
+        from_name = ".".join([package_name, plugin_name, object_name])
         if print_debug:
             print "from %s import %s" % (from_name, object_name)
         return _import(from_name, object_name)
 
-    config_module = get_module(config_name)
+    config_plugin = get_plugin(config_name)
 
     if dissolve_version_string:
-        plugin_module = get_module(module_name)
+        plugin_plugin = get_plugin(plugin_name)
 
-        module_version = getattr(plugin_module, "__version__", None)
-        if module_version:
+        plugin_version = getattr(plugin_plugin, "__version__", None)
+        if plugin_version:
             # Cleanup a SVN Revision Number
-            module_version = module_version.strip("$ ")
-        config_module.__version__ = module_version
+            plugin_version = plugin_version.strip("$ ")
+        config_plugin.__version__ = plugin_version
 
-    return config_module
+    return config_plugin
 
-def _run(context, local_response, module_name, method_name, url_args, method_kwargs):
+def _run(context, local_response, plugin_name, method_name, url_args, method_kwargs):
     """
-    get the module and call the method
+    get the plugin and call the method
     """
     def error(msg):
-        msg = "Error run module/plugin '%s.%s: %s" % (
-            module_name, method_name, msg
+        msg = "Error run plugin/plugin '%s.%s: %s" % (
+            plugin_name, method_name, msg
         )
         context["page_msg"](msg)
         msg2 = '<i title="(Error details in page messages.)">["%s.%s" error.]</i>' % (
-            module_name, method_name
+            plugin_name, method_name
         )
         local_response.write(msg2)
 
-#    context["page_msg"](module_name, method_name)
+#    context["page_msg"](plugin_name, method_name)
     try:
-        plugin = Plugin.objects.get(module_name=module_name)
+        plugin = Plugin.objects.get(plugin_name=plugin_name)
     except Plugin.DoesNotExist:
         error("Plugin not exists in database.")
         return
 
-    module_config = get_module_config(
+    plugin_config = get_plugin_config(
         package_name = plugin.package_name,
-        module_name = plugin.module_name,
+        plugin_name = plugin.plugin_name,
         dissolve_version_string=False
     )
-#    context["page_msg"](module_config.module_manager_data)
+#    context["page_msg"](plugin_config.plugin_manager_data)
     try:
-        method_cfg = module_config.module_manager_data[method_name]
+        method_cfg = plugin_config.plugin_manager_data[method_name]
     except KeyError:
         error("Can't get config for the method '%s'." % method_name)
         return
@@ -139,8 +138,8 @@ def _run(context, local_response, module_name, method_name, url_args, method_kwa
             else:
                 raise AccessDeny
 
-    module_class=get_module_class(plugin.package_name, module_name)
-    class_instance = module_class(context, local_response)
+    plugin_class=get_plugin_class(plugin.package_name, plugin_name)
+    class_instance = plugin_class(context, local_response)
     unbound_method = getattr(class_instance, method_name)
 
     output = unbound_method(*url_args, **method_kwargs)
@@ -148,101 +147,97 @@ def _run(context, local_response, module_name, method_name, url_args, method_kwa
 
 
 
-def run(context, response, module_name, method_name, url_args=(),
+def run(context, response, plugin_name, method_name, url_args=(),
                                                                                         method_kwargs={}):
     """
     run the plugin with errorhandling
     """
-#    print "module_manager.run():", module_name, method_name, url_args, method_kwargs
+#    print "plugin_manager.run():", plugin_name, method_name, url_args, method_kwargs
     if settings.DEBUG:
         return _run(
-            context, response, module_name, method_name,
+            context, response, plugin_name, method_name,
             url_args, method_kwargs
         )
     else:
         try:
             return _run(
-                context, response, module_name, method_name,
+                context, response, plugin_name, method_name,
                 url_args, method_kwargs
             )
         except Exception:
-            msg = "Run Module %s.%s Error" % (module_name, method_name)
+            msg = "Run plugin %s.%s Error" % (plugin_name, method_name)
             context["page_msg"].red("%s:" % msg)
             import sys, traceback
             context["page_msg"]("<pre>%s</pre>" % traceback.format_exc())
             return msg + "(Look in the page_msg)"
 
 
-def handle_command(context, response, module_name, method_name, url_args):
+def handle_command(context, response, plugin_name, method_name, url_args):
     """
     handle a _command url request
     """
-    output = run(context, response, module_name, method_name, url_args)
+    output = run(context, response, plugin_name, method_name, url_args)
     return output
 
 #_____________________________________________________________________________
-# some routines around modules/plugins
+# some routines around plugins/plugins
 
-def file_check(module_path, dir_item):
+def file_check(plugin_path, dir_item):
     """
-    Test if the given module_path/dir_item can be a PyLucid Plugin.
+    Test if the given plugin_path/dir_item can be a PyLucid Plugin.
     """
     for item in ("__init__.py", "%s.py", "%s_cfg.py"):
         if "%s" in item:
             item = item % dir_item
-        item = os.path.join(module_path, dir_item, item)
+        item = os.path.join(plugin_path, dir_item, item)
         if not os.path.isfile(item):
             return False
     return True
 
-def get_module_list(module_path):
+def get_plugin_list(plugin_path):
     """
-    Return a dict-list with module_info for the given path.
+    Return a dict-list with plugin_info for the given path.
     """
-    module_list = []
-    for dir_item in os.listdir(module_path):
-        abs_path = os.path.join(module_path, dir_item)
-        if not os.path.isdir(abs_path) or not file_check(module_path, dir_item):
+    plugin_list = []
+    for dir_item in os.listdir(plugin_path):
+        abs_path = os.path.join(plugin_path, dir_item)
+        if not os.path.isdir(abs_path) or not file_check(plugin_path, dir_item):
             continue
+        plugin_list.append(dir_item)
+    return plugin_list
 
-        module_list.append(dir_item)
+def get_internal_plugin_list():
+    return get_plugin_list(settings.INTERNAL_PLUGIN_PATH)
+def get_external_plugin_list():
+    return get_plugin_list(settings.EXTERNAL_PLUGIN_PATH)
 
-    return module_list
 
-def get_all_modules():
-    module_paths = settings.PYLUCID_MODULE_PATHS
-
-    module_info = {}
-    for path in module_paths:
-        module_info[path] = get_module_list(path)
-
-    return module_info
-
-def install_module(package_name, module_name, module_config, active=False):
+def install_plugin(package_name, plugin_name, plugin_config, active):
     """
-    insert a module/plugin in the 'plugin' table
+    insert a plugin/plugin in the 'plugin' table
     """
-    print "Install %s.%s..." % (package_name, module_name),
+    print "Install %s.%s..." % (package_name, plugin_name),
     plugin = Plugin.objects.create(
         package_name = package_name,
-        module_name = module_name,
-        version = module_config.__version__,
-        author = module_config.__author__,
-        url = module_config.__url__,
-        description = module_config.__description__,
-        long_description = module_config.__long_description__,
+        plugin_name = plugin_name,
+        version = plugin_config.__version__,
+        author = plugin_config.__author__,
+        url = plugin_config.__url__,
+        description = plugin_config.__description__,
+        long_description = plugin_config.__long_description__,
+        can_deinstall = getattr(plugin_config, "__can_deinstall__", True),
         active = active,
     )
     print "OK, ID:", plugin.id
     return plugin
 
-def get_internalpage_files(package_name, module_name, internal_page_name):
+def get_internalpage_files(package_name, plugin_name, internal_page_name):
     """
     read html, js, css files for the internal page.
     If there exist no file, it returns "".
     """
     basepath = os.path.join(
-        package_name.replace(".",os.sep), module_name, internal_page_name
+        package_name.replace(".",os.sep), plugin_name, internal_page_name
     )
     def read_file(ext):
         try:
@@ -261,9 +256,9 @@ def get_internalpage_files(package_name, module_name, internal_page_name):
     return html, js, css
 
 
-def install_internalpage(plugin, package_name, module_name, module_config):
+def install_internalpage(plugin, package_name, plugin_name, plugin_config):
     """
-    install all internal pages for the given module.
+    install all internal pages for the given plugin.
 
     TODO: Befor create: check if page is in db
     """
@@ -271,11 +266,26 @@ def install_internalpage(plugin, package_name, module_name, module_config):
 #        internal_page = PagesInternal.objects.get(name = internal_page_name)
 #    except PagesInternal.DoesNotExist, e:
 
-    module_manager_data = module_config.module_manager_data
+    try:
+        plugin_manager_data = plugin_config.plugin_manager_data
+    except AttributeError:
+        # The old way?
+        try:
+            plugin_manager_data = plugin_config.module_manager_data
+        except AttributeError, e:
+            msg = (
+                "Can't get 'plugin_manager_data' from %s.%s"
+                " (Also old 'module_manager_data' not there.)"
+                " Org.Error: %s"
+            ) % (package_name, plugin_name, e)
+            raise AttributeError(msg)
+        print "*** DeprecationWarning: ***"
+        print " - You should rename module_manager_data to plugin_manager_data"
+        print
 
-    for method, cfg in module_manager_data.iteritems():
+    for method, cfg in plugin_manager_data.iteritems():
         if not "internal_page_info" in cfg:
-            # module method has no internal page
+            # plugin method has no internal page
             continue
 
         internal_page_info = cfg["internal_page_info"]
@@ -284,7 +294,7 @@ def install_internalpage(plugin, package_name, module_name, module_config):
         internal_page_name = internal_page_info.get("name", method)
 
         html, js, css = get_internalpage_files(
-            package_name, module_name, internal_page_name
+            package_name, plugin_name, internal_page_name
         )
 
         markup_name = internal_page_info.get("markup", None)
@@ -294,11 +304,12 @@ def install_internalpage(plugin, package_name, module_name, module_config):
 
         template_engine = internal_page_info.get("template_engine", None)
         if template_engine:
-            print "*** INFO: ***"
+            print "*** DeprecationWarning: ***"
             print " - 'template_engine' key in internal_page_info is obsolete!"
             print " - Only django template engine is supported!"
+            print
 
-        internal_page_name = ".".join([module_name, internal_page_name])
+        internal_page_name = ".".join([plugin_name, internal_page_name])
         print "install internal page '%s'..." % internal_page_name,
         internal_page = PagesInternal.objects.create(
             name = internal_page_name,
@@ -318,36 +329,39 @@ def install_internal_plugins():
     """
     Plugin.objects.all().delete()    # delete all installed Plugins
 
-    module_dict = get_all_modules()
-    for module_path in module_dict:
-        print "---", module_path
-        package_name = module_path.replace("/", ".")
-        for module_name in module_dict[module_path]:
-            print "\n\ninstall plugin: *** %s ***\n" % module_name
-            try:
-                module_config = get_module_config(
-                    package_name, module_name,
-                    dissolve_version_string=True, print_debug=True
-                )
-            except ImportError, e:
-                print "ImportError:", e
-                continue
+    plugin_path = settings.INTERNAL_PLUGIN_PATH
+    package_name = plugin_path.replace("/", ".")
 
-            must_install = (
-                getattr(module_config, "__important_buildin__", False) or
-                getattr(module_config, "__essential_buildin__", False)
-            )
-            if not must_install:
-                print "plugin is not important or essential, skip."
-                continue
+    plugin_list = get_plugin_list(plugin_path)
 
-            plugin = install_module(
-                package_name, module_name, module_config, active=True
+    for plugin_name in plugin_list:
+        print "\n\ninstall plugin: *** %s ***\n" % plugin_name
+        try:
+            plugin_config = get_plugin_config(
+                package_name, plugin_name,
+                dissolve_version_string=True, print_debug=True
             )
-            install_internalpage(
-                plugin, package_name, module_name, module_config
-            )
-            print "OK, plugins installed."
+        except ImportError, e:
+            print "ImportError:", e
+            continue
+
+        obsolete_test = (
+            hasattr(plugin_config, "__important_buildin__") or
+            hasattr(plugin_config, "__essential_buildin__")
+        )
+        if obsolete_test:
+            print "*** DeprecationWarning: ***"
+            print " - '__important_buildin__' or '__essential_buildin__' are obsolete."
+
+
+
+        plugin = install_plugin(
+            package_name, plugin_name, plugin_config, active=True
+        )
+        install_internalpage(
+            plugin, package_name, plugin_name, plugin_config
+        )
+        print "OK, plugins installed."
 
 if __name__ == "__main__":
     os.chdir("../..") # go into root dir

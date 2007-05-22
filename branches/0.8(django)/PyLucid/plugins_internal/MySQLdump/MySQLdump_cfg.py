@@ -10,15 +10,11 @@ __description__         = "Makes a MySQL dump for a backup"
 __long_description__ = """
 You can make a SQL dump from you DB. Also you can make a install-dump.
 """
-__important_buildin__   = True
 
 #_____________________________________________________________________________
 # Module-Manager Daten
 
-#~ module_manager_debug = True
-module_manager_debug = False
-
-module_manager_data = {
+plugin_manager_data = {
     "menu" : {
         "must_login"    : True,
         "must_admin"    : True,
