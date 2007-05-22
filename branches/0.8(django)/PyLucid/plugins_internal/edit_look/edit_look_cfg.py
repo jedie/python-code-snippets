@@ -10,20 +10,17 @@ __description__ = "Edit the look of your CMS"
 __long_description__ = """
 Edit stylesheets, templates and internal_pages
 """
-__essential_buildin__ = True
+__can_deinstall__ = False
 
 #_____________________________________________________________________________
 # Module-Manager Daten
-
-#~ module_manager_debug = True
-module_manager_debug = False
 
 global_rights = {
     "must_login"    : True,
     "must_admin"    : True,
 }
 
-module_manager_data = {
+plugin_manager_data = {
     "stylesheet" : {
         "must_login"    : True,
         "must_admin"    : True,

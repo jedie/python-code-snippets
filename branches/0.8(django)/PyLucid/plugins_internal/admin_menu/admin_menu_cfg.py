@@ -8,7 +8,7 @@ __author__      = "Jens Diemer"
 __url__         = "http://www.PyLucid.org"
 __description__ = "Administration Menu"
 __long_description__ = """"""
-__essential_buildin__ = True
+__can_deinstall__ = False
 
 #___________________________________________________________________________________________________
 # Module-Manager Daten
@@ -22,7 +22,7 @@ global_rights = {
     "has_Tags"      : False,
 }
 
-module_manager_data = {
+plugin_manager_data = {
     "lucidTag" : {
         "must_login"    : True,
         "must_admin"    : False,

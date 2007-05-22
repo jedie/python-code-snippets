@@ -13,7 +13,7 @@ __author__              = "Jens Diemer"
 __url__                 = "http://www.PyLucid.org"
 __description__         = "edit a CMS page"
 __long_description__    = """Edit a normal CMS pages"""
-__essential_buildin__   = True
+__can_deinstall__ = False
 
 #_____________________________________________________________________________
 # Module-Manager Daten
@@ -23,7 +23,7 @@ global_rights = {
     "must_admin"    : False,
 }
 
-module_manager_data = {
+plugin_manager_data = {
     "edit_page" : {
         "must_login"    : True,
         "must_admin"    : False,

@@ -313,24 +313,32 @@ class Plugindata(models.Model):
 class Plugin(models.Model):
     #id = models.IntegerField(primary_key=True)
     package_name = models.CharField(maxlength=255)
-    module_name = models.CharField(maxlength=90, unique=True)
+    plugin_name = models.CharField(maxlength=90, unique=True)
     version = models.CharField(null=True, blank=True, maxlength=45)
     author = models.CharField(blank=True, maxlength=150)
     url = models.CharField(blank=True, maxlength=255)
     description = models.CharField(blank=True, maxlength=255)
     long_description = models.TextField(blank=True)
-    active = models.BooleanField()
+    can_deinstall = models.BooleanField(default=True,
+        help_text="If false and/or not set: This essential plugin can't be deinstalled."
+    )
+    active = models.BooleanField(default=False,
+        help_text="Is this plugin is enabled and useable?"
+    )
 
     class Admin:
-        list_display = ("active", "module_name", "description", "version")
-        ordering = ('package_name',"module_name")
+        list_display = (
+            "active", "plugin_name", "description", "version", "can_deinstall"
+        )
+        list_display_links = ("plugin_name",)
+        ordering = ('package_name',"plugin_name")
         list_filter = ("author",)
 
     class Meta:
         db_table = '%splugin' % TABLE_PREFIX
 
     def __str__(self):
-        return self.module_name.replace("_"," ")
+        return self.plugin_name.replace("_"," ")
 
 #______________________________________________________________________________
 

@@ -169,9 +169,9 @@ install_modules_template = """
 class InstallPlugins(BaseInstall):
     def view(self):
         output = []
-        from PyLucid.system import module_manager
+        from PyLucid.system import plugin_manager
 
-        self._redirect_execute(module_manager.install_internal_plugins)
+        self._redirect_execute(plugin_manager.install_internal_plugins)
 
         return self._render(install_modules_template)
 

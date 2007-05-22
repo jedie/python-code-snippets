@@ -11,12 +11,12 @@ __long_description__    = """With the Module/Plugin Administration
 you can install/deinstall modules to the DB and you
 can activate/deactivate this modules in the DB.
 """
-__essential_buildin__   = True
+__cannot_deinstall__ = True
 
 #_____________________________________________________________________________
 # Module-Manager Daten
 
-module_manager_data = {
+plugin_manager_data = {
     "menu" : {
         "must_login"    : True,
         "must_admin"    : True,

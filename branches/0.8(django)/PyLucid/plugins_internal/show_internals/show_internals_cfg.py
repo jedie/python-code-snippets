@@ -10,20 +10,16 @@ __description__ = "Shows internal information"
 __long_description__ = """
 Shows internal, system and python information.
 """
-__important_buildin__   = True
 
 #_____________________________________________________________________________
 # Module-Manager Daten
-
-#~ module_manager_debug = True
-module_manager_debug = False
 
 global_rights = {
     "must_login"    : True,
     "must_admin"    : True,
 }
 
-module_manager_data = {
+plugin_manager_data = {
     "lucidTag"  : global_rights,
     "link"      : global_rights,
     "menu"      : global_rights,
