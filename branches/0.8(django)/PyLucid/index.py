@@ -21,7 +21,7 @@ from django.template import Template, RequestContext
 
 from PyLucid import models, settings
 
-from PyLucid.system import module_manager
+from PyLucid.system import plugin_manager
 from PyLucid.system.exceptions import *
 from PyLucid.system.page_msg import PageMessages
 from PyLucid.system.template import get_template_content
@@ -110,7 +110,7 @@ def handle_command(request, page_id, module_name, method_name, url_args):
         url_args = (url_args,)
 
     try:
-        output = module_manager.handle_command(
+        output = plugin_manager.handle_command(
             context, local_response, module_name, method_name, url_args
         )
     except AccessDeny:

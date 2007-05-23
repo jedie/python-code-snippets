@@ -9,7 +9,7 @@ registered in: ./PyLucid/defaulttags/__init__.py
 
 import cStringIO as StringIO
 
-from PyLucid.system.module_manager import run
+from PyLucid.system.plugin_manager import run
 
 from django import template
 
