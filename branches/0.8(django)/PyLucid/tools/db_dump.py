@@ -10,7 +10,7 @@
 # For now, it only support .py format, so the output result will
 # be saved as python source code, and you can import it.
 #
-# Version 1.6 2007-04-09
+# Version 1.7 2007-05.24
 #
 # Update 1.0 2007-01-18
 #
@@ -33,6 +33,11 @@
 #
 # Update 1.6 2007-04-09
 #    * Add float support
+#
+# Update 1.7 2007-05.24
+#    * Backwards-incompatible change update by Jens Diemer:
+#        May 8, 2007: Generic relations have moved
+#
 
 import os, sys
 from optparse import OptionParser
@@ -267,7 +272,13 @@ def get_model_stru(model):
     return fields, default
 
 def get_model_many2many_stru(model):
-    from django.db.models import GenericRel
+    try:
+        from django.db.models import GenericRel
+    except ImportError:
+        # since May 8, 2007 (Changeset 5172): Generic relations have moved
+        # http://code.djangoproject.com/wiki/BackwardsIncompatibleChanges
+        # http://code.djangoproject.com/changeset/5172
+        from django.contrib.contenttypes.generic import GenericRel
 
     opts = model._meta
     for f in opts.many_to_many:
