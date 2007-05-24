@@ -4,11 +4,11 @@
 """
 
 from PyLucid.install.BaseInstall import BaseInstall
-from PyLucid.tools.OutBuffer import Redirector
+from PyLucid.system.response import SimpleStringIO
 
 from django import newforms as forms
 
-import cgi, sys, time, StringIO, re
+import cgi, sys, time, re
 
 
 
@@ -303,13 +303,21 @@ Execute code with Python v{{ sysversion }}:<br />
     Use <em>help(object)</em> for more information ;)
 </p>
 {% if output %}
-<fieldset><legend>executed in {{ duration|stringformat:"0.3f" }}sec.:</legend>
+<fieldset><legend>executed in {{ duration|stringformat:".1f" }}ms:</legend>
     <pre>{{ output }}</pre>
 </fieldset>
 {% endif %}
 <br />
 {% endblock %}
 """
+def execute_codeblock(codeblock, object_access):
+    code = compile(codeblock, "<stdin>", "exec", 0, 1)
+    if object_access:
+        exec code
+    else:
+        globals = {}
+        locals = {}
+        exec code in globals, locals
 class EvilEval(BaseInstall):
     def view(self):
         from PyLucid.settings import INSTALL_EVILEVAL
@@ -339,37 +347,21 @@ class EvilEval(BaseInstall):
 
         if "codeblock" in self.request.POST and eval_form.is_valid():
             # a codeblock was submited and the form is valid -> run the code
-            codeblock = eval_form.clean_data["codeblock"]
+            codeblock = eval_form.cleaned_data["codeblock"]
             codeblock = codeblock.replace("\r\n", "\n") # Windows
+            object_access = eval_form.cleaned_data["object_access"]
 
             start_time = time.time()
-
-            stderr = StringIO.StringIO()
-            stdout_redirector = Redirector(stderr)
-            globals = {}
-            locals = {}
-
             try:
-                code = compile(codeblock, "<stdin>", "exec", 0, 1)
-                if eval_form.clean_data["object_access"]:
-                    exec code
-                else:
-                    exec code in globals, locals
+                self._redirect_execute(
+                    execute_codeblock, codeblock, object_access
+                )
             except:
                 import traceback
-                sys.stdout.write(traceback.format_exc())
+                self.context["output"] += traceback.format_exc()
 
-            output = stdout_redirector.get()
-            stderr = stderr.getvalue()
-            if stderr != "":
-                output += "\n---\nError:" + stderr
-
-            if output == "":
-                output = "[No output]"
-
-            self.context["output"] = cgi.escape(output)
-
-            self.context["duration"] = time.time() - start_time
+            self.context["duration"] = (time.time() - start_time) * 1000
+            self.context["output"] = cgi.escape(self.context["output"])
 
         return self._render(python_input_form)
 

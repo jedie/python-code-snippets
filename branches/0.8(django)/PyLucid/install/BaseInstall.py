@@ -4,10 +4,10 @@ A base class for every _install view.
 """
 
 import sys
-import cStringIO as StringIO
 
 from PyLucid.settings import INSTALL_PASS
 from PyLucid import PYLUCID_VERSION_STRING
+from PyLucid.system.response import SimpleStringIO
 
 from django.http import HttpResponse, Http404
 from django.template import Template, Context, loader
@@ -48,7 +48,7 @@ class BaseInstall(object):
 	    puts the redirected outputs into self.context["output"].
     	usefull to run django management functions.
     	"""
-        redirect = StringIO.StringIO()
+        redirect = SimpleStringIO()
         old_stdout = sys.stdout
         sys.stdout = redirect
         old_stderr = sys.stderr
