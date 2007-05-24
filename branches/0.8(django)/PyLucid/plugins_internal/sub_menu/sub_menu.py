@@ -41,12 +41,21 @@ class sub_menu(PyLucidBaseModule):
     def lucidTag( self ):
         """
         """
-        current_page_id = self.request.current_page.id
+        current_page_id = self.current_page.id
         sub_pages = Page.objects.filter(
             parent__exact=current_page_id, showlinks__exact=1
         )
+#        sub_pages = Page.objects.all()
+#        for p in sub_pages:
+#            self.page_msg(p)
+#            self.page_msg(p.permitViewGroup)
+#
+#        return
+
         if self.request.user.username != "":
-            sub_pages = sub_pages.filter(permitViewPublic__exact=1)
+            sub_pages = sub_pages.filter(permitViewGroup__exact=None)
+
+        self.page_msg(sub_pages)
 
         sub_pages = sub_pages.order_by('position')
 
