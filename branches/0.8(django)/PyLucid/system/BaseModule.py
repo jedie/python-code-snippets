@@ -51,6 +51,8 @@ class PyLucidBaseModule(object):
         self.URLs       = context["URLs"]
 #        self.URLs.debug()
 
+        self.current_page = self.context["PAGE"]
+
         self.db = db
 
     def _debug_context(self, context, template):
