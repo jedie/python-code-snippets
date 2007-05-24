@@ -30,7 +30,7 @@ license:
     http://www.opensource.org/licenses/gpl-license.php
 """
 
-from PyLucid.settings import DEBUG
+from django.conf import settings
 
 import os, sys, cgi, pprint
 import inspect
@@ -87,10 +87,11 @@ class PageMessages(object):
 
     """
     raw = False
-    debug_mode = DEBUG
+    debug_mode = settings.DEBUG
 
     def __init__(self, context):
         self.messages = context["messages"]
+        self._charset = settings.DEFAULT_CHARSET
 
     #_________________________________________________________________________
 
@@ -128,35 +129,43 @@ class PageMessages(object):
         #~ self.request.user.message_set.create(message=msg)
         self.messages.append(msg)
 
+    def _get_fileinfo(self):
+        """
+        Append the fileinfo: Where from the announcement comes?
+        Only, if debug_mode is on.
+        """
+        if not self.debug_mode:
+            return ""
+
+        try:
+            self_basename = os.path.basename(__file__)
+            if self_basename.endswith(".pyc"):
+                # cut: ".pyc" -> ".py"
+                self_basename = self_basename[:-1]
+#                result.append("1%s1" % self_basename)
+
+            for stack_frame in inspect.stack():
+                # go forward in the stack, to outside of this file.
+                filename = stack_frame[1]
+                lineno = stack_frame[2]
+#                    result.append("2%s2" % os.path.basename(filename))
+                if os.path.basename(filename) != self_basename:
+#                        result.append("\n")
+                    break
+
+            filename = "...%s" % filename[-25:]
+            fileinfo = "%-25s line %3s: " % (filename, lineno)
+        except Exception, e:
+            fileinfo = "(inspect Error: %s)" % e
+
+        return fileinfo
+
     def prepare(self, *msg):
         """
         -if debug_mode is on: insert a info from where the message sended.
         -for dict, list use pprint ;)
         """
-        result = []
-
-        if self.debug_mode:
-            try:
-                self_basename = os.path.basename(__file__)
-                if self_basename.endswith(".pyc"):
-                    # cut: ".pyc" -> ".py"
-                    self_basename = self_basename[:-1]
-#                result.append("1%s1" % self_basename)
-
-                for stack_frame in inspect.stack():
-                    # go forward in the stack, to outside of this file.
-                    filename = stack_frame[1]
-                    lineno = stack_frame[2]
-#                    result.append("2%s2" % os.path.basename(filename))
-                    if os.path.basename(filename) != self_basename:
-#                        result.append("\n")
-                        break
-
-                filename = "...%s" % filename[-25:]
-                fileinfo = "%-25s line %3s: " % (filename, lineno)
-            except Exception, e:
-                fileinfo = "(inspect Error: %s)" % e
-            result.append(fileinfo)
+        result = [self._get_fileinfo()]
 
         for item in msg:
             if isinstance(item, dict) or isinstance(item, list):
@@ -168,16 +177,21 @@ class PageMessages(object):
                     line = line.replace(" ","&nbsp;")
                     result.append("%s<br />\n" % line)
             else:
-                result.append(self.encode_and_prepare(item))
+                item = self.encode_and_prepare(item)
+                result.append(item)
                 result.append(" ")
 
-        return "".join(result)
+        result = "".join(result)
+        return cgi.escape(result)
 
     def encode_and_prepare(self, txt):
-        # FIXME: Das ist mehr schlecht als recht... Die Behandlung von unicode
-        # muß irgendwie anders gehen!
+        """
+        returns the given txt as a string object.
+        """
         if isinstance(txt, unicode):
-            return txt.encode("UTF-8", "replace")
+            return txt.encode(self._charset)
+
+        # FIXME: Is that needed???
         try:
             return str(txt)
         except:
