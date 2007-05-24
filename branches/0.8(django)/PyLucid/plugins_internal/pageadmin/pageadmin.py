@@ -30,9 +30,38 @@ debug = False
 #~ debug = True
 
 from django import newforms as forms
-       
-from PyLucid.models import Page     
+from django.db import models
+
+from PyLucid.models import Page
 from PyLucid.system.BaseModule import PyLucidBaseModule
+
+
+class ParentSelectField(forms.ChoiceField):
+    pass
+#    def render(self, name, value, attrs=None, choices=()):
+#        return "XXX"
+#        from django.utils.html import escape
+#        from django.newforms.util import flatatt, smart_unicode
+#        if value is None: value = ''
+#        final_attrs = self.build_attrs(attrs, name=name)
+#        output = [u'<select%s>' % flatatt(final_attrs)]
+#        str_value = smart_unicode(value)
+#        for group_label, group in self.choices:
+#            if group_label: # should belong to an optgroup
+#                group_label = smart_unicode(group_label)
+#                output.append(u'<optgroup label="%s">' % escape(group_label))
+#            for k, v in group:
+#                option_value = smart_unicode(k)
+#                option_label = smart_unicode(v)
+#                selected_html = (option_value == str_value) and u' selected="selected"' or ''
+#                output.append(u'<option value="%s"%s>%s</option>' % (escape(option_value), selected_html, escape(option_label)))
+#            if group_label:
+#                output.append(u'</optgroup>')
+#        output.append(u'</select>')
+#        return u'\n'.join(output)
+
+class EditPageForm(forms.BaseForm):
+    parent2 = forms.DateField()
 
 
 class pageadmin(PyLucidBaseModule):
@@ -53,42 +82,30 @@ class pageadmin(PyLucidBaseModule):
         """
         Einstiegs Methode wenn man auf "edit page" klickt
         """
-#        http://192.168.6.2:8081/_admin/PyLucid/page/14/
-        from django.http import HttpResponseRedirect
-#        return HttpResponseRedirect(
+        current_page_id  = self.current_page.id
+        edit_link = self.URLs.adminLink("PyLucid/page/%s/" % current_page_id)
+        self.response.write('<a href="%s">django panel edit</a>' % edit_link)
 
-#        self.URLs.debug()
-        
-        edit_url = "%s/_admin/PyLucid/page/%s/" % (
-            self.URLs["scriptRoot"], self.request.current_page_id
+        def my_callback(field, **kwargs):
+            if isinstance(field, models.fields.related.ForeignKey):
+                print "jojo", field
+                return ParentSelectField(**kwargs)
+            else:
+                return field.formfield(**kwargs)
+
+        PageForm = forms.models.form_for_instance(
+            self.current_page, fields=(
+                "content", "parent",
+                "name", "shortcut", "title",
+                "keywords", "description",
+            ),
+            formfield_callback=my_callback
         )
-        self.response.write('<a href="%s">django panel edit</a>' % edit_url)
-#        return HttpResponseRedirect(edit_url)
-    
-        page = Page.objects.get(id=self.request.current_page_id)
-        
-#        PageForm = forms.models.form_for_model(Page)
-        PageForm = forms.models.form_for_instance(page)
-        
-        # http://www.djangoproject.com/documentation/newforms/
-        # http://code.djangoproject.com/browser/django/trunk/tests/regressiontests/forms/tests.py
-        
-        PageForm.base_fields['id'].help_text = "This is the page ID."
-        from django.newforms.extras.widgets import SelectDateWidget
-#        PageForm.base_fields['lastupdatetime'].widget = SelectDateWidget()
-        
-        disable_dict = {"disabled":"disabled"}
-        for field_name in ('id', "ownerID", 'lastupdatetime', 'lastupdateby'):
-            PageForm.base_fields[field_name].widget.attrs.update(disable_dict)
-        
-        
-        
-#        .choices = 
-        
+#        PageForm.base_fields["parent"].widget = GroupedSelect
+#        self.page_msg(PageForm.base_fields["parent"])
+#        help(PageForm)
         form = PageForm()
-        
         html_form = form.as_p()
-        
         html = (
             '<form action="." method="post">'
             '  <table class="form">'
@@ -98,7 +115,6 @@ class pageadmin(PyLucidBaseModule):
             '</form>'
         ) % html_form
         self.response.write(html)
-        
         """
         if debug: self.debug()
 
