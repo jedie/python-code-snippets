@@ -2,6 +2,8 @@
 # -*- coding: UTF-8 -*-
 
 """
+A minimalistic StringIO-file-like object.
+
 Last commit info:
 ----------------------------------
 $LastChangedDate$
@@ -16,129 +18,47 @@ license:
 """
 
 
-from django.http import HttpResponse
-
-import sys, os, re, cgi
-
-from PyLucid.system.module_manager import handleTag
-
-lucidSplitRE = re.compile("<lucid(.*?)")
-
-MIDDLEWARE_TAGS = ("page_msg", "script_duration")
+#if __name__ == "__main__": # A local test. THIS SHOULD BE COMMENTED!!!
+#    import os
+#    os.environ["DJANGO_SETTINGS_MODULE"] = "PyLucid.settings"
+#    from PyLucid import settings
+#    from django.core import management
+#    management.setup_environ(settings) # init django
 
 
-class PyLucidResponse(HttpResponse):
+from django.conf import settings
+
+
+class SimpleStringIO(object):
     """
-    Response object.
-    replace all lucid-Tags and use the module_manager to get the result-content
-    of these tags.
+    Minimalistic StringIO-file-like object.
+    Encode unicode to the default charset (imported from the settings).
+    See http://docs.python.org/lib/bltin-file-objects.html
     """
-    def __init__(self, request, *args, **kwargs):
-        super(PyLucidResponse, self).__init__(*args, **kwargs)
-        self.request = request
-        try:
-            self.page_msg = request.page_msg
-        except AttributeError:
-            # Install?`
-            self.page_msg = sys.stderr
-        self.request.tag_info = {}
+    def __init__(self):
+        self._charset = settings.DEFAULT_CHARSET
+        self._container = []
 
-    def isatty(self):
-        return False
-
-    def write(self, txt):
+    def write(self, content):
         """
-        Parse the text and replace lucidTag
+        Append a new chunk.
+        Encode unicode to the default charset.
         """
-        self.append_parsed(txt)
+        if isinstance(content, unicode):
+            content = content.encode(self._charset)
+        self._container.append(content)
 
-    def append_parsed(self, txt):
+    def getvalue(self):
         """
-        replace alle lucidTag in the content and append it to the container
+        Get all content.
         """
-        assert isinstance(txt, basestring)
+        content = ''.join(self._container)
+        return content
 
-        if not "<lucid" in txt:
-            self._container.append(txt)
-            return
-
-        txt = lucidSplitRE.split(txt)
-        for part in txt:
-            if not part.startswith("Tag:"):
-                if part.startswith("Function:"):
-                    # Obsolete!
-                    self.page_msg("lucidFunction's are obsolete!")
-                else:
-                    self._container.append(part)
-                continue
-
-            # Handle a lucidTag
-
-            # Bsp part => Tag:page_body/><p>jau</p>
-            tag, post = part.split(">",1)
-            # tag  => Tag:page_body/
-            # post => <p>jau</p>
-
-            tag = tag[4:].rstrip("/")
-
-#            if "</lucidTag>" in post:
-#                raise NotImplementedError
-
-            # Tag über Module-Manager ausführen
-#            try:
-            self.handleTag(tag)
-#            except Exception, e:
-#                msg = "Handle Tag %s Error: %s" % (tag, e)
-#                self.page_msg(msg)
-#                self._container.append("[%s]" % msg)
-
-            # Teil hinter dem Tag schreiben
-            self._container.append(post)
-
-
-    def handleTag(self, tag):
-        if tag in MIDDLEWARE_TAGS:
-            # save tag position for a later replace, see self.replace_tag()
-            self.request.tag_info[tag] = len(self._container)
-            self._container.append("<lucidTag:%s/>" % tag)
-            return
-
-        if tag in self.request.static_tags:
-            content = self.request.static_tags[tag]
-            if tag == "page_body":
-                # replace
-                self.append_parsed(content)
-            else:
-                assert isinstance(content, basestring), (
-                    "static tag returns not a basestring! returns: '%s'"
-                ) % repr(content)
-                self._container.append(content)
-            return
-
-        local_module_response = handleTag(tag, self.request, self)
-        if local_module_response:
-            if isinstance(local_module_response, basestring):
-                output = local_module_response
-            else:
-                try:
-                    output = local_module_response.get()
-                except Exception, e:
-                    output = (
-                        "[Error get module output: %s"
-                        " - type: %s, repr: %s"
-                    ) % (
-                        e, cgi.escape(str(type(local_module_response))),
-                        cgi.escape(repr(local_module_response))
-                    )
-
-                    raise ValueError(output)
-
-            self._container.append(output)
-
-    def replace_tag(self, tag, txt):
-        """
-        Replace a saved Tag
-        Used by the middlewares to put "page_msg" and "script_duration"
-        """
-        position = self.request.tag_info[tag]
-        self._container[position] = txt
+#if __name__ == "__main__":
+#     A local test: You must uncomment the django local init part above!
+#    response = SimpleStringIO()
+#    response.write(u"test")
+#    response.write("\n")
+#    response.write("test")
+#    print response.getvalue()

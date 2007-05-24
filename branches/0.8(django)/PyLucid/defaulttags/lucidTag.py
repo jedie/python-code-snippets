@@ -7,9 +7,8 @@ e.g.: {% lucidTag module_name.method_name key1="value1" key2="value2" %}
 registered in: ./PyLucid/defaulttags/__init__.py
 """
 
-import cStringIO as StringIO
-
 from PyLucid.system.plugin_manager import run
+from PyLucid.system.response import SimpleStringIO
 
 from django import template
 
@@ -28,7 +27,7 @@ class lucidTagNode(template.Node):
     def render(self, context):
 #        print "lucidTag.render():", self.module_name, self.method_name
 
-        local_response = StringIO.StringIO()
+        local_response = SimpleStringIO()
         output = run(
             context, local_response,
             self.module_name, self.method_name, self.method_kwargs

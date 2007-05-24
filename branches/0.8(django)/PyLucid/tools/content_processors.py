@@ -1,9 +1,8 @@
 
-import cStringIO as StringIO
-
 from django.template import Template, Context
 
 from PyLucid.system.tinyTextile import TinyTextileParser
+from PyLucid.system.response import SimpleStringIO
 
 from django.template import add_to_builtins
 # use the undocumented django function to add the "lucidTag" to the tag library.
@@ -16,7 +15,7 @@ def apply_markup(content, markup_object):
     """
     markup = markup_object.name
     if markup == "textile":
-        out_obj = StringIO.StringIO()
+        out_obj = SimpleStringIO()
         p = TinyTextileParser(out_obj)#, request, response)
         p.parse(content)
         return out_obj.getvalue()

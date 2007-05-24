@@ -5,8 +5,6 @@
 Display a PyLucid CMS Page
 """
 
-import cStringIO as StringIO
-
 #if __name__ == "__main__": # A local test. THIS SHOULD BE COMMENTED!!!
 #    import os
 #    os.environ["DJANGO_SETTINGS_MODULE"] = "PyLucid.settings"
@@ -22,6 +20,7 @@ from django.template import Template, RequestContext
 from PyLucid import models, settings
 
 from PyLucid.system import plugin_manager
+from PyLucid.system.response import SimpleStringIO
 from PyLucid.system.exceptions import *
 from PyLucid.system.page_msg import PageMessages
 from PyLucid.system.template import get_template_content
@@ -102,7 +101,7 @@ def handle_command(request, page_id, module_name, method_name, url_args):
     context["URLs"] = URLs(context)
 #    context["URLs"].debug()
 
-    local_response = StringIO.StringIO()
+    local_response = SimpleStringIO()
 
     if url_args == "":
         url_args = ()
