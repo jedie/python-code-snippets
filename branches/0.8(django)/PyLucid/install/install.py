@@ -24,13 +24,17 @@ syncdb_template = """
 """
 class Sync_DB(BaseInstall):
     def view(self):
+        self._redirect_execute(self.syncdb)
+        return self._render(syncdb_template)
+
+    def syncdb(self):
         from django.core import management
 
-        self._redirect_execute(
-            management.syncdb,
-            verbosity=2, interactive=False
-        )
-        return self._render(syncdb_template)
+        print "syncdb:"
+        print "-"*80
+
+        management.syncdb(verbosity=2, interactive=False)
+
 
 def syncdb(request, install_pass):
     """
@@ -183,14 +187,42 @@ def install_plugins(request, install_pass):
 create_user_template = """
 {% extends "PyLucid/install/base.html" %}
 {% block content %}
-<h1>Create test superuser</h1>
+<h1>Create a user</h1>
 <pre>{{ output|escape }}</pre>
+
+<form action="." method="post">
+  <table class="form">
+    {{ form }}
+  </table>
+  <input type="submit" value="create user" />
+</form>
+
 {% endblock %}
 """
-class CreateTestUser(BaseInstall):
+from django import newforms as forms
+class UserForm(forms.Form):
+    username = forms.CharField(max_length=30, help_text='max 30 chars.')
+    email = forms.EmailField()
+    password = forms.CharField(widget=forms.PasswordInput)
+    superuser = forms.BooleanField(
+        help_text='First user should be a superuser!'
+    )
+
+class CreateUser(BaseInstall):
     def view(self):
-        output = ["Create a 'test' superuser..."]
+#        output = ["Create a 'test' superuser..."]
         from django.contrib.auth.models import User
+
+#        UserForm = forms.form_for_model(User)
+        form = UserForm()#{"superuser":True})
+        html_code = form.as_p()
+
+        self.context["form"] = html_code
+
+        return self._render(create_user_template)
+
+        """
+
         try:
             user = User.objects.create_user('test', 'test@invalid', '12345678')
         except Exception, e:
@@ -211,12 +243,13 @@ class CreateTestUser(BaseInstall):
             output.append("OK\n")
 
         self.context["output"] = "".join(output)
-        return self._render(create_user_template)
 
-def create_test_user(request, install_pass):
+        """
+
+def create_user(request, install_pass):
     """
-    4. create test superuser
+    4. create a user
     """
-    return CreateTestUser(request, install_pass).view()
+    return CreateUser(request, install_pass).view()
 
 

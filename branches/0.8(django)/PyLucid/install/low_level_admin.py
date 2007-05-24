@@ -160,7 +160,7 @@ class Dump_DB(BaseInstall):
 
 def dump_db(request, install_pass):
     """
-    dump db data (using db_dump.py)
+    1. dump db data (using db_dump.py)
     """
     return Dump_DB(request, install_pass).view()
 
@@ -181,6 +181,62 @@ class CleanupDjangoTables(BaseInstall):
 
 def cleanup_django_tables(request, install_pass):
     """
-    cleanup django tables
+    2. cleanup django tables
     """
     return CleanupDjangoTables(request, install_pass).view()
+
+#______________________________________________________________________________
+
+syncdb_template = """
+{% extends "PyLucid/install/base.html" %}
+{% block content %}
+<h1>Recreate all django tables</h1>
+<h2>Note:</h2>
+<p>After this you must recreate a user and assign the pages</p>
+<pre>{{ output|escape }}</pre>
+{% endblock %}
+"""
+
+from PyLucid.install.install import Sync_DB
+class RecreateDjangoTables(Sync_DB):
+    DJANGO_TABLE_PREFIXES = ("auth", "django")
+    def view(self):
+
+        self._redirect_execute(
+            self.delete_tables
+        )
+        self.context["output"] += "\n\n"
+
+        # self.syncdb is inherited from Sync_DB
+        self._redirect_execute(self.syncdb)
+
+        return self._render(syncdb_template)
+
+    def delete_tables(self):
+        print "Delete django tables:"
+        print "-"*80
+
+        from PyLucid.db.meta import get_all_tables
+        from django.db import connection
+
+        cursor = connection.cursor()
+        SQLcommand = "Drop table %s;"
+
+        table_list = get_all_tables()
+        for table_name in table_list:
+            prefix = table_name.split("_")[0]
+            if not prefix in self.DJANGO_TABLE_PREFIXES:
+                continue
+
+            SQL = SQLcommand % table_name
+            print "%s..." % SQL,
+            cursor.execute(SQL)
+            print "OK"
+
+
+
+def recreate_django_tables(request, install_pass):
+    """
+    2. Recreate all django tables (user/groups/permission lost!)
+    """
+    return RecreateDjangoTables(request, install_pass).view()
