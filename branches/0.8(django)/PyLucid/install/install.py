@@ -8,7 +8,6 @@ http://code.djangoproject.com/wiki/CookBookScriptsMiniFlush
 
 from PyLucid import settings
 from PyLucid.install.BaseInstall import BaseInstall
-from PyLucid.tools.OutBuffer import Redirector
 
 from django import newforms as forms
 
@@ -140,8 +139,6 @@ class Options(object):
 
 class Init_DB2(BaseInstall):
     def view(self):
-
-        from PyLucid.tools.OutBuffer import Redirector
         from PyLucid.tools.db_dump import loaddb
 
         self._redirect_execute(
