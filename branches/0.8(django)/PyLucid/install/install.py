@@ -10,6 +10,7 @@ from PyLucid import settings
 from PyLucid.install.BaseInstall import BaseInstall
 
 from django import newforms as forms
+from django.contrib.auth.models import User
 
 import sys, os
 
@@ -188,67 +189,80 @@ create_user_template = """
 {% extends "PyLucid/install/base.html" %}
 {% block content %}
 <h1>Create a user</h1>
-<pre>{{ output|escape }}</pre>
 
-<form action="." method="post">
+{% if output %}
+    <pre>{{ output|escape }}</pre>
+{% endif %}
+
+<form method="post">
   <table class="form">
     {{ form }}
   </table>
+  <ul>
+      <strong>Note:</strong>
+      <li>Every User you create here, is a superuser how can do everything!</li>
+      <li>
+          After you have created the first user, you can login and create
+          normal user, using
+          <a href="/{{ admin_url_prefix }}/auth/user/">the admin panel</a>.
+      </li>
+  </ul>
   <input type="submit" value="create user" />
 </form>
 
 {% endblock %}
 """
-from django import newforms as forms
-class UserForm(forms.Form):
-    username = forms.CharField(max_length=30, help_text='max 30 chars.')
-    email = forms.EmailField()
-    password = forms.CharField(widget=forms.PasswordInput)
-    superuser = forms.BooleanField(
-        help_text='First user should be a superuser!'
-    )
-
 class CreateUser(BaseInstall):
     def view(self):
-#        output = ["Create a 'test' superuser..."]
-        from django.contrib.auth.models import User
+        """
+        Display the user form.
+        """
+        UserForm = forms.form_for_model(
+            User,
+            fields=("username", "first_name", "last_name", "email", "password")
+        )
+        # Change the help_text, because there is a URL in the default text
+        UserForm.base_fields['password'].help_text = ""
 
-#        UserForm = forms.form_for_model(User)
-        form = UserForm()#{"superuser":True})
-        html_code = form.as_p()
+        if self.request.method == 'POST':
+            user_form = UserForm(self.request.POST)
+            if user_form.is_valid():
+                # Create the new user
+                self._redirect_execute(self.create_user, user_form)
+        else:
+            user_form = UserForm()
 
-        self.context["form"] = html_code
+        self.context["form"] = user_form.as_table()
+        self.context["admin_url_prefix"] = settings.ADMIN_URL_PREFIX
 
         return self._render(create_user_template)
 
+    def create_user(self, user_form):
         """
+        create a new user in the database
+        """
+        print "Create a new superuser:"
 
+        user_data = user_form.cleaned_data
         try:
-            user = User.objects.create_user('test', 'test@invalid', '12345678')
-        except Exception, e:
-            output.append("ERROR: %s\n" % e)
-        else:
-            output.append("OK\n")
-
-        output.append("\nSetup rights...")
-        try:
-            user = User.objects.get(username__exact='test')
+            user = User.objects.create_user(
+                user_data["username"], user_data["email"], user_data["password"]
+            )
             user.is_staff = True
             user.is_active = True
             user.is_superuser = True
+            user.first_name = user_data["first_name"]
+            user.last_name = user_data["last_name"]
             user.save()
         except Exception, e:
-            output.append("ERROR: %s\n" % e)
+            print "ERROR: %s" % e
         else:
-            output.append("OK\n")
+            print "OK"
 
-        self.context["output"] = "".join(output)
-
-        """
 
 def create_user(request, install_pass):
     """
-    4. create a user
+    4. create the first superuser
     """
     return CreateUser(request, install_pass).view()
 
