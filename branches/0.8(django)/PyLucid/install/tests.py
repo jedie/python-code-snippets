@@ -37,33 +37,40 @@ def inspectdb(request, install_pass):
 class SQLInfo(BaseInstall):
     __remove_esc_re = re.compile(r"\033\[.*?m")
     def view(self):
-        output = []
+        self._redirect_execute(self.print_info)
+        return self._simple_render(
+            headline="SQL create Statements from the current models"
+        )
 
+    def print_info(self):
         from django.core.management import get_sql_create, get_custom_sql, get_sql_indexes
         from django.db.models import get_apps
 
         app_list = get_apps()
 #        output.append("App list: %s" % app_list)
 
-        def write_lines(lines):
+        def write_lines(method, app, txt):
+            lines = method(app)
+            if lines==[]:
+                return
+
+            print "--\n-- %s:\n--" % txt
+
             for line in lines:
-                line = self._remove_esc(line)
-                output.append("%s\n" % line)
+                print self._remove_esc(line)
 
         for app in app_list:
-            output.append("**** sql_create:\n")
-            write_lines(get_sql_create(app))
-            output.append("**** get_custom_sql:\n")
-            write_lines(get_custom_sql(app))
-            output.append("**** get_sql_indexes:\n")
-            write_lines(get_sql_indexes(app))
+            print "--\n--",
+            print "_"*77
+            print "-- %s\n--" % app.__name__
+            write_lines(get_sql_create, app, "get_sql_create")
+            write_lines(get_custom_sql, app, "get_custom_sql")
+            write_lines(get_sql_indexes, app, "get_sql_indexes")
 
-            output.append("-"*79)
-            output.append("\n\n")
+#            output.append("-- ")
+#            output.append("-"*75)
+#            output.append("\n--\n--")
 
-        return self._simple_render(
-            output, headline="SQL create Statements from the current models"
-        )
 
     def _remove_esc(self, txt):
         """ Remove escape sequence from a string """
@@ -310,7 +317,7 @@ Execute code with Python v{{ sysversion }}:<br />
 <br />
 {% endblock %}
 """
-def execute_codeblock(codeblock, object_access):
+def _execute_codeblock(codeblock, object_access):
     code = compile(codeblock, "<stdin>", "exec", 0, 1)
     if object_access:
         exec code
@@ -354,7 +361,7 @@ class EvilEval(BaseInstall):
             start_time = time.time()
             try:
                 self._redirect_execute(
-                    execute_codeblock, codeblock, object_access
+                    _execute_codeblock, codeblock, object_access
                 )
             except:
                 import traceback
