@@ -3,7 +3,6 @@ from datetime import datetime
 from django.db import models
 from django.contrib.auth.models import User, Group
 
-from PyLucid.settings import TABLE_PREFIX
 
 def lazy_date(obj):
     if isinstance(obj, datetime):
@@ -16,8 +15,6 @@ class Page(models.Model):
 
     TODO: We need a cache system for the parent relation.
     """
-#    id = models.IntegerField(primary_key=True)
-
     content = models.TextField(blank=True, help_text="The CMS page content.")
 
     parent = models.ForeignKey(
@@ -44,8 +41,8 @@ class Page(models.Model):
     style = models.ForeignKey(
         "Style", to_field="id", help_text="the used stylesheet for this page"
     )
-    markup = models.ForeignKey(
-        "Markup", to_field="id",
+    markup = models.ForeignKey("Markup",
+        related_name="page_markup",
         help_text="the used markup language for this page"
     )
 
@@ -58,10 +55,14 @@ class Page(models.Model):
 
     createtime = models.DateTimeField(auto_now_add=True)
     lastupdatetime = models.DateTimeField(auto_now=True)
+    createby = models.ForeignKey(User, related_name="page_createby")
     lastupdateby = models.ForeignKey(User, related_name="page_lastupdateby")
 
-    showlinks = models.BooleanField( default=True,
+    showlinks = models.BooleanField(default=True,
         help_text="Put the Link to this page into Menu/Sitemap etc.?"
+    )
+    permitViewPublic = models.BooleanField(default=True,
+        help_text="Can anonymous see this page?"
     )
 
     permitViewGroup = models.ForeignKey(
@@ -69,21 +70,15 @@ class Page(models.Model):
         help_text="Limit viewable to a group?"
     )
 
-    owner = models.ForeignKey(
-        User, help_text="The owner of this page (only information.)"
-    )
     permitEditGroup = models.ForeignKey(
-        Group, related_name="page_permitEditGroup", blank=True,
+        Group, related_name="page_permitEditGroup", null=True, blank=True,
         help_text="Usergroup how can edit this page."
     )
-
-    class Meta:
-        db_table = '%spage' % TABLE_PREFIX
 
     class Admin:
         list_display = ("id", "shortcut", "name", "title", "description")
         list_display_links = ("shortcut",)
-        list_filter = ("owner",)
+        list_filter = ("createby","lastupdateby")
         search_fields = ["content","name", "title", "description","keywords"]
         fields = (
             ('basic', {'fields': ('content','parent','position',)}),
@@ -95,7 +90,9 @@ class Page(models.Model):
             }),
             ('Advanced options', {
                 #'classes': 'collapse',
-                'fields' : ('showlinks', 'permitViewGroup', 'owner', 'permitEditGroup'),
+                'fields' : (
+                    'showlinks', 'permitViewGroup', 'permitEditGroup'
+                ),
             }),
         )
         date_hierarchy = 'lastupdatetime'
@@ -133,7 +130,6 @@ class Page(models.Model):
 #______________________________________________________________________________
 
 class Archive(models.Model):
-    id = models.IntegerField(primary_key=True)
     userID = models.IntegerField()
     type = models.CharField(maxlength=150)
     date = models.DateTimeField()
@@ -144,77 +140,33 @@ class Archive(models.Model):
         pass
 
     class Meta:
-        db_table = '%sarchive' % TABLE_PREFIX
         verbose_name_plural = 'Archive'
 
 #______________________________________________________________________________
 
-#class Group(models.Model):
-#    id = models.IntegerField(primary_key=True)
-#    pluginID = models.IntegerField()
-#    name = models.CharField(unique=True, maxlength=150)
-#    section = models.CharField(maxlength=150)
-#    description = models.CharField(maxlength=150)
-#    lastupdatetime = models.DateTimeField()
-#    lastupdateby = models.IntegerField(null=True, blank=True)
-#    createtime = models.DateTimeField(default=models.LazyDate())
-#
-#    def save(self):
-#        print "save..."
-#        print self.lastupdatetime
-#        print self.createtime
-#        self.lastupdatetime = lazy_date(self.lastupdatetime)
-#        self.createtime = lazy_date(self.createtime)
-#
-#        super(Group, self).save()
-#
-#    class Admin:
-#        pass
-#
-#    class Meta:
-#        db_table = '%sgroup' % TABLE_PREFIX
+class JS_LoginData(models.Model):
+    user = models.ForeignKey(User)
 
-#______________________________________________________________________________
-
-class Markup(models.Model):
-    id = models.IntegerField(primary_key=True)
-    name = models.CharField(maxlength=150)
-
-    class Admin:
-        list_display = ("id", "name")
-        list_display_links = ("name",)
-
-    class Meta:
-        db_table = '%smarkup' % TABLE_PREFIX
-
-    def __str__(self):
-        return self.name
-
-#______________________________________________________________________________
-
-"""
-obsolete???
-class Md5User(models.Model):
-    id = models.IntegerField(primary_key=True)
-    name = models.CharField(unique=True, maxlength=150)
-    realname = models.CharField(maxlength=150)
-    email = models.CharField(maxlength=150)
     md5checksum = models.CharField(maxlength=192)
     salt = models.IntegerField()
-    admin = models.IntegerField()
 
     createtime = models.DateTimeField(auto_now_add=True)
     lastupdatetime = models.DateTimeField(auto_now=True)
 
-    lastupdateby = models.IntegerField(null=True, blank=True)
-
     class Admin:
         pass
 
-    class Meta:
-        db_table = '%smd5user' % TABLE_PREFIX
-        verbose_name_plural = 'MD5 Users'
-"""
+#______________________________________________________________________________
+
+class Markup(models.Model):
+    name = models.CharField(maxlength=150)
+
+    class Admin:
+        list_display = ("id", "name",)
+        list_display_links = ("name",)
+
+    def __str__(self):
+        return self.name
 
 #______________________________________________________________________________
 
@@ -243,13 +195,17 @@ class PagesInternal(models.Model):
         "Plugin", #to_field="id",
         help_text="The associated plugin"
     )
-    markup = models.ForeignKey(
-        "Markup", #to_field="id",
+    markup = models.ForeignKey("Markup",
+        related_name="page_internal_markup",
         help_text="the used markup language for this page"
     )
 
     createtime = models.DateTimeField(auto_now_add=True)
     lastupdatetime = models.DateTimeField(auto_now=True)
+    createby = models.ForeignKey(
+        User, related_name="page_internal_createby",
+        null=True, blank=True,
+    )
     lastupdateby = models.ForeignKey(
         User, related_name="page_internal_lastupdateby",
         null=True, blank=True,
@@ -266,9 +222,6 @@ class PagesInternal(models.Model):
         list_filter = ("plugin",)
         date_hierarchy = 'lastupdatetime'
         search_fields = ["name","content_html","content_js","content_css"]
-
-    class Meta:
-        db_table = '%spages_internal' % TABLE_PREFIX
 
     def __str__(self):
         return self.name
@@ -311,7 +264,6 @@ class Plugindata(models.Model):
 #______________________________________________________________________________
 
 class Plugin(models.Model):
-    #id = models.IntegerField(primary_key=True)
     package_name = models.CharField(maxlength=255)
     plugin_name = models.CharField(maxlength=90, unique=True)
     version = models.CharField(null=True, blank=True, maxlength=45)
@@ -320,7 +272,10 @@ class Plugin(models.Model):
     description = models.CharField(blank=True, maxlength=255)
     long_description = models.TextField(blank=True)
     can_deinstall = models.BooleanField(default=True,
-        help_text="If false and/or not set: This essential plugin can't be deinstalled."
+        help_text=(
+            "If false and/or not set:"
+            " This essential plugin can't be deinstalled."
+        )
     )
     active = models.BooleanField(default=False,
         help_text="Is this plugin is enabled and useable?"
@@ -334,48 +289,51 @@ class Plugin(models.Model):
         ordering = ('package_name',"plugin_name")
         list_filter = ("author",)
 
-    class Meta:
-        db_table = '%splugin' % TABLE_PREFIX
-
     def __str__(self):
         return self.plugin_name.replace("_"," ")
 
 #______________________________________________________________________________
 
 class Preference(models.Model):
-    id = models.IntegerField(primary_key=True)
-    pluginID = models.IntegerField()
-    section = models.CharField(maxlength=90)
-    varName = models.CharField(maxlength=90)
+    plugin = models.ForeignKey(
+        "Plugin", help_text="The associated plugin",
+        null=True, blank=True
+    )
     name = models.CharField(maxlength=150)
     description = models.TextField()
     value = models.CharField(maxlength=255)
-    type = models.CharField(maxlength=90)
+
+    lastupdatetime = models.DateTimeField(auto_now=True)
+    lastupdateby = models.ForeignKey(
+        User, null=True, blank=True,
+        related_name="preferences_lastupdateby",
+    )
 
     class Admin:
-        list_display = ("id", "pluginID", "section", "varName", "name", "value", "type", "description")
-        list_display_links = ("varName",)
-        list_filter = ("section",)
-        ordering = ('section',"varName")
-        search_fields = ["varName", "value", "description"]
+        list_display = ("plugin", "name", "value", "description")
+        list_display_links = ("name",)
+        list_filter = ("plugin",)
+        ordering = ("plugin","name")
+        search_fields = ["name", "value", "description"]
 
-    class Meta:
-        db_table = '%spreference' % TABLE_PREFIX
-
-    def __str__(self):
-        return "%s (%s)" % (self.varName, self.name)
+#    def __str__(self):
+#        return self.name
 
 #______________________________________________________________________________
 
 class Style(models.Model):
-    id = models.IntegerField(primary_key=True)
+    name = models.CharField(unique=True, maxlength=150)
 
     createtime = models.DateTimeField(auto_now_add=True)
     lastupdatetime = models.DateTimeField(auto_now=True)
-    lastupdateby = models.ForeignKey(User, related_name="style_lastupdateby")
 
-    plugin_id = models.IntegerField(null=True, blank=True)
-    name = models.CharField(unique=True, maxlength=150)
+    createby = models.ForeignKey(User, related_name="style_createby",
+        null=True, blank=True
+    )
+    lastupdateby = models.ForeignKey(User, related_name="style_lastupdateby",
+        null=True, blank=True
+    )
+
     description = models.TextField(null=True, blank=True)
     content = models.TextField()
 
@@ -383,37 +341,23 @@ class Style(models.Model):
         list_display = ("id", "name", "description")
         list_display_links = ("name",)
 
-    class Meta:
-        db_table = '%sstyle' % TABLE_PREFIX
-
     def __str__(self):
         return self.name
 
 #______________________________________________________________________________
-# obsolete?
-#class TemplateEngine(models.Model):
-#    id = models.IntegerField(primary_key=True)
-#    name = models.CharField(unique=True, maxlength=150)
-#
-#    class Admin:
-#        list_display = ("id", "name")
-#        list_display_links = ("name",)
-#
-#    class Meta:
-#        db_table = '%stemplate_engine' % TABLE_PREFIX
-#
-#    def __str__(self):
-#        return self.name
-
-#______________________________________________________________________________
 
 class Template(models.Model):
-    id = models.IntegerField(primary_key=True)
     name = models.CharField(unique=True, maxlength=150)
 
     createtime = models.DateTimeField(auto_now_add=True)
     lastupdatetime = models.DateTimeField(auto_now=True)
-    lastupdateby = models.ForeignKey(User, related_name="template_lastupdateby")
+
+    createby = models.ForeignKey(User, related_name="template_createby",
+        null=True, blank=True
+    )
+    lastupdateby = models.ForeignKey(User, related_name="template_lastupdateby",
+        null=True, blank=True
+    )
 
     description = models.TextField()
     content = models.TextField()
@@ -421,9 +365,6 @@ class Template(models.Model):
     class Admin:
         list_display = ("id", "name", "description")
         list_display_links = ("name",)
-
-    class Meta:
-        db_table = '%stemplate' % TABLE_PREFIX
 
     def __str__(self):
         return self.name

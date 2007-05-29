@@ -28,7 +28,7 @@ def get_default_page_id():
     returns the default page id
     """
     try:
-        default_page = Preference.objects.get(varName__exact="defaultPage")
+        default_page = Preference.objects.get(name__exact="index page")
     except Exception, e:
         from PyLucid.settings import INSTALL_HELP_URL
         msg = (
