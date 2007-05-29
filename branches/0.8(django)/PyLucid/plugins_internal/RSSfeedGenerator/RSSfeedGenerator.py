@@ -37,7 +37,9 @@ from PyLucid.system.BaseModule import PyLucidBaseModule
 class RSSfeedGenerator(PyLucidBaseModule):
 
     def lucidTag(self):
-        url = self.URLs.actionLink("download") + RSS_filename
+        # FIXME:
+#        url = self.URLs.actionLink("download") + RSS_filename
+        url = "download" + RSS_filename
         html = (
             '<a href="%s"'
             ' type="application/rss+xml" title="RSS">'
@@ -50,7 +52,7 @@ class RSSfeedGenerator(PyLucidBaseModule):
             '<link rel="alternate" type="application/rss+xml"'
             ' title="RSS" href="%s" />\n'
         ) % url
-        self.response.addCode.insert(headLink)
+#        self.response.addCode.insert(headLink)
 
     def download(self, function_info):
         """
