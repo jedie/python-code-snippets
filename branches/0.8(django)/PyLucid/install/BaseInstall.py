@@ -21,7 +21,7 @@ from django.template import Template, Context, loader
 DEBUG = False
 
 SIMPLE_RENDER_TEMPLATE = """
-{% extends "PyLucid/install/base.html" %}
+{% extends "install_base.html" %}
 {% block content %}
 {% if headline %}<h1>{{ headline|escape }}</h1>{% endif %}
 <pre>{{ output|escape }}</pre>

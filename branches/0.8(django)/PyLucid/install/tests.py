@@ -84,7 +84,7 @@ def sql_info(request, install_pass):
 #______________________________________________________________________________
 
 info_template = """
-{% extends "PyLucid/install/base.html" %}
+{% extends "install_base.html" %}
 {% block content %}
 <h1>Info</h1>
 <ul>
@@ -242,7 +242,7 @@ def info(request, install_pass):
 #______________________________________________________________________________
 
 url_info_template = """
-{% extends "PyLucid/install/base.html" %}
+{% extends "install_base.html" %}
 {% block content %}
 <h1>URL Info for '{{ domain }}':</h1>
 <table>
@@ -286,7 +286,7 @@ class PythonEvalForm(forms.Form):
     object_access = forms.BooleanField(required=False)
 
 access_deny = """
-{% extends "PyLucid/install/base.html" %}
+{% extends "install_base.html" %}
 {% block content %}
 <h2>Access Error:</h2>
 <h3>Python Webshell is disabled.</h3>
@@ -296,7 +296,7 @@ access_deny = """
 {% endblock %}
 """
 python_input_form = """
-{% extends "PyLucid/install/base.html" %}
+{% extends "install_base.html" %}
 {% block content %}
 Execute code with Python v{{ sysversion }}:<br />
 
