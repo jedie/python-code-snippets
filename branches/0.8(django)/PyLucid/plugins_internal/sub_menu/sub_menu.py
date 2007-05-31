@@ -28,34 +28,22 @@ import re, os, sys, urllib, cgi
 from PyLucid.system.BaseModule import PyLucidBaseModule
 from PyLucid.models import Page
 
-TEMPLATE = """
-<ul>
-{% for page in sub_pages %}
-  <li><a href="{{ page.shortcut }}">{{ page.name|escape }}</a></li>
-{% endfor %}
-</ul>
-"""
-
 class sub_menu(PyLucidBaseModule):
 
     def lucidTag( self ):
         """
         """
         current_page_id = self.current_page.id
+
         sub_pages = Page.objects.filter(
             parent__exact=current_page_id, showlinks__exact=1
         )
-#        sub_pages = Page.objects.all()
-#        for p in sub_pages:
-#            self.page_msg(p)
-#            self.page_msg(p.permitViewGroup)
-#
-#        return
+#        self.page_msg(sub_pages)
 
-        if self.request.user.username != "":
-            sub_pages = sub_pages.filter(permitViewGroup__exact=None)
+        if self.request.user.is_anonymous():
+            sub_pages = sub_pages.exclude(permitViewPublic = False)
 
-        self.page_msg(sub_pages)
+#        self.page_msg(sub_pages)
 
         sub_pages = sub_pages.order_by('position')
 
@@ -67,7 +55,7 @@ class sub_menu(PyLucidBaseModule):
             "sub_pages": sub_pages,
             "prelink": prelink,
         }
-        self._render_string_template(TEMPLATE, context)#, debug=True)
+        self._render_template("sub_menu", context)
 
 
 
