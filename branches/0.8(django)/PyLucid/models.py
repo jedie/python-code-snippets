@@ -9,6 +9,7 @@ def lazy_date(obj):
         return obj
     return models.LazyDate()
 
+
 class Page(models.Model):
     """
     A CMS Page Object
@@ -76,9 +77,13 @@ class Page(models.Model):
     )
 
     class Admin:
-        list_display = ("id", "shortcut", "name", "title", "description")
+        list_display = (
+            "id", "shortcut", "name", "title", "description", "lastupdatetime"
+        )
         list_display_links = ("shortcut",)
-        list_filter = ("createby","lastupdateby")
+        list_filter = (
+            "createby","lastupdateby","permitViewPublic", "template", "style"
+        )
         search_fields = ["content","name", "title", "description","keywords"]
         fields = (
             ('basic', {'fields': ('content','parent','position',)}),
@@ -103,8 +108,7 @@ class Page(models.Model):
         """
         return "/_goto/%s" % self.shortcut
 
-
-    def __str__(self):
+    def __unicode__(self):
         return self.shortcut
 
     def get_style_name(self):
@@ -129,8 +133,11 @@ class Page(models.Model):
 
 #______________________________________________________________________________
 
+"""
+Not used yet.
 class Archive(models.Model):
-    userID = models.IntegerField()
+    user = models.ForeignKey(User)
+
     type = models.CharField(maxlength=150)
     date = models.DateTimeField()
     comment = models.CharField(maxlength=255)
@@ -141,6 +148,7 @@ class Archive(models.Model):
 
     class Meta:
         verbose_name_plural = 'Archive'
+"""
 
 #______________________________________________________________________________
 
@@ -153,8 +161,16 @@ class JS_LoginData(models.Model):
     createtime = models.DateTimeField(auto_now_add=True)
     lastupdatetime = models.DateTimeField(auto_now=True)
 
+    def __unicode__(self):
+        return self.user.username
+
     class Admin:
-        pass
+        list_display = (
+            'user', 'md5checksum', 'salt', 'createtime', 'lastupdatetime'
+        )
+
+    class Meta:
+        verbose_name = verbose_name_plural = 'JS-LoginData'
 
 #______________________________________________________________________________
 
@@ -165,7 +181,7 @@ class Markup(models.Model):
         list_display = ("id", "name",)
         list_display_links = ("name",)
 
-    def __str__(self):
+    def __unicode__(self):
         return self.name
 
 #______________________________________________________________________________
@@ -223,7 +239,7 @@ class PagesInternal(models.Model):
         date_hierarchy = 'lastupdatetime'
         search_fields = ["name","content_html","content_js","content_css"]
 
-    def __str__(self):
+    def __unicode__(self):
         return self.name
 
 #______________________________________________________________________________
@@ -254,7 +270,7 @@ class Plugindata(models.Model):
         db_table = '%splugindata' % TABLE_PREFIX
         verbose_name_plural = 'Plugin Data'
 
-    def __str__(self):
+    def __unicode__(self):
         return self.method_name
 
     def __repr__(self):
@@ -289,7 +305,7 @@ class Plugin(models.Model):
         ordering = ('package_name',"plugin_name")
         list_filter = ("author",)
 
-    def __str__(self):
+    def __unicode__(self):
         return self.plugin_name.replace("_"," ")
 
 #______________________________________________________________________________
@@ -316,7 +332,7 @@ class Preference(models.Model):
         ordering = ("plugin","name")
         search_fields = ["name", "value", "description"]
 
-#    def __str__(self):
+#    def __unicode__(self):
 #        return self.name
 
 #______________________________________________________________________________
@@ -338,10 +354,12 @@ class Style(models.Model):
     content = models.TextField()
 
     class Admin:
-        list_display = ("id", "name", "description")
+        list_display = (
+            "id", "name", "description", "createtime", "lastupdatetime"
+        )
         list_display_links = ("name",)
 
-    def __str__(self):
+    def __unicode__(self):
         return self.name
 
 #______________________________________________________________________________
@@ -366,5 +384,5 @@ class Template(models.Model):
         list_display = ("id", "name", "description")
         list_display_links = ("name",)
 
-    def __str__(self):
+    def __unicode__(self):
         return self.name
