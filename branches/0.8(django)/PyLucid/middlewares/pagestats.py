@@ -1,8 +1,10 @@
 
 """
-Based on http://code.djangoproject.com/wiki/PageStatsMiddleware
+A small page statistic middleware.
 
-it used the old tag!
+replace the >TAG< with some stats. But only in HTML pages.
+
+Based on http://code.djangoproject.com/wiki/PageStatsMiddleware
 """
 
 from operator import add
@@ -24,15 +26,18 @@ class PageStatsMiddleware(object):
         start_time = time()
 
         # get number of db queries before we do anything
-        old_quaries = len(connection.queries)
+        old_queries = len(connection.queries)
 
         # start the view
         response = view_func(request, *view_args, **view_kwargs)
 
-        content = response.content
+        # Put only the statistic into HTML pages
+        if not "html" in response.headers['Content-Type']:
+            # No HTML Page -> do nothing
+            return response
 
         # compute the db time for the queries just run
-        queries = len(connection.queries) - old_quaries
+        queries = len(connection.queries) - old_queries
 
         # replace the comment if found
         stat_info = FMT % {
@@ -40,12 +45,7 @@ class PageStatsMiddleware(object):
             'overall_time' : time() - start_overall,
             'queries' : queries,
         }
-        mimetype = response.headers['Content-Type']
-#        print mimetype
-        if "html" in mimetype:
-            content = content.replace(TAG, stat_info)
-        else:
-            content += "\n---\n%s\n" % stat_info
 
-        response.content = content
+        response.content = response.content.replace(TAG, stat_info)
+
         return response
