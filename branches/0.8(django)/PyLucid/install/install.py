@@ -17,7 +17,7 @@ import sys, os
 #______________________________________________________________________________
 
 syncdb_template = """
-{% extends "PyLucid/install/base.html" %}
+{% extends "install_base.html" %}
 {% block content %}
 <h1>syncdb</h1>
 <pre>{{ output|escape }}</pre>
@@ -59,7 +59,7 @@ class InitDBForm(forms.Form):
     )
 
 dump_template = """
-{% extends "PyLucid/install/base.html" %}
+{% extends "install_base.html" %}
 {% block content %}
 <h1>init DB</h1>
 
@@ -162,7 +162,7 @@ def init_db2(request, install_pass):
 #______________________________________________________________________________
 
 install_modules_template = """
-{% extends "PyLucid/install/base.html" %}
+{% extends "install_base.html" %}
 {% block content %}
 <h1>Install all internal plugins:</h1>
 <pre>{{ output|escape }}</pre>
@@ -186,7 +186,7 @@ def install_plugins(request, install_pass):
 #______________________________________________________________________________
 
 create_user_template = """
-{% extends "PyLucid/install/base.html" %}
+{% extends "install_base.html" %}
 {% block content %}
 <h1>Create a user</h1>
 

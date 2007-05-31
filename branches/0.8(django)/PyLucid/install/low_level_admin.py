@@ -188,7 +188,7 @@ def cleanup_django_tables(request, install_pass):
 #______________________________________________________________________________
 
 syncdb_template = """
-{% extends "PyLucid/install/base.html" %}
+{% extends "install_base.html" %}
 {% block content %}
 <h1>Recreate all django tables</h1>
 <h2>Note:</h2>

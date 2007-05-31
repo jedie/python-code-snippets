@@ -335,18 +335,6 @@ class Update(Sync_DB):
         print
         cursor = connection.cursor()
 
-#    plugin = models.ForeignKey(
-#        "Plugin", help_text="The associated plugin",
-#        null=True, blank=True
-#    )
-#    name = models.CharField(maxlength=150)
-#    description = models.TextField()
-#    value = models.CharField(maxlength=255)
-#
-#    lastupdatetime = models.DateTimeField(auto_now=True)
-#    lastupdateby = models.ForeignKey(User, related_name="page_lastupdateby")
-
-
         table_keys = (
             "name", "description", "value"
         )
@@ -388,210 +376,12 @@ class Update(Sync_DB):
             else:
                 raise # Should never happen.
 
-
-#    plugin = models.ForeignKey(
-#        "Plugin", help_text="The associated plugin",
-#        null=True, blank=True
-#    )
-#    name = models.CharField(maxlength=150)
-#    description = models.TextField()
-#    value = models.CharField(maxlength=255)
-#
-#    lastupdatetime = models.DateTimeField(auto_now=True)
-#    lastupdateby = models.ForeignKey(
-#        User, null=True, blank=True,
-#        related_name="preferences_lastupdateby",
-#    )
-
             p = Preference(
                 plugin=None, name=name,
                 description = p_dict["description"],
                 value = new_value,
             )
             p.save()
-
-
-
-
-
-
-
-class UpdateOLD(Sync_DB):
-    def view(self):
-#        self._redirect_execute(self.update_structure)
-#        self._redirect_execute(self.update_data)
-#        self.context["output"] += (
-#            "\nupdate done.\n"
-#            "You must execute 'syncdb'!"
-#        )
-#
-#        # self.syncdb is inherited from Sync_DB
-#        self._redirect_execute(self.syncdb)
-
-        self._redirect_execute(self.convert_data)
-
-        return self._simple_render(headline="Update PyLucid tables.")
-
-    def update_structure(self):
-        print "update PyLucid database:"
-
-        cursor = connection.cursor()
-
-        def display_info(txt):
-            print "\n"
-            print "%s:" % txt
-            print "-"*79
-            print
-
-        def verbose_execute(SQLcommand):
-            print "%s..." % SQLcommand,
-            try:
-                cursor.execute(SQLcommand)
-            except Exception, e:
-                print "Error: %s" % e
-            else:
-                print "OK"
-
-        #_______________________________________________________________________
-        display_info("Drop obsolete tables")
-
-        tables = (
-            "l10n", "group", "groups", "user_group", "log", "session_data",
-            "plugindata", "template_engines", "template_engine"
-        )
-        for tablename in tables:
-            tablename = TABLE_PREFIX + tablename
-            SQLcommand = "DROP TABLE %s;" % tablename
-            verbose_execute(SQLcommand)
-
-        #_______________________________________________________________________
-        display_info("rename tables")
-
-        tablenames = (
-            ("pages",  "page"),
-            ("styles", "style"),
-            ("templates", "template"),
-            ("markups", "markup"),
-#            ("md5users", "md5user"),
-            ("plugins", "plugin"),
-            ("preferences", "preference"),
-            ("styles", "style"),
-            ("templates", "template"),
-        )
-        for source, destination in tablenames:
-            source = TABLE_PREFIX + source
-            destination = TABLE_PREFIX + destination
-
-            SQLcommand = "RENAME TABLE %s TO %s;" % (source, destination)
-            verbose_execute(SQLcommand)
-
-        #_______________________________________________________________________
-        display_info("Drop some obsolete columns")
-
-        column_delete = (
-            ("page", "permitViewPublic"),
-        )
-
-        for item in column_delete:
-            SQLcommand = "ALTER TABLE %s%s DROP COLUMN %s;" % (
-                TABLE_PREFIX, item[0], item[1]
-            )
-            verbose_execute(SQLcommand)
-
-        #_______________________________________________________________________
-        display_info("Change some column names (for SQL constraints)")
-        column_rename = (
-            # Because of the development version are here "double" Statements.
-            ("page", "parent parent_id INTEGER NULL"),
-            ("page", "parent_id parent_id INTEGER NULL"),
-
-            ("page", "template template_id INTEGER NOT NULL"),
-            ("page", "template_id template_id INTEGER NOT NULL"),
-
-            ("page", "style style_id INTEGER NOT NULL"),
-            ("page", "style_id style_id INTEGER NOT NULL"),
-
-            ("page", "markup markup_id INTEGER NOT NULL"),
-            ("page", "markup_id markup_id INTEGER NOT NULL"),
-
-            ("page", "lastupdateby lastupdateby_id INTEGER NOT NULL"),
-            ("page", "lastupdateby_id lastupdateby_id INTEGER NOT NULL"),
-
-            ("page", "ownerID owner_id INTEGER NOT NULL"),
-            ("page", "owner_id owner_id INTEGER NOT NULL"),
-
-            ("page", "permitEditGroupID permitEditGroup_id INTEGER NULL"),
-            ("page", "permitEditGroup_id permitEditGroup_id INTEGER NULL"),
-
-            ("page", "permitViewGroupID permitViewGroup_id INTEGER NULL"),
-            ("page", "permitViewGroup_id permitViewGroup_id INTEGER NULL"),
-
-            ("page", "showlinks showlinks bool NOT NULL"),
-
-            ("pages_internal", "template_engine template_id INTEGER NOT NULL"),
-            ("pages_internal", "template_id template_id INTEGER NOT NULL"),
-
-            ("pages_internal", "lastupdateby lastupdateby_id INTEGER NOT NULL"),
-            ("pages_internal", "lastupdateby_id lastupdateby_id INTEGER NOT NULL"),
-
-            ("pages_internal", "markup markup_id INTEGER NOT NULL"),
-            ("pages_internal", "markup_id markup_id INTEGER NOT NULL"),
-
-            ("style", "lastupdateby lastupdateby_id INTEGER NOT NULL"),
-            ("style", "lastupdateby_id lastupdateby_id INTEGER NOT NULL"),
-
-            ("template", "lastupdateby lastupdateby_id INTEGER NOT NULL"),
-            ("template", "lastupdateby_id lastupdateby_id INTEGER NOT NULL"),
-        )
-        for item in column_rename:
-            SQLcommand = "ALTER TABLE %s%s CHANGE %s;" % (
-                TABLE_PREFIX, item[0], item[1]
-            )
-            verbose_execute(SQLcommand)
-
-        #_______________________________________________________________________
-
-        display_info(
-            "Delete 'plugin' table (must be recreated with 'syncdb'!)"
-        )
-        verbose_execute("DROP TABLE %splugin" % TABLE_PREFIX)
-
-        display_info(
-            "Delete 'pages_internal' table (must be recreated with 'syncdb'!)"
-        )
-        verbose_execute("DROP TABLE %spages_internal" % TABLE_PREFIX)
-
-    #___________________________________________________________________________
-
-    def update_data(self):
-        """
-        Update some data in tables
-        -parent relation:
-            old model: root parent = 0
-            new model: root parent = None
-        """
-        from PyLucid.models import Page
-        print
-        print "="*80
-        print " *** Update some PyLucid table data ***"
-        print "="*80
-        print
-        for page in Page.objects.all():
-            print page
-            # Update parent relation
-            try:
-                parent = page.parent
-            except Page.DoesNotExist:
-                print " - Update parent page to None"
-                page.parent = None
-                page.save()
-            else:
-                print " - Parent relation OK"
-            print
-
-    #___________________________________________________________________________
-
-
 
 
 def update(request, install_pass):
@@ -636,6 +426,8 @@ CHANGE_TAGS = {
     "page_description": "{{ PAGE.description }}",
     "page_last_modified": "{{ PAGE.last_modified }}",
     "page_datetime": "{{ PAGE.datetime }}",
+
+    "list_of_new_sides": "{% lucidTag page_update_list %}",
 
     "script_duration": "<!-- script_duration -->",
 }
