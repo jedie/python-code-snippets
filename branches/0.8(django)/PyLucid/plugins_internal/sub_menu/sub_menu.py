@@ -27,6 +27,7 @@ import re, os, sys, urllib, cgi
 
 from PyLucid.system.BaseModule import PyLucidBaseModule
 from PyLucid.models import Page
+from PyLucid.db.page import get_link_by_id
 
 class sub_menu(PyLucidBaseModule):
 
@@ -49,7 +50,7 @@ class sub_menu(PyLucidBaseModule):
 
         sub_pages = sub_pages.values("name", "shortcut", "title")
 
-        prelink = self.db.page.get_link_by_id(current_page_id)
+        prelink = get_link_by_id(current_page_id)
 
         context = {
             "sub_pages": sub_pages,

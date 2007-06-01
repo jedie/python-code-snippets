@@ -30,6 +30,7 @@ __version__= "$Rev:$"
 from PyLucid.system.BaseModule import PyLucidBaseModule
 from PyLucid.tools.tree_generator import TreeGenerator
 from PyLucid.models import Page
+#from PyLucid.db.page import MenuData
 
 
 
@@ -49,7 +50,9 @@ class main_menu(PyLucidBaseModule):
             menu_data = menu_data.exclude(permitViewPublic = False)
 #        self.page_msg(menu_data)
 
-        menu_data = TreeGenerator().generate(menu_data)
+        menu_data = TreeGenerator().get_tree_menu(
+            menu_data, self.current_page_id
+        )
 #        self.page_msg(menu_data)
 
         menu_data = self.get_html(menu_data)
@@ -89,7 +92,10 @@ class main_menu(PyLucidBaseModule):
             '<a href="%(href)s" title="%(title)s">%(name)s</a>'
             '</li>'
         )
-        result = ["<ul>"]
+        if parent == None:
+            result = ['<ul id="main_menu">']
+        else:
+            result = ["<ul>"]
 
         for entry in menu_data:
             href = []
@@ -100,6 +106,9 @@ class main_menu(PyLucidBaseModule):
             href = "/".join(href)
 
             entry["href"] = "".join((self.URLs["absoluteIndex"], href))
+
+            if entry["id"] == self.current_page_id:
+                entry["name"] = '<span class="current">%s</span>' % entry["name"]
 
             result.append(html % entry)
 

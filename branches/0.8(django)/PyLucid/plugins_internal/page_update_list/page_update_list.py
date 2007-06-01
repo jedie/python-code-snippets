@@ -26,7 +26,7 @@ license:
 __version__= "$Rev$"
 
 from PyLucid.system.BaseModule import PyLucidBaseModule
-
+from PyLucid.db.page import get_update_info
 
 class page_update_list(PyLucidBaseModule):
 
@@ -45,7 +45,7 @@ class page_update_list(PyLucidBaseModule):
         self.generate_list(count)
 
     def generate_list(self, count):
-        page_updates = self.db.page.get_update_info(self.context, 10)
+        page_updates = get_update_info(self.context, 10)
 
         context = {
             "page_updates" : page_updates

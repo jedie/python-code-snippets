@@ -34,13 +34,13 @@ class SiteMap(PyLucidBaseModule):
 
     def lucidTag(self):
         """ Baut die SiteMap zusammen """
-        
+
         sitemap_data = Page.objects.values(
             "id", "parent", "name", "title", "shortcut"
         ).order_by("position")
         #self.page_msg(values)
-        sitemap_data = TreeGenerator().generate(sitemap_data)
-        
+        sitemap_data = TreeGenerator().get_complete_tree(sitemap_data)
+
         html = self.get_html(sitemap_data)
         self.response.write(html)
 
@@ -73,24 +73,24 @@ class SiteMap(PyLucidBaseModule):
             '</li>'
         )
         result = ["<ul>"]
-        
+
         for entry in menu_data:
             href = []
             if parent:
                 href.append(parent)
-                
+
             href.append(entry["shortcut"])
-            
+
             href = "/".join(href)
             entry["href"] = "%s/%s/" % (self.URLs["absoluteIndex"], href)
-                
+
             result.append(html % entry)
-            
+
             if entry.has_key("subitems"):
                 result.append(
                     self.get_html(entry["subitems"], parent=href)
                 )
-                
+
         result.append("</ul>")
         return "\n".join(result)
 
