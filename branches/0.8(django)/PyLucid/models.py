@@ -47,10 +47,10 @@ class Page(models.Model):
         help_text="the used markup language for this page"
     )
 
-    keywords = models.TextField(
+    keywords = models.CharField(
         blank=True, maxlength=255, help_text="Keywords for the html header."
     )
-    description = models.TextField(
+    description = models.CharField(
         blank=True, maxlength=255, help_text="Text for the html header."
     )
 
