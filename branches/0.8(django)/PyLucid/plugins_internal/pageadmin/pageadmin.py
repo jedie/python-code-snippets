@@ -41,8 +41,6 @@ class pageadmin(PyLucidBaseModule):
         edit a existing page
         """
         current_page_id  = self.current_page.id
-        edit_link = self.URLs.adminLink("PyLucid/page/%s/" % current_page_id)
-        self.response.write('<a href="%s">django panel edit</a>' % edit_link)
 
         PageForm = forms.models.form_for_instance(
             self.current_page, fields=(
@@ -63,16 +61,17 @@ class pageadmin(PyLucidBaseModule):
 
         html_form = html_form.as_p()
 
-        # FIXME: Quick hack. 'escape' Template String, so they are invisible ;)
-        html_form = html_form.replace("{", "&#x7B;").replace("}", "&#x7D;")
-        html = (
-            '<form method="post">'
-            '  <table class="form">'
-            '    %s'
-            '  </table>'
-            '  <input type="submit" value="speichern" />'
-            '</form>'
-        ) % html_form
-        self.response.write(html)
+        # FIXME: Quick hack 'escape' Template String.
+        # So they are invisible to the django template engine;)
+        edit_page_form = html_form.replace("{", "&#x7B;").replace("}", "&#x7D;")
 
+        url_django_edit = self.URLs.adminLink("PyLucid/page/%s/" % current_page_id)
 
+        context = {
+            "edit_page_form" : edit_page_form,
+            "url_django_edit": url_django_edit,
+            "url_abort": "#",
+            "url_textile_help": "#",
+            "url_taglist": "#",
+        }
+        self._render_template("edit_page", context)
