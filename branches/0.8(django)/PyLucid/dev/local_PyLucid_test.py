@@ -55,7 +55,7 @@ class FakePageMsg(object):
 class FakeUser(object):
     def is_anonymous(self):
         return True
-    
+
 class FakeRequest(object):
     user = FakeUser()
 
@@ -74,9 +74,17 @@ response = sys.stdout
 #______________________________________________________________________________
 # Test:
 
-from PyLucid.plugins_internal.main_menu.main_menu import main_menu
+#from PyLucid.plugins_internal.main_menu.main_menu import main_menu
+#
+#main_menu(fake_context, response).lucidTag()
 
-main_menu(fake_context, response).lucidTag()
+from pprint import pprint
+
+from PyLucid.db.page import get_update_info
+data = get_update_info(fake_context, 10)
+for line in data:
+    pprint(line)
+    print
 
 
 

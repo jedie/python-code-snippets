@@ -15,13 +15,14 @@ from PyLucid import settings
 
 
 SIMULATE = True
-APP_NAME = "PyLucid"
+#SIMULATE = False
+PREFIX = "PyLucid_"
 
 
 # DB data files not needed for installation
 UNNEEDED_FILES = (
-    "archive", "md5user", "object_cache", "pages_internal", "plugin",
-    "plugindata",
+    "plugin", "plugindata", "pagesinternal",
+    "js_logindata",
 )
 
 
@@ -37,7 +38,7 @@ def delete_file(path):
 
 filelist = os.listdir(settings.INSTALL_DATA_DIR)
 
-prefix_len = len(APP_NAME)
+prefix_len = len(PREFIX)
 filelist.sort()
 for filename in filelist:
     if filename.startswith("."):
@@ -46,7 +47,7 @@ for filename in filelist:
 
     abs_path = os.path.join(settings.INSTALL_DATA_DIR, filename)
 
-    if not filename.startswith(APP_NAME):
+    if not filename.startswith(PREFIX):
         # django tables
         delete_file(abs_path)
         continue
