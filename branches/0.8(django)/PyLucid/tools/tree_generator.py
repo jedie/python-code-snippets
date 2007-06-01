@@ -11,9 +11,10 @@ class TreeGenerator(object):
             row["level"] = level
         return data
 
-    def make_dict(self, data, key_name):
+    def make_dict_list(self, data, key_name):
         """
         generate a dict based on key_name
+        - every entry is a list!
         """
         result = {}
         for row in data:
@@ -25,20 +26,30 @@ class TreeGenerator(object):
 
         return result
 
-    def generate(self, data):
+    def make_unique_dict(self, data, key_name):
         """
-        returns the tree data
+        generate a dict based on key_name
+        - The key must be unique!
         """
-        parent_dict = self.make_dict(data, "parent")
+        result = {}
+        for row in data:
+            result[row[key_name]] = row
+
+        return result
+
+    def get_complete_tree(self, data):
+        """
+        returns the tree data for a sitemap
+        """
+        parent_dict = self.make_dict_list(data, "parent")
 
         root = parent_dict.pop(None)
         root = self.insert_level(root, self.start_level)
 
-        tree = self.gen(root, parent_dict, level=self.start_level+1)
+        tree = self.gen_complete_tree(root, parent_dict, self.start_level+1)
         return tree
 
-
-    def gen(self, block, data, level):
+    def gen_complete_tree(self, block, data, level):
         """
         generate recurive the tree data
         """
@@ -47,27 +58,100 @@ class TreeGenerator(object):
             if id in data:
                 subitems = data.pop(id)
                 subitems = self.insert_level(subitems, level)
-                row["subitems"] = self.gen(subitems, data, level+1)
+                row["subitems"] = self.gen_complete_tree(subitems, data, level+1)
 
         return block
+
+    def get_tree_menu(self, data, current_id):
+        """
+        returns a tree data for a tree menu
+        """
+        id_dict = self.make_unique_dict(data, "id")
+        #~ print "id_dict:"
+        #~ pprint(id_dict)
+
+        parent_dict = self.make_dict_list(data, "parent")
+        #~ print "\nparent_dict:"
+        #~ pprint(parent_dict)
+        #~ print
+
+        try:
+            subitems=parent_dict.pop(current_id)
+            subitem_id=current_id
+        except KeyError:
+            # The current page has no sub pages
+            subitems=None
+            subitem_id=None
+
+        tree_menu = self.gen_tree_menu(current_id, id_dict, parent_dict, subitems, subitem_id)
+        return tree_menu
+
+    def gen_tree_menu(self, current_id, id_dict, parent_dict, subitems=None,
+                                                            subitem_id=None):
+
+        current_page = id_dict.pop(current_id)
+        #~ print "current_page:", current_page
+
+        # get subitems for the next loop:
+        parent_id = current_page["parent"]
+        current_level_items = parent_dict.pop(parent_id)
+        #~ print "current_level_items 1:", current_level_items
+
+        for item in current_level_items:
+            if item["id"] == subitem_id:
+                item["subitems"] = subitems
+                break
+
+        #~ print "current_level_items 2:", current_level_items
+
+        next_id = current_page["parent"]
+        #~ print "next id:", next_id
+
+        #~ print
+
+        if next_id == None:
+            return current_level_items
+        else:
+            return self.gen_tree_menu(
+                next_id,
+                id_dict, parent_dict,
+                subitems=current_level_items,
+                subitem_id = parent_id
+            )
 
 
 if __name__ == "__main__":
     from pprint import pprint
+    import copy
 
     data = [
-        {'id': 1,   'parent': None,  'name': '1. Entry'},
-        {'id': 2,   'parent': 1,  'name': '1.1. first subitem'},
-        {'id': 3,   'parent': 1,  'name': '1.2. second subitem'},
-        {'id': 4,   'parent': 2,  'name': '1.2.1 first sub-subitem'},
-        {'id': 5,   'parent': 2,  'name': '1.2.2 second sub-subitem'},
-        {'id': 6,   'parent': None,  'name': '2. Entry'},
-        {'id': 7,   'parent': 6,  'name': '2.1. first subitem'},
+        {'id': 1, 'parent': None, 'name': '1. AAA'},
+        {'id': 2, 'parent': 1,    'name': '1.1. BBB'},
+        {'id': 3, 'parent': 1,    'name': '1.2. BBB'},
+        {'id': 4, 'parent': 2,    'name': '1.2.1. CCC'},
+        {'id': 5, 'parent': 2,    'name': '1.2.2. CCC'},
+        {'id': 6, 'parent': None, 'name': '2. AAA'},
+        {'id': 7, 'parent': 6,    'name': '2.1. BBB'},
     ]
 
-    tree = TreeGenerator().generate(data)
+    test_data = copy.deepcopy(data)
+    tree = TreeGenerator().get_complete_tree(test_data)
+    print "-"*80
     pprint(tree)
 
+    print "-"*80
+
+    test_data = copy.deepcopy(data)
+    tree_menu = TreeGenerator().get_tree_menu(test_data, 2)
+    print "-"*80
+    pprint(tree_menu)
+
+    print "-"*80
+
+    test_data = copy.deepcopy(data)
+    tree_menu = TreeGenerator().get_tree_menu(test_data, 6)
+    print "-"*80
+    pprint(tree_menu)
 
 
 

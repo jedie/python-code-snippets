@@ -41,6 +41,8 @@ class Update(Sync_DB):
         move some data from the old PyLucid tables into the new django tables
         """
         cursor = connection.cursor()
+
+        # FIXME: Truncate tables only for Testing!!!
         cursor.execute("TRUNCATE TABLE auth_user;")
         cursor.execute("TRUNCATE TABLE PyLucid_js_logindata;")
         cursor.execute("TRUNCATE TABLE PyLucid_template;")

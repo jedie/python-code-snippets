@@ -134,7 +134,7 @@ def _init_db(request, install_pass):# deactivated with the unterscore!
     return Init_DB(request, install_pass).view()
 #______________________________________________________________________________
 
-class Options(object):
+class DB_DumpFakeOptions(object):
     """ Fake optparse options """
     datadir = 'PyLucid/db_dump_datadir'
     verbose = True
@@ -148,7 +148,7 @@ class Init_DB2(BaseInstall):
 
         self._redirect_execute(
             loaddb,
-            app_labels = [], format = "py", options = Options()
+            app_labels = [], format = "py", options = DB_DumpFakeOptions()
         )
 
         return self._simple_render(headline="init DB (using db_dump.py)")

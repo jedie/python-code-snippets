@@ -32,7 +32,6 @@ import os, pprint, cgi
 from django.contrib.sites.models import Site
 
 from PyLucid import settings
-from PyLucid import db
 from PyLucid.models import PagesInternal
 from PyLucid.tools.content_processors import apply_markup, render_template
 
@@ -52,8 +51,6 @@ class PyLucidBaseModule(object):
 #        self.URLs.debug()
 
         self.current_page = self.context["PAGE"]
-
-        self.db = db
 
     def _debug_context(self, context, template):
         import pprint

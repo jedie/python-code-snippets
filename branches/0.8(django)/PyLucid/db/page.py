@@ -9,6 +9,7 @@ TODO: We need a caching for:
     url data for every page?
 """
 
+from PyLucid.system.BaseModule import PyLucidBaseModule
 from PyLucid.models import User, Page
 
 def get_link_by_id(page_id):
@@ -82,3 +83,7 @@ def get_update_info(context, count=10):
         item["user"] = userlist.get("lastupdateby", "[%s]" % _("unknown"))
 
     return page_updates
+
+
+
+
