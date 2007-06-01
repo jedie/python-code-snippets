@@ -202,10 +202,20 @@ class Update(Sync_DB):
 
 #            self.__fix_datetimes(page_dict, ["createtime", "lastupdatetime"])
             old_lastupdateby_id = page_dict["lastupdateby"]
-            page_dict["lastupdateby"] = user_map[old_lastupdateby_id]
+            try:
+                page_dict["lastupdateby"] = user_map[old_lastupdateby_id]
+            except KeyError, e:
+                print "User with ID '%s' unknown!" % e
+                page_dict["lastupdateby"] = user_map.values()[0]
+                print "Use the first one."
 
             old_owner_id = page_dict.pop("ownerID")
-            page_dict["createby"] = user_map[old_owner_id]
+            try:
+                page_dict["createby"] = user_map[old_owner_id]
+            except KeyError, e:
+                print "User with ID '%s' unknown!" % e
+                page_dict["createby"] = user_map.values()[0]
+                print "Use the first one."
 
             print page_dict
 
@@ -217,7 +227,7 @@ class Update(Sync_DB):
             old_style_id = page_dict["style"]
             page_dict["style"] = style_map[old_style_id]
 
-            old_markup_id = page_dict["markup"]
+            old_markup_id = int(page_dict["markup"])
             page_dict["markup"] = markup_map[old_markup_id]
 
             new_page = Page(**page_dict)
@@ -307,7 +317,10 @@ class Update(Sync_DB):
             user.save()
 
             # For later using
-            user_map[user_dict["id"]] = user
+            old_id = user_dict["id"]
+            user_map[old_id] = user
+
+            print "old ID: %s - new ID: %s;" % (old_id, user.id),
 
             print "Put md5data into DB:",
             if not user_dict["salt"] in (None, 0):
