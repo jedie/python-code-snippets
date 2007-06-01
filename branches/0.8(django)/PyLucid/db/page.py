@@ -13,7 +13,10 @@ from PyLucid.system.BaseModule import PyLucidBaseModule
 from PyLucid.models import User, Page
 
 def get_link_by_id(page_id):
-    """ Create the absolute page link for the given ID """
+    """
+    Create the absolute page link for the given ID
+    TODO: This must be chached!
+    """
     data = []
 
     while page_id != 0:
@@ -51,23 +54,22 @@ def get_update_info(context, count=10):
     """
     request = context["request"]
 
-    page_updates = Page.objects.filter(showlinks__exact=1)
-    # TODO:
-#    if request.user.username != "":
-#        page_updates = page_updates.filter(permitViewPublic__exact=1)
-
-    page_updates = page_updates.order_by('-lastupdatetime')
-
-    page_updates = page_updates.values(
+    data = Page.objects.values(
         "id", "name", "title", "lastupdatetime", "lastupdateby"
-    )[:count]
+    ).order_by('-lastupdatetime')
 
-    userlist = list(set([item["lastupdateby"] for item in page_updates]))
+    data = data.filter(showlinks = True)
+
+    if request.user.is_anonymous():
+        data = data.exclude(permitViewPublic = False)
+
+    data = data[:count]
+
+    userlist = list(set([item["lastupdateby"] for item in data]))
     userlist = User.objects.in_bulk(userlist)
 
-    for item in page_updates:
+    for item in data:
         item["link"] = get_absolute_link_by_id(context, item["id"])
-#        item["absoluteLink"] = "/%s" % item["link"]#self.URLs.absoluteLink(item["link"])
 
         pageName = item["name"]
         pageTitle = item["title"]
@@ -82,7 +84,7 @@ def get_update_info(context, count=10):
 
         item["user"] = userlist.get("lastupdateby", "[%s]" % _("unknown"))
 
-    return page_updates
+    return data
 
 
 
