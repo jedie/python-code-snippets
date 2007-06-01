@@ -76,7 +76,7 @@ def get_update_info(context, count=10):
         if pageTitle in (None, "", pageName):
             # Eine Seite muß nicht zwingent ein Title haben
             # oder title == name :(
-            item["name_title"] = pageTitle
+            item["name_title"] = pageName
         else:
             item["name_title"] = "%s - %s" % (pageName, pageTitle)
 
