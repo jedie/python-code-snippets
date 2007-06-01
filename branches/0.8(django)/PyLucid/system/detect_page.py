@@ -75,10 +75,6 @@ def get_current_page_obj(request, url_info):
     for shortcut in shortcuts:
         #~ print shortcut
         try:
-            page = Page.objects.get(shortcut__exact=shortcut)
+            return Page.objects.get(shortcut__exact=shortcut)
         except Page.DoesNotExist:
-            request.page_msg(_("Page '%s' doesn't exists.") % shortcut)
-        else:
-            return page
-
-    raise Http404
+            raise Http404(_("Page '%s' doesn't exists.") % shortcut)
