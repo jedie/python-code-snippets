@@ -1,128 +1,228 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+Generate a tree of the cms pages, who are orginised in a parent-model.
+usefull for: main menu and the sitemap.
+
+Last commit info:
+----------------------------------
+$LastChangedDate:$
+$Rev:$
+$Author: JensDiemer $
+
+Original code by Marc 'BlackJack' Rintsch
+see: http://www.python-forum.de/topic-10852.html (de)
+
+license:
+    GNU General Public License v2 or above
+    http://www.opensource.org/licenses/gpl-license.php
+"""
+
+
+class MenuNode(object):
+    def __init__(self, id, data={}, parent=None):
+        self.id = id
+        self.data = data
+        self.parent = parent
+        self.subnodes = list()
+        self.visible = False
+
+    def add(self, node):
+        """
+        add a new sub node.
+        """
+        self.subnodes.append(node)
+        node.parent = self
+
+    def activate(self):
+        """
+        activate self + all sub nodes + the parent node
+        """
+        self.visible = True
+        # Activate all subnodes:
+        for subnode in self.subnodes:
+            subnode.visible = True
+        # activate the parent node
+        if self.parent is not None:
+            self.parent.activate()
+
+    def to_dict(self, level=0):
+        """
+        built the tree dict of all activated nodes
+        """
+        result = self.data.copy()
+        result["level"] = level
+
+        subitems = [subnode.to_dict(level + 1)
+                    for subnode in self.subnodes
+                    if subnode.visible]
+        if subitems:
+            result['subitems'] = subitems
+
+        return result
+
 
 class TreeGenerator(object):
-    def __init__(self, start_level=1):
-        self.start_level = start_level
+    def __init__(self, flat_data):
+        # Create a dict with all pages as nodes
+        self.nodes = dict((n['id'], MenuNode(n['id'], n))
+                          for n in flat_data)
 
-    def insert_level(self, data, level):
+        # Create the root node
+        self.root = MenuNode(id=None)
+        self.nodes[None] = self.root
+
+        # built the node tree
+        for node_data in flat_data:
+            id = node_data['id']
+            parent = node_data['parent']
+            self.nodes[parent].add(self.nodes[id])
+
+    def to_dict(self):
         """
-        insert in every row a 'level'-key
+        built the tree dict of all visible nodes.
         """
-        for row in data:
-            row["level"] = level
-        return data
+        return self.root.to_dict()['subitems']
 
-    def make_dict_list(self, data, key_name):
+    def activate_all(self):
         """
-        generate a dict based on key_name
-        - every entry is a list!
+        make all nodes visible (for a sitemap)
         """
-        result = {}
-        for row in data:
-            key = row[key_name]
-            if not key in result:
-                result[key] = [row]
-            else:
-                result[key].append(row)
+        for node in self.nodes.itervalues():
+            node.visible = True
 
-        return result
-
-    def make_unique_dict(self, data, key_name):
+    def deactivate_all(self):
         """
-        generate a dict based on key_name
-        - The key must be unique!
+        makes all nodes invisible.
         """
-        result = {}
-        for row in data:
-            result[row[key_name]] = row
+        for node in self.nodes.itervalues():
+            node.visible = False
 
-        return result
-
-    def get_complete_tree(self, data):
+    def activate(self, id):
         """
-        returns the tree data for a sitemap
+        make one node visible. (for the main menu)
         """
-        parent_dict = self.make_dict_list(data, "parent")
+        self.nodes[id].activate()
 
-        root = parent_dict.pop(None)
-        root = self.insert_level(root, self.start_level)
+    #___________________________________________________________________________
 
-        tree = self.gen_complete_tree(root, parent_dict, self.start_level+1)
-        return tree
-
-    def gen_complete_tree(self, block, data, level):
+    def get_menu_tree(self, id=None):
         """
-        generate recurive the tree data
+        generate a tree dirct for the main menu.
+        If id==None: Only the top pages are visible!
         """
-        for row in block:
-            id = row["id"]
-            if id in data:
-                subitems = data.pop(id)
-                subitems = self.insert_level(subitems, level)
-                row["subitems"] = self.gen_complete_tree(subitems, data, level+1)
+        self.deactivate_all()
+        self.activate(id)
+        return self.to_dict()
 
-        return block
-
-    def get_tree_menu(self, data, current_id):
+    def get_sitemap_tree(self):
         """
-        returns a tree data for a tree menu
+        generate a tree wih all nodes for a sitemap
         """
-        id_dict = self.make_unique_dict(data, "id")
-        #~ print "id_dict:"
-        #~ pprint(id_dict)
+        self.activate_all()
+        return self.to_dict()
 
-        parent_dict = self.make_dict_list(data, "parent")
-        #~ print "\nparent_dict:"
-        #~ pprint(parent_dict)
-        #~ print
 
-        try:
-            subitems=parent_dict.pop(current_id)
-            subitem_id=current_id
-        except KeyError:
-            # The current page has no sub pages
-            subitems=None
-            subitem_id=None
 
-        tree_menu = self.gen_tree_menu(current_id, id_dict, parent_dict, subitems, subitem_id)
-        return tree_menu
 
-    def gen_tree_menu(self, current_id, id_dict, parent_dict, subitems=None,
-                                                            subitem_id=None):
 
-        current_page = id_dict.pop(current_id)
-        #~ print "current_page:", current_page
 
-        # get subitems for the next loop:
-        parent_id = current_page["parent"]
-        current_level_items = parent_dict.pop(parent_id)
-        #~ print "current_level_items 1:", current_level_items
+def test_generator(tree):
+    #
+    # Sitemap.
+    #
+    result = tree.get_sitemap_tree()
+    must_be = [{'id': 1,
+          'level': 1,
+          'name': '1. AAA',
+          'parent': None,
+          'subitems': [{'id': 2,
+                        'level': 2,
+                        'name': '1.1. BBB',
+                        'parent': 1,
+                        'subitems': [{'id': 4,
+                                      'level': 3,
+                                      'name': '1.2.1. CCC',
+                                      'parent': 2},
+                                     {'id': 5,
+                                      'level': 3,
+                                      'name': '1.2.2. CCC',
+                                      'parent': 2}]},
+                       {'parent': 1, 'id': 3, 'name': '1.2. BBB', 'level': 2}]},
+         {'id': 6,
+          'level': 1,
+          'name': '2. AAA',
+          'parent': None,
+          'subitems': [{'parent': 6, 'id': 7, 'name': '2.1. BBB', 'level': 2}]}]
+    if result != must_be:
+        print '-' * 40
+        print "*** ERROR 1 ***"
+        pprint(result)
 
-        for item in current_level_items:
-            if item["id"] == subitem_id:
-                item["subitems"] = subitems
-                break
 
-        #~ print "current_level_items 2:", current_level_items
+    #
+    # Keinen Punkt aktivieren
+    #   => Nur die Punkte der ersten Ebene sind zu sehen.
+    #
+    result = tree.get_menu_tree()
+    must_be = [{'parent': None, 'id': 1, 'name': '1. AAA', 'level': 1},
+            {'parent': None, 'id': 6, 'name': '2. AAA', 'level': 1}]
+    if result != must_be:
+        print '-' * 40
+        print "*** ERROR 2 ***"
+        pprint(result)
 
-        next_id = current_page["parent"]
-        #~ print "next id:", next_id
 
-        #~ print
+    #
+    # Menüpunkt 2 aktivieren.
+    #
+    result = tree.get_menu_tree(2)
+    must_be = [{'id': 1,
+          'level': 1,
+          'name': '1. AAA',
+          'parent': None,
+          'subitems': [{'id': 2,
+                        'level': 2,
+                        'name': '1.1. BBB',
+                        'parent': 1,
+                        'subitems': [{'id': 4,
+                                      'level': 3,
+                                      'name': '1.2.1. CCC',
+                                      'parent': 2},
+                                     {'id': 5,
+                                      'level': 3,
+                                      'name': '1.2.2. CCC',
+                                      'parent': 2}]},
+                       {'parent': 1, 'id': 3, 'name': '1.2. BBB', 'level': 2}]},
+         {'parent': None, 'id': 6, 'name': '2. AAA', 'level': 1}]
+    if result != must_be:
+        print '-' * 40
+        print "*** ERROR 3 ***"
+        pprint(result)
 
-        if next_id == None:
-            return current_level_items
-        else:
-            return self.gen_tree_menu(
-                next_id,
-                id_dict, parent_dict,
-                subitems=current_level_items,
-                subitem_id = parent_id
-            )
+
+    #
+    # Menüpunkt 6 aktivieren.
+    #
+    result = tree.get_menu_tree(6)
+    must_be = [{'parent': None, 'id': 1, 'name': '1. AAA', 'level': 1},
+         {'id': 6,
+          'level': 1,
+          'name': '2. AAA',
+          'parent': None,
+          'subitems': [{'parent': 6, 'id': 7, 'name': '2.1. BBB', 'level': 2}]}]
+    if result != must_be:
+        print '-' * 40
+        print "*** ERROR 4 ***"
+        pprint(result)
+
+
 
 
 if __name__ == "__main__":
     from pprint import pprint
-    import copy
+    import copy, time, sys
 
     data = [
         {'id': 1, 'parent': None, 'name': '1. AAA'},
@@ -134,25 +234,9 @@ if __name__ == "__main__":
         {'id': 7, 'parent': 6,    'name': '2.1. BBB'},
     ]
 
-    test_data = copy.deepcopy(data)
-    tree = TreeGenerator().get_complete_tree(test_data)
-    print "-"*80
-    pprint(tree)
+    print "test..."
 
-    print "-"*80
+    tree = TreeGenerator(data)
+    test_generator(tree)
 
-    test_data = copy.deepcopy(data)
-    tree_menu = TreeGenerator().get_tree_menu(test_data, 2)
-    print "-"*80
-    pprint(tree_menu)
-
-    print "-"*80
-
-    test_data = copy.deepcopy(data)
-    tree_menu = TreeGenerator().get_tree_menu(test_data, 6)
-    print "-"*80
-    pprint(tree_menu)
-
-
-
-
+    print "\nEND"

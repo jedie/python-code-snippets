@@ -39,9 +39,10 @@ class SiteMap(PyLucidBaseModule):
             "id", "parent", "name", "title", "shortcut"
         ).order_by("position")
         #self.page_msg(values)
-        sitemap_data = TreeGenerator().get_complete_tree(sitemap_data)
+        tree = TreeGenerator(sitemap_data)
+        sitemap_tree = tree.get_sitemap_tree()
 
-        html = self.get_html(sitemap_data)
+        html = self.get_html(sitemap_tree)
         self.response.write(html)
 
     def get_html(self, menu_data, parent=None):

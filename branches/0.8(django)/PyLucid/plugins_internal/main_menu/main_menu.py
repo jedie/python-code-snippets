@@ -50,9 +50,8 @@ class main_menu(PyLucidBaseModule):
             menu_data = menu_data.exclude(permitViewPublic = False)
 #        self.page_msg(menu_data)
 
-        menu_data = TreeGenerator().get_tree_menu(
-            menu_data, self.current_page_id
-        )
+        tree = TreeGenerator(menu_data)
+        menu_data = tree.get_menu_tree(self.current_page_id)
 #        self.page_msg(menu_data)
 
         menu_data = self.get_html(menu_data)
