@@ -11,6 +11,7 @@ TODO: We need a caching for:
 
 from PyLucid.system.BaseModule import PyLucidBaseModule
 from PyLucid.models import User, Page
+from PyLucid.tools.tree_generator import TreeGenerator
 
 def get_link_by_id(page_id):
     """
@@ -87,5 +88,27 @@ def get_update_info(context, count=10):
     return data
 
 
+def flat_tree_list():
+    """
+    Generate a flat page list.
+    Usefull for a html select input, like this:
+        <option value="1">___| about</option>
+        <option value="2">______| features</option>
+        <option value="3">_________| unicode</option>
+        <option value="4">_________| unicode test</option>
+        <option value="5">______| news</option>
+        <option value="6">_________| SVN news</option>
+    """
+    page_data = Page.objects.values(
+        "id", "parent", "name", "title", "shortcut"
+    ).order_by("position")
+    tree = TreeGenerator(page_data)
+    tree.activate_all()
+    page_list = tree.get_flat_list()
+
+    for page in page_list:
+        page["level_name"] = " %s| %s" % ("_"*((page["level"]*2)-2), page["name"])
+
+    return page_list
 
 
