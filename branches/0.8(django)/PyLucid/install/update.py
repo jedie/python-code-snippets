@@ -409,8 +409,34 @@ def update(request, install_pass):
 
 import re
 
+ADD_CODE = """
+<!-- additional javascript code - START -->
+{% if js_data %}
+{% for js in js_data %}
+<script type="text/javascript">
+/* <![CDATA[ */
+/* additional javascript from {{ js.from_info }} */
+{{ js.data }}
+/* ]]> */
+</script>
+{% endfor %}
+{% endif %}<!-- additional javascript code - END -->
+<!-- additional stylesheet code - START -->
+{% if css_data %}
+{% for css in css_data %}
+<style type="text/css">
+/* <![CDATA[ */
+/* additional stylesheets from {{ css.from_info }} */
+{{ css.data }}
+/* ]]> */
+</style>
+{% endfor %}
+{% endif %}<!-- additional stylesheet code - END -->
+"""
+
 REPLACE_DATA = (
     ("|escapexml ", "|escape "),
+    ("<PyLucidInternal:addCode/>", ADD_CODE)
 )
 
 UNSUPPORTED_TAGS = ("{% recurse ",)
@@ -429,6 +455,7 @@ PAGE_MSG_TAG = """\
     </fieldset>
   {% endif %}\
 """
+
 CHANGE_TAGS = {
     "page_msg": PAGE_MSG_TAG,
     "script_login": "{{ login_link }}",
@@ -445,6 +472,8 @@ CHANGE_TAGS = {
     "list_of_new_sides": "{% lucidTag page_update_list %}",
 
     "script_duration": "<!-- script_duration -->",
+
+    "page_style":  "{% lucidTag page_style %}" + ADD_CODE,
 }
 
 class UpdateTemplates(BaseInstall):

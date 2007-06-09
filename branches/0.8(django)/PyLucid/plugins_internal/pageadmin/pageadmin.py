@@ -29,7 +29,7 @@ __version__= "$Rev$"
 
 from django import newforms as forms
 from django.db import models
-from django.http import HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect
 
 from PyLucid.models import Page
 from PyLucid.db.page import flat_tree_list
@@ -80,15 +80,21 @@ class pageadmin(PyLucidBaseModule):
 
         # FIXME: Quick hack 'escape' Template String.
         # So they are invisible to the django template engine;)
-        edit_page_form = edit_page_form.replace("{", "&#x7B;").replace("}", "&#x7D;")
+        edit_page_form = edit_page_form.replace("{", "&#x7B;")\
+                                                                                .replace("}", "&#x7D;")
 
-        url_django_edit = self.URLs.adminLink("PyLucid/page/%s/" % edit_page_id)
+        url_django_edit = self.URLs.adminLink(
+            "PyLucid/page/%s/" % edit_page_id
+        )
+        url_textile_help = self.URLs.commandLink(
+            "pageadmin", "tinyTextile_help"
+        )
 
         context = {
             "edit_page_form" : edit_page_form,
             "url_django_edit": url_django_edit,
             "url_abort": "#",
-            "url_textile_help": "#",
+            "url_textile_help": url_textile_help,
             "url_taglist": "#",
         }
         self._render_template("edit_page", context)
@@ -103,7 +109,9 @@ class pageadmin(PyLucidBaseModule):
             if form.is_valid():
                 form_data = form.cleaned_data
                 page_id = form_data["page_id"]
-                new_url = self.URLs.commandLink("pageadmin", "edit_page", page_id)
+                new_url = self.URLs.commandLink(
+                    "pageadmin", "edit_page", page_id
+                )
 #                self.page_msg(new_url)
                 return HttpResponseRedirect(new_url)
 
@@ -113,3 +121,14 @@ class pageadmin(PyLucidBaseModule):
             "page_list": page_list,
         }
         self._render_template("select_edit_page", context)
+
+    def tinyTextile_help(self):
+        """
+        Render the tinyTextile Help page.
+        """
+        html = self._get_rendered_template("tinyTextile_help", context={})
+        return HttpResponse(html)
+
+
+
+

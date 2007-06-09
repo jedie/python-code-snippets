@@ -3,11 +3,40 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <title>tinyTextile help</title>
-<PyLucidInternal:addCode/>
+
+<!-- additional javascript code - START -->
+{% if js_data %}
+{% for js in js_data %}
+<script type="text/javascript">
+/* <![CDATA[ */
+/* additional javascript from {{ js.from_info }} */
+{{ js.data }}
+/* ]]> */
+</script>
+{% endfor %}
+{% endif %}<!-- additional javascript code - END -->
+<!-- additional stylesheet code - START -->
+{% if css_data %}
+{% for css in css_data %}
+<style type="text/css">
+/* <![CDATA[ */
+/* additional stylesheets from {{ css.from_info }} */
+{{ css.data }}
+/* ]]> */
+</style>
+{% endfor %}
+{% endif %}<!-- additional stylesheet code - END -->
+
 </head>
 <body>
 <h1>tinyTextile help</h1>
-<lucidTag:page_msg/>
+  {% if messages %}
+    <fieldset id="page_msg"><legend>page message</legend>
+    {% for message in messages %}
+      {{ message }}<br />
+    {% endfor %}
+    </fieldset>
+  {% endif %}
 
 <div id="content">
 
@@ -235,5 +264,5 @@ h1. HTML-Code
 You can insert any HTML code directy in you page. tinyTextile ingnore it.
 
 </div>
-<lucidTag:script_duration/>
+<!-- script_duration -->
 </body></html>

@@ -1,52 +1,26 @@
-label, input, select, textarea {
-  vertical-align: middle;
-  margin-top: 5px;
-  margin-bottom: 5px;
+#action_buttons {
+    padding: 0.1em 0.3em 0.1em 0.3em;
+    background-color: #09C;
 }
-label.left {
-  float: left;
-  text-align: right;
-
-  width: 10em;
-  margin-right: .3em;
-  padding: 0px;
-}
-.rightonly {
-  /* Eingabefelder mit Text dahinter */
-  margin-left: 10.3em;
-  padding: 0px;
-}
-
-form br {
-  /*  floats nach dem Forumlar aufheben */
-  clear: both;
-}
-
-label, select, input {
-  cursor: pointer;
-}
-.internalpage input[type=text] {
-  width: 75%;
-  cursor: text;
-}
-
-.internalpage input, .internalpage select, .internalpage textarea {
-  margin: 2px;
-  border: 1px solid grey;
-  color: #000;
-  background: #fafafa;
-}
-.internalpage input:focus, .internalpage select:focus, .internalpage textarea:focus {
-  border: 1px solid black;
-  background: #fff;
-}
-
-#resize_buttons * {
+#action_buttons a {
     text-decoration:none;
     margin: 0px;
-    padding: 0.1em 2em 0.1em 2em;
+    padding: 0.1em 0.5em 0.1em 0.5em;
     font-family:Verdana;
-    font-weight:bold;
     line-height:2em;
+    font-size:0.75em;
 }
-
+#action_buttons a:link {
+    color: black;
+    background-color: #f5f5f5;
+    border: 1px solid;
+    border-color: #ddd #555 #555 #ddd;
+}
+#action_buttons a:hover {
+    color: white;
+    background-color: #aaa;
+    border-color: #555 #ddd #ddd #555;
+}
+#action_buttons .separator {
+    padding: 0 0.3em 0 0.3em;
+}
