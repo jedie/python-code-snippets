@@ -76,15 +76,43 @@ class PyLucidBaseModule(object):
             msg = "internal page '%s' not found! (%s)" % (internal_page_name, e)
             raise PagesInternal.DoesNotExist(msg)
 
+    def _add_js_css_data(self, internal_page):
+        """
+        insert the additional JavaScript and StyleSheet data into the global
+        context.
+        """
+        def add(attr_name, key):
+            content = getattr(internal_page, attr_name)
+            if content == "":
+                # Nothig to append ;)
+                return
+
+            if not key in self.context:
+                self.context[key] = []
+
+            self.context[key].append({
+                "from_info": "internal page: '%s'" % internal_page.name,
+                "data": content,
+            })
+
+        # append the JavaScript data
+        add("content_js", "js_data")
+
+        # append the StyleSheet data
+        add("content_css", "css_data")
+
+
     def _get_rendered_template(self, internal_page_name, context, debug=False):
         """
         return a rendered internal page
         """
         internal_page = self._get_template(internal_page_name)
 
-        content = internal_page.content_html
+        content_html = internal_page.content_html
 
-        html = self.__render(content, context)
+        self._add_js_css_data(internal_page)
+
+        html = self.__render(content_html, context)
 
         markup_object = internal_page.markup
         html = apply_markup(html, markup_object)
