@@ -49,7 +49,7 @@ class MenuNode(object):
 
     def to_dict(self, level=0):
         """
-        built the tree dict of all activated nodes
+        built the tree dict of all activated nodes and insert a level info
         """
         result = self.data.copy()
         result["level"] = level
@@ -61,6 +61,22 @@ class MenuNode(object):
             result['subitems'] = subitems
 
         return result
+
+    def get_flat_list(self, level=0):
+        """
+        genrate a flat list for all visible pages and insert a level info
+        """
+        flat_list=[]
+
+        current_entry = self.data.copy()
+        current_entry["level"] = level
+        flat_list.append(current_entry)
+
+        for subnode in self.subnodes:
+            if subnode.visible:
+                flat_list += subnode.get_flat_list(level + 1)
+
+        return flat_list
 
 
 class TreeGenerator(object):
@@ -123,6 +139,11 @@ class TreeGenerator(object):
         self.activate_all()
         return self.to_dict()
 
+    def get_flat_list(self):
+        """
+        returns a flat list of all visible pages with the level info.
+        """
+        return self.root.get_flat_list()[1:]
 
 
 
@@ -218,6 +239,22 @@ def test_generator(tree):
         pprint(result)
 
 
+    tree.activate_all()
+    result = tree.get_flat_list()
+    must_be = [
+        {'level': 1, 'id': 1, 'parent': None, 'name': '1. AAA'},
+        {'level': 2, 'id': 2, 'parent': 1, 'name': '1.1. BBB'},
+        {'level': 3, 'id': 4, 'parent': 2, 'name': '1.2.1. CCC'},
+        {'level': 3, 'id': 5, 'parent': 2, 'name': '1.2.2. CCC'},
+        {'level': 2, 'id': 3, 'parent': 1, 'name': '1.2. BBB'},
+        {'level': 1, 'id': 6, 'parent': None, 'name': '2. AAA'},
+        {'level': 2, 'id': 7, 'parent': 6, 'name': '2.1. BBB'}
+    ]
+    if result != must_be:
+        print '-' * 40
+        print "*** ERROR 5 ***"
+        pprint(result)
+
 
 
 if __name__ == "__main__":
@@ -240,3 +277,4 @@ if __name__ == "__main__":
     test_generator(tree)
 
     print "\nEND"
+
