@@ -361,7 +361,7 @@ class TinyTextileParser:
     def hightlight(self, type, code_lines):
         code = "".join(code_lines)
         code = code.strip()
-        code = self.render.get_hightlighted(type, code)
+#        code = self.render.get_hightlighted(type, code)
         self.out.write(code)
 
     #_________________________________________________________________________
