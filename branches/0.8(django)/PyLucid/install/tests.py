@@ -8,7 +8,7 @@ from PyLucid.system.response import SimpleStringIO
 
 from django import newforms as forms
 
-import cgi, sys, time, re
+import cgi, sys, time
 
 
 
@@ -35,7 +35,6 @@ def inspectdb(request, install_pass):
 #______________________________________________________________________________
 
 class SQLInfo(BaseInstall):
-    __remove_esc_re = re.compile(r"\033\[.*?m")
     def view(self):
         self._redirect_execute(self.print_info)
         return self._simple_render(
@@ -43,7 +42,8 @@ class SQLInfo(BaseInstall):
         )
 
     def print_info(self):
-        from django.core.management import get_sql_create, get_custom_sql, get_sql_indexes
+        from django.core.management import get_sql_create, get_custom_sql, \
+                                                                get_sql_indexes
         from django.db.models import get_apps
 
         app_list = get_apps()
@@ -57,7 +57,7 @@ class SQLInfo(BaseInstall):
             print "--\n-- %s:\n--" % txt
 
             for line in lines:
-                print self._remove_esc(line)
+                print line
 
         for app in app_list:
             print "--\n--",
@@ -66,16 +66,6 @@ class SQLInfo(BaseInstall):
             write_lines(get_sql_create, app, "get_sql_create")
             write_lines(get_custom_sql, app, "get_custom_sql")
             write_lines(get_sql_indexes, app, "get_sql_indexes")
-
-#            output.append("-- ")
-#            output.append("-"*75)
-#            output.append("\n--\n--")
-
-
-    def _remove_esc(self, txt):
-        """ Remove escape sequence from a string """
-        txt = self.__remove_esc_re.sub("", txt)
-        return txt
 
 def sql_info(request, install_pass):
     "2. SQL info"

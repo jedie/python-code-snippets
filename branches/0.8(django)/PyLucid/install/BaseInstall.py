@@ -43,11 +43,11 @@ class BaseInstall(object):
         }
 
     def _redirect_execute(self, method, *args, **kwargs):
-    	"""
-    	run a method an redirect stdout writes (print) into a Buffer.
-	    puts the redirected outputs into self.context["output"].
-    	usefull to run django management functions.
-    	"""
+        """
+        run a method an redirect stdout writes (print) into a Buffer.
+        puts the redirected outputs into self.context["output"].
+        usefull to run django management functions.
+        """
         redirect = SimpleStringIO()
         old_stdout = sys.stdout
         sys.stdout = redirect
