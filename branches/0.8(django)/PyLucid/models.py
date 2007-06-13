@@ -48,16 +48,22 @@ class Page(models.Model):
     )
 
     keywords = models.CharField(
-        blank=True, maxlength=255, help_text="Keywords for the html header."
+        blank=True, maxlength=255,
+        help_text="Keywords for the html header. (separated by commas)"
     )
     description = models.CharField(
-        blank=True, maxlength=255, help_text="Text for the html header."
+        blank=True, maxlength=255,
+        help_text="Short description of the contents. (for the html header)"
     )
 
     createtime = models.DateTimeField(auto_now_add=True)
     lastupdatetime = models.DateTimeField(auto_now=True)
-    createby = models.ForeignKey(User, related_name="page_createby")
-    lastupdateby = models.ForeignKey(User, related_name="page_lastupdateby")
+    createby = models.ForeignKey(
+        User, editable=False, related_name="page_createby"
+    )
+    lastupdateby = models.ForeignKey(
+        User, editable=False, related_name="page_lastupdateby"
+    )
 
     showlinks = models.BooleanField(default=True,
         help_text="Put the Link to this page into Menu/Sitemap etc.?"
@@ -84,23 +90,27 @@ class Page(models.Model):
         list_filter = (
             "createby","lastupdateby","permitViewPublic", "template", "style"
         )
+        date_hierarchy = 'lastupdatetime'
         search_fields = ["content","name", "title", "description","keywords"]
+
         fields = (
             ('basic', {'fields': ('content','parent','position',)}),
-            ('identification', {'fields': ('name','shortcut','title')}),
-            ('internal', {'fields': ('template','style','markup')}),
             ('meta', {'fields': ('keywords', 'description')}),
-            ('update information', {
-                'fields': ('createtime','lastupdatetime','lastupdateby')
+            ('name / shortcut / title', {
+                'classes': 'collapse',
+                'fields': ('name','shortcut','title')
+            }),
+            ('template / style / markup', {
+                'classes': 'collapse',
+                'fields': ('template','style','markup')
             }),
             ('Advanced options', {
-                #'classes': 'collapse',
+                'classes': 'collapse',
                 'fields' : (
                     'showlinks', 'permitViewGroup', 'permitEditGroup'
                 ),
             }),
         )
-        date_hierarchy = 'lastupdatetime'
 
     def get_absolute_url(self):
         """
