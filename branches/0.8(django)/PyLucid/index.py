@@ -31,7 +31,7 @@ from PyLucid.system.LocalModuleResponse import LocalModuleResponse
 from PyLucid.tools.content_processors import apply_markup, render_template
 
 
-def render_cms_page(context, page_content=None):
+def _render_cms_page(context, page_content=None):
     current_page = context["PAGE"]
 
     if page_content:
@@ -42,7 +42,9 @@ def render_cms_page(context, page_content=None):
         page_content = current_page.content
 
         markup_object = current_page.markup
-        current_page.content = apply_markup(page_content, markup_object)
+        current_page.content = apply_markup(
+            page_content, context, markup_object
+        )
 
     current_page.content = render_template(current_page.content, context)
 
@@ -59,9 +61,10 @@ def render_cms_page(context, page_content=None):
     return HttpResponse(html)
 
 
-def index(request, url):
+def _get_context(request, current_page_obj):
     """
-    The main index method. Display a requested CMS Page.
+    Setup the context with PyLucid objects.
+    For index() and handle_command() views.
     """
     try:
         context = RequestContext(request)
@@ -81,25 +84,34 @@ def index(request, url):
             raise AttributeError(e)
 
     context["page_msg"] = PageMessages(context)
-    context["PAGE"] = get_current_page_obj(request, url)
+    context["PAGE"] = current_page_obj
     context["URLs"] = URLs(context)
 #    context["URLs"].debug()
 
-    return render_cms_page(context)
+    # For additional JavaScript and StyleSheet information.
+    # JS+CSS from internal_pages or CSS data for pygments
+    context["js_data"] = []
+    context["css_data"] = []
+
+    return context
+
+
+
+def index(request, url):
+    """
+    The main index method. Display a requested CMS Page.
+    """
+    current_page_obj = get_current_page_obj(request, url)
+    context = _get_context(request, current_page_obj)
+    return _render_cms_page(context)
 
 
 def handle_command(request, page_id, module_name, method_name, url_args):
     """
     hanlde a _command request
     """
-    context = RequestContext(request)
-    context["page_msg"] = PageMessages(context)
-
-    # TODO: Should i check here, if the page_id exists?!?
-    context["PAGE"] = models.Page.objects.get(id=int(page_id))
-
-    context["URLs"] = URLs(context)
-#    context["URLs"].debug()
+    current_page_obj = models.Page.objects.get(id=int(page_id))
+    context = _get_context(request, current_page_obj)
 
     local_response = SimpleStringIO()
 
@@ -140,6 +152,6 @@ def handle_command(request, page_id, module_name, method_name, url_args):
 #    print page_content
 #    print "---"
 
-    return render_cms_page(context, page_content)
+    return _render_cms_page(context, page_content)
 
 
