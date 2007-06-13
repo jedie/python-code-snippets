@@ -73,6 +73,7 @@ class pageadmin(PyLucidBaseModule):
                 # save the new page data
                 html_form.save()
                 self.page_msg("page updated.")
+                return
         else:
             html_form = PageForm()
 

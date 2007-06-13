@@ -1,23 +1,24 @@
 <fieldset>
-	<legend>Edit the CMS page '<strong title="{{ PAGE.title|escape }}">{{ PAGE.name|escape }}</strong>'</legend>
-	<p id="action_buttons">
-            <input type="submit" value="save" />
-            <span class="separator">|||</span>
-	    <input onclick="self.location.href='{{ url_abort }}'" name="abort" value="abort" type="reset">
-            <span class="separator">|||</span>
-	    <a href="{{ url_textile_help }}" onclick="OpenInWindow(this.href); return false">tinyTextile Help</a>
-            <span class="separator">|||</span>
-	    <a href="{{ url_taglist }}" onclick="OpenInWindow(this.href); return false" title="List of all available PyLucid template tags">tag list</a>
-            <span class="separator">|||</span>
-	    <a href="{{ url_django_edit }}" title="Edit this page in the django admin panel.">django panel edit</a>
-            <span class="separator">|||</span>
-<span class="resize_buttons">
-  <a href="JavaScript:resize_big('id_content');" title="makes the textarea bigger">&nbsp;+&nbsp;</a>
-  <a href="JavaScript:resize_small('id_content');" title="makes the textarea smaller">&nbsp;-&nbsp;</a><br>
-</span>
-	</p>
-	<form method="post">
-		<table class="form">
-			{{ edit_page_form }}
-		</table>
+<legend>Edit the CMS page '<strong title="{{ PAGE.title|escape }}">{{ PAGE.name|escape }}</strong>'</legend>
+<form action="." method="post">
+  <p id="action_buttons">
+       <input type="submit" value="save" />
+       <span class="separator">|||</span>
+    <input onclick="self.location.href='{{ url_abort }}'" name="abort" value="abort" type="reset" />
+       <span class="separator">|||</span>
+    <a href="{{ url_textile_help }}" onclick="OpenInWindow(this.href); return false">tinyTextile Help</a>
+       <span class="separator">|||</span>
+    <a href="{{ url_taglist }}" onclick="OpenInWindow(this.href); return false" title="List of all available PyLucid template tags">tag list</a>
+       <span class="separator">|||</span>
+    <a href="{{ url_django_edit }}" title="Edit this page in the django admin panel.">django panel edit</a>
+       <span class="separator">|||</span>
+       <span class="resize_buttons">
+         <a href="JavaScript:resize_big('id_content');" title="makes the textarea bigger">&nbsp;+&nbsp;</a>
+         <a href="JavaScript:resize_small('id_content');" title="makes the textarea smaller">&nbsp;-&nbsp;</a><br />
+       </span>
+  </p>
+  <table class="form">
+     {{ edit_page_form }}
+  </table>
+</form>
 </fieldset>
