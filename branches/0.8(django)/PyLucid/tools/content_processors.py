@@ -9,14 +9,14 @@ from django.template import add_to_builtins
 # see ./PyLucid/defaulttags/__init__.py
 add_to_builtins('PyLucid.defaulttags')
 
-def apply_markup(content, markup_object):
+def apply_markup(content, context, markup_object):
     """
     appy to the content the given markup
     """
     markup = markup_object.name
     if markup == "textile":
         out_obj = SimpleStringIO()
-        p = TinyTextileParser(out_obj)#, request, response)
+        p = TinyTextileParser(out_obj, context)
         p.parse(content)
         return out_obj.getvalue()
     else:

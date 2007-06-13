@@ -87,9 +87,6 @@ class PyLucidBaseModule(object):
                 # Nothig to append ;)
                 return
 
-            if not key in self.context:
-                self.context[key] = []
-
             self.context[key].append({
                 "from_info": "internal page: '%s'" % internal_page.name,
                 "data": content,
@@ -115,7 +112,7 @@ class PyLucidBaseModule(object):
         html = self.__render(content_html, context)
 
         markup_object = internal_page.markup
-        html = apply_markup(html, markup_object)
+        html = apply_markup(html, context, markup_object)
 
         return html
 

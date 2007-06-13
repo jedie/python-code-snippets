@@ -28,21 +28,14 @@ license:
 __version__= "$Rev$"
 
 import sys, re, cgi
-
+from PyLucid.system.response import SimpleStringIO
 
 
 class TinyTextileParser:
-    def __init__(self, out_obj, newline="\n"): #, request, response
-        self.out        = out_obj
-
-#        self.request    = request
-#        self.response   = response
-        #self.URLs       = request.URLs
-        #self.tools      = request.tools
-#        self.page_msg   = request.page_msg
-        #self.render     = self.request.render
-
-        self.newline    = newline
+    def __init__(self, out_obj, context):
+        self.out = out_obj
+        self.context = context
+        self.page_msg   = context["page_msg"]
 
         # Regeln für Blockelemente
         self.block_rules = self._compile_rules([
@@ -213,7 +206,7 @@ class TinyTextileParser:
             #~ if self.is_html.findall(block) != []:
             if block[0] == "<":
                 # Der Block scheint schon HTML-Code zu sein
-                self.out.write(block + self.newline)
+                self.out.write("%s\n" % block)
                 #~ self.page_msg("Is HTML:", cgi.escape(block))
                 continue
 
@@ -252,7 +245,7 @@ class TinyTextileParser:
                 return False
 
             # Methode die für die area zuständig ist aufrufen
-            current_area[3]("\n"+block+"\n")
+            current_area[3]("\n%s\n" % block)
 
             # In der area bleiben
             return current_area
@@ -347,7 +340,7 @@ class TinyTextileParser:
             code_type, block = block.split(">",1)
             self.sourcecode_type = code_type.lstrip("=.")
 
-        self.sourcecode_data.append(self.newline + block + self.newline)
+        self.sourcecode_data.append("\n%s\n" % block)
 
     def code_area_end(self, dummy):
         """
@@ -359,10 +352,66 @@ class TinyTextileParser:
     #_________________________________________________________________________
 
     def hightlight(self, type, code_lines):
+        """
+        Display Sourcecode.
+        Try to use pygments, if exists.
+        """
+#        self.page_msg("Source type: '%s'" % type)
+
         code = "".join(code_lines)
         code = code.strip()
-#        code = self.render.get_hightlighted(type, code)
+
+        def no_hightlight(code):
+            code = '\n<code>%s</code>\n' % cgi.escape(code)
+            return code
+
+        try:
+            from pygments import lexers
+            from pygments.formatters import HtmlFormatter
+            from pygments import highlight
+        except ImportError:
+            lexer_name = cgi.escape(type)
+            sourcecode = no_hightlight(code)
+        else:
+            ext = type.lower().lstrip(".")
+
+            try:
+                lexer = lexers.get_lexer_by_name(ext)
+            except lexers.ClassNotFound, e:
+                lexer_name = "[Hightlight Error: %s]<br />\n" % e
+                sourcecode = no_hightlight(code)
+            else:
+                lexer_name = lexer.name
+
+                formatter = HtmlFormatter(
+                    linenos=True, encoding="utf-8", style='colorful'
+                )
+
+                stylesheet = formatter.get_style_defs('.pygments_code')
+
+                self.context["css_data"].append({
+                    "from_info": "tinyTextile",
+                    "data": stylesheet,
+                })
+
+                out_object = SimpleStringIO()
+                highlight(code, lexer, formatter, out_object)
+                sourcecode = out_object.getvalue()
+
+        code = (
+            '<fieldset class="pygments_code">'
+            '<legend class="pygments_code">%(lexer_name)s</legend>'
+            '%(sourcecode)s'
+            '</fieldset>'
+        ) % {
+            "lexer_name": lexer_name,
+            "sourcecode": sourcecode,
+        }
+
         self.out.write(code)
+
+
+
 
     #_________________________________________________________________________
 
@@ -381,12 +430,12 @@ class TinyTextileParser:
 
             if count != 0:
                 # Ein Blockelement wurde gefunden
-                self.out.write(txt + self.newline)
+                self.out.write("%s\n" % txt)
                 return
 
         # Kein Blockelement gefunden -> Formatierung des Absatzes
-        block = block.strip().replace("\n", "<br />" + self.newline)
-        self.out.write("<p>%s</p>" % block + self.newline)
+        block = block.strip().replace("\n", "<br />\n")
+        self.out.write("<p>%s</p>\n" % block)
 
     def build_list(self, listitems):
         "Erzeugt eine Liste aus einem Absatz"
@@ -402,12 +451,12 @@ class TinyTextileParser:
             currentlen = len(item[0])
             if item[0][0] == "*":
                 # normale Aufzählungsliste
-                pre_tag  = "<ul>" + self.newline
-                post_tag = "</ul>" + self.newline
+                pre_tag  = "<ul>\n"
+                post_tag = "</ul>\n"
             else:
                 # Nummerierte Liste
-                pre_tag  = "<ol>" + self.newline
-                post_tag = "</ol>" + self.newline
+                pre_tag  = "<ol>\n"
+                post_tag = "</ol>\n"
 
             if currentlen > deep:
                 write(currentlen - deep, pre_tag, spacer(deep))
@@ -417,7 +466,7 @@ class TinyTextileParser:
                 deep = currentlen
 
             self.out.write(
-                "%s<li>%s</li>%s" % (spacer(deep), item[1], self.newline)
+                "%s<li>%s</li>\n" % (spacer(deep), item[1])
             )
 
         for i in range(deep):
