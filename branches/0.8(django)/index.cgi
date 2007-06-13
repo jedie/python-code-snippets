@@ -18,6 +18,20 @@ import os
 # Set the DJANGO_SETTINGS_MODULE environment variable.
 os.environ['DJANGO_SETTINGS_MODULE'] = "PyLucid.settings"
 
+def traceback_end():
+    """
+    Print out a traceback and terminate with sys.exit()
+    """
+    print
+    print "-"*80
+    try:
+        import sys, traceback
+        print traceback.format_exc()
+    except Exception, e:
+        print "Error: %s" % e
+    sys.exit()
+
+
 try:
     from PyLucid.settings import DEBUG
 except Exception, e:
@@ -29,11 +43,8 @@ except Exception, e:
     print "You must rename ./PyLucid/settings-example.py to ./PyLucid/settings.py"
     print
     print "You must setup this file for your config!"
-    print
-    print "-"*80
-    import sys, traceback
-    print traceback.format_exc()
-    sys.exit()
+    traceback_end()
+
 
 if DEBUG:
     import sys, cgi, inspect
@@ -129,24 +140,31 @@ if DEBUG:
 
 
 # Add a custom Python path, you'll want to add the parent folder of
-# your project directory.
-#sys.path.insert(0, "/home/user/django/")
+# your project directory. (Optional.)
+#BASE_PATH = os.path.abspath(os.path.dirname(__file__))
+#sys.path.insert(0, BASE_PATH)
 
 # Switch to the directory of your project. (Optional.)
-# os.chdir("/home/user/django/myproject/")
+# os.chdir("/home/user/django/PyLucid/")
 
-#~ from django.core.servers.cgi import runcgi
-from cgi_server import runcgi
+try:
+    #~ from django.core.servers.cgi import runcgi
+    # Normaly the cgi_server.py should be saved in dajngo/core/servers
+    # But we used svn:externals to include the django source ;)
+    from cgi_server import runcgi
+except Exception, e:
+    print "Content-type: text/plain; charset=utf-8\r\n\r\n"
+    print "<h1>Error:</h1><h2>Can't import the CGI Server:</h2>"
+    print "<h3>%s</h3>" % e
+    traceback_end()
 
+# Run PyLucid for one request:
 try:
     runcgi()
 except Exception, e:
     print "Content-type: text/plain; charset=utf-8\r\n\r\n"
     print "Low-Level-Error:", e
     print
-    print "-"*80
-    import traceback
-    print traceback.format_exc()
     print "-"*80
     print
     if str(e) == "no such table: django_session":
@@ -157,3 +175,5 @@ except Exception, e:
         print " - django.contrib.auth.middleware.AuthenticationMiddleware"
         print
         print "After 'syncdb' you must activate the middleware classes!"
+
+    traceback_end()

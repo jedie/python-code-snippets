@@ -1,20 +1,33 @@
-# Sollte auf der verwedeten Handler zeigen, damit die URL auch ohne
-# den Dateinamen funktioniert.
-# http://httpd.apache.org/docs/2.0/mod/mod_dir.html#directoryindex
-DirectoryIndex index.html
+#
+# PyLucid .htaccess file
+# per default: using the CGI Version (index.cgi)
+#
+# You can easy change this to use fastCGI, see below.
+#
 
-
-# Damit allgemein CGI's ausgeführt werden
+# Enable execution of CGI scripts using mod_cgi
 # http://httpd.apache.org/docs/2.0/mod/core.html#options
 Options +ExecCGI
 
+# Old (?) fastCGI Apache module:
+#AddHandler fastcgi-script .fcgi
+
+# New (?) fastCGI Apache module:
+#AddHandler fcgid-script .fcgi
 
 # http://httpd.apache.org/docs/2.0/mod/mod_mime.html#addhandler
-AddHandler cgi-script .py .cgi
-
-#AddHandler fastcgi-script .fcgi
-AddHandler fcgid-script .fcgi
+AddHandler cgi-script .cgi
 
 RewriteEngine On
+
+# leave out media files and cgi-bin
+RewriteRule ^media - [L]
+RewriteRule ^cgi-bin - [L]
+
 RewriteCond %{REQUEST_FILENAME} !-f
-RewriteRule ^(.*)$ index.py/$1 [QSA,L]
+
+# for CGI Version:
+RewriteRule ^(.*)$ index.cgi/$1 [QSA,L]
+
+# for fastCGI Version:
+#RewriteRule ^(.*)$ index.fcgi/$1 [QSA,L]
