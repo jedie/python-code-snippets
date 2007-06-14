@@ -42,11 +42,14 @@ class SelectEditPageForm(forms.Form):
 
 class pageadmin(PyLucidBaseModule):
 
-    def edit_page(self, edit_page_id=None):
+    def edit_page(self, page_instance=None, edit_page_id=None):
         """
         edit a existing page
         """
-        if edit_page_id == None:
+        if page_instance:
+            # Edit a new page
+            edit_page_id  = self.current_page.id
+        elif edit_page_id == None:
             # Edit the current cms page
             edit_page_id  = self.current_page.id
             page_instance = self.current_page
@@ -72,6 +75,7 @@ class pageadmin(PyLucidBaseModule):
             if html_form.is_valid():
                 # save the new page data
                 html_form.save()
+                self.current_page = html_form
                 self.page_msg("page updated.")
                 return
         else:
@@ -82,7 +86,7 @@ class pageadmin(PyLucidBaseModule):
         # FIXME: Quick hack 'escape' Template String.
         # So they are invisible to the django template engine;)
         edit_page_form = edit_page_form.replace("{", "&#x7B;")\
-                                                                                .replace("}", "&#x7D;")
+                                                        .replace("}", "&#x7D;")
 
         url_django_edit = self.URLs.adminLink(
             "PyLucid/page/%s/" % edit_page_id
@@ -122,6 +126,33 @@ class pageadmin(PyLucidBaseModule):
             "page_list": page_list,
         }
         self._render_template("select_edit_page", context)
+
+    #___________________________________________________________________________
+
+    def new_page(self):
+        """
+        make a new CMS page.
+        """
+        parent = self.current_page
+        # make a new page object:
+        new_page = Page(
+            name             = "New Page",
+            shortcut         = "NewPage",
+            template         = parent.template,
+            style            = parent.style,
+            markup           = parent.markup,
+            createby         = self.request.user,
+            lastupdateby     = self.request.user,
+            showlinks        = parent.showlinks,
+            permitViewPublic = parent.permitViewPublic,
+            permitViewGroup  = parent.permitViewGroup,
+            permitEditGroup  = parent.permitEditGroup,
+            parent           = parent,
+        )
+        # display the normal edit page dialog for the new cms page:
+        self.edit_page(page_instance=new_page)
+
+    #___________________________________________________________________________
 
     def tinyTextile_help(self):
         """
