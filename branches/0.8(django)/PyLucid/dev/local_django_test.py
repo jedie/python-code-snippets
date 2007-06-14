@@ -2,27 +2,15 @@
 # -*- coding: utf-8 -*-
 
 """
-A local django test with empty database.
+A local django test with synced database but empty tables.
 """
 
-import os
-os.chdir("../../") # go into PyLucid App root folder
-#print os.getcwd()
-
-from django.core import management
-
-os.environ["DJANGO_SETTINGS_MODULE"] = "PyLucid.settings"
-from PyLucid import settings
-
-settings.DATABASE_ENGINE = "sqlite3"
-settings.DATABASE_NAME = ":memory:"
-
-#______________________________________________________________________________
-
-print "setup the django environ and create the model tables...",
-management.setup_environ(settings) # init django
-management.syncdb(verbosity=0, interactive=False) # Create Tables
-print "OK\n"
+from unittests.setup_environment import setup
+setup(
+    chdir="../../",
+    path_info=False, extra_verbose=False,
+    syncdb=True, insert_dump=False
+)
 
 #______________________________________________________________________________
 # Test:
@@ -30,9 +18,9 @@ print "OK\n"
 from django.db.models import get_apps, get_models
 
 for app in get_apps():
-    print app.__name__
+    print "%s:" % app.__name__
     for model in get_models(app):
-        print model._meta.object_name
+        print " * %s" % model._meta.object_name
 
     print
 
