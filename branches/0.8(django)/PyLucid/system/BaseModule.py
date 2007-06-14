@@ -27,11 +27,6 @@ license:
     http://www.opensource.org/licenses/gpl-license.php
 """
 
-import os, pprint, cgi
-
-from django.contrib.sites.models import Site
-
-from PyLucid import settings
 from PyLucid.models import PagesInternal
 from PyLucid.tools.content_processors import apply_markup, render_template
 
@@ -48,12 +43,10 @@ class PyLucidBaseModule(object):
         self.request    = context["request"]
         self.page_msg   = context["page_msg"]
         self.URLs       = context["URLs"]
-#        self.URLs.debug()
 
         self.current_page = self.context["PAGE"]
 
     def _debug_context(self, context, template):
-        import pprint
         self.response.write("<fieldset><legend>template debug:</legend>")
         self.response.write("<legend>context:</legend>")
         self.response.write("<pre>")
@@ -70,10 +63,11 @@ class PyLucidBaseModule(object):
 
         internal_page_name = ".".join([module_name, internal_page_name])
 
+        #TODO: PagesInternal doesn't have a DoesNotExist member
         try:
             return PagesInternal.objects.get(name = internal_page_name)
-        except PagesInternal.DoesNotExist, e:
-            msg = "internal page '%s' not found! (%s)" % (internal_page_name, e)
+        except PagesInternal.DoesNotExist, err:
+            msg = "internal page '%s' not found! (%s)" % (internal_page_name, err)
             raise PagesInternal.DoesNotExist(msg)
 
     def _add_js_css_data(self, internal_page):
@@ -103,6 +97,7 @@ class PyLucidBaseModule(object):
         """
         return a rendered internal page
         """
+        #TODO: `debug` isn't used.
         internal_page = self._get_template(internal_page_name)
 
         content_html = internal_page.content_html
@@ -120,6 +115,7 @@ class PyLucidBaseModule(object):
         """
         render a template and write it into the response object
         """
+        #TODO: `debug` isn't used
         html = self._get_rendered_template(internal_page_name, context, debug)
         self.response.write(html)
 
@@ -128,6 +124,7 @@ class PyLucidBaseModule(object):
         Render a string-template with the given context and
         returns the result as a HttpResponse object.
         """
+        #TODO: `debug` isn't used
         html = self.__render(template, context)
 
         self.response.write(html)
@@ -144,15 +141,10 @@ class PyLucidBaseModule(object):
 
         html = render_template(content, self.context, context)
         return html
-
-#        try:
-        t = Template(content)
-        c = self.__prepare_context(context)
-        html = t.render(c)
-#        except Exception, e:
-#            html = "[Error, render the django Template '%s': %s]" % (
-#                internal_page_name, e
-#            )
+        #XXX: what the hell? two returns? isn't there something wrong here?
+        tmpl = Template(content)
+        ctx = self.__prepare_context(context)
+        html = tmpl.render(ctx)
         return html
 
     def __prepare_context(self, context):
@@ -160,8 +152,9 @@ class PyLucidBaseModule(object):
         -transfer some objects from the global context into the local dict
         -returns a django context object
         """
+        #FIXME: isn't that unused?
         for key in self.TRANSFER_KEYS:
             context[key] = self.context[key]
 
-        c = Context(context)
+        c = context(context)
         return c

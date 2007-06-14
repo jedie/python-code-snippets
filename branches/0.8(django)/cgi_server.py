@@ -48,9 +48,9 @@ def runcgi():
         elif not headers_sent:
             # Before the first output, send the stored headers
             status, response_headers = headers_sent[:] = headers_set
-            
+
             response_headers = send_content_type(response_headers) # Send Content-Type first
-            
+
             if status == "500":
                 sys.stdout.write("Content-type: text/html; charset=utf-8\r\n\r\nHARDCORE DEBUG:\n")
             sys.stdout.write('Status: %s\r\n' % status)
@@ -79,7 +79,7 @@ def runcgi():
     try:
         for data in result:
             if data:    # don't send headers until body appears
-               write(data)
+                write(data)
         if not headers_sent:
             write('')   # send headers now if body was empty
     finally:

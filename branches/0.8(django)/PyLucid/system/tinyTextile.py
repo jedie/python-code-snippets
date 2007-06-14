@@ -25,7 +25,7 @@ license:
 
 """
 
-__version__= "$Rev$"
+__version__ = "$Rev$"
 
 import sys, re, cgi
 from PyLucid.system.response import SimpleStringIO
@@ -67,7 +67,8 @@ class TinyTextileParser:
                 r'"([^"]+?)":([^\s\<]+)',
                 r'<a href="\2">\1</a>'
             ],
-            [ # interne PyLucid Links - Bsp.: Das ist ein [[InternerLink]] zur Seite InternerLink ;)
+            [ # interne PyLucid Links - Bsp.: 
+              # Das ist ein [[InternerLink]] zur Seite InternerLink ;)
                 r'\[\[(.+?)\]\]',
                 self.shortcutLink
             ],
@@ -146,12 +147,7 @@ class TinyTextileParser:
 
     def parse(self, txt):
         "Parsed den Text in's out_obj"
-        #~ print "-"*80
-        #~ print txt
-        #~ print "-"*80
         txt = self.pre_process(txt)
-        #~ print txt
-        #~ print "-"*80
 
         self.make_paragraphs(txt)
 
@@ -189,9 +185,7 @@ class TinyTextileParser:
         Wendet Blockelement-Regeln und Inlineelement-Regeln an.
         """
         blocks = re.split("\n{2,}", txt)
-        #~ print repr(blocks)
         #~ self.page_msg(cgi.escape(str(blocks)))
-        text = ""
         current_area = None
         for block in blocks:
             current_area = self.handle_areas(block, current_area)
@@ -212,7 +206,6 @@ class TinyTextileParser:
 
             # inline-rules Anwenden
             for inlinerule in self.inline_rules:
-                #~ print ">>>",block,"<<<"
                 block = inlinerule[0].sub(inlinerule[1], block)
 
             # Block-rules Anwenden
@@ -261,7 +254,7 @@ class TinyTextileParser:
 
                 rest_block = block[len(area_tag):]
                 try:
-                    if rest_block[0]=="\n":
+                    if rest_block[0] == "\n":
                         # Evtl. vorhandene Leerzeile ignorieren
                         rest_block = rest_block[1:]
                 except IndexError:
@@ -337,7 +330,7 @@ class TinyTextileParser:
             # Aus der ersten Zeile den Typ des Sourcecodes ermitteln:
             # <code=sql> oder <code=.sh> oder <code>
             self.first_sourcecode_block = False
-            code_type, block = block.split(">",1)
+            code_type, block = block.split(">", 1)
             self.sourcecode_type = code_type.lstrip("=.")
 
         self.sourcecode_data.append("\n%s\n" % block)
@@ -351,12 +344,12 @@ class TinyTextileParser:
 
     #_________________________________________________________________________
 
-    def hightlight(self, type, code_lines):
+    def hightlight(self, source_type, code_lines):
         """
         Display Sourcecode.
         Try to use pygments, if exists.
         """
-#        self.page_msg("Source type: '%s'" % type)
+#        self.page_msg("Source type: '%s'" % source_type)
 
         code = "".join(code_lines)
         code = code.strip()
@@ -370,15 +363,15 @@ class TinyTextileParser:
             from pygments.formatters import HtmlFormatter
             from pygments import highlight
         except ImportError:
-            lexer_name = cgi.escape(type)
+            lexer_name = cgi.escape(source_type)
             sourcecode = no_hightlight(code)
         else:
-            ext = type.lower().lstrip(".")
+            ext = source_type.lower().lstrip(".")
 
             try:
                 lexer = lexers.get_lexer_by_name(ext)
-            except lexers.ClassNotFound, e:
-                lexer_name = "[Hightlight Error: %s]<br />\n" % e
+            except lexers.ClassNotFound, err:
+                lexer_name = "[Hightlight Error: %s]<br />\n" % err
                 sourcecode = no_hightlight(code)
             else:
                 lexer_name = lexer.name
@@ -440,11 +433,12 @@ class TinyTextileParser:
     def build_list(self, listitems):
         "Erzeugt eine Liste aus einem Absatz"
 
-        def spacer(deep): return " "* (deep * 3)
+        def spacer(deep):
+            return " "* (deep * 3)
 
-        def write(number, Tag, spacer):
+        def write(number, tag, spacer):
             for i in range(number):
-                self.out.write(spacer + Tag)
+                self.out.write(spacer + tag)
 
         deep = 0
         for item in re.findall("([\*#]+) (.*)", listitems):
