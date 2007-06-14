@@ -116,8 +116,14 @@ class Page(models.Model):
 
     def save(self):
         # Make the shortcut unique:
+        if self.id != None:
+            # A existing page should update
+            exclude_shortcut = Page.objects.get(id=self.id).shortcut
+        else:
+            # A new page created
+            exclude_shortcut = None
 #        print "shortcut 1: '%s'" % self.shortcut
-        self.shortcut = getUniqueShortcut(self.shortcut)
+        self.shortcut = getUniqueShortcut(self.shortcut, exclude_shortcut)
 #        print "shortcut 2: '%s'" % self.shortcut
 
         super(Page, self).save() # Call the "real" save() method

@@ -39,9 +39,12 @@ def makeUnique(item_name, name_list):
 
     return item_name
 
-def getUniqueShortcut(shortcut):
+def getUniqueShortcut(shortcut, exclude_shortcut=None):
     from PyLucid.models import Page
     shortcuts = Page.objects.values("shortcut")
+#    print "exclude shortcut: '%s'" % exclude_shortcut
+    if exclude_shortcut != None:
+        shortcuts = shortcuts.exclude(shortcut=exclude_shortcut)
     existing_shortcuts = [i["shortcut"] for i in shortcuts]
 #    print "existing_shortcuts:", existing_shortcuts
     return makeUnique(shortcut, existing_shortcuts)
