@@ -5,35 +5,14 @@
 A local test with a full init PyLucid environment
 """
 
-import sys, os
-os.chdir("../../") # go into PyLucid App root folder
-#print os.getcwd()
+import sys
 
-from django.core import management
-
-os.environ["DJANGO_SETTINGS_MODULE"] = "PyLucid.settings"
-from PyLucid import settings
-
-settings.DATABASE_ENGINE = "sqlite3"
-settings.DATABASE_NAME = ":memory:"
-
-#______________________________________________________________________________
-
-print "setup the django environ and create the model tables...",
-management.setup_environ(settings) # init django
-management.syncdb(verbosity=0, interactive=False) # Create Tables
-print "OK\n"
-
-#______________________________________________________________________________
-
-print "insert the PyLucid install Dump:"
-from PyLucid.install.install import DB_DumpFakeOptions
-from PyLucid.tools.db_dump import loaddb
-
-fake_options = DB_DumpFakeOptions()
-fake_options.verbose = False
-loaddb(app_labels = [], format = "py", options = fake_options)
-print
+from unittests.setup_environment import setup
+setup(
+    chdir="../../",
+    path_info=False, extra_verbose=False,
+    syncdb=True, insert_dump=True
+)
 
 #______________________________________________________________________________
 
