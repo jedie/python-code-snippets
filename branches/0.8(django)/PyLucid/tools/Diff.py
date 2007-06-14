@@ -59,7 +59,7 @@ def display_plaintext_diff(content1, content2):
     diff = make_diff(content1, content2)
 
     def is_diff_line(line):
-        for char in ("-","+","?"):
+        for char in ("-", "+", "?"):
             if line.startswith(char):
                 return True
         return False
@@ -96,7 +96,7 @@ def display_plaintext_diff(content1, content2):
         old_lineno = lineno
     print "..."
 
-def get_diff(content1, content2):
+def get_diff(content1, content2, request):
     """
     returns the HTML-Diff hightlighted with Pygments
     """
@@ -121,9 +121,9 @@ def make_diff(content1, content2, mode="Differ"):
     content1 = prepare(content1)
     content2 = prepare(content2)
 
-    if mode=="Differ":
+    if mode == "Differ":
         diff = difflib.Differ().compare(content1, content2)
-    elif mode=="HtmlDiff":
+    elif mode == "HtmlDiff":
         diff = difflib.HtmlDiff(tabsize=4).make_table(content1, content2)
 
     return diff

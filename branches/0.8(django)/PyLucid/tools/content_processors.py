@@ -16,22 +16,17 @@ def apply_markup(content, context, markup_object):
     markup = markup_object.name
     if markup == "textile":
         out_obj = SimpleStringIO()
-        p = TinyTextileParser(out_obj, context)
-        p.parse(content)
+        markup_parser = TinyTextileParser(out_obj, context)
+        markup_parser.parse(content)
         return out_obj.getvalue()
     else:
         return content
 
 def render_template(content, global_context, local_context={}):
-#        try:
-        t = Template(content)
-        c = prepare_context(global_context, local_context)
-        html = t.render(c)
-#        except Exception, e:
-#            html = "[Error, render the django Template '%s': %s]" % (
-#                internal_page_name, e
-#            )
-        return html
+    tmpl = Template(content)
+    ctx = prepare_context(global_context, local_context)
+    html = t.render(ctx)
+    return html
 
 def prepare_context(global_context, local_context):
     """
@@ -42,5 +37,5 @@ def prepare_context(global_context, local_context):
 
     global_context.update(local_context)
 
-    c = Context(global_context)
-    return c
+    ctx = Context(global_context)
+    return ctx

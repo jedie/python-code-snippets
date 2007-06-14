@@ -6,13 +6,7 @@ http://groups.google.com/group/django-developers/browse_thread/thread/50073e3a37
 http://www.python-forum.de/topic-10510.html
 """
 
-if __name__ == "__main__": # Init django
-    from PyLucid import settings
-
-    from django.core.management import setup_environ
-    setup_environ(settings)
-
-from django.db.models import get_apps, get_app, get_models
+from django.db.models import get_apps, get_models
 from django.db import connection
 
 
@@ -30,8 +24,8 @@ def clean_contenttypes(debug=True):
 
     db_types = {}
     cursor.execute("SELECT id, model FROM django_content_type")
-    for id, model in cursor.fetchall():
-        db_types[model] = id
+    for idx, model in cursor.fetchall():
+        db_types[model] = idx
     print "db_types: %s" % repr(db_types)
 
     model_names = []
@@ -51,13 +45,13 @@ def clean_contenttypes(debug=True):
 
     SQLcommand = "DELETE FROM django_content_type WHERE id = %s;"
     for model in obsolete_names:
-        id = db_types[model]
-        print "delete: %s - id: %s" % (model, id)
+        idx = db_types[model]
+        print "delete: %s - id: %s" % (model, idx)
         if debug:
             print "Debug only:"
             print SQLcommand % id
         else:
-            cursor.execute(SQLcommand, [id])
+            cursor.execute(SQLcommand, [idx])
     else:
         print "\nTable 'django_content_type' up to date. Nothing to do."
 
@@ -99,6 +93,11 @@ def clean_permissions(debug=True):
         print "\nTable 'auth_permission' up to date. Nothing to do."
 
 if __name__ == "__main__":
+    from PyLucid import settings
+
+    from django.core.management import setup_environ
+    setup_environ(settings)
+
     debug = True
 
     clean_contenttypes(debug)

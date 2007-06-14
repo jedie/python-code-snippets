@@ -103,4 +103,5 @@ Note, you must edit MIDDLEWARE_CLASSES above, after installation!!!
 INSTALL_EVILEVAL = False
 
 # Install Password you should put this in the _install URL
+#FIXME: ship a more save password
 INSTALL_PASS = "12345678"
