@@ -1,4 +1,4 @@
-from django.conf.urls.defaults import *
+from django.conf.urls.defaults import include, patterns
 
 from PyLucid import settings
 from PyLucid.install.urls import get_install_view_urls

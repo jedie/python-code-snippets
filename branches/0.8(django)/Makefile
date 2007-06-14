@@ -16,8 +16,6 @@ clean-pyc:
 	find . -name '*.pyc' -exec rm -f {} +
 	find . -name '*.pyo' -exec rm -f {} +
 	find . -name '*~' -exec rm -f {} +
-	find . -name '*.log' -exec rm -f {} +
-	find . -name 'rendered' -exec rm -rf {} +
 
 #test:
 #	@(cd tests; py.test $(TESTS))

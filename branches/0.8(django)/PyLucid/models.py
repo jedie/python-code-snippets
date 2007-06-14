@@ -6,12 +6,6 @@ from django.contrib.auth.models import User, Group
 from PyLucid.tools.shortcuts import getUniqueShortcut
 
 
-def lazy_date(obj):
-    if isinstance(obj, datetime):
-        return obj
-    return models.LazyDate()
-
-
 class Page(models.Model):
     """
     A CMS Page Object
@@ -93,7 +87,7 @@ class Page(models.Model):
             "createby","lastupdateby","permitViewPublic", "template", "style"
         )
         date_hierarchy = 'lastupdatetime'
-        search_fields = ["content","name", "title", "description","keywords"]
+        search_fields = ["content", "name", "title", "description", "keywords"]
 
         fields = (
             ('basic', {'fields': ('content','parent','position',)}),
@@ -157,26 +151,6 @@ class Page(models.Model):
     def get_lastupdatetime_string(self):
         return self.__strftime(self.lastupdatetime)
 
-#______________________________________________________________________________
-
-"""
-Not used yet.
-class Archive(models.Model):
-    user = models.ForeignKey(User)
-
-    type = models.CharField(maxlength=150)
-    date = models.DateTimeField()
-    comment = models.CharField(maxlength=255)
-    content = models.TextField()
-
-    class Admin:
-        pass
-
-    class Meta:
-        verbose_name_plural = 'Archive'
-"""
-
-#______________________________________________________________________________
 
 class JS_LoginData(models.Model):
     user = models.ForeignKey(User)
@@ -198,7 +172,6 @@ class JS_LoginData(models.Model):
     class Meta:
         verbose_name = verbose_name_plural = 'JS-LoginData'
 
-#______________________________________________________________________________
 
 class Markup(models.Model):
     name = models.CharField(maxlength=150)
@@ -210,26 +183,6 @@ class Markup(models.Model):
     def __unicode__(self):
         return self.name
 
-#______________________________________________________________________________
-
-"""
-obsolete???
-class ObjectCache(models.Model):
-    id = models.CharField(primary_key=True, maxlength=120)
-    expiry_time = models.DateTimeField(null=True)
-    request_ip = models.CharField(blank=True, maxlength=45)
-    user_id = models.IntegerField(null=True, blank=True)
-    pickled_data = models.TextField(blank=True)
-
-    class Admin:
-        pass
-
-    class Meta:
-        db_table = '%sobject_cache' % TABLE_PREFIX
-        verbose_name_plural = 'Object Cache'
-"""
-
-#______________________________________________________________________________
 
 class PagesInternal(models.Model):
     name = models.CharField(primary_key=True, maxlength=150)
@@ -268,42 +221,6 @@ class PagesInternal(models.Model):
     def __unicode__(self):
         return self.name
 
-#______________________________________________________________________________
-
-"""
-obsolete???
-class Plugindata(models.Model):
-    id = models.IntegerField(primary_key=True)
-    plugin_id = models.IntegerField()
-    method_name = models.CharField(maxlength=150)
-    internal_page_info = models.CharField(null=True, blank=True, maxlength=255)
-    menu_section = models.CharField(null=True, blank=True, maxlength=255)
-    menu_description = models.CharField(null=True, blank=True, maxlength=255)
-    must_admin = models.IntegerField()
-    must_login = models.IntegerField()
-    has_Tags = models.IntegerField()
-    no_rights_error = models.IntegerField()
-    direct_out = models.IntegerField()
-    sys_exit = models.IntegerField()
-
-    class Admin:
-        list_display = ("id", "method_name", "plugin_id")
-        list_display_links = ("method_name",)
-        ordering = ('plugin_id',"method_name")
-        list_filter = ("plugin_id",)
-
-    class Meta:
-        db_table = '%splugindata' % TABLE_PREFIX
-        verbose_name_plural = 'Plugin Data'
-
-    def __unicode__(self):
-        return self.method_name
-
-    def __repr__(self):
-        return "<Plugindata: %s, id:%s>" % (self.method_name, self.plugin_id)
-"""
-
-#______________________________________________________________________________
 
 class Plugin(models.Model):
     package_name = models.CharField(maxlength=255)
@@ -328,13 +245,12 @@ class Plugin(models.Model):
             "active", "plugin_name", "description", "version", "can_deinstall"
         )
         list_display_links = ("plugin_name",)
-        ordering = ('package_name',"plugin_name")
+        ordering = ('package_name', 'plugin_name')
         list_filter = ("author",)
 
     def __unicode__(self):
         return self.plugin_name.replace("_"," ")
 
-#______________________________________________________________________________
 
 class Preference(models.Model):
     plugin = models.ForeignKey(
@@ -358,10 +274,6 @@ class Preference(models.Model):
         ordering = ("plugin","name")
         search_fields = ["name", "value", "description"]
 
-#    def __unicode__(self):
-#        return self.name
-
-#______________________________________________________________________________
 
 class Style(models.Model):
     name = models.CharField(unique=True, maxlength=150)
@@ -388,7 +300,6 @@ class Style(models.Model):
     def __unicode__(self):
         return self.name
 
-#______________________________________________________________________________
 
 class Template(models.Model):
     name = models.CharField(unique=True, maxlength=150)

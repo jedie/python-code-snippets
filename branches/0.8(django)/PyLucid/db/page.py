@@ -107,7 +107,10 @@ def flat_tree_list():
     page_list = tree.get_flat_list()
 
     for page in page_list:
-        page["level_name"] = " %s| %s" % ("_"*((page["level"]*2)-2), page["name"])
+        page["level_name"] = " %s| %s" % (
+            "_"*((page["level"]*2)-2),
+            page["name"]
+        )
 
     return page_list
 

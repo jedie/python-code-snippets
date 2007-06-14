@@ -44,7 +44,7 @@ color=yes
 # Put messages in a separate file for each module / package specified on the
 # command line instead of printing them on stdout. Reports (if any) will be
 # written in a file name "pylint_global.[txt|html]".
-files-output=no
+files-output=yes
 
 # Python expression which should return a note less than 10 (10 is the highest
 # note).You have access to the variables errors warning, statement which

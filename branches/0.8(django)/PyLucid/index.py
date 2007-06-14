@@ -13,20 +13,17 @@ Display a PyLucid CMS Page
 #    management.setup_environ(settings) # init django
 
 
-from django.http import Http404, HttpResponse
-from django.template import Template, RequestContext
-#from django.contrib.sites.models import Site
+from django.http import HttpResponse
+from django.template import RequestContext
 
 from PyLucid import models, settings
 
 from PyLucid.system import plugin_manager
 from PyLucid.system.response import SimpleStringIO
-from PyLucid.system.exceptions import *
+from PyLucid.system.exceptions import AccessDeny
 from PyLucid.system.page_msg import PageMessages
-from PyLucid.system.template import get_template_content
 from PyLucid.system.detect_page import get_current_page_obj
 from PyLucid.system.URLs import URLs
-from PyLucid.system.LocalModuleResponse import LocalModuleResponse
 
 from PyLucid.tools.content_processors import apply_markup, render_template
 
