@@ -43,6 +43,7 @@ print "No empty shortcut allowed"
 verbose_save(page, "")
 assert page.shortcut != ""
 
+
 print
 print "Unique Test"
 test = "UniqueShortCutTest"
@@ -50,3 +51,23 @@ verbose_save(page, test)
 page2 = Page.objects.all()[1] # Get the second page
 verbose_save(page2, test)
 assert page.shortcut != page2.shortcut
+assert page2.shortcut == "UniqueShortCutTest1"
+
+print
+print "update a page only. (Shourtcut should not be changed!)"
+verbose_save(page, test)
+assert page.shortcut == "UniqueShortCutTest"
+verbose_save(page, test)
+assert page.shortcut == "UniqueShortCutTest"
+
+print
+print "insert a new page with a existing shortcut"
+# For page.id = None look at:
+# http://www.djangoproject.com/documentation/db-api/#how-django-knows-to-update-vs-insert
+page.id = None # django means the side would be new.
+verbose_save(page, test)
+assert page.shortcut == "UniqueShortCutTest2"
+
+page.id = None # django means the side would be new.
+verbose_save(page, test)
+assert page.shortcut == "UniqueShortCutTest3"
