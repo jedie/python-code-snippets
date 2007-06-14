@@ -3,7 +3,6 @@
 setup some "static" variables
 """
 
-from PyLucid import settings
 from PyLucid import PYLUCID_VERSION_STRING
 
 def static(request):
