@@ -3,6 +3,8 @@ from datetime import datetime
 from django.db import models
 from django.contrib.auth.models import User, Group
 
+from PyLucid.tools.shortcuts import getUniqueShortcut
+
 
 def lazy_date(obj):
     if isinstance(obj, datetime):
@@ -111,6 +113,14 @@ class Page(models.Model):
                 ),
             }),
         )
+
+    def save(self):
+        # Make the shortcut unique:
+#        print "shortcut 1: '%s'" % self.shortcut
+        self.shortcut = getUniqueShortcut(self.shortcut)
+#        print "shortcut 2: '%s'" % self.shortcut
+
+        super(Page, self).save() # Call the "real" save() method
 
     def get_absolute_url(self):
         """
