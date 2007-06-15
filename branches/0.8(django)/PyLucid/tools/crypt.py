@@ -1,19 +1,18 @@
-
 """
-    PyLucid crypt
-    ~~~~~~~~~
+    PyLucid.tools.crypt
+    ~~~~~~~~~~~~~~~~~~~
 
-    Two usefull has functions.
+    Two usefull hash functions.
     Used in the _install section for login.
 
     Last commit info:
-    ~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~
     $LastChangedDate: $
     $Rev: $
     $Author: $
 
-    :copyright: 2007 by Jens Diemer
-    :license: GNU GPL v2 or above, see LICENSE for more details
+    :copyright: 2007 by Jens Diemer.
+    :license: GNU GPL, see LICENSE for more details
 """
 
 
@@ -27,10 +26,8 @@ def make_salt_hash(txt):
     make from the given string a hash with a salt value
     """
     salt = sha.new(str(random.random())).hexdigest()[:SALT_LEN]
-    hash = sha.new(salt + txt).hexdigest()
-#    print "make_salt_hash - salt........:", salt
-#    print "make_salt_hash - hash........:", hash
-    return salt + hash
+    sha_hash = sha.new(salt + txt).hexdigest()
+    return salt + sha_hash
 
 def check_salt_hash(txt, hash_string):
     """
@@ -38,12 +35,9 @@ def check_salt_hash(txt, hash_string):
     returns a bool.
     """
     salt = hash_string[:SALT_LEN]
-    hash = hash_string[SALT_LEN:]
+    sha_hash = hash_string[SALT_LEN:]
     test_hash = sha.new(salt + txt).hexdigest()
-#    print "check_salt_hash - salt.......:", salt
-#    print "check_salt_hash - hash.......:", hash
-#    print "check_salt_hash - test_hash..:", test_hash
-    return hash == test_hash
+    return sha_hash == test_hash
 
 if __name__ == "__main__":
     test_txt = "12345678test"

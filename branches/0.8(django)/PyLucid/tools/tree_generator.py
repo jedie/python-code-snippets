@@ -1,22 +1,24 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """
-Generate a tree of the cms pages, who are orginised in a parent-model.
-usefull for: main menu and the sitemap.
+    PyLucid.tools.tree_generator.py
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Last commit info:
-----------------------------------
-$LastChangedDate:$
-$Rev:$
-$Author: JensDiemer $
+    Generate a tree of the cms pages, who are orginised in a parent-model.
+    usefull for the main menu and the sitemap.
 
-Original code by Marc 'BlackJack' Rintsch
-see: http://www.python-forum.de/topic-10852.html (de)
+    Original code by Marc 'BlackJack' Rintsch
+    see: http://www.python-forum.de/topic-10852.html (de)
 
-license:
-    GNU General Public License v2 or above
-    http://www.opensource.org/licenses/gpl-license.php
+
+    Last commit info:
+    ~~~~~~~~~~~~~~~~~
+    $LastChangedDate:$
+    $Rev:$
+    $Author:$
+
+    :copyright: 2007 by Jens Diemer and Marc Rintsch.
+    :license: GNU GPL, see LICENSE for more details
 """
 
 
@@ -146,9 +148,6 @@ class TreeGenerator(object):
         return self.root.get_flat_list()[1:]
 
 
-
-
-
 def test_generator(tree):
     #
     # Sitemap.
@@ -259,7 +258,6 @@ def test_generator(tree):
 
 if __name__ == "__main__":
     from pprint import pprint
-    import copy, time, sys
 
     data = [
         {'id': 1, 'parent': None, 'name': '1. AAA'},
