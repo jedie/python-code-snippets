@@ -1,3 +1,20 @@
+"""
+    PyLucid.urls
+    ~~~~~~~~~~~~
+
+    The urls, manage the PyLucid CMS.
+
+
+    Last commit info:
+    ~~~~~~~~~~~~~~~~~
+    $LastChangedDate: $
+    $Rev: $
+    $Author: $
+
+    :copyright: 2007 by the PyLucid team.
+    :license: GNU GPL, see LICENSE for more details.
+"""
+
 from django.conf.urls.defaults import include, patterns
 
 from PyLucid import settings

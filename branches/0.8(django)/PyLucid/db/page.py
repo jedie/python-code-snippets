@@ -1,6 +1,24 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
+"""
+    PyLucid.db.page
+    ~~~~~~~~~~~~~~~
 
+    Django settings for the PyLucid project.
+
+    You must copy this file:
+        settings_example.py -> settings.py
+
+
+    Last commit info:
+    ~~~~~~~~~
+    $LastChangedDate: $
+    $Rev: $
+    $Author: $
+
+    :copyright: 2007 by Jens Diemer
+    :license: GNU GPL, see LICENSE for more details
+"""
 """
 some needfull function around the cms pages
 
