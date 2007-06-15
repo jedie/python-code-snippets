@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """
-    PyLucid index view
-    ~~~~~~~~~
+    PyLucid.index
+    ~~~~~~~~~~~~~
 
     - Display a PyLucid CMS Page
     - Answer a _command Request
@@ -15,7 +14,7 @@
     $Author: $
 
     :copyright: 2007 by Jens Diemer
-    :license: GNU GPL v2 or above, see LICENSE for more details
+    :license: GNU GPL, see LICENSE for more details
 """
 
 #if __name__ == "__main__": # A local test. THIS SHOULD BE COMMENTED!!!
@@ -83,7 +82,7 @@ def _get_context(request, current_page_obj):
     """
     try:
         context = RequestContext(request)
-    except AttributeError, e:
+    except AttributeError, err:
         if str(e) == "'WSGIRequest' object has no attribute 'user'":
             # The auth middleware is not
             msg = (
@@ -91,12 +90,12 @@ def _get_context(request, current_page_obj):
                 " - Did you install PyLucid correctly?"
                 " Please look at: %s"
                 " - Original Error: %s"
-            ) % (settings.INSTALL_HELP_URL, e)
+            ) % (settings.INSTALL_HELP_URL, err)
             from django.core.exceptions import ImproperlyConfigured
             raise ImproperlyConfigured(msg)
         else:
             # other error
-            raise AttributeError(e)
+            raise AttributeError(err)
 
     context["page_msg"] = PageMessages(context)
     context["PAGE"] = current_page_obj

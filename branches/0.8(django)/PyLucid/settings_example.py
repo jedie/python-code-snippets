@@ -1,13 +1,26 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """
-Django settings for PyLucid project.
+    PyLucid.settings-example
+    ~~~~~~~~~~~~~~~~~~~~~~~~
 
-You must copy this file:
-    settings-example.py -> settings.py
+    Django settings for the PyLucid project.
+
+    You must copy this file:
+        settings_example.py -> settings.py
+
+
+    Last commit info:
+    ~~~~~~~~~
+    $LastChangedDate: $
+    $Rev: $
+    $Author: $
+
+    :copyright: 2007 by Jens Diemer
+    :license: GNU GPL, see LICENSE for more details
 """
 
+# deactivate the DEBUG mode in a productive environment
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 

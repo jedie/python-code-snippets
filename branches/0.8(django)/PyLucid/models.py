@@ -1,4 +1,19 @@
-from datetime import datetime
+"""
+    PyLucid.models
+    ~~~~~~~~~~~~~~
+
+    The database models for PyLucid
+    based on Django's ORM.
+
+    Last commit info:
+    ~~~~~~~~~~~~~~~~~
+    $LastChangedDate: $
+    $Rev: $
+    $Author: $
+
+    :copyright: 2007 by the PyLucid team.
+    :license: GNU GPL, see LICENSE for more details.
+"""
 
 from django.db import models
 from django.contrib.auth.models import User, Group
@@ -109,6 +124,7 @@ class Page(models.Model):
         )
 
     def save(self):
+        """save a new page"""
         # Make the shortcut unique:
         if self.id != None:
             # A existing page should update
@@ -116,10 +132,7 @@ class Page(models.Model):
         else:
             # A new page created
             exclude_shortcut = None
-#        print "shortcut 1: '%s'" % self.shortcut
         self.shortcut = getUniqueShortcut(self.shortcut, exclude_shortcut)
-#        print "shortcut 2: '%s'" % self.shortcut
-
         super(Page, self).save() # Call the "real" save() method
 
     def get_absolute_url(self):
@@ -127,9 +140,6 @@ class Page(models.Model):
         permanent link?
         """
         return "/_goto/%s" % self.shortcut
-
-    def __unicode__(self):
-        return self.shortcut
 
     def get_style_name(self):
         """
@@ -151,6 +161,8 @@ class Page(models.Model):
     def get_lastupdatetime_string(self):
         return self.__strftime(self.lastupdatetime)
 
+    def __unicode__(self):
+        return self.shortcut
 
 class JS_LoginData(models.Model):
     user = models.ForeignKey(User)
@@ -216,7 +228,7 @@ class PagesInternal(models.Model):
         #ordering = ('plugin',"name")
         list_filter = ("plugin",)
         date_hierarchy = 'lastupdatetime'
-        search_fields = ["name","content_html","content_js","content_css"]
+        search_fields = ["name", "content_html", "content_js", "content_css"]
 
     def __unicode__(self):
         return self.name

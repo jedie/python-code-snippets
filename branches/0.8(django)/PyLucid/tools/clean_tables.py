@@ -1,9 +1,21 @@
-
 """
-Clean up django tables
+    PyLucid.db.clean_tables
+    ~~~~~~~~~~~~~~~~~~~~~~~
 
-http://groups.google.com/group/django-developers/browse_thread/thread/50073e3a377dcd80
-http://www.python-forum.de/topic-10510.html
+    Clean up django tables
+
+    http://groups.google.com/group/django-developers/browse_thread/thread/50073e3a377dcd80
+    http://www.python-forum.de/topic-10510.html
+
+
+    Last commit info:
+    ~~~~~~~~~
+    $LastChangedDate: $
+    $Rev: $
+    $Author: $
+
+    :copyright: 2007 by Jens Diemer
+    :license: GNU GPL, see LICENSE for more details
 """
 
 from django.db.models import get_apps, get_models
