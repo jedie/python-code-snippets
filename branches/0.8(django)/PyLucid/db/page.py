@@ -21,7 +21,6 @@
 #      page-ID  <-> parant-ID relation?
 #      url data for every page?
 
-from PyLucid.system.BaseModule import PyLucidBaseModule
 from PyLucid.models import User, Page
 from PyLucid.tools.tree_generator import TreeGenerator
 

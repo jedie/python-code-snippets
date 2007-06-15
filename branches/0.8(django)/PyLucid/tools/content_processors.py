@@ -46,9 +46,9 @@ def render_string_template(template, context):
     """
     Render a string-template with the given context
     """
-    c = Context(context)
-    t = Template(template)
-    html = t.render(c)
+    ctx = Context(context)
+    tmpl = Template(template)
+    html = tmpl.render(ctx)
     return html
 
 def render_template(content, global_context, local_context={}):

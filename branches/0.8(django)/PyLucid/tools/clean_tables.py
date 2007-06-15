@@ -55,15 +55,15 @@ def clean_contenttypes(debug=True):
     obsolete_names = db_type_names - model_names
     print "obsolete_names: %s" % repr(obsolete_names)
 
-    SQLcommand = "DELETE FROM django_content_type WHERE id = %s;"
+    sql_command = "DELETE FROM django_content_type WHERE id = %s;"
     for model in obsolete_names:
         idx = db_types[model]
         print "delete: %s - id: %s" % (model, idx)
         if debug:
             print "Debug only:"
-            print SQLcommand % id
+            print sql_command % id
         else:
-            cursor.execute(SQLcommand, [idx])
+            cursor.execute(sql_command, [idx])
     else:
         print "\nTable 'django_content_type' up to date. Nothing to do."
 
@@ -83,24 +83,24 @@ def clean_permissions(debug=True):
 
     cursor.execute("SELECT content_type_id, codename FROM auth_permission;")
     db_permissions = {}
-    for id, permission in cursor.fetchall():
-        if not id in db_permissions:
-            db_permissions[id] = []
-        db_permissions[id].append(permission)
+    for idx, permission in cursor.fetchall():
+        if not idx in db_permissions:
+            db_permissions[idx] = []
+        db_permissions[idx].append(permission)
     print "db_permissions: %s" % repr(db_permissions)
 
-    SQLcommand = "DELETE FROM auth_permission WHERE content_type_id = %s;"
+    sql_command = "DELETE FROM auth_permission WHERE content_type_id = %s;"
     uptodate = True
-    for id, permission in db_permissions.iteritems():
-        if id in db_content_ids:
+    for idx, permission in db_permissions.iteritems():
+        if idx in db_content_ids:
             continue
-        print "obsolete permissions: %s: %s" % (id, permission)
+        print "obsolete permissions: %s: %s" % (idx, permission)
         uptodate = False
         if debug:
             print "Debug only:"
-            print SQLcommand % id
+            print sql_command % idx
         else:
-            cursor.execute(SQLcommand, [id])
+            cursor.execute(sql_command, [idx])
     if uptodate:
         print "\nTable 'auth_permission' up to date. Nothing to do."
 

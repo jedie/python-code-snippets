@@ -83,7 +83,7 @@ def _get_context(request, current_page_obj):
     try:
         context = RequestContext(request)
     except AttributeError, err:
-        if str(e) == "'WSGIRequest' object has no attribute 'user'":
+        if str(err) == "'WSGIRequest' object has no attribute 'user'":
             # The auth middleware is not
             msg = (
                 "The auth middleware is not activatet in your settings.py"

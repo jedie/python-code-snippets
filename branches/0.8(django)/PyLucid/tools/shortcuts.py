@@ -1,7 +1,17 @@
-
 """
-Some usefull routines around:
-    PyLucid.models.Page.shortcut
+    PyLucid.tools.shortcuts
+    ~~~~~~~~~~~~~~~~~~~~~~~
+
+    Some usefull routines around `PyLucid.models.Page.shortcut`.
+
+    Last commit info:
+    ~~~~~~~~~~~~~~~~~
+    $LastChangedDate:$
+    $Rev:$
+    $Author:$
+
+    :copyright: 2007 by Jens Diemer.
+    :license: GNU GPL, see LICENSE for more details
 """
 
 import string
@@ -50,7 +60,7 @@ def getUniqueShortcut(shortcut, exclude_shortcut=None):
     return makeUnique(shortcut, existing_shortcuts)
 
 if __name__ == "__main__":
-    name_list = ["GibtsSchon","UndAuchDas","UndAuchDas1","UndAuchDas2"]
+    name_list = ["GibtsSchon", "UndAuchDas", "UndAuchDas1", "UndAuchDas2"]
     print name_list
     print "-"*80
     print makeUnique("Ich bin neu!", name_list)

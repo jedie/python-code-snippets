@@ -1,34 +1,32 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
+"""
+    PyLucid.tools.Diff
+    ~~~~~~~~~~~~~~~~~~
 
-""" kombiniert difflib.Differ() mit Pygments
+    combine difflib.Differ() with pygments.
 
-Used request.render.highlight or request.render.get_hightlighted
-
-
- example-1:
-----------
-    from PyLucid.tools.Diff import display_diff
-    display_diff(file_content, db_content, self.request)
-
- example-2:
-----------
-    from PyLucid.tools.Diff import get_diff
-    html_diff_page = get_diff(file_content, db_content, self.request)
-    self.response.write(html_diff_page)
+    Used request.render.highlight or request.render.get_hightlighted
 
 
-Last commit info:
-----------------------------------
-$LastChangedDate$
-$Rev$
-$Author$
+    example-1::
+        from PyLucid.tools.Diff import display_diff
+        display_diff(file_content, db_content, self.request)
 
-Created by Jens Diemer
+    example-2::
+        from PyLucid.tools.Diff import get_diff
+        html_diff_page = get_diff(file_content, db_content, self.request)
+        self.response.write(html_diff_page)
 
-license:
-    GNU General Public License v2 or above
-    http://www.opensource.org/licenses/gpl-license.php
+
+    Last commit info:
+    ~~~~~~~~~~~~~~~~~
+    $LastChangedDate:$
+    $Rev:$
+    $Author:$
+
+    :copyright: 2007 by Jens Diemer.
+    :license: GNU GPL, see LICENSE for more details.
 """
 
 
