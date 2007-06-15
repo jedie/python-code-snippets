@@ -23,9 +23,9 @@ def apply_markup(content, context, markup_object):
         return content
 
 def render_template(content, global_context, local_context={}):
-    tmpl = Template(content)
-    ctx = prepare_context(global_context, local_context)
-    html = t.render(ctx)
+    template = Template(content)
+    context = prepare_context(global_context, local_context)
+    html = template.render(context)
     return html
 
 def prepare_context(global_context, local_context):
