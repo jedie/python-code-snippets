@@ -4,14 +4,11 @@
     PyLucid.db.page
     ~~~~~~~~~~~~~~~
 
-    Django settings for the PyLucid project.
-
-    You must copy this file:
-        settings_example.py -> settings.py
+    some needfull function around the cms pages
 
 
     Last commit info:
-    ~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~
     $LastChangedDate: $
     $Rev: $
     $Author: $
@@ -19,13 +16,10 @@
     :copyright: 2007 by Jens Diemer
     :license: GNU GPL, see LICENSE for more details
 """
-"""
-some needfull function around the cms pages
 
-TODO: We need a caching for:
-    page-ID  <-> parant-ID relation?
-    url data for every page?
-"""
+#TODO: We need a caching for:
+#      page-ID  <-> parant-ID relation?
+#      url data for every page?
 
 from PyLucid.system.BaseModule import PyLucidBaseModule
 from PyLucid.models import User, Page
