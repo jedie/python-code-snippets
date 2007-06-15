@@ -8,7 +8,10 @@ import sys
 from PyLucid.settings import INSTALL_PASS
 from PyLucid import PYLUCID_VERSION_STRING
 from PyLucid.system.response import SimpleStringIO
+from PyLucid.tools.crypt import make_salt_hash, check_salt_hash
+from PyLucid.tools.content_processors import render_string_template
 
+from django import newforms as forms
 from django.http import HttpResponse, Http404
 from django.template import Template, Context, loader
 # The loader must be import, even if it is not used directly!!!
@@ -19,6 +22,87 @@ from django.template import Template, Context, loader
 # Warning: If debug is on, the install password is in the traceback!!!
 #debug = True
 DEBUG = False
+
+
+def check_install_password(password):
+    """
+    compare the given >password< with the INSTALL_PASS.
+    raise a WrongPassword if the password is not the same.
+    """
+    def error(msg):
+        msg = "install password error: %s!" % msg
+        if DEBUG:
+            msg += " [Debug: '%s' != '%s']" % (
+                password, INSTALL_PASS
+            )
+        self.context["msg"] = msg
+        raise WrongPassword()
+    if INSTALL_PASS == None:
+        error("no passwort set in your settings.py")
+    elif len(INSTALL_PASS)<8:
+        error("The password in your settings.py is to short")
+    elif password != INSTALL_PASS:
+        error("wrong password")
+
+
+def save_password_cookie(password):
+    """
+    Store the verified password as a hash in a client cookie.
+    Return a HttpResponse object with cookie.
+    """
+    salt_hash = make_salt_hash(password)
+    response = HttpResponse()
+    response.set_cookie("instpass", value=salt_hash, max_age=None)
+    #, expires=None, path='/', domain=None, secure=None)
+    return response
+
+
+def check_cookie_pass(request):
+    """
+    check if the _install section password is stored in the cookie
+    - returns True if the password hash is ok
+    - returns False if there is no password or the hash test failed
+    """
+    cookie_pass = request.COOKIES.get("instpass", None)
+    if cookie_pass and check_salt_hash(INSTALL_PASS, cookie_pass) == True:
+        # The salt-hash stored in the cookie is ok
+        return True
+    else:
+        return False
+
+
+class InstallPassForm(forms.Form):
+    """ a django newforms for input the _install section password """
+    password = forms.CharField(
+        min_length=8, help_text='The install password from your settings.py'
+    )
+
+LOGIN_TEMPLATE = """
+{% extends "install_base.html" %}
+{% block content %}
+<h1>Login</h1>
+
+{% if form %}
+<form method="post" action=".">
+  <table class="form">
+    {{ form }}
+  </table>
+  <input type="submit" value="login" />
+</form>
+{% endif %}
+
+{% endblock %}
+"""
+LOGGED_IN_TEMPLATE = """
+{% extends "install_base.html" %}
+{% block content %}
+<h1>Login</h1>
+
+<p>Access permit. Your logged in!</p>
+<p><a href="{% url PyLucid.install.menu . %}">continue</a></p>
+
+{% endblock %}
+"""
 
 SIMPLE_RENDER_TEMPLATE = """
 {% extends "install_base.html" %}
@@ -32,15 +116,62 @@ class BaseInstall(object):
     """
     Base class for all install views.
     """
-    def __init__(self, request, install_pass):
+    def __init__(self, request):
+        if INSTALL_PASS == None or len(INSTALL_PASS)<8:
+            raise Http404(
+                "Install password not set or too short."
+                " - Install section deactivated"
+            )
+
         self.request = request
-        self._check_pass(install_pass)
         self.context = {
             "output": "",
             "http_host": request.META.get("HTTP_HOST","cms page"),
             "version": PYLUCID_VERSION_STRING,
-            "install_pass": install_pass,
         }
+
+    #___________________________________________________________________________
+
+    def start_view(self):
+        """
+        - Check the install password / login cookie
+        - starts the self.view() if login ok
+        - display the login form if login not ok
+        """
+        if check_cookie_pass(self.request) == True:
+            # access ok -> start the normal _instal view() method
+            return self.view()
+
+        # The _install section password is not in the cookie
+        # -> display a html input form or check a submited form
+
+        if self.request.method == 'POST':
+            # A form was submit
+            form = InstallPassForm(self.request.POST)
+            if form.is_valid():
+                # The submited form is ok
+                form_data = form.cleaned_data
+                password = form_data["password"]
+                try:
+                    check_install_password(password)
+                except WrongPassword:
+                    # Display the form again
+                    pass
+                else:
+                    # Password is ok. -> User login
+                    response = save_password_cookie(password)
+                    html = render_string_template(LOGGED_IN_TEMPLATE, self.context)
+                    response.write(html)
+                    return response
+        else:
+            # Create a empty form
+            form = InstallPassForm()
+
+        self.context["form"] = form.as_table()
+        self.context["no_menu_link"] = True # no "back to menu" link
+        return self._render(LOGIN_TEMPLATE)
+
+    #___________________________________________________________________________
 
     def _redirect_execute(self, method, *args, **kwargs):
         """
@@ -63,12 +194,9 @@ class BaseInstall(object):
 
     def _render(self, template):
         """
-        Render a string-template with the given context and
-        returns the result as a HttpResponse object.
+        render the template and returns the result as a HttpResponse object.
         """
-        c = Context(self.context)
-        t = Template(template)
-        html = t.render(c)
+        html = render_string_template(template, self.context)
         return HttpResponse(html)
 
     def _simple_render(self, output=None, headline=None):
@@ -83,29 +211,12 @@ class BaseInstall(object):
         return self._render(SIMPLE_RENDER_TEMPLATE)
 
 
-    def _check_pass(self, install_pass):
-        """
-        Check if the _install password is right.
-        raise a Http404 if the password is wrong.
-        """
-        password = install_pass.split("/", 1)[0]
 
-        def error(msg):
-            msg = "*** install password error: %s! ***" % msg
-            if DEBUG:
-                msg += " [Debug: '%s' != '%s']" % (
-                    password, INSTALL_PASS
-                )
-            raise Http404(msg)
-
-        if password == "":
-            error("no password in URL")
-
-        if len(password)<8:
-            error("password to short")
-
-        if password != INSTALL_PASS:
-            error("wrong password")
+class WrongPassword(Exception):
+    """
+    Wrong _install section password
+    """
+    pass
 
 
 

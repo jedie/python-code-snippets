@@ -18,20 +18,32 @@
 from django.conf.urls.defaults import include, patterns
 
 from PyLucid import settings
-from PyLucid.install.urls import get_install_view_urls
 
-# all available install views
-urls = get_install_view_urls(
-    '^%s/(?P<install_pass>[^/]*?)/%%s/(.*?)$' % settings.INSTALL_URL_PREFIX
-)
+if settings.INSTALL_PASS and len(settings.INSTALL_PASS)>=8:
+    # The _install section is activated
+    urls = (
+        (
+            (
+                '^%s/'
+                '(?P<module_name>[^/]*?)/'
+                '(?P<method_name>[^/]*?)/'
+                '(?P<url_args>.*?)$'
+            ) % settings.INSTALL_URL_PREFIX,
+            "PyLucid.install.index.run_method",
+        ),
+        (
+            '^%s/logout/$' % settings.INSTALL_URL_PREFIX,
+            'PyLucid.install.index.logout'
+        ),
+    )
+else:
+    urls = ()
+
 urls += (
     (r'^%s/' % settings.ADMIN_URL_PREFIX, include('django.contrib.admin.urls')),
     (
-        (
-            '^%s/'
-            '(?P<install_pass>[^/]*?)/$'
-        ) % settings.INSTALL_URL_PREFIX,
-        'PyLucid.install.index.index'
+        '^%s/$' % settings.INSTALL_URL_PREFIX,
+        'PyLucid.install.index.menu'
     ),
     (
         (
@@ -45,5 +57,7 @@ urls += (
     ),
     (r'^(.*?)$', 'PyLucid.index.index'),
 )
+
+#print urls
 
 urlpatterns = patterns('', *urls)

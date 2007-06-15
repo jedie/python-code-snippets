@@ -42,6 +42,15 @@ def apply_markup(content, context, markup_object):
         return content
 
 
+def render_string_template(template, context):
+    """
+    Render a string-template with the given context
+    """
+    c = Context(context)
+    t = Template(template)
+    html = t.render(c)
+    return html
+
 def render_template(content, global_context, local_context={}):
     """
     Render a template.
@@ -53,7 +62,7 @@ def render_template(content, global_context, local_context={}):
     page can display something from the global context, like page name...
     """
     global_context.update(local_context)
-    context = Context(global_context)
-    template = Template(content)
-    html = template.render(context)
+
+    html = render_string_template(content, global_context)
+
     return html

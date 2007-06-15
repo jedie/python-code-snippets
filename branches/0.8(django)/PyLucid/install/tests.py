@@ -26,11 +26,11 @@ class InspectDB(BaseInstall):
 
         return self._simple_render(output, headline="inspectdb")
 
-def inspectdb(request, install_pass):
+def inspectdb(request):
     """
     1. inspect the database
     """
-    return InspectDB(request, install_pass).view()
+    return InspectDB(request).start_view()
 
 #______________________________________________________________________________
 
@@ -67,9 +67,9 @@ class SQLInfo(BaseInstall):
             write_lines(get_custom_sql, app, "get_custom_sql")
             write_lines(get_sql_indexes, app, "get_sql_indexes")
 
-def sql_info(request, install_pass):
+def sql_info(request):
     "2. SQL info"
-    return SQLInfo(request, install_pass).view()
+    return SQLInfo(request).start_view()
 
 #______________________________________________________________________________
 
@@ -222,11 +222,11 @@ class Info(BaseInstall):
 
         return self._render(info_template)
 
-def info(request, install_pass):
+def info(request):
     """
     3. Display some information (for developers)
     """
-    return Info(request, install_pass).view()
+    return Info(request).start_view()
 
 
 #______________________________________________________________________________
@@ -258,11 +258,11 @@ class URL_Info(BaseInstall):
 
         return self._render(url_info_template)
 
-def url_info(request, install_pass):
+def url_info(request):
     """
     4. Display the current used urlpatterns
     """
-    return URL_Info(request, install_pass).view()
+    return URL_Info(request).start_view()
 
 #______________________________________________________________________________
 
@@ -362,10 +362,10 @@ class EvilEval(BaseInstall):
 
         return self._render(python_input_form)
 
-def evileval(request, install_pass):
+def evileval(request):
     """
     5. a Python web-shell
     """
-    return EvilEval(request, install_pass).view()
+    return EvilEval(request).start_view()
 
 

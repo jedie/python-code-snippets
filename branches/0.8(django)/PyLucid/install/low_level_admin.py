@@ -129,11 +129,11 @@ from django.core import serializers
 #        self.context["output"] = "".join(output)
 #        return render(dump_template)
 #
-#def _dump_db(request, install_pass):# deactivated with the unterscore!
+#def _dump_db(request):# deactivated with the unterscore!
 #    """
 #    dump db data (using fixture)
 #    """
-#    return Dump_DB(request, install_pass).view()
+#    return Dump_DB(request).start_view()
 #===============================================================================
 
 #______________________________________________________________________________
@@ -158,11 +158,11 @@ class Dump_DB(BaseInstall):
 
         return self._simple_render(headline="DB dump (using db_dump.py)")
 
-def dump_db(request, install_pass):
+def dump_db(request):
     """
     1. dump db data (using db_dump.py)
     """
-    return Dump_DB(request, install_pass).view()
+    return Dump_DB(request).start_view()
 
 #______________________________________________________________________________
 
@@ -179,11 +179,11 @@ class CleanupDjangoTables(BaseInstall):
         return self._simple_render(headline="Cleanup django tables")
 
 
-def cleanup_django_tables(request, install_pass):
+def cleanup_django_tables(request):
     """
     2. cleanup django tables
     """
-    return CleanupDjangoTables(request, install_pass).view()
+    return CleanupDjangoTables(request).start_view()
 
 #______________________________________________________________________________
 
@@ -235,8 +235,8 @@ class RecreateDjangoTables(Sync_DB):
 
 
 
-def recreate_django_tables(request, install_pass):
+def recreate_django_tables(request):
     """
     2. Recreate all django tables (user/groups/permission lost!)
     """
-    return RecreateDjangoTables(request, install_pass).view()
+    return RecreateDjangoTables(request).start_view()

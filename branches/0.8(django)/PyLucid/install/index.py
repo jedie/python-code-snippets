@@ -2,44 +2,87 @@
 """
 The index view
  - generate the _install section menu
-"""
 
-from PyLucid import install as install_package
-from PyLucid.install.BaseInstall import BaseInstall
+TODO: rewrite _get_members
+"""
 
 import inspect
 
+from PyLucid import install as install_package
+from PyLucid.install.BaseInstall import BaseInstall
+from PyLucid.tools.content_processors import render_string_template
 
-def get_members(obj, predicate, skip_name=[], skip_secret=True):
+from django.http import HttpResponse
+
+
+def run_method(request, module_name, method_name, url_args):
+    """
+    run a _install method
+    """
+    print module_name, method_name, url_args
+
+    from_name = ".".join(["PyLucid.install", module_name])
+    module_object = __import__(from_name, {}, {}, [method_name])
+
+    unbound_method = getattr(module_object, method_name)
+
+    return unbound_method(request, *url_args)
+
+
+def _get_members(obj, predicate, skip_name=[]):
+    """
+    get all members for generating the dynamic _install section menu
+    - sort based on the first line of the docstring
+    - renumber the docstring
+    """
     result = []
 
-    module_list = inspect.getmembers(obj, predicate)
-    module_list = [i[0] for i in module_list]
-    for module_name in module_list:
-        if skip_secret and module_name.startswith("_"):
-            continue
-        if module_name in skip_name:
+    member_list = inspect.getmembers(obj, predicate)
+    member_list = [i[0] for i in member_list]
+    for member_name in member_list:
+        if member_name.startswith("_"):
+            # Skip all "secret" members.
             continue
 
-        module_obj = getattr(obj, module_name)
+        if member_name in skip_name:
+            continue
 
-        doc = module_obj.__doc__
+        member_obj = getattr(obj, member_name)
+
+        doc = member_obj.__doc__
         if doc:
             doc = doc.strip()
             doc = doc.splitlines()[0]
+        else:
+            doc = member_obj.__name__
 
-        result.append((doc, module_name))
+        result.append((doc, member_name))
 
     result.sort()
 
     for no,data in enumerate(result):
-        result[no] = {"doc": data[0], "name": data[1]}
+        doc, name = data
+        doc = "%s. %s" % (no+1, doc.lstrip("1234567890."))
+        result[no] = {"doc": doc, "name": name}
 
     return result
 
+LOGOUT_TEMPLATE = """
+{% extends "install_base.html" %}
+{% block content %}
+<h1>Logout</h1>
 
+<h3>You logged out.</h3>
+<p><a href="{% url PyLucid.install.index.menu . %}">continue</a></p>
+<p>
+You should disable the _install section!<br />
+Set 'INSTALL_PASS = None' in your settings.py
+</p>
 
-menu_template = """
+{% endblock %}
+"""
+
+MENU_TEMPLATE = """
 {% extends "install_base.html" %}
 {% block content %}
 <h1>menu</h1>
@@ -59,13 +102,13 @@ menu_template = """
 {% endblock %}
 """
 class Index(BaseInstall):
-    """
-    Generate and display the install section menu
-    """
     def view(self):
+        """
+        Generate and display the install section menu
+        """
         menu_data = {}
 
-        module_list = get_members(
+        module_list = _get_members(
             obj=install_package, predicate=inspect.ismodule,
             skip_name=install_package.SKIP_MODULES
         )
@@ -73,7 +116,7 @@ class Index(BaseInstall):
             module_name = module_data["name"]
 
             module_obj = getattr(install_package, module_name)
-            members = get_members(
+            members = _get_members(
                 obj=module_obj, predicate=inspect.isfunction,
                 skip_name=[]
             )
@@ -82,20 +125,30 @@ class Index(BaseInstall):
 
         self.context["module_list"] = module_list
 
-        # The install_pass variable was set in BaseInstall.__init__
-        # If we delete it from the context, the "back to menu"-Links does
-        # not rendered ;)
-        del self.context["install_pass"]
+        # Do not display the "back to menu" link
+        self.context["no_menu_link"] = True
 
-        return self._render(menu_template)
+        return self._render(MENU_TEMPLATE)
+
+    def logout(self):
+        """
+        Delete the instpass cookie, so the user is logout.
+        """
+        self.context["no_menu_link"] = True # no "back to menu" link
+        html = render_string_template(LOGOUT_TEMPLATE, self.context)
+        response = HttpResponse(html)
+        response.set_cookie("instpass", value="")
+        return response
 
 
-def index(request, install_pass):
-    "index view"
-    return Index(request, install_pass).view()
+def menu(request):
+    "Display the _install section main menu"
+    return Index(request).start_view()
 
 
-
+def logout(request, *args):
+    "logout from the _install section"
+    return Index(request).logout()
 
 
 

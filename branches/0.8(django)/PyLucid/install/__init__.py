@@ -1,5 +1,11 @@
 
-#from PyLucid.install
+"""
+setup for the dynamic _install section menu
+look at PyLucid.install.index.menu
+"""
+
 import install, tests, low_level_admin, update
 
-SKIP_MODULES = ("urls", "index", "BaseInstall")
+__all__ = [install, tests, low_level_admin, update]
+
+SKIP_MODULES = ("index", "BaseInstall")

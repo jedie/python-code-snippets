@@ -115,6 +115,9 @@ Note, you must edit MIDDLEWARE_CLASSES above, after installation!!!
 # Enable the _install Python Web Shell Feature?
 INSTALL_EVILEVAL = False
 
-# Install Password you should put this in the _install URL
-#FIXME: ship a more save password
+# Install Password to login into the _install section.
+# The password must be min. 8 chars long.
+# Deactivate the _install section with 'INSTALL_PASS = None'
+# After the installation you should deactivate it!
+#FIXME: ship with no password
 INSTALL_PASS = "12345678"
