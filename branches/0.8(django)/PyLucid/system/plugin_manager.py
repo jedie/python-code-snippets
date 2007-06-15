@@ -38,15 +38,15 @@ from django.http import HttpResponse
 from PyLucid.system.exceptions import *
 from PyLucid.models import Plugin, Markup, PagesInternal
 
-def _import(form_name, object_name):
+def _import(from_name, object_name):
     """
-    from 'form_name' import 'object_name'
+    from 'from_name' import 'object_name'
     """
     try:
-        return __import__(form_name, {}, {}, [object_name])
+        return __import__(from_name, {}, {}, [object_name])
     except ImportError, e:
         raise ImportError, "Can't import %s from %s: %s" % (
-            object_name, form_name, e
+            object_name, from_name, e
         )
 
 def get_plugin_class(package_name, plugin_name):
@@ -54,7 +54,7 @@ def get_plugin_class(package_name, plugin_name):
     import the plugin/plugin and returns the class object
     """
     plugin = _import(
-        form_name = ".".join([package_name, plugin_name, plugin_name]),
+        from_name = ".".join([package_name, plugin_name, plugin_name]),
         object_name = plugin_name
     )
     plugin_class = getattr(plugin, plugin_name)
