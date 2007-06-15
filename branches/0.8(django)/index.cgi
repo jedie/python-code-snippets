@@ -56,19 +56,45 @@ if DEBUG:
         """
         oldFileinfo = ""
         header_send = False
+
+        def _get_fileinfo(self):
+            """
+            Append the fileinfo: Where from the announcement comes?
+            """
+            try:
+                self_basename = os.path.basename(__file__)
+                if self_basename.endswith(".pyc"):
+                    # cut: ".pyc" -> ".py"
+                    self_basename = self_basename[:-1]
+
+                for stack_frame in inspect.stack():
+                    # go forward in the stack, to outside of this file.
+                    filename = stack_frame[1]
+                    lineno = stack_frame[2]
+                    if os.path.basename(filename) != self_basename:
+                        break
+
+                filename = "...%s" % filename[-25:]
+                fileinfo = "%-25s line %3s" % (filename, lineno)
+            except Exception, e:
+                fileinfo = "(inspect Error: %s)" % e
+
+            return fileinfo
+
         def send_info(self):
             """
             Write information about the file and line number, from which the
             message comes from.
             """
             stack = inspect.stack()[1]
-            fileinfo = (stack[1].split("/")[-1][-40:], stack[2])
+#            fileinfo = (stack[1].split("/")[-1][-40:], stack[2])
+            fileinfo = self._get_fileinfo()
 
             if fileinfo != self.oldFileinfo:
                 # Send the fileinfo only once.
                 self.oldFileinfo = fileinfo
                 self.out.write(
-                    "<br />[stdout/stderr write from: ...%s, line %s]\n" % fileinfo
+                    "<br />[stdout/stderr write from: %s]\n" % fileinfo
                 )
 
         def isatty(self):
