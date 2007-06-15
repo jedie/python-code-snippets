@@ -399,11 +399,11 @@ class Update(Sync_DB):
             p.save()
 
 
-def update(request, install_pass):
+def update(request):
     """
     1. update DB tables from v0.7.2 to django PyLucid v0.8
     """
-    return Update(request, install_pass).view()
+    return Update(request).start_view()
 
 #______________________________________________________________________________
 
@@ -627,8 +627,8 @@ class UpdateTemplates(BaseInstall):
 #            print
 
 
-def update_templates(request, install_pass):
+def update_templates(request):
     """
     2. update to the new django template engine
     """
-    return UpdateTemplates(request, install_pass).view()
+    return UpdateTemplates(request).start_view()

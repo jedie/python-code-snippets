@@ -37,11 +37,11 @@ class Sync_DB(BaseInstall):
         management.syncdb(verbosity=2, interactive=False)
 
 
-def syncdb(request, install_pass):
+def syncdb(request):
     """
     1. install Db tables (syncdb)
     """
-    return Sync_DB(request, install_pass).view()
+    return Sync_DB(request).start_view()
 
 #______________________________________________________________________________
 class InitDBForm(forms.Form):
@@ -127,11 +127,11 @@ class Init_DB(BaseInstall):
         self.context["output"] = "".join(output)
         return self._render(dump_template)
 
-def _init_db(request, install_pass):# deactivated with the unterscore!
+def _init_db(request):# deactivated with the unterscore!
     """
     2. init DB data
     """
-    return Init_DB(request, install_pass).view()
+    return Init_DB(request).start_view()
 #______________________________________________________________________________
 
 class DB_DumpFakeOptions(object):
@@ -153,11 +153,11 @@ class Init_DB2(BaseInstall):
 
         return self._simple_render(headline="init DB (using db_dump.py)")
 
-def init_db2(request, install_pass):
+def init_db2(request):
     """
     2. init DB data (using db_dump.py)
     """
-    return Init_DB2(request, install_pass).view()
+    return Init_DB2(request).start_view()
 
 #______________________________________________________________________________
 
@@ -177,11 +177,11 @@ class InstallPlugins(BaseInstall):
 
         return self._render(install_modules_template)
 
-def install_plugins(request, install_pass):
+def install_plugins(request):
     """
     3. install internal plugins
     """
-    return InstallPlugins(request, install_pass).view()
+    return InstallPlugins(request).start_view()
 
 #______________________________________________________________________________
 
@@ -260,10 +260,10 @@ class CreateUser(BaseInstall):
             print "OK"
 
 
-def create_user(request, install_pass):
+def create_user(request):
     """
     4. create the first superuser
     """
-    return CreateUser(request, install_pass).view()
+    return CreateUser(request).start_view()
 
 
