@@ -9,7 +9,7 @@
 
 
     Last commit info:
-    ~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~
     $LastChangedDate: $
     $Rev: $
     $Author: $

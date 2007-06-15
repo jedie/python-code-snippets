@@ -8,7 +8,7 @@
     - Answer a _command Request
 
     Last commit info:
-    ~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~
     $LastChangedDate: $
     $Rev: $
     $Author: $
