@@ -2,21 +2,19 @@
 # -*- coding: UTF-8 -*-
 
 """
-Alles was mit dem ändern von Inhalten zu tun hat:
-    -edit_page
+    PyLucid plugin
+    ~~~~~~~~~
 
-Last commit info:
-----------------------------------
-$LastChangedDate$
-$Rev$
-$Author$
+    CMS page administration (edit, delete, make a new page etc.)
 
-Created by Jens Diemer
+    Last commit info:
+    ~~~~~~~~~
+    $LastChangedDate$
+    $Rev$
+    $Author$
 
-license:
-    GNU General Public License v2 or above
-    http://www.opensource.org/licenses/gpl-license.php
-
+    :copyright: 2007 by Jens Diemer
+    :license: GNU GPL v2 or above, see LICENSE for more details
 """
 
 __version__= "$Rev$"
