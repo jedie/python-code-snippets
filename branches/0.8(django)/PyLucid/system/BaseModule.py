@@ -47,6 +47,7 @@ class PyLucidBaseModule(object):
         self.current_page = self.context["PAGE"]
 
     def _debug_context(self, context, template):
+        import pprint, cgi
         self.response.write("<fieldset><legend>template debug:</legend>")
         self.response.write("<legend>context:</legend>")
         self.response.write("<pre>")
@@ -63,7 +64,6 @@ class PyLucidBaseModule(object):
 
         internal_page_name = ".".join([module_name, internal_page_name])
 
-        #TODO: PagesInternal doesn't have a DoesNotExist member
         try:
             return PagesInternal.objects.get(name = internal_page_name)
         except PagesInternal.DoesNotExist, err:
@@ -97,17 +97,16 @@ class PyLucidBaseModule(object):
         """
         return a rendered internal page
         """
-        #TODO: `debug` isn't used.
         internal_page = self._get_template(internal_page_name)
 
         content_html = internal_page.content_html
 
         self._add_js_css_data(internal_page)
 
-        html = self.__render(content_html, context)
+        html = self.__render(content_html, context, debug)
 
         markup_object = internal_page.markup
-        html = apply_markup(html, context, markup_object)
+        html = apply_markup(html, self.context, markup_object)
 
         return html
 
@@ -115,7 +114,6 @@ class PyLucidBaseModule(object):
         """
         render a template and write it into the response object
         """
-        #TODO: `debug` isn't used
         html = self._get_rendered_template(internal_page_name, context, debug)
         self.response.write(html)
 
@@ -124,8 +122,7 @@ class PyLucidBaseModule(object):
         Render a string-template with the given context and
         returns the result as a HttpResponse object.
         """
-        #TODO: `debug` isn't used
-        html = self.__render(template, context)
+        html = self.__render(template, context, debug)
 
         self.response.write(html)
 
@@ -141,20 +138,6 @@ class PyLucidBaseModule(object):
 
         html = render_template(content, self.context, context)
         return html
-        #XXX: what the hell? two returns? isn't there something wrong here?
-        tmpl = Template(content)
-        ctx = self.__prepare_context(context)
-        html = tmpl.render(ctx)
-        return html
 
-    def __prepare_context(self, context):
-        """
-        -transfer some objects from the global context into the local dict
-        -returns a django context object
-        """
-        #FIXME: isn't that unused?
-        for key in self.TRANSFER_KEYS:
-            context[key] = self.context[key]
 
-        c = context(context)
-        return c
+
