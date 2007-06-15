@@ -2,7 +2,20 @@
 # -*- coding: utf-8 -*-
 
 """
-Display a PyLucid CMS Page
+    PyLucid index view
+    ~~~~~~~~~
+
+    - Display a PyLucid CMS Page
+    - Answer a _command Request
+
+    Last commit info:
+    ~~~~~~~~~
+    $LastChangedDate: $
+    $Rev: $
+    $Author: $
+
+    :copyright: 2007 by Jens Diemer
+    :license: GNU GPL v2 or above, see LICENSE for more details
 """
 
 #if __name__ == "__main__": # A local test. THIS SHOULD BE COMMENTED!!!
@@ -29,10 +42,15 @@ from PyLucid.tools.content_processors import apply_markup, render_template
 
 
 def _render_cms_page(context, page_content=None):
+    """
+    render the cms page.
+    - render a normal cms request
+    - render a _command request: The page.content is the output from the plugin.
+    """
     current_page = context["PAGE"]
 
     if page_content:
-        # The page content comes e.g. from the _command module/plugin
+        # The page content comes e.g. from the _command plugin
         current_page.content = page_content
     else:
         # get the current page data from the db
@@ -96,7 +114,8 @@ def _get_context(request, current_page_obj):
 
 def index(request, url):
     """
-    The main index method. Display a requested CMS Page.
+    The main index method.
+    Response a normal page request: Display a requested cms page.
     """
     current_page_obj = get_current_page_obj(request, url)
     context = _get_context(request, current_page_obj)
@@ -105,7 +124,7 @@ def index(request, url):
 
 def handle_command(request, page_id, module_name, method_name, url_args):
     """
-    hanlde a _command request
+    handle a _command request
     """
     current_page_obj = models.Page.objects.get(id=int(page_id))
     context = _get_context(request, current_page_obj)
