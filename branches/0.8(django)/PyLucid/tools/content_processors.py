@@ -1,13 +1,32 @@
 
+"""
+    PyLucid content processors
+    ~~~~~~~~~
+
+    - apply a markup to a content
+    - render a django template
+
+    Last commit info:
+    ~~~~~~~~~
+    $LastChangedDate: $
+    $Rev: $
+    $Author: $
+
+    :copyright: 2007 by Jens Diemer
+    :license: GNU GPL v2 or above, see LICENSE for more details
+"""
+
 from django.template import Template, Context
 
 from PyLucid.system.tinyTextile import TinyTextileParser
 from PyLucid.system.response import SimpleStringIO
 
-from django.template import add_to_builtins
+
 # use the undocumented django function to add the "lucidTag" to the tag library.
 # see ./PyLucid/defaulttags/__init__.py
+from django.template import add_to_builtins
 add_to_builtins('PyLucid.defaulttags')
+
 
 def apply_markup(content, context, markup_object):
     """
@@ -22,20 +41,19 @@ def apply_markup(content, context, markup_object):
     else:
         return content
 
+
 def render_template(content, global_context, local_context={}):
+    """
+    Render a template.
+    1. put all local context items in the global context
+    2. render with the merged context
+    Note:
+    - The local_context are content for a internal page.
+    - We merged the local- and global-context together, so every internal
+    page can display something from the global context, like page name...
+    """
+    global_context.update(local_context)
+    context = Context(global_context)
     template = Template(content)
-    context = prepare_context(global_context, local_context)
     html = template.render(context)
     return html
-
-def prepare_context(global_context, local_context):
-    """
-    -transfer objects from the global context into the local dict
-    -returns a django context object
-    TODO: Should we made a copy from the global context?
-    """
-
-    global_context.update(local_context)
-
-    ctx = Context(global_context)
-    return ctx
