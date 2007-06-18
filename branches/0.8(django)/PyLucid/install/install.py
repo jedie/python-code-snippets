@@ -185,10 +185,10 @@ def install_plugins(request):
 
 #______________________________________________________________________________
 
-create_user_template = """
+create_user_template = """{% load i18n %}
 {% extends "install_base.html" %}
 {% block content %}
-<h1>Create a user</h1>
+<h1>{% trans 'Add user' %}</h1>
 
 {% if output %}
     <pre>{{ output|escape }}</pre>
@@ -199,15 +199,18 @@ create_user_template = """
     {{ form }}
   </table>
   <ul>
-      <strong>Note:</strong>
-      <li>Every User you create here, is a superuser how can do everything!</li>
+      <strong>{% trans 'Note' %}:</strong>
       <li>
-          After you have created the first user, you can login and create
-          normal user, using
-          <a href="/{{ admin_url_prefix }}/auth/user/">the admin panel</a>.
+        {% blocktrans %}Every User you create here,
+        is a superuser how can do everything!{% endblocktrans %}
+      </li>
+      <li>
+        {% blocktrans %}After you have created the first user,
+        you can login and create normal user, using{% endblocktrans %}
+        <a href="/{{ admin_url_prefix }}/auth/user/">{% trans 'Django administration' %}</a>.
       </li>
   </ul>
-  <input type="submit" value="create user" />
+  <input type="submit" value="{% trans 'Add user' %}" />
 </form>
 
 {% endblock %}

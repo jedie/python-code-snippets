@@ -13,6 +13,7 @@ from PyLucid.tools.content_processors import render_string_template
 
 from django import newforms as forms
 from django.http import HttpResponse, Http404
+from django.utils.translation import ugettext as _
 from django.template import Template, Context, loader
 # The loader must be import, even if it is not used directly!!!
 # Note: The loader makes this: add_to_builtins('django.template.loader_tags')
@@ -30,18 +31,21 @@ def check_install_password(password):
     raise a WrongPassword if the password is not the same.
     """
     def error(msg):
-        msg = "install password error: %s!" % msg
+        msg = _("error:") + msg
         if DEBUG:
             msg += " [Debug: '%s' != '%s']" % (
                 password, INSTALL_PASS
             )
         raise WrongPassword(msg)
     if INSTALL_PASS == None:
-        error("no passwort set in your settings.py")
+        error(_("no passwort set in your settings.py"))
     elif len(INSTALL_PASS)<8:
-        error("The password in your settings.py is to short")
+        error(_("The password in your settings.py is to short"))
     elif password != INSTALL_PASS:
-        error("wrong password")
+        error(_(
+            "Your old password was entered incorrectly."
+            " Please enter it again."
+        ))
 
 
 def save_password_cookie(password):
@@ -73,13 +77,14 @@ def check_cookie_pass(request):
 class InstallPassForm(forms.Form):
     """ a django newforms for input the _install section password """
     password = forms.CharField(
-        min_length=8, help_text='The install password from your settings.py'
+        _('password'), min_length=8,
+        help_text=_('The install password from your settings.py')
     )
 
 LOGIN_TEMPLATE = """
 {% extends "install_base.html" %}
 {% block content %}
-<h1>Login</h1>
+<h1>{% trans 'Log in' %}</h1>
 
 {% if msg %}<h3>{{ msg|escape }}</h3>{% endif %}
 
@@ -87,18 +92,18 @@ LOGIN_TEMPLATE = """
   <table class="form">
     {{ form }}
   </table>
-  <input type="submit" value="login" />
+  <input type="submit" value="{% trans 'Log in' %}" />
 </form>
-<p>Note: Cookies must be enabled.</p>
+<p>{% trans 'Note: Cookies must be enabled.' %}</p>
 {% endblock %}
 """
 LOGGED_IN_TEMPLATE = """
 {% extends "install_base.html" %}
 {% block content %}
-<h1>Login</h1>
+<h1>{% trans 'Login' %}</h1>
 
-<p>Access permit. Your logged in!</p>
-<p><a href="{% url PyLucid.install.menu . %}">continue</a></p>
+<p>{% trans 'Access permit. Your logged in!' %}</p>
+<p><a href="{% url PyLucid.install.menu . %}">{% trans 'continue' %}</a></p>
 
 {% endblock %}
 """

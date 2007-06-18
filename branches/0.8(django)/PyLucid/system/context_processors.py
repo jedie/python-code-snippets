@@ -3,6 +3,8 @@
 setup some "static" variables
 """
 
+from django.utils.translation import ugettext as _
+
 from PyLucid import PYLUCID_VERSION_STRING
 
 def static(request):
@@ -27,10 +29,10 @@ def static(request):
     if request.user.username != "":
         # User is loged in
         context_extras["login_link"] = (
-            '<a href="/_admin/logout">logout [%s]</a>'
-        ) % request.user.username
+            '<a href="/_admin/logout">%s [%s]</a>'
+        ) % (_("Log out"), request.user.username)
     else:
-        context_extras["login_link"] = '<a href="/_admin">login</a>'
+        context_extras["login_link"] = '<a href="/_admin">%s</a>' % _("Log in")
 
     #___________________________________________________________________________
 
