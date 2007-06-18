@@ -237,14 +237,15 @@ def get_internalpage_files(package_name, plugin_name, internal_page_name):
     If there exist no file, it returns "".
     """
     basepath = os.path.join(
-        package_name.replace(".",os.sep), plugin_name, internal_page_name
+        package_name.replace(".",os.sep), plugin_name, "internal_pages",
+        internal_page_name,
     )
     def read_file(ext):
         try:
             f = file(basepath + ext, "r")
             content = f.read()
             f.close()
-        except IOError:
+        except IOError, e:
             return ""
         else:
             return content
