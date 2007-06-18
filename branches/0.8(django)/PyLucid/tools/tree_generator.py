@@ -49,29 +49,32 @@ class MenuNode(object):
         if self.parent is not None:
             self.parent.activate()
 
+    def _get_current_entry(self, level):
+        current_entry = self.data.copy()
+        current_entry["level"] = level
+        return current_entry
+
     def to_dict(self, level=0):
         """
         built the tree dict of all activated nodes and insert a level info
         """
-        result = self.data.copy()
-        result["level"] = level
+        current_entry = self._get_current_entry(level)
 
         subitems = [subnode.to_dict(level + 1)
                     for subnode in self.subnodes
                     if subnode.visible]
         if subitems:
-            result['subitems'] = subitems
+            current_entry['subitems'] = subitems
 
-        return result
+        return current_entry
 
     def get_flat_list(self, level=0):
         """
         genrate a flat list for all visible pages and insert a level info
         """
         flat_list=[]
-
-        current_entry = self.data.copy()
-        current_entry["level"] = level
+        
+        current_entry = self._get_current_entry(level)       
         flat_list.append(current_entry)
 
         for subnode in self.subnodes:
@@ -79,6 +82,8 @@ class MenuNode(object):
                 flat_list += subnode.get_flat_list(level + 1)
 
         return flat_list
+
+
 
 
 class TreeGenerator(object):
@@ -148,10 +153,17 @@ class TreeGenerator(object):
         return self.root.get_flat_list()[1:]
 
 
-def test_generator(tree):
+def test_generator(tree, display_result):
     #
     # Sitemap.
     #
+    def verbose(result, no):
+        if not display_result:
+            return
+        print '-' * 40
+        print "*** No. %s ***" % no
+        pprint(result)
+        
     result = tree.get_sitemap_tree()
     must_be = [{'id': 1,
           'level': 1,
@@ -175,6 +187,7 @@ def test_generator(tree):
           'name': '2. AAA',
           'parent': None,
           'subitems': [{'parent': 6, 'id': 7, 'name': '2.1. BBB', 'level': 2}]}]
+    verbose(result, 1)
     if result != must_be:
         print '-' * 40
         print "*** ERROR 1 ***"
@@ -188,6 +201,7 @@ def test_generator(tree):
     result = tree.get_menu_tree()
     must_be = [{'parent': None, 'id': 1, 'name': '1. AAA', 'level': 1},
             {'parent': None, 'id': 6, 'name': '2. AAA', 'level': 1}]
+    verbose(result, 2)
     if result != must_be:
         print '-' * 40
         print "*** ERROR 2 ***"
@@ -216,6 +230,7 @@ def test_generator(tree):
                                       'parent': 2}]},
                        {'parent': 1, 'id': 3, 'name': '1.2. BBB', 'level': 2}]},
          {'parent': None, 'id': 6, 'name': '2. AAA', 'level': 1}]
+    verbose(result, 3)
     if result != must_be:
         print '-' * 40
         print "*** ERROR 3 ***"
@@ -232,6 +247,7 @@ def test_generator(tree):
           'name': '2. AAA',
           'parent': None,
           'subitems': [{'parent': 6, 'id': 7, 'name': '2.1. BBB', 'level': 2}]}]
+    verbose(result, 4)
     if result != must_be:
         print '-' * 40
         print "*** ERROR 4 ***"
@@ -241,14 +257,15 @@ def test_generator(tree):
     tree.activate_all()
     result = tree.get_flat_list()
     must_be = [
-        {'level': 1, 'id': 1, 'parent': None, 'name': '1. AAA'},
-        {'level': 2, 'id': 2, 'parent': 1, 'name': '1.1. BBB'},
-        {'level': 3, 'id': 4, 'parent': 2, 'name': '1.2.1. CCC'},
-        {'level': 3, 'id': 5, 'parent': 2, 'name': '1.2.2. CCC'},
-        {'level': 2, 'id': 3, 'parent': 1, 'name': '1.2. BBB'},
-        {'level': 1, 'id': 6, 'parent': None, 'name': '2. AAA'},
-        {'level': 2, 'id': 7, 'parent': 6, 'name': '2.1. BBB'}
+        {'id': 1, 'level': 1, 'name': '1. AAA', 'parent': None},
+        {'id': 2, 'level': 2, 'name': '1.1. BBB', 'parent': 1},
+        {'id': 4, 'level': 3, 'name': '1.2.1. CCC', 'parent': 2},
+        {'id': 5, 'level': 3, 'name': '1.2.2. CCC', 'parent': 2},
+        {'id': 3, 'level': 2, 'name': '1.2. BBB', 'parent': 1},
+        {'id': 6, 'level': 1, 'name': '2. AAA', 'parent': None},
+        {'id': 7, 'level': 2, 'name': '2.1. BBB', 'parent': 6}
     ]
+    verbose(result, 5)
     if result != must_be:
         print '-' * 40
         print "*** ERROR 5 ***"
@@ -272,7 +289,8 @@ if __name__ == "__main__":
     print "test..."
 
     tree = TreeGenerator(data)
-    test_generator(tree)
+#    test_generator(tree, display_result=False)
+    test_generator(tree, display_result=True)
 
     print "\nEND"
 
