@@ -6,9 +6,9 @@ Einfache Suche in CMS Seiten
 
 Last commit info:
 ----------------------------------
-$LastChangedDate:$
-$Rev:$
-$Author: JensDiemer $
+$LastChangedDate$
+$Rev$
+$Author$
 
 Created by Jens Diemer
 
@@ -17,7 +17,7 @@ license:
     http://www.opensource.org/licenses/gpl-license.php
 """
 
-__version__= "$Rev:$"
+__version__= "$Rev$"
 
 
 import cgi, time, urllib
