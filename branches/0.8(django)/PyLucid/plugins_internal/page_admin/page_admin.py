@@ -36,7 +36,7 @@ class SelectEditPageForm(forms.Form):
     page_id = forms.IntegerField()
 
 
-class PageAdmin(PyLucidBaseModule):
+class page_admin(PyLucidBaseModule):
 
     def edit_page(self, edit_page_id=None, page_instance=None):
         """
