@@ -38,6 +38,7 @@ def get_default_page_id():
         ) % (e, INSTALL_HELP_URL)
         raise ImproperlyConfigured(msg)
     id = default_page.value
+    id = int(id)
     return id
 
 def get_default_page(request):

@@ -29,7 +29,6 @@ plugin_manager_data = {
         "must_admin"    : False,
         "internal_page_info" : {
             "description"       : "HTML form to edit a CMS Page",
-            "template_engine"   : "jinja",
             "markup"            : None,
         },
     },
@@ -44,7 +43,6 @@ plugin_manager_data = {
         "must_admin"    : False,
         "internal_page_info" : {
             "description"       : "the tinyTextile help page",
-            "template_engine"   : None,
             "markup"            : "textile",
         },
     },
@@ -54,17 +52,15 @@ plugin_manager_data = {
         "must_admin"    : False,
         "internal_page_info" : {
             "description"       : "select a page to edit it",
-            "template_engine"   : "jinja",
             "markup"            : None,
         },
     },
 
-    "select_del_page" : {
+    "delete_pages" : {
         "must_login"    : True,
         "must_admin"    : True,
         "internal_page_info" : {
-            "description"       : "select a page to delete it",
-            "template_engine"   : "jinja",
+            "description"       : "select pages to delete these.",
             "markup"            : None,
         },
     },
@@ -74,7 +70,6 @@ plugin_manager_data = {
         "must_admin"    : False,
         "internal_page_info" : {
             "description"       : "change the position of every page",
-            "template_engine"   : "jinja",
             "markup"            : None,
         },
     },
@@ -84,7 +79,6 @@ plugin_manager_data = {
         "must_admin"    : False,
         "internal_page_info" : {
             "description"       : "List of all available lucid tags/functions",
-            "template_engine"   : "jinja",
             "markup"            : None,
         },
     }
