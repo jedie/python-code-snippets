@@ -48,6 +48,10 @@ class Config(object):
     # Dateien mit der Endung, werden komplett ausgelassen:
     skip_file_ext = (".pyc",)
 
+    # Verzeichnisse die ausgelassen werden sollen. (Relativ zum aktuellen Verz.)
+    # wird mit .startwith() verglichen!
+    skip_dirs = ()
+
     # Nur diese keywords werden als svn:keywords eingetragen:
     allowed_keywords = set([
         "LastChangedDate", "LastChangedRevision", "LastChangedBy", "HeadURL",
@@ -110,14 +114,23 @@ def print_status(config):
 
 #_____________________________________________________________________________
 
-def walk(repo_path, skip_file_ext):
+def walk(repo_path, skip_file_ext, skip_dirs):
     """
     os.walk durch das repro-Verz.
     Liefert den absoluten Pfad als generator zurí¤«
     """
+    def test_skip_dirs(dir, skip_dirs):
+        for skip_dir in skip_dirs:
+            if dir.startswith(skip_dir):
+                return False
+        return True
+
     for dir,_,files in os.walk(repo_path):
         if ("/.svn" in dir) or ("\\.svn" in dir):
             # Versteckte .svn Verzeichnisse auslassen
+            continue
+
+        if test_skip_dirs(dir, skip_dirs) != True:
             continue
 
         for fn in files:
@@ -274,7 +287,7 @@ def sync_keywords(config):
     """
     syncronisiert keywords aus allen Dateien.
     """
-    for fn in walk(config.repository, config.skip_file_ext):
+    for fn in walk(config.repository, config.skip_file_ext, config.skip_dirs):
         try:
             svn_entry = client.info(fn)
         except pysvn._pysvn.ClientError, e:
