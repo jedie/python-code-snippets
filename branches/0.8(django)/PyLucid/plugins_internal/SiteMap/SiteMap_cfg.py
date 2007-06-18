@@ -21,7 +21,6 @@ plugin_manager_data = {
         "internal_page_info" : {
             "name"              : "SiteMap",
             "description"       : "SiteMap",
-            "template_engine"   : "jinja",
             "markup"            : None
         },
     }

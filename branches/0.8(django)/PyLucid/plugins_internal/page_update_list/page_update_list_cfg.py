@@ -21,7 +21,6 @@ plugin_manager_data = {
         "internal_page_info" : {
             "name"              : "PageUpdateTable",
             "description"       : "Table for the list of page updates",
-            "template_engine"   : "jinja",
             "markup"            : None
         },
     },
