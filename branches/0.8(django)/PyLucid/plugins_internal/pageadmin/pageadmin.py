@@ -161,7 +161,7 @@ class pageadmin(PyLucidBaseModule):
 
     def _delete_page(self, id):
         """
-        Delete the page with the given >id<.
+        Delete one page with the given >id<.
         Error, if...
         ...this is the default page.
         ...this page has sub pages.
@@ -197,40 +197,39 @@ class pageadmin(PyLucidBaseModule):
             self.page_msg(_("Page with id: %s delete successful.") % id)
 
 
-    def delete_pages(self):
+    def _process_delete_pages(self):
         """
-        A html select box for editing a cms page.
-        If the form was sended, return a redirect to the edit_page method.
+        process a sended "delete pages" dialog.
         """
-        if self.request.method == 'POST':
-            self.page_msg(self.request.POST)
-            id_list = self.request.POST.getlist("pages")
+        if self.request.method != 'POST':
+            # No form sended via POST
+            return
+
+        # create a list of the sended page IDs:
+        id_list = self.request.POST.getlist("pages")
+        try:
+            # Convert the string list to a interger list
+            id_list = [int(i) for i in id_list]
+        except ValueError, msg:
+            self.page_msg.red(_("Wrong data: %s") % cgi.escape(str(msg)))
+            return
+
+        # delete the pages, one by one:
+        for id in id_list:
             try:
-                id_list = [int(i) for i in id_list]
-            except ValueError, msg:
-                self.page_msg.red(_("Wrong data: %s") % cgi.escape(str(msg)))
-            else:
-                for id in id_list:
-                    try:
-                        self._delete_page(id)
-                    except DeletePageError, msg:
-                        self.page_msg.red(msg)
+                self._delete_page(id)
+            except DeletePageError, msg:
+                self.page_msg.red(msg)
 
-        page_tree = get_sitemap_tree()
 
-        # The default page can't delete, so we need the ID of these page:
-        default_page_id = get_default_page_id()
-
-        html = self._get_html(page_tree, default_page_id)
-
-        context = {
-            "html_data": html,
-        }
-        self._render_template("delete_pages", context)
-
-    def _get_html(self, menu_data, default_page_id):
+    def _get_html(self, sitemap_tree, default_page_id):
+        """
+        generate from the sitemap_tree a "checkbox-list" for the delete
+        page html form dialog.
+        The default page and pages with sub pages would get no checkbox.
+        """
         result = ["<ul>\n"]
-        for entry in menu_data:
+        for entry in sitemap_tree:
             result.append('<li>')
 
             if entry["id"]==default_page_id:
@@ -265,7 +264,34 @@ class pageadmin(PyLucidBaseModule):
         return "".join(result)
 
 
+    def delete_pages(self):
+        """
+        Render the delete page html form dialog.
+        A sended html form would be
+        """
+        # Process a sended POST formular:
+        self._process_delete_pages()
+
+        # Get the needed data for build the html form:
+        page_tree = get_sitemap_tree()
+
+        # The default page can't delete, so we need the ID of these page:
+        default_page_id = get_default_page_id()
+
+        # Generate the HTML form code:
+        html = self._get_html(page_tree, default_page_id)
+
+        # Render the Template:
+        context = {
+            "html_data": html,
+        }
+        self._render_template("delete_pages", context)
+
+
 class DeletePageError(Exception):
+    """
+    Error while deleting one cms page.
+    """
     pass
 
 
