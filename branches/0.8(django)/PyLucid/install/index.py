@@ -19,8 +19,6 @@ def run_method(request, module_name, method_name, url_args):
     """
     run a _install method
     """
-    print module_name, method_name, url_args
-
     from_name = ".".join(["PyLucid.install", module_name])
     module_object = __import__(from_name, {}, {}, [method_name])
 
