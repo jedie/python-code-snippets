@@ -22,7 +22,6 @@ plugin_manager_data = {
         "internal_page_info" : {
             "name"              : "main_menu",
             "description"       : "The main menu Template",
-            "template_engine"   : "jinja",
             "markup"            : None
         },
     }

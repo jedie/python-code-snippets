@@ -31,7 +31,6 @@ plugin_manager_data = {
         "internal_page_info" : {
             "name"              : "top_menu",
             "description"       : "Administration front menu",
-            "template_engine"   : "string formatting",
             "markup"            : None,
         },
     },
@@ -46,7 +45,6 @@ plugin_manager_data = {
         "internal_page_info" : {
             "name"              : "sub_menu",
             "description"       : "Administration sub menu",
-            "template_engine"   : "django",
             "markup"            : "textile",
         },
     },

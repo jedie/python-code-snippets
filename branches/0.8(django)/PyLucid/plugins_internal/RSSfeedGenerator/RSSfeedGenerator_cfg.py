@@ -25,7 +25,6 @@ plugin_manager_data = {
         "internal_page_info" : {
             "name"              : "RSSfeed",
             "description"       : "The RSS feed generator template",
-            "template_engine"   : "jinja",
             "markup"            : None
         },
     }

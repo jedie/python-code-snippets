@@ -21,7 +21,6 @@ plugin_manager_data = {
         "internal_page_info" : {
             "name"              : "input_form",
             "description"       : "The HTML form of the search module.",
-            "template_engine"   : "string formatting",
             "markup"            : None
         },
     },
