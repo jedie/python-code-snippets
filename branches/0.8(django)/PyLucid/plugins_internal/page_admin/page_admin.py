@@ -111,7 +111,7 @@ class page_admin(PyLucidBaseModule):
                 form_data = form.cleaned_data
                 page_id = form_data["page_id"]
                 new_url = self.URLs.commandLink(
-                    "pageadmin", "edit_page", page_id
+                    "page_admin", "edit_page", page_id
                 )
 #                self.page_msg(new_url)
                 return HttpResponseRedirect(new_url)
