@@ -9,15 +9,15 @@
 
     Last commit info:
     ~~~~~~~~~
-    $LastChangedDate$
-    $Rev$
-    $Author$
+    $LastChangedDate:2007-06-18 16:07:16 +0200 (Mo, 18 Jun 2007) $
+    $Rev:1070 $
+    $Author:JensDiemer $
 
     :copyright: 2007 by Jens Diemer
     :license: GNU GPL v2 or above, see LICENSE for more details
 """
 
-__version__= "$Rev$"
+__version__= "$Rev:1070 $"
 
 
 import cgi
@@ -36,7 +36,7 @@ class SelectEditPageForm(forms.Form):
     page_id = forms.IntegerField()
 
 
-class pageadmin(PyLucidBaseModule):
+class PageAdmin(PyLucidBaseModule):
 
     def edit_page(self, edit_page_id=None, page_instance=None):
         """
