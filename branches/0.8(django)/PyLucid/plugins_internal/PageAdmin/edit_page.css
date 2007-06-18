@@ -1,0 +1,26 @@
+#action_buttons {
+    padding: 0.1em 0.3em 0.1em 0.3em;
+    background-color: #09C;
+}
+#action_buttons a {
+    text-decoration:none;
+    margin: 0px;
+    padding: 0.1em 0.5em 0.1em 0.5em;
+    font-family:Verdana;
+    line-height:2em;
+    font-size:0.75em;
+}
+#action_buttons a:link {
+    color: black;
+    background-color: #f5f5f5;
+    border: 1px solid;
+    border-color: #ddd #555 #555 #ddd;
+}
+#action_buttons a:hover {
+    color: white;
+    background-color: #aaa;
+    border-color: #555 #ddd #ddd #555;
+}
+#action_buttons .separator {
+    padding: 0 0.3em 0 0.3em;
+}
