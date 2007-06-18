@@ -18,6 +18,5 @@
 """
 
 # PyLucid Version String
-#FIXME: why 0.8.1 ? and not 0.8.0 ?
-PYLUCID_VERSION = (0, 8, 1,"alpha")
-PYLUCID_VERSION_STRING = "0.8.1 alpha"
+PYLUCID_VERSION = (0, 8, 0,"alpha2")
+PYLUCID_VERSION_STRING = "0.8.0 alpha2"
