@@ -35,8 +35,7 @@ def check_install_password(password):
             msg += " [Debug: '%s' != '%s']" % (
                 password, INSTALL_PASS
             )
-        self.context["msg"] = msg
-        raise WrongPassword()
+        raise WrongPassword(msg)
     if INSTALL_PASS == None:
         error("no passwort set in your settings.py")
     elif len(INSTALL_PASS)<8:
@@ -82,15 +81,15 @@ LOGIN_TEMPLATE = """
 {% block content %}
 <h1>Login</h1>
 
-{% if form %}
+{% if msg %}<h3>{{ msg|escape }}</h3>{% endif %}
+
 <form method="post" action=".">
   <table class="form">
     {{ form }}
   </table>
   <input type="submit" value="login" />
 </form>
-{% endif %}
-
+<p>Note: Cookies must be enabled.</p>
 {% endblock %}
 """
 LOGGED_IN_TEMPLATE = """
@@ -154,9 +153,9 @@ class BaseInstall(object):
                 password = form_data["password"]
                 try:
                     check_install_password(password)
-                except WrongPassword:
+                except WrongPassword, msg:
                     # Display the form again
-                    pass
+                    self.context["msg"] = msg
                 else:
                     # Password is ok. -> User login
                     response = save_password_cookie(password)
