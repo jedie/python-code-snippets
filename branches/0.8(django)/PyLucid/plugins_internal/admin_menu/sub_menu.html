@@ -1,41 +1,42 @@
-h2. Administration Sub-Menu
+h2. {% trans 'Administration sub menu' %}
 
-<fieldset><legend>page admin</legend>
+<fieldset><legend>{% trans 'page admin' %}</legend>
 
-* "select page to edit":{{ commandURLprefix }}/pageadmin/select_edit_page --(all pages available!)--
-* "select page to delete":{{ commandURLprefix }}/pageadmin/select_del_page --(a select box, not delete the current page.)--
-* "sequencing the pages":{{ commandURLprefix }}/pageadmin/sequencing --(change the page order)--
-
-</fieldset>
-
-<fieldset><legend>edit look</legend>
-
-* "edit stylesheets":{{ adminURLprefix }}/PyLucid/style/
-* "edit templates":{{ adminURLprefix }}/PyLucid/template/
-* "edit internal page":{{ adminURLprefix }}/PyLucid/pagesinternal/
+* "{% trans 'select page to edit' %}":{{ commandURLprefix }}/pageadmin/select_edit_page --(all pages available!)--
+* "{% trans 'select page to delete' %}":{{ commandURLprefix }}/pageadmin/select_del_page --(a select box, not delete the current page.)--
+* "{% trans 'sequencing the pages' %}":{{ commandURLprefix }}/pageadmin/sequencing --(change the page order)--
 
 </fieldset>
 
-<fieldset><legend>user management</legend>
+<fieldset><legend>{% trans 'edit look' %}</legend>
 
-* "manage user":{{ commandURLprefix }}/userhandling/manage_user
-
-</fieldset>
-
-<fieldset><legend>Module/Plugins management</legend>
-
-* "Module Administration":{{ commandURLprefix }}/module_admin/menu
-* "Module Setup":{{ commandURLprefix }}/module_admin/module_setup
+* "{% trans 'edit stylesheets' %}":{{ adminURLprefix }}/PyLucid/style/ | "{% trans 'edit current stylesheet' %}":{{ adminURLprefix }}/PyLucid/style/{{ PAGE.style.id }}/
+* "{% trans 'edit templates' %}":{{ adminURLprefix }}/PyLucid/template/ | "{% trans 'edit current tenplate' %}":{{ adminURLprefix }}/PyLucid/template/{{ PAGE.template.id }}/
+* "{% trans 'edit internal pages' %}":{{ adminURLprefix }}/PyLucid/pagesinternal/
 
 </fieldset>
 
-<fieldset><legend>backup</legend>
+<fieldset><legend>{% trans 'user management' %}</legend>
 
-* "DB dump":{{ commandURLprefix }}/MySQLdump/menu
+* "{% trans 'edit users' %}":{{ adminURLprefix }}/auth/user/
+* "{% trans 'edit user groups' %}":{{ adminURLprefix }}/auth/group/
 
 </fieldset>
 
-<fieldset><legend>internals</legend>
+<fieldset><legend>{% trans 'Plugins management' %}</legend>
+
+* "{% trans 'Plugin administration' %}":{{ commandURLprefix }}/module_admin/menu
+* "{% trans 'Plugin setup' %}":{{ commandURLprefix }}/module_admin/module_setup
+
+</fieldset>
+
+<fieldset><legend>{% trans 'backup' %}</legend>
+
+* "{% trans 'DB dump' %}":{{ commandURLprefix }}/MySQLdump/menu
+
+</fieldset>
+
+<fieldset><legend>{% trans 'internals' %}</legend>
 
 * <lucidTag:show_internals/>
 

@@ -28,6 +28,7 @@ from django.template import add_to_builtins
 add_to_builtins('PyLucid.defaulttags')
 
 
+
 def apply_markup(content, context, markup_object):
     """
     appy to the content the given markup

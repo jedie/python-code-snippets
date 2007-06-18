@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>PyLucid Setup</title>
+<title>PyLucid setup</title>
 <meta http-equiv="expires"      content="0" />
 <meta name="robots"             content="noindex,nofollow" />
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
@@ -49,15 +49,15 @@ a:hover {
 </head>
 <body>
 <a name="top"></a>
-<h3>PyLucid v{{ version }} - setup@<a href="{% url PyLucid.index.index . %}" title="goto your PyLucid CMS page">{{ http_host }}</a></h3>
-{% if not no_menu_link %}<p><a href="{% url PyLucid.install.index.menu . %}">&#xAB; back to menu</a></p>{% endif %}
+<h3>PyLucid v{{ version }} - setup@<a href="{% url PyLucid.index.index . %}" title="{% trans 'goto your PyLucid CMS page' %}">{{ http_host }}</a></h3>
+{% if not no_menu_link %}<p><a href="{% url PyLucid.install.index.menu . %}">&#xAB; {% trans 'back to menu' %}</a></p>{% endif %}
 <lucidTag:page_msg/>
 {% block content %}{% endblock %}
-{% if not no_menu_link %}<p><a href="{% url PyLucid.install.index.menu . %}">&#xAB; back to menu</a> |{% endif %}
-<a href="#top">&#x5E; top</a> | <a href="{% url PyLucid.install.index.logout . %}">logout</a>
+{% if not no_menu_link %}<p><a href="{% url PyLucid.install.index.menu . %}">&#xAB; {% trans 'back to menu' %}</a> |{% endif %}
+<a href="#top">&#x5E; {% trans 'top' %}</a> | <a href="{% url PyLucid.install.index.logout . %}">{% trans 'Log out' %}</a>
 {% if install_pass %}</p>{% endif %}
 <hr />
 <small>
-<p>page stats: <!-- script_duration --></p>
+<p>{% trans 'page stats:' %} <!-- script_duration --></p>
 </small>
 </body></html>

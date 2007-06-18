@@ -68,13 +68,13 @@ def _get_members(obj, predicate, skip_name=[]):
 LOGOUT_TEMPLATE = """
 {% extends "install_base.html" %}
 {% block content %}
-<h1>Logout</h1>
+<h1>{% trans 'Log out' %}</h1>
 
-<h3>You logged out.</h3>
-<p><a href="{% url PyLucid.install.index.menu . %}">continue</a></p>
+<h3>{% trans 'You logged out.' %}</h3>
+<p><a href="{% url PyLucid.install.index.menu . %}">{% trans 'continue' %}</a></p>
 <p>
-You should disable the _install section!<br />
-Set 'INSTALL_PASS = None' in your settings.py
+{% trans 'You should disable the _install section!' %}<br />
+{% trans 'Set "INSTALL_PASS = None" in your settings.py' %}
 </p>
 
 {% endblock %}
@@ -83,7 +83,7 @@ Set 'INSTALL_PASS = None' in your settings.py
 MENU_TEMPLATE = """
 {% extends "install_base.html" %}
 {% block content %}
-<h1>menu</h1>
+<h1>{% trans 'menu' %}</h1>
 <ul>
 {% for item in module_list %}
     <li><h2>{{ item.doc }}</h2>
