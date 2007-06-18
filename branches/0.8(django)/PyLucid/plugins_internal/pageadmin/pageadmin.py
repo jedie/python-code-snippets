@@ -38,25 +38,25 @@ class SelectEditPageForm(forms.Form):
 
 class pageadmin(PyLucidBaseModule):
 
-    def edit_page(self, page_instance=None, edit_page_id=None):
+    def edit_page(self, edit_page_id=None, page_instance=None):
         """
         edit a existing page
         """
-        if page_instance:
+        if page_instance != None:
             # Edit a new page
             edit_page_id  = self.current_page.id
-        elif edit_page_id == None:
-            # Edit the current cms page
-            edit_page_id  = self.current_page.id
-            page_instance = self.current_page
-        else:
+        elif edit_page_id != None:
             # Edit the page with the given ID. ("select page to edit" function)
             try:
                 edit_page_id = int(edit_page_id.strip("/"))
-                page_instance = Page.objects.get(id__exact=edit_page_id)
+                page_instance = Page.objects.get(id=edit_page_id)
             except Exception, e:
                 self.page_msg("Wrong page ID! (%s)" % e)
                 return
+        else:
+            # Edit the current cms page
+            edit_page_id  = self.current_page.id
+            page_instance = self.current_page
 
         PageForm = forms.models.form_for_instance(
             page_instance, fields=(
