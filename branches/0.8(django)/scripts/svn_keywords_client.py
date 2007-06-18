@@ -15,9 +15,9 @@
 
     Last commit info:
     ~~~~~~~~~~~~~~~~~
-    $LastChangedDate: 2007-02-05 11:08:38 +0100 (Mo, 05 Feb 2007) $
-    $Rev: 828 $
-    $Author: JensDiemer $
+    $LastChangedDate$
+    $Rev$
+    $Author$
 
     :copyright: 2007 by Jens Diemer
     :license: GNU GPL, see LICENSE for more details.
@@ -25,7 +25,7 @@
 
 import sys, os
 
-os.chdir("../../") # go into PyLucid App root folder
+os.chdir("../") # go into PyLucid App root folder
 print os.getcwd()
 
 # Path to the svn_keywords.py file:
