@@ -14,9 +14,9 @@ ToDo: Use the Template to generate the Sitemap. But there is no recuse-Tag
 
 Last commit info:
 ----------------------------------
-$LastChangedDate:$
-$Rev:$
-$Author: JensDiemer $
+$LastChangedDate$
+$Rev$
+$Author$
 
 Created by Jens Diemer
 
@@ -25,7 +25,7 @@ license:
     http://www.opensource.org/licenses/gpl-license.php
 """
 
-__version__= "$Rev:$"
+__version__= "$Rev$"
 
 from PyLucid.system.BaseModule import PyLucidBaseModule
 from PyLucid.tools.tree_generator import TreeGenerator

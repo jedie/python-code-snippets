@@ -4,9 +4,9 @@
 """
 Last commit info:
 ----------------------------------
-$LastChangedDate: 2007-03-01 18:18:33 +0100 (Do, 01 Mär 2007) $
-$Rev: 876 $
-$Author: JensDiemer $
+$LastChangedDate$
+$Rev$
+$Author$
 
 Created by Jens Diemer
 

@@ -9,9 +9,9 @@ django problematic: http://code.djangoproject.com/ticket/443
 
 Last commit info:
 ----------------------------------
-$LastChangedDate:$
-$Rev:$
-$Author: JensDiemer $
+$LastChangedDate$
+$Rev$
+$Author$
 
 Created by Jens Diemer
 
