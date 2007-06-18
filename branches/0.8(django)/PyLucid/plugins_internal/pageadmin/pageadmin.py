@@ -20,18 +20,16 @@
 __version__= "$Rev$"
 
 
-# Python-Basis Module einbinden
-#import sys, cgi, time, pickle, urllib, datetime
-
-
+import cgi
 
 from django import newforms as forms
 from django.db import models
 from django.http import HttpResponse, HttpResponseRedirect
 
 from PyLucid.models import Page
-from PyLucid.db.page import flat_tree_list
+from PyLucid.db.page import flat_tree_list, get_sitemap_tree
 from PyLucid.system.BaseModule import PyLucidBaseModule
+from PyLucid.system.detect_page import get_default_page_id
 
 
 class SelectEditPageForm(forms.Form):
@@ -159,6 +157,115 @@ class pageadmin(PyLucidBaseModule):
         html = self._get_rendered_template("tinyTextile_help", context={})
         return HttpResponse(html)
 
+    #___________________________________________________________________________
 
+    def _delete_page(self, id):
+        """
+        Delete the page with the given >id<.
+        Error, if...
+        ...this is the default page.
+        ...this page has sub pages.
+        """
+        # The default page can't delete:
+        default_page_id = get_default_page_id()
+        if id == default_page_id:
+            msg = _(
+                    "Can't delete the page with ID:%s,"
+                    " because this is the default page!"
+            ) % id
+            raise DeletePageError(msg)
+
+        # Check if the page has subpages
+        sub_pages_count = Page.objects.filter(parent=id).count()
+        if sub_pages_count != 0:
+            msg = _(
+                    "Can't delete the page with ID:%s,"
+                    " because it has %s sub pages!"
+            ) % (id, sub_pages_count)
+            raise DeletePageError(msg)
+
+        # Delete the page:
+        try:
+            page = Page.objects.get(id=id)
+            page.delete()
+        except Exception, msg:
+            msg = _("Can't delete the page with ID:%s: %s") % (
+                id, cgi.escape(str(msg))
+            )
+            raise DeletePageError(msg)
+        else:
+            self.page_msg(_("Page with id: %s delete successful.") % id)
+
+
+    def delete_pages(self):
+        """
+        A html select box for editing a cms page.
+        If the form was sended, return a redirect to the edit_page method.
+        """
+        if self.request.method == 'POST':
+            self.page_msg(self.request.POST)
+            id_list = self.request.POST.getlist("pages")
+            try:
+                id_list = [int(i) for i in id_list]
+            except ValueError, msg:
+                self.page_msg.red(_("Wrong data: %s") % cgi.escape(str(msg)))
+            else:
+                for id in id_list:
+                    try:
+                        self._delete_page(id)
+                    except DeletePageError, msg:
+                        self.page_msg.red(msg)
+
+        page_tree = get_sitemap_tree()
+
+        # The default page can't delete, so we need the ID of these page:
+        default_page_id = get_default_page_id()
+
+        html = self._get_html(page_tree, default_page_id)
+
+        context = {
+            "html_data": html,
+        }
+        self._render_template("delete_pages", context)
+
+    def _get_html(self, menu_data, default_page_id):
+        result = ["<ul>\n"]
+        for entry in menu_data:
+            result.append('<li>')
+
+            if entry["id"]==default_page_id:
+                html = (
+                    '<span title="Can not delete this pages,'
+                    ' because it the default page.">%(name)s</span>'
+                )
+            elif "subitems" in entry:
+                html = (
+                    '<span title="Can not delete this pages,'
+                    ' because it has sub pages.">%(name)s</span>'
+                )
+            else:
+                html = (
+                    '<input name="pages" value="%(id)s"'
+                    ' id="del_page_%(id)s" type="checkbox"'
+                    ' title="delete page: %(name)s" />'
+                    ' <label for="del_page_%(id)s">%(name)s</label>'
+                )
+
+            result.append(html % entry)
+#            result.append(' <small>(id: %s)</small>' % entry["id"])
+
+            if "subitems" in entry:
+                result.append(
+                    self._get_html(entry["subitems"], default_page_id)
+                )
+
+            result.append('</li>\n')
+
+        result.append("</ul>\n")
+        return "".join(result)
+
+
+class DeletePageError(Exception):
+    pass
 
 

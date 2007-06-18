@@ -125,4 +125,15 @@ def flat_tree_list():
 
     return page_list
 
+def get_sitemap_tree():
+    """
+    Generate a tree of all pages.
+    """
+    sitemap_data = Page.objects.values(
+        "id", "parent", "name", "title", "shortcut"
+    ).order_by("position")
+    #self.page_msg(values)
+    tree = TreeGenerator(sitemap_data)
+    sitemap_tree = tree.get_sitemap_tree()
+    return sitemap_tree
 

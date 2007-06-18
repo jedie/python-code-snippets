@@ -25,8 +25,7 @@ license:
 
 __version__= "$Rev:$"
 
-from PyLucid.tools.tree_generator import TreeGenerator
-from PyLucid.models import Page
+from PyLucid.db.page import get_sitemap_tree
 
 from PyLucid.system.BaseModule import PyLucidBaseModule
 
@@ -35,12 +34,7 @@ class SiteMap(PyLucidBaseModule):
     def lucidTag(self):
         """ Baut die SiteMap zusammen """
 
-        sitemap_data = Page.objects.values(
-            "id", "parent", "name", "title", "shortcut"
-        ).order_by("position")
-        #self.page_msg(values)
-        tree = TreeGenerator(sitemap_data)
-        sitemap_tree = tree.get_sitemap_tree()
+        sitemap_tree = get_sitemap_tree()
 
         html = self.get_html(sitemap_tree)
         self.response.write(html)
@@ -87,7 +81,7 @@ class SiteMap(PyLucidBaseModule):
 
             result.append(html % entry)
 
-            if entry.has_key("subitems"):
+            if "subitems" in entry:
                 result.append(
                     self.get_html(entry["subitems"], parent=href)
                 )
