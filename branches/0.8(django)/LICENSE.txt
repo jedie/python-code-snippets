@@ -55,7 +55,7 @@ homepage: http://webshox.org/
 
  SVN file info
 ~~~~~~~~~~~~~~~
-$Date: 2006-12-04 07:38:03 +0100 (Mo, 04 Dez 2006) $
-$Rev: 820 $
-$Author: JensDiemer $
+$LastChangedDate$
+$Rev$
+$Author$
 $URL$
