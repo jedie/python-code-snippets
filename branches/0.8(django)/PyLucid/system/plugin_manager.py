@@ -29,9 +29,9 @@ debug = True
 
 from PyLucid import settings
 
-if __name__ == "__main__": # init django for local test
-    from django.core.management import setup_environ
-    setup_environ(settings)
+#if __name__ == "__main__": # init django for local test
+#    from django.core.management import setup_environ
+#    setup_environ(settings)
 
 from django.http import HttpResponse
 
@@ -148,7 +148,7 @@ def _run(context, local_response, plugin_name, method_name, url_args, method_kwa
 
 
 def run(context, response, plugin_name, method_name, url_args=(),
-                                                                                        method_kwargs={}):
+                                                            method_kwargs={}):
     """
     run the plugin with errorhandling
     """
