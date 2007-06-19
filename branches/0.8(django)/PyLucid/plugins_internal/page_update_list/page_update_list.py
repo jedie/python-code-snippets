@@ -1,25 +1,20 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 
-# by jensdiemer.de (steht unter GPL-License)
-
 """
-<lucidTag:page_update_list />
-oder
-<lucidFunction:page_update_list>20</lucidFunction>
-Generiert eine Liste der "letzten Änderungen"
+    PyLucid page update list plugin
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Last commit info:
-----------------------------------
-$LastChangedDate$
-$Rev$
-$Author$
+    Generate a list of the latest page updates.
 
-Created by Jens Diemer
+    Last commit info:
+    ~~~~~~~~~~~~~~~~~
+    $LastChangedDate$
+    $Rev$
+    $Author$
 
-license:
-    GNU General Public License v2 or above
-    http://www.opensource.org/licenses/gpl-license.php
+    :copyright: 2007 by Jens Diemer
+    :license: GNU GPL, see LICENSE for more detailsp
 
 """
 
@@ -28,29 +23,35 @@ __version__= "$Rev$"
 from PyLucid.system.BaseModule import PyLucidBaseModule
 from PyLucid.db.page import get_update_info
 
+from django.core.cache import cache
+CACHE_KEY = "page_update_list"
+
 class page_update_list(PyLucidBaseModule):
 
-    def lucidTag(self):
-        self.generate_list(10)
-
-    def lucidFunction(self, count):
+    def lucidTag(self, count=10):
         try:
             count = int(count)
         except Exception, e:
-            msg = "lucidFunction is not a int number: %s" % e
-            self.page_msg(msg)
+            msg = "page_update_list error: count must be a integer (%s)" % e
+            self.page_msg.red(msg)
             self.response.write("[%s]" % msg)
             return
 
         self.generate_list(count)
 
     def generate_list(self, count):
-        page_updates = get_update_info(self.context, 10)
+        cache_key = "%s_%s" % (CACHE_KEY, count)
+        page_updates = cache.get(cache_key)
 
-        context = {
-            "page_updates" : page_updates
-        }
-#        self.page_msg(context)
+        context = {}
+
+        if page_updates != None:
+            context["from_cache"] = True
+        else:
+            page_updates = get_update_info(self.context, 10)
+            cache.set(cache_key, page_updates, 120)
+
+        context["page_updates"] = page_updates
 
         self._render_template("PageUpdateTable", context)
 

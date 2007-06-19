@@ -134,11 +134,20 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = False   # Whether sessions expire when a user 
 # http://www.djangoproject.com/documentation/cache/
 
 # The cache backend to use.
-# Default: "locmem:///" (Local in-memory caching; multi-process and thread-safe)
-CACHE_BACKEND = 'locmem:///'
+# Note:
+#    -You can test available backends in the _install section!
+#
+# Database caching:
+#    You must create the cache tables manually in the shell. Look at the docs!
+# Filesystem caching:
+#    Usefull if memcache is not available. You should check if it allowed to
+#    make temp files! You can test this in the PyLucid _install section!
+# Local-memory caching:
+#    Not useable with CGI! Every Request starts with a empty cache ;)
+#    Waring: On shared webhosting, the available memory can be limited.
 
-# The cache key prefix that the cache middleware should use.
-CACHE_MIDDLEWARE_KEY_PREFIX = ''
+# Default: "dummy:///" (No cache)
+CACHE_BACKEND = "dummy:///"
 
 
 #_____________________________________________________________________________
