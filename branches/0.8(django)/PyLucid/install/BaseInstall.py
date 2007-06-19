@@ -37,7 +37,7 @@ def check_install_password(password):
                 password, INSTALL_PASS
             )
         raise WrongPassword(msg)
-    if INSTALL_PASS == None:
+    if INSTALL_PASS in (None, ""):
         error(_("no passwort set in your settings.py"))
     elif len(INSTALL_PASS)<8:
         error(_("The password in your settings.py is to short"))
