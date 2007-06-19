@@ -194,6 +194,10 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
 #    'django.contrib.auth.middleware.AuthenticationMiddleware',
+
+    # PageCache is experimental!
+#    'PyLucid.middlewares.page_cache.PageCache',
+
     'django.middleware.doc.XViewMiddleware',
     'PyLucid.middlewares.pagestats.PageStatsMiddleware',
 )
