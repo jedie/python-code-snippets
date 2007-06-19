@@ -2,27 +2,28 @@
 # -*- coding: UTF-8 -*-
 
 """
-Generiert das komplette Seitenmenü mit Untermenüs in eine Baumansicht
+    PyLucid main menu plugin
+    ~~~~~~~~~~~~~~~~~~~~~~~~
 
-Das Menü wird eingebunden mit dem lucid-Tag:
-<lucidTag:main_menu/>
+    Generate a nested tree menu.
 
-ToDo: Use the Template to generate the Sitemap. But there is no recuse-Tag
-    in the django template engine :(
+    TODO:
+        - Use the django template engine to generate the nested html list from
+            the tree dict. But the Problem is: There is no recusive function
+            available. So we must implement this. See:
+
+    Links about a recusive function with the django template engine:
     - http://www.python-forum.de/topic-9655.html
     - http://groups.google.com/group/django-users/browse_thread/thread/3bd2812a3d0f7700/14f61279e0e9fd90
 
-Last commit info:
-----------------------------------
-$LastChangedDate$
-$Rev$
-$Author$
+    Last commit info:
+    ~~~~~~~~~~~~~~~~~
+    $LastChangedDate: $
+    $Rev$
+    $Author: $
 
-Created by Jens Diemer
-
-license:
-    GNU General Public License v2 or above
-    http://www.opensource.org/licenses/gpl-license.php
+    :copyright: 2007 by Jens Diemer
+    :license: GNU GPL, see LICENSE for more details
 """
 
 __version__= "$Rev$"
@@ -30,61 +31,51 @@ __version__= "$Rev$"
 from PyLucid.system.BaseModule import PyLucidBaseModule
 from PyLucid.tools.tree_generator import TreeGenerator
 from PyLucid.models import Page
-#from PyLucid.db.page import MenuData
 
-
+from django.core.cache import cache
+CACHE_KEY = "main_menu"
 
 class main_menu(PyLucidBaseModule):
 
     def lucidTag(self):
+        """
+        write the current opened tree menu
+        """
         current_page = self.context["PAGE"]
         self.current_page_id  = current_page.id
 
-#        "name","shortcut","title"
-        menu_data = Page.objects.values(
-            "id", "parent", "name", "title", "shortcut"
-        ).order_by("position")
-#        self.page_msg(menu_data)
-
         if self.request.user.is_anonymous():
-            menu_data = menu_data.exclude(permitViewPublic = False)
-#        self.page_msg(menu_data)
+            cache_key = "%s_anonymous" % CACHE_KEY
+        else:
+            cache_key = CACHE_KEY
 
-        tree = TreeGenerator(menu_data)
+        tree = cache.get(cache_key)
+        if tree == None:
+            # Not in the cache available
+            menu_data = Page.objects.values(
+                "id", "parent", "name", "title", "shortcut"
+            ).order_by("position")
+
+            if self.request.user.is_anonymous():
+                menu_data = menu_data.exclude(permitViewPublic = False)
+
+            tree = TreeGenerator(menu_data)
+            cache.set(cache_key, tree, 120)
+#        else:
+#            self.page_msg("Menu data from the cache.")
+
+        # Generate the opened tree dict for the given page id
         menu_data = tree.get_menu_tree(self.current_page_id)
-#        self.page_msg(menu_data)
 
+        # Create from the tree dict a nested html list.
         menu_data = self.get_html(menu_data)
-        self.response.write(menu_data)
-        return
 
-        context = {
-            "menu_data" : menu_data
-        }
-        self._render_template(main_menu, context)
+        self.response.write(menu_data)
+
 
     def get_html(self, menu_data, parent=None):
         """
-        [{'id': 1L,
-          'level': 1,
-          'name': 'index',
-          'parent': 0L,
-          'shortcut': 'Index',
-          'title': 'index'},
-         {'id': 10L,
-          'level': 1,
-          'name': 'Designs',
-          'parent': 0L,
-          'shortcut': 'Designs',
-          'subitems': [{'id': 13L,
-                        'level': 2,
-                        'name': 'elementary',
-                        'parent': 10L,
-                        'shortcut': 'Elementary',
-                        'title': 'elementary'},
-                       {'id': 12L,
-                        'level': 2,
-                        'name': 'old defaul
+        Generate a nested html list from the given tree dict.
         """
         html = (
             '<li>'
@@ -118,14 +109,4 @@ class main_menu(PyLucidBaseModule):
 
         result.append("</ul>")
         return "\n".join(result)
-
-
-
-
-
-
-
-
-
-
 

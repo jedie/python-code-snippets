@@ -8,8 +8,110 @@ from PyLucid.system.response import SimpleStringIO
 
 from django import newforms as forms
 
-import cgi, sys, time
+import os, cgi, sys, time
 
+
+
+#______________________________________________________________________________
+
+class CacheBackendTest(BaseInstall):
+    def _print_infoline(self, txt):
+        print
+        print "_"*80
+        print txt
+        print "-"*80
+
+    def _verbose_try_import(self, module_name):
+        """
+        try to import the given >module_name< and print information.
+        """
+        try:
+            __import__(module_name)
+        except ImportError, msg:
+            print "The module '%s' is not available. (%s)" % (module_name, msg)
+        else:
+            print "The module '%s' is available." % module_name
+
+    def _print_tempdir_info(self):
+        """
+        Try to write temp files into the default system temp directory.
+        """
+        def write_test(file_path):
+            f = file(file_path, "w")
+            f.write("Test if PyLucid can write into the temp directory.")
+            f.close()
+            os.remove(file_path)
+
+        from tempfile import gettempdir
+        tempdir = gettempdir()
+        print "The system default temp dir is: '%s'" % tempdir
+        print
+
+        #______________________________________________________________________
+        # Try if we can make files directly into the temp directory:
+
+        test_fn = os.path.join(tempdir, "PyLucid_test.txt")
+        try:
+            write_test(test_fn)
+        except OSError, msg:
+            print "Error write the test file '%s': %s" % (test_fn, msg)
+            print "You can't use the filesystem caching backend :("
+            return
+        else:
+            print "Write a test file '%s' allowed, ok." % test_fn
+            useable_dir = tempdir
+
+        #______________________________________________________________________
+        # Try if we can use a subdirectory:
+
+        test_dir = os.path.join(tempdir, "PyLucid_cache")
+        try:
+            if not os.path.isdir(test_dir):
+                # test only if not exists (os.rmdir failed in the past?)
+                os.makedirs(test_dir)
+
+            # Try to write a temp file
+            test_fn = os.path.join(test_dir, "PyLucid_test.txt")
+            write_test(test_fn)
+            try:
+                os.rmdir(test_dir)
+            except:
+                # don't care: only important we can create directory/files ;)
+                pass
+        except OSError, msg:
+            print "Error using the sub directory '%s': %s" % (test_dir, msg)
+        else:
+            print "Using a sub directory '%s' allowed, ok." % test_dir
+            useable_dir = test_dir
+
+        print (
+            "\n"
+            "You can use the filesystem caching backend!\n"
+            "You should insert the following line into your settings.py"
+            " to enable this:\n"
+            "CACHE_BACKEND = 'file://%s'"
+        ) % useable_dir
+
+    def view(self):
+        self._redirect_execute(self.print_info)
+        return self._simple_render(
+            headline="Available cache backend test"
+        )
+
+    def print_info(self):
+        self._print_infoline("Tests for the memcache backend:")
+        self._verbose_try_import("cmemcache")
+        self._verbose_try_import("memcache")
+
+        self._print_infoline("Tests for the filesystem caching backend:")
+        self._print_tempdir_info()
+
+
+def cache_backend_test(request):
+    """
+    1. Available cache backend test
+    """
+    return CacheBackendTest(request).start_view()
 
 
 #______________________________________________________________________________

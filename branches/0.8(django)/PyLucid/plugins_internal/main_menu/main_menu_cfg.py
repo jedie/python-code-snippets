@@ -12,17 +12,9 @@ __long_description__    = __description__
 #___________________________________________________________________________________________________
 # Module-Manager Daten
 
-#~ module_manager_debug = True
-module_manager_debug = False
-
 plugin_manager_data = {
     "lucidTag" : {
         "must_login"    : False,
         "must_admin"    : False,
-        "internal_page_info" : {
-            "name"              : "main_menu",
-            "description"       : "The main menu Template",
-            "markup"            : None
-        },
     }
 }
