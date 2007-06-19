@@ -11,7 +11,7 @@ from datetime import datetime
 from django.db import connection
 
 from PyLucid.install.BaseInstall import BaseInstall
-from PyLucid.settings import TABLE_PREFIX
+from PyLucid.settings import OLD_TABLE_PREFIX
 from PyLucid.models import JS_LoginData, Page, Template, Style, Markup, Preference
 
 from django.contrib.auth.models import User

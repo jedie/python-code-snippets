@@ -234,3 +234,7 @@ INSTALL_EVILEVAL = False
 # Deactivate the _install section with: INSTALL_PASS = ""
 # After the installation you should deactivate it!
 INSTALL_PASS = ""
+
+# The table prefix from a old PyLucid installation, if exist.
+# Only used for updating!
+OLD_TABLE_PREFIX = ""
