@@ -2,27 +2,26 @@
 # -*- coding: UTF-8 -*-
 
 """
-plugin Manager
+    PyLucid Plugin Manager
+    ~~~~~~~~~~~~~~~~~~~~~~
 
-Last commit info:
-----------------------------------
-$LastChangedDate$
-$Rev$
-$Author$
+    The plugin manager starts a plugin an returns the content back.
+    For _command requests and for {% lucidTag ... %}
 
-Created by Jens Diemer
+    install/Deintstall plugins into the database.
 
-license:
-    GNU General Public License v2 or above
-    http://www.opensource.org/licenses/gpl-license.php
+    Last commit info:
+    ~~~~~~~~~~~~~~~~~
+    $LastChangedDate: $
+    $Rev: $
+    $Author: $
 
+    :copyright: 2007 by Jens Diemer
+    :license: GNU GPL, see LICENSE for more details
 """
 
 
 import os, sys, cgi, traceback
-
-#~ from PyLucid.system.exceptions import PyLucidException
-
 
 #~ debug = False
 debug = True
@@ -137,6 +136,9 @@ def _run(context, local_response, plugin_name, method_name, url_args, method_kwa
                 return ""
             else:
                 raise AccessDeny
+
+    URLs = context["URLs"]
+    URLs.current_plugin = plugin_name
 
     plugin_class=get_plugin_class(plugin.package_name, plugin_name)
     class_instance = plugin_class(context, local_response)

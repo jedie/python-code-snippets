@@ -1,10 +1,21 @@
 
 """
-the special PyLucid tag who starts a module/plugin with the module manager.
+    {% lucidTag ... %}
+    ~~~~~~~~~~~~~~~~~~
 
-e.g.: {% lucidTag plugin_name.method_name key1="value1" key2="value2" %}
+    the special PyLucid tag who starts a plugin with the plugin manager.
+    e.g.: {% lucidTag plugin_name.method_name key1="value1" key2="value2" %}
 
-registered in: ./PyLucid/defaulttags/__init__.py
+    registered in: ./PyLucid/defaulttags/__init__.py
+
+    Last commit info:
+    ~~~~~~~~~~~~~~~~~
+    $LastChangedDate: $
+    $Rev: $
+    $Author: $
+
+    :copyright: 2007 by Jens Diemer
+    :license: GNU GPL, see LICENSE for more details
 """
 
 import cgi

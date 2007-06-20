@@ -24,7 +24,8 @@ from PyLucid.system.BaseModule import PyLucidBaseModule
 from PyLucid.db.page import get_update_info
 
 from django.core.cache import cache
-CACHE_KEY = "page_update_list"
+# Same key used by the RSSfeedGenerator Plugin, too!!!
+CACHE_KEY = "page_updates_data"
 
 class page_update_list(PyLucidBaseModule):
 

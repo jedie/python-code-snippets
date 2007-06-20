@@ -15,11 +15,13 @@ class URLs(dict):
         self.request     = context["request"]
         self.page_msg    = context["page_msg"]
 
+        self.current_plugin = None
+
         self.setup_URLs()
 
     def setup_URLs(self):
         """
-        Pfad für Links festlegen
+        Set some base urls, which are same for every Request.
         """
         self["cwd"] = os.getcwdu()
         self["host"] = self.request.META['HTTP_HOST']
@@ -47,23 +49,24 @@ class URLs(dict):
 
     #__________________________________________________________________________
 
-    def commandLink(self, modulename, methodname="", args="", addSlash=True):
-        args = self._prepage_args(args)
-        link = "/".join((
-            self["commandBase"], modulename, methodname, args
-        ))
+    def _generate_url(self, parts, args, addSlash):
+        """
+        Generate the link from the given parts and args.
+        """
+        if args != None:
+            # Extend parts with the args.
+            if isinstance(args, (list, tuple)):
+                args = [str(i) for i in args]
+                parts += args
+            else:
+                parts.append(str(args))
+
+        # Join parts + args together.
+        link = "/".join(parts)
 
         if addSlash:
             link = self.addSlash(link)
         return link
-
-    def adminLink(self, url):
-        link = "/".join((
-            self["adminBase"], url
-        ))
-        return link
-
-    #__________________________________________________________________________
 
     def addSlash(self, path):
         """
@@ -77,12 +80,34 @@ class URLs(dict):
         else:
             return path
 
+    #__________________________________________________________________________
 
-    def _prepage_args(self, args):
-        if isinstance(args, (list, tuple)):
-            return "/".join([str(i) for i in args])
-        else:
-            return str(args)
+    def commandLink(self, plugin_name, method_name, args=None, addSlash=True):
+        """
+        generate a command link to the given plugin and method
+        - args can be a list, tuple or a string.
+        - addSlash=False if the url has a filename.
+        """
+        parts = [self["commandBase"], plugin_name, method_name]
+        return self._generate_url(parts, args, addSlash)
+
+    def methodLink(self, method_name, args=None, addSlash=True):
+        """
+        generate a link to a other method in the current used plugin.
+        - args can be a list, tuple or a string.
+        - addSlash=False if the url has a filename.
+        """
+        parts = [self["commandBase"], self.current_plugin, method_name]
+        return self._generate_url(parts, args, addSlash)
+
+    def adminLink(self, url):
+        """
+        generate a link into the django admin panel.
+        """
+        link = "/".join((
+            self["adminBase"], url
+        ))
+        return link
 
     #__________________________________________________________________________
 
