@@ -2,88 +2,125 @@
 # -*- coding: UTF-8 -*-
 
 """
-A small RSS news feed Generator
+    PyLucid RSS news feed generator plugin
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Info:
-If this plugin is installed, you can insert this Link in the global Template:
+    -With {% lucidTag RSSfeedGenerator count=10 %} you can generate a link to
+    the RSS XML file.
 
-<link rel="alternate" type="application/rss+xml" title="RSS" \
-href="/_command/RSSfeedGenerator/download/RSS.xml" />
+    FIXME: Make the "count" argument not as a GET parameter.
 
-Last commit info:
-----------------------------------
-$LastChangedDate$
-$Rev$
-$Author$
+    Last commit info:
+    ~~~~~~~~~~~~~~~~~
+    $LastChangedDate$
+    $Rev$
+    $Author$
 
-Created by Jens Diemer
-
-license:
-    GNU General Public License v2 or above
-    http://www.opensource.org/licenses/gpl-license.php
+    :copyright: 2007 by Jens Diemer
+    :license: GNU GPL, see LICENSE for more details
 """
 
 
 import sys, os, cgi, time
 
-RSS_filename = "RSS.xml"
+RSS_FILENAME = "RSS.xml"
 
-#~ debug = True
+#debug = True
 debug = False
 
 from PyLucid.system.BaseModule import PyLucidBaseModule
+from PyLucid.db.page import get_update_info
+from PyLucid.system.exceptions import PluginError
+from PyLucid import PYLUCID_VERSION_STRING
 
+from django.http import HttpResponse
+
+from django.core.cache import cache
+# Same key used by the PageUpdateList Plugin, too!!!
+CACHE_KEY = "page_updates_data"
 
 class RSSfeedGenerator(PyLucidBaseModule):
 
-    def lucidTag(self):
-        # FIXME:
-#        url = self.URLs.actionLink("download") + RSS_filename
-        url = "download" + RSS_filename
+    def lucidTag(self, count=10):
+        """
+        Put a link to the RSS feed file into the cms page.
+        """
+        count = self.prepare_count(count)
+        url = self.URLs.methodLink(
+            "download", RSS_FILENAME, addSlash=False
+        )
+        # FIXME: We should better use a small internal page for this:
         html = (
-            '<a href="%s"'
-            ' type="application/rss+xml" title="RSS">'
+            '<a href="%s?count=%s" type="application/rss+xml" title="RSS">'
             'RSS'
             '</a>'
-        ) % url
+        ) % (url, count)
         self.response.write(html)
 
-        headLink = (
-            '<link rel="alternate" type="application/rss+xml"'
-            ' title="RSS" href="%s" />\n'
-        ) % url
+        # TODO: implement a way to add this into the html head:
+#        headLink = (
+#            '<link rel="alternate" type="application/rss+xml"'
+#            ' title="RSS" href="%s" />\n'
+#        ) % url
 #        self.response.addCode.insert(headLink)
 
-    def download(self, function_info):
+    def download(self, filename):
         """
-        Generiert den feed und sendet ihn zum Client.
-        (function_info wird ignoriert)
+        Generate the XML file and send it to the client.
+        Info: the method ignored the filename
         """
-        page_updates = self.db.get_page_update_info(15)
+        count = self.request.GET.get("count", 10)
+        count = self.prepare_count(count)
+        cache_key = "%s_%s" % (CACHE_KEY, count)
+        if debug:
+            self.page_msg("RSSfeedGenerator Debug:")
+            self.page_msg("count:", count)
+            self.page_msg("cache_key:", cache_key)
+
+        page_updates = cache.get(cache_key)
+
+        context = {}
+
+        if page_updates != None:
+            context["from_cache"] = True
+        else:
+            page_updates = get_update_info(self.context, count)
+            cache.set(cache_key, page_updates, 120)
 
         context = {
             "page_updates" : page_updates,
             "homepage_link" : self.URLs["absoluteIndex"],
             "hostname": self.URLs["hostname"],
+            "pylucid_version": PYLUCID_VERSION_STRING,
             "pubDate": time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime()),
         }
         if debug:
-            self.page_msg("RSSfeedGenerator - Debug context:")
+            self.page_msg("Debug context:")
             self.page_msg(context)
 
-        content = self.templates.get_rendered_page("RSSfeed", context)
-
-        #~ self.response.startFileResponse(RSS_filename, contentLen=None, \
-                    #~ content_type='application/rss+xml; charset=utf-8')
-        #~ self.response.write(content)
-        #~ return self.response
+        content = self._get_rendered_template("RSSfeed", context)
 
         if debug:
             self.response.write("<h2>Debug:</h2><pre>")
             self.response.write(cgi.escape(content))
             self.response.write("</pre>")
-        else:
-            # XML Datei senden
-            self.response.startFreshResponse(content_type="application/xml")
-            self.response.write(content)
-            return self.response
+            return
+
+        # send the XML file to the client
+        response = HttpResponse()
+        response['Content-Type'] = 'application/xml; charset=utf-8'
+        response.write(content)
+        return response
+
+    def prepare_count(self, count):
+        """
+        Check if the count is a number and in a definied range.
+        """
+        try:
+            count = int(count)
+            if count<1 or count>100:
+                raise AssertionError("Number is out of range.")
+            return count
+        except Exception, e:
+            msg = "Error! Wrong count argument: %s" % e
+            raise PluginError(msg)

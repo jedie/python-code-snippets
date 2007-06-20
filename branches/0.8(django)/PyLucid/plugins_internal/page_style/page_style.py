@@ -2,21 +2,22 @@
 # -*- coding: UTF-8 -*-
 
 """
-CSS in die CMS Seite einfügen
+    PyLucid stylesheets
+    ~~~~~~~~~~~~~~~~~~~
 
+    - Put the css html tag into the cms page.
+    - Send the current stylesheet directly to the client.
 
-Last commit info:
-----------------------------------
-$LastChangedDate$
-$Rev$
-$Author$
+    Last commit info:
+    ~~~~~~~~~~~~~~~~~
+    $LastChangedDate$
+    $Rev$
+    $Author$
 
-Created by Jens Diemer
-
-license:
-    GNU General Public License v2 or above
-    http://www.opensource.org/licenses/gpl-license.php
+    :copyright: 2007 by Jens Diemer
+    :license: GNU GPL, see LICENSE for more details
 """
+
 
 __version__= "$Rev$"
 
@@ -43,8 +44,8 @@ class page_style(PyLucidBaseModule):
         style_name = current_page.style.name
         style_filename = "%s.css" % style_name
 
-        url = self.URLs.commandLink(
-            "page_style", "sendStyle", style_filename, addSlash=False
+        url = self.URLs.methodLink(
+            "sendStyle", style_filename, addSlash=False
         )
         cssTag = '<link rel="stylesheet" type="text/css" href="%s" />\n' % url
 
