@@ -1,8 +1,22 @@
-#!/usr/bin/python
-# -*- coding: UTF-8 -*-
-
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 """
-URL class
+    PyLucid URLs
+    ~~~~~~~~~~~~
+
+    The URLs class has some usefull methods for plugins to build links.
+
+    The view put a instance in context["URLs"]. The BaseModule bind the class
+    to self. So every plugin can easy access the methods with self.URLs.
+
+    Last commit info:
+    ~~~~~~~~~~~~~~~~~
+    $LastChangedDate: $
+    $Rev: $
+    $Author: $
+
+    :copyright: 2007 by Jens Diemer
+    :license: GNU GPL, see LICENSE for more details
 """
 
 import os, posixpath
@@ -30,22 +44,22 @@ class URLs(dict):
             self["host"],
         )
 
-        self["scriptRoot"] = self.request.META.get("SCRIPT_NAME", "/")
+#        self["scriptRoot"] = self.request.META.get("SCRIPT_NAME", "/")
+        self["scriptRoot"] = "/"
 
         self["docRoot"] = self.addSlash(posixpath.split(self["scriptRoot"])[0])
 
         self["absoluteIndex"] = self.addSlash(
             "".join((self["hostname"], self["scriptRoot"]))
         )
-#        self.page_msg("Absolute Index: '%s'" % self["absoluteIndex"])
 
-        self["commandBase"] = "/".join((
+        self["commandBase"] = posixpath.join(
             self["scriptRoot"], settings.COMMAND_URL_PREFIX,
             str(self.context["PAGE"].id)
-        ))
-        self["adminBase"] = "/".join((
+        )
+        self["adminBase"] = posixpath.join(
             self["scriptRoot"], settings.ADMIN_URL_PREFIX
-        ))
+        )
 
     #__________________________________________________________________________
 
@@ -112,6 +126,9 @@ class URLs(dict):
     #__________________________________________________________________________
 
     def debug(self):
+        """
+        write debug information into the page_msg
+        """
         self.page_msg("URLs debug:")
         for k,v in self.items():
             self.page_msg(" - %15s: '%s'" % (k,v))
