@@ -205,14 +205,19 @@ TEMPLATE_DIRS = (
 #    'SessionMiddleware' and 'AuthenticationMiddleware' must be deactivated!
 #  * After "syncdb" you must activate 'SessionMiddleware' and
 #    'AuthenticationMiddleware'!
-#  * The CacheMiddleware is only usefull if a CACHE_BACKEND exist and worked!
-#    Look above in the CACHE section for this.
+#  * The PageCache middleware is only usefull if a CACHE_BACKEND exist and
+#    worked fine. Look above in the CACHE section for this.
+#  * The DebugPageCache should be *never* activated. Only for dev debugging.
 # !!! IMPORTANT !!!
 MIDDLEWARE_CLASSES = (
+#    'PyLucid.middlewares.page_cache.DebugPageCache',
+
+    # Activate this after 'syncdb':
 #    'django.contrib.sessions.middleware.SessionMiddleware',
 #    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    # -----------------------------
 
-#    'django.middleware.cache.CacheMiddleware',
+#    'PyLucid.middlewares.page_cache.PageCache',
 
     'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',

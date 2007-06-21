@@ -1,10 +1,23 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 """
-A small page statistic middleware.
+    PyLucid page statistics
+    ~~~~~~~~~~~~~~~~~~~~~~~
 
-replace the >TAG< with some stats. But only in HTML pages.
+    A small page statistic middleware.
+    -replace the >TAG< with some stats. But only in HTML pages.
 
-Based on http://code.djangoproject.com/wiki/PageStatsMiddleware
+    Based on http://code.djangoproject.com/wiki/PageStatsMiddleware
+
+    Last commit info:
+    ~~~~~~~~~~~~~~~~~
+    $LastChangedDate: $
+    $Rev: $
+    $Author: $
+
+    :copyright: 2007 by Jens Diemer
+    :license: GNU GPL, see LICENSE for more details
 """
 
 from operator import add
