@@ -1,16 +1,74 @@
-<h2>List of all available Tags:</h2>
-<ul id="tag_list">
-{% for tag in tag_list %}
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>List of all available template tags</title>
+
+<!-- additional javascript code - START -->
+{% if js_data %}
+{% for js in js_data %}
+<script type="text/javascript">
+/* <![CDATA[ */
+/* additional javascript from {{ js.from_info }} */
+{{ js.data }}
+/* ]]> */
+</script>
+{% endfor %}
+{% endif %}<!-- additional javascript code - END -->
+<!-- additional stylesheet code - START -->
+{% if css_data %}
+{% for css in css_data %}
+<style type="text/css">
+/* <![CDATA[ */
+/* additional stylesheets from {{ css.from_info }} */
+{{ css.data }}
+/* ]]> */
+</style>
+{% endfor %}
+{% endif %}<!-- additional stylesheet code - END -->
+
+</head>
+<body>
+
+<div id="content">
+
+<h2>List of all available plugin tags:</h2>
+<p><strong>Note:</strong> Necessary tag parameters are not indicated here!</p>
+<ul id="plugin_list">
+{% for plugin in plugin_list %}
   <li>
-    <p title="{{ tag.description }}">
-      {% if tag.is_lucidTag %}
-        &lt;lucidTag:{{ tag.module_name }}/&gt;
-      {% endif %}
-      {% if tag.is_lucidFunction %}
-        &lt;lucidFunction:{{ tag.module_name }}&gt;...&lt;/lucidFunction&gt;
-      {% endif %}
-       <small> - {{ tag.description }}</small>
+    <p title="{{ plugin.long_description }}">
+        &#x7B;&#x7B; lucidTag {{ plugin.plugin_name }} &#x7D;&#x7D;
+       <small> - {{ plugin.description }}</small>
     </p>
   </li>
 {% endfor %}
 </ul>
+
+<h2>List of all PAGE tags:</h2>
+<ul id="page_fields">
+{% for field in page_fields %}
+  <li>
+    <p>
+        &#x7B;&#x7B; PAGE.{{ field.name }} &#x7D;&#x7D;
+       <small> - {{ field.help_text }}</small>
+    </p>
+  </li>
+{% endfor %}
+</ul>
+
+<hr />
+
+<h2>Usefull links:</h2>
+<ul id="links">
+  <li>
+    <a href="http://www.djangoproject.com/documentation/templates/">
+    The django documentation about the template language
+    </a>
+  </li>
+</ul>
+
+
+</div>
+<!-- script_duration -->
+</body></html>
