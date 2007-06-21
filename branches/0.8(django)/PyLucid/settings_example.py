@@ -133,7 +133,7 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = False   # Whether sessions expire when a user 
 # CACHE
 # http://www.djangoproject.com/documentation/cache/
 
-# The cache backend to use.
+# The cache backend to use. Must have for the CacheMiddleware.
 # Note:
 #    -You can test available backends in the _install section!
 #
@@ -148,6 +148,21 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = False   # Whether sessions expire when a user 
 
 # Default: "dummy:///" (No cache)
 CACHE_BACKEND = "dummy:///"
+
+#_____________________________________________________________________________
+# PAGE CACHE
+#
+# The per-site cache, caches your entire cms site. But it doesn't cache any
+# request with GET or POST parameters.
+# It works only if the CACHE_BACKEND works, too.
+# You must enable the CacheMiddleware below in the MIDDLEWARE_CLASSES setting.
+#
+
+# The number of seconds each cms page should be cached.
+CACHE_MIDDLEWARE_SECONDS = 240
+
+# Cache only anonymous requests, not those made by a logged-in user.
+CACHE_MIDDLEWARE_ANONYMOUS_ONLY = True
 
 
 #_____________________________________________________________________________
@@ -186,18 +201,21 @@ TEMPLATE_DIRS = (
 # response phase the middleware will be applied in reverse order.
 #
 # !!! IMPORTANT !!!
-#   After "syncdb" you must activate 'SessionMiddleware' and
-#   'AuthenticationMiddleware'!
+#  * In the first install phase (befor the database tables exists) the
+#    'SessionMiddleware' and 'AuthenticationMiddleware' must be deactivated!
+#  * After "syncdb" you must activate 'SessionMiddleware' and
+#    'AuthenticationMiddleware'!
+#  * The CacheMiddleware is only usefull if a CACHE_BACKEND exist and worked!
+#    Look above in the CACHE section for this.
 # !!! IMPORTANT !!!
 MIDDLEWARE_CLASSES = (
 #    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.locale.LocaleMiddleware',
-    'django.middleware.common.CommonMiddleware',
 #    'django.contrib.auth.middleware.AuthenticationMiddleware',
 
-    # PageCache is experimental!
-#    'PyLucid.middlewares.page_cache.PageCache',
+#    'django.middleware.cache.CacheMiddleware',
 
+    'django.middleware.locale.LocaleMiddleware',
+    'django.middleware.common.CommonMiddleware',
     'django.middleware.doc.XViewMiddleware',
     'PyLucid.middlewares.pagestats.PageStatsMiddleware',
 )
