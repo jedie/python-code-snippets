@@ -466,7 +466,7 @@ CHANGE_TAGS = {
     "page_title": "{{ PAGE.title|escape }}",
     "page_keywords": "{{ PAGE.keywords }}",
     "page_description": "{{ PAGE.description }}",
-    "page_last_modified": "{{ PAGE.last_modified }}",
+    "page_last_modified": "{{ PAGE.lastupdatetime }}",
     "page_datetime": "{{ PAGE.datetime }}",
 
     "list_of_new_sides": "{% lucidTag page_update_list %}",
