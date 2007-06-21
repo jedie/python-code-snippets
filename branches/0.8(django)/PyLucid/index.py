@@ -27,6 +27,7 @@
 
 from django.http import HttpResponse
 from django.template import RequestContext
+from django.views.decorators.cache import cache_page
 
 from PyLucid import models, settings
 
@@ -111,6 +112,11 @@ def _get_context(request, current_page_obj):
 
 
 
+# Cache every normal cms page view with django.middleware.cache.CacheMiddleware
+# Related Links:
+#  - http://code.djangoproject.com/ticket/4649
+#  - http://www.python-forum.de/post-71486.html
+@cache_page
 def index(request, url):
     """
     The main index method.

@@ -137,14 +137,19 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = False   # Whether sessions expire when a user 
 # Note:
 #    -You can test available backends in the _install section!
 #
+# 'dummy:///' - Dummy caching:
+#    The default non-caching. It just implements the cache interface without
+#    doing anything.
 # Database caching:
 #    You must create the cache tables manually in the shell. Look at the docs!
 # Filesystem caching:
 #    Usefull if memcache is not available. You should check if it allowed to
 #    make temp files! You can test this in the PyLucid _install section!
-# Local-memory caching:
+# 'locmem:///' - Local-memory caching:
 #    Not useable with CGI! Every Request starts with a empty cache ;)
 #    Waring: On shared webhosting, the available memory can be limited.
+# 'simple:///' - Simple caching
+#    Only for development!
 
 # Default: "dummy:///" (No cache)
 CACHE_BACKEND = "dummy:///"
@@ -152,10 +157,8 @@ CACHE_BACKEND = "dummy:///"
 #_____________________________________________________________________________
 # PAGE CACHE
 #
-# The per-site cache, caches your entire cms site. But it doesn't cache any
-# request with GET or POST parameters.
-# It works only if the CACHE_BACKEND works, too.
-# You must enable the CacheMiddleware below in the MIDDLEWARE_CLASSES setting.
+# In PyLucid every normal cms page request would be cached, if the CACHE_BACKEND
+# works.
 #
 
 # The number of seconds each cms page should be cached.
@@ -205,19 +208,16 @@ TEMPLATE_DIRS = (
 #    'SessionMiddleware' and 'AuthenticationMiddleware' must be deactivated!
 #  * After "syncdb" you must activate 'SessionMiddleware' and
 #    'AuthenticationMiddleware'!
-#  * The PageCache middleware is only usefull if a CACHE_BACKEND exist and
-#    worked fine. Look above in the CACHE section for this.
 #  * The DebugPageCache should be *never* activated. Only for dev debugging.
 # !!! IMPORTANT !!!
+#
 MIDDLEWARE_CLASSES = (
-#    'PyLucid.middlewares.page_cache.DebugPageCache',
+#    'PyLucid.middlewares.page_cache_debug.DebugPageCache',
 
     # Activate this after 'syncdb':
 #    'django.contrib.sessions.middleware.SessionMiddleware',
 #    'django.contrib.auth.middleware.AuthenticationMiddleware',
     # -----------------------------
-
-#    'PyLucid.middlewares.page_cache.PageCache',
 
     'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
