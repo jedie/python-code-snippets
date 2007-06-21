@@ -27,6 +27,9 @@ class Page(models.Model):
 
     TODO: We need a cache system for the parent relation.
     """
+    # Explicite id field, so we can insert a help_text ;)
+    id = models.AutoField(primary_key=True, help_text="The internal page ID.")
+
     content = models.TextField(blank=True, help_text="The CMS page content.")
 
     parent = models.ForeignKey(
@@ -67,13 +70,19 @@ class Page(models.Model):
         help_text="Short description of the contents. (for the html header)"
     )
 
-    createtime = models.DateTimeField(auto_now_add=True)
-    lastupdatetime = models.DateTimeField(auto_now=True)
+    createtime = models.DateTimeField(
+        auto_now_add=True, help_text="Create time",
+    )
+    lastupdatetime = models.DateTimeField(
+        auto_now=True, help_text="Time of the last change.",
+    )
     createby = models.ForeignKey(
-        User, editable=False, related_name="page_createby"
+        User, editable=False, related_name="page_createby",
+        help_text="User how create the current page.",
     )
     lastupdateby = models.ForeignKey(
-        User, editable=False, related_name="page_lastupdateby"
+        User, editable=False, related_name="page_lastupdateby",
+        help_text="User as last edit the current page.",
     )
 
     showlinks = models.BooleanField(default=True,

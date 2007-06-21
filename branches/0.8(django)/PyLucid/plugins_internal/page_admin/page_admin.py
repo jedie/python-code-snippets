@@ -26,7 +26,7 @@ from django import newforms as forms
 from django.db import models
 from django.http import HttpResponse, HttpResponseRedirect
 
-from PyLucid.models import Page
+from PyLucid.models import Page, Plugin
 from PyLucid.db.page import flat_tree_list, get_sitemap_tree
 from PyLucid.system.BaseModule import PyLucidBaseModule
 from PyLucid.system.detect_page import get_default_page_id
@@ -87,16 +87,13 @@ class page_admin(PyLucidBaseModule):
         url_django_edit = self.URLs.adminLink(
             "PyLucid/page/%s/" % edit_page_id
         )
-        url_textile_help = self.URLs.commandLink(
-            "pageadmin", "tinyTextile_help"
-        )
 
         context = {
             "edit_page_form" : edit_page_form,
             "url_django_edit": url_django_edit,
             "url_abort": "#",
-            "url_textile_help": url_textile_help,
-            "url_taglist": "#",
+            "url_textile_help": self.URLs.methodLink("tinyTextile_help"),
+            "url_taglist": self.URLs.methodLink("tag_list"),
         }
         self._render_template("edit_page", context)
 
@@ -147,15 +144,6 @@ class page_admin(PyLucidBaseModule):
         )
         # display the normal edit page dialog for the new cms page:
         self.edit_page(page_instance=new_page)
-
-    #___________________________________________________________________________
-
-    def tinyTextile_help(self):
-        """
-        Render the tinyTextile Help page.
-        """
-        html = self._get_rendered_template("tinyTextile_help", context={})
-        return HttpResponse(html)
 
     #___________________________________________________________________________
 
@@ -287,11 +275,68 @@ class page_admin(PyLucidBaseModule):
         }
         self._render_template("delete_pages", context)
 
+    #___________________________________________________________________________
+
+    def tinyTextile_help(self):
+        """
+        Render the tinyTextile Help page.
+        """
+        html = self._get_rendered_template("tinyTextile_help", context={})
+        return HttpResponse(html)
+
+    #___________________________________________________________________________
+
+    def tag_list(self):
+        """
+        Render a help page with a list of all available django template tags
+        and all available lucidTag's (List of all available plugins).
+
+        TODO: Find a way to put the tag parameter syntax into the plugin_list:
+            e.g. without..: {{ lucidTag page_update_list }}
+            e.g. with.....: {{ lucidTag page_update_list count=10 }}
+            idea: Import the plugin class and use inspect?
+        """
+
+        def get_plugin_list():
+            """
+            Generate a list of all Plugins how are active.
+            """
+            plugin_list = Plugin.objects.values(
+                "id", "plugin_name", "version", "author", "url", "description",
+                "long_description",
+            ).order_by('package_name')
+            plugin_list = plugin_list.filter(active = True)
+            return plugin_list
+
+        def get_page_fields():
+            """
+            Generate a list of all PyLucid.models.Page fields.
+            """
+            page_fields = []
+            opts = self.current_page._meta
+            for field in opts.fields:
+                page_fields.append({
+                    "name": field.name,
+                    "help_text": field.help_text
+                })
+            return page_fields
+
+        # TODO: insert the extra context fields
+        # e.g. from PyLucid.system.context_processors
+
+        context = {
+            "plugin_list": get_plugin_list(),
+            "page_fields": get_page_fields(),
+        }
+        html = self._get_rendered_template("tag_list", context)
+        return HttpResponse(html)
+
 
 class DeletePageError(Exception):
     """
     Error while deleting one cms page.
     """
     pass
+
 
 
