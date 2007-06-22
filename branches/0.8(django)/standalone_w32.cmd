@@ -1,6 +1,6 @@
 @echo off
 
-REM ~ set DJANGO_SETTINGS_MODULE=PyLucid.settings
+cd /d %~dp0
 
 :loop
     echo Starting django development server...
