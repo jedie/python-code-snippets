@@ -26,15 +26,35 @@ class Update(Sync_DB):
     -copy/convert the data from the old PyLucid installation into the new tables
     """
     def view(self):
-        if TABLE_PREFIX == "PyLucid_":
+        headline="Update PyLucid tables."
+
+        if OLD_TABLE_PREFIX == "PyLucid_":
             # TODO: Must rename the old tables first.
-            raise "Conflict: Table names are the same!"
+            return self._simple_render(
+                output = "Error: Conflict: Table names are the same!",
+                headline=headline
+            )
+        elif OLD_TABLE_PREFIX in ("", None):
+            return self._simple_render(
+                output = (
+                    "Error: OLD_TABLE_PREFIX is empty! Please check your"
+                    " settings.py and insert the table prefix from your old"
+                    " PyLucid installation."
+                ),
+                headline=headline
+            )
 
         # self.syncdb is inherited from the Sync_DB class
         self._redirect_execute(self.syncdb)
 
         self._redirect_execute(self.move_data)
-        return self._simple_render(headline="Update PyLucid tables.")
+
+        self.context["output"] += (
+            "\nReady.\n"
+            "Now you must run the template update!"
+        )
+
+        return self._simple_render(headline=headline)
 
     def move_data(self):
         """
@@ -76,7 +96,7 @@ class Update(Sync_DB):
     def __get_all(self, keys, table_name):
         cursor = connection.cursor()
         SQLcommand = "SELECT %s FROM %s%s;" % (
-            ",".join(keys), TABLE_PREFIX, table_name
+            ",".join(keys), OLD_TABLE_PREFIX, table_name
         )
         cursor.execute(SQLcommand)
         data = cursor.fetchall()
@@ -174,7 +194,7 @@ class Update(Sync_DB):
 
         SQLcommand = (
             "SELECT id FROM %spages;"
-        ) % TABLE_PREFIX
+        ) % OLD_TABLE_PREFIX
         cursor.execute(SQLcommand)
 
         page_keys = (
@@ -191,7 +211,7 @@ class Update(Sync_DB):
             id = id[0]
             print id
             SQLcommand = "SELECT %s FROM %spages WHERE id=%s;" % (
-                ",".join(page_keys), TABLE_PREFIX, id
+                ",".join(page_keys), OLD_TABLE_PREFIX, id
             )
             cursor.execute(SQLcommand)
             page_data = cursor.fetchall()[0]
@@ -278,9 +298,21 @@ class Update(Sync_DB):
         )
 
         SQLcommand = "SELECT %s FROM %smd5users;" % (
-            ",".join(user_table_keys), TABLE_PREFIX
+            ",".join(user_table_keys), OLD_TABLE_PREFIX
         )
-        cursor.execute(SQLcommand)
+        try:
+            cursor.execute(SQLcommand)
+        except Exception, msg:
+            if "doesn't exist" in str(msg):
+                # First time the update routine access to the old tables.
+                # If the table was not found, the OLD_TABLE_PREFIX seems to
+                # be wrong.
+                msg = (
+                    '%s - It seems to be, that OLD_TABLE_PREFIX="%s" settings'
+                    ' is wrong. Please check your settings.py'
+                ) % (msg, OLD_TABLE_PREFIX)
+            raise Exception(msg)
+
 
         user_map = {}
 
@@ -361,7 +393,7 @@ class Update(Sync_DB):
         }
         where = " OR ".join(["name='%s'" % i for i in needed.keys()])
         SQLcommand = "SELECT %s FROM %spreferences WHERE %s;" % (
-            ",".join(table_keys), TABLE_PREFIX, where
+            ",".join(table_keys), OLD_TABLE_PREFIX, where
         )
         cursor.execute(SQLcommand)
 
