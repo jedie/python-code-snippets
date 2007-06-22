@@ -5,10 +5,9 @@
 A local django test with synced database but empty tables.
 """
 
-from unittests.setup_environment import setup
+from setup import setup
 setup(
-    chdir="../../",
-    path_info=False, extra_verbose=False,
+    chdir=None, path_info=False, extra_verbose=False,
     syncdb=True, insert_dump=False
 )
 
