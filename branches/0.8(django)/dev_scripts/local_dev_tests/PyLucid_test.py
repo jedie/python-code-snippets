@@ -7,10 +7,9 @@ A local test with a full init PyLucid environment
 
 import sys
 
-from unittests.setup_environment import setup
+from setup import setup
 setup(
-    chdir="../../",
-    path_info=False, extra_verbose=False,
+    chdir=None, path_info=False, extra_verbose=False,
     syncdb=True, insert_dump=True
 )
 

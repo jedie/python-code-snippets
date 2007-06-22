@@ -10,6 +10,9 @@ import sys, os
 def setup_path(chdir, path_info):
     if path_info:
         print "os.getcwd() 1:", os.getcwd()
+    if chdir == None:
+        # Nothing to do (e.g. for local_dev_tests)
+        return
     os.chdir(chdir) # go into PyLucid App root folder
     if path_info:
         print "os.getcwd() 2:", os.getcwd()
@@ -46,7 +49,7 @@ def make_insert_dump(extra_verbose):
 
 
 
-def setup(chdir="../../../", path_info=True, extra_verbose=True, syncdb=True,
+def setup(chdir="../../", path_info=True, extra_verbose=True, syncdb=True,
                                                             insert_dump=True):
     """
     setup a test environment
