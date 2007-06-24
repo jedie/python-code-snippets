@@ -20,6 +20,7 @@ from django.template import Template, Context
 
 from PyLucid.system.tinyTextile import TinyTextileParser
 from PyLucid.system.response import SimpleStringIO
+from PyLucid import settings
 
 
 # use the undocumented django function to add the "lucidTag" to the tag library.
@@ -32,13 +33,52 @@ add_to_builtins('PyLucid.defaulttags')
 def apply_markup(content, context, markup_object):
     """
     appy to the content the given markup
+    The Markups names are from the _install Dump:
+        ./PyLucid/db_dump_datadir/PyLucid_markup.py
     """
+    page_msg = context["page_msg"]
     markup = markup_object.name
-    if markup == "textile":
+
+    if markup == 'tinyTextile':
         out_obj = SimpleStringIO()
         markup_parser = TinyTextileParser(out_obj, context)
         markup_parser.parse(content)
         return out_obj.getvalue()
+    elif markup == 'Textile (original)':
+        try:
+            import textile
+        except ImportError:
+            page_msg("Markup error: The Python textile library isn't installed.")
+            return content
+        else:
+            return textile.textile(
+                content,
+                encoding=settings.DEFAULT_CHARSET,
+                output=settings.DEFAULT_CHARSET
+            )
+    elif markup == 'Markdown':
+        try:
+            import markdown
+        except ImportError:
+            page_msg("Markup error: The Python markdown library isn't installed.")
+            return content
+        else:
+            return markdown.markdown(content)
+    elif markup == 'ReStructuredText':
+        try:
+            from docutils.core import publish_parts
+        except ImportError:
+            page_msg("Markup error: The Python docutils library isn't installed.")
+            return content
+        else:
+            docutils_settings = getattr(
+                settings, "RESTRUCTUREDTEXT_FILTER_SETTINGS", {}
+            )
+            parts = publish_parts(
+                source=content, writer_name="html4css1",
+                settings_overrides=docutils_settings
+            )
+            return parts["fragment"]
     else:
         return content
 
