@@ -1,8 +1,8 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 
-#___________________________________________________________________________________________________
-# Meta-Angaben
+#_____________________________________________________________________________
+# meta information
 
 __author__      = "Jens Diemer"
 __url__         = "http://www.PyLucid.org"
@@ -11,8 +11,8 @@ __long_description__ = """
 A small search engine with rating for your CMS.
 """
 
-#___________________________________________________________________________________________________
-# Module-Manager Daten
+#_____________________________________________________________________________
+# plugin administration data
 
 plugin_manager_data = {
     "lucidTag" : {

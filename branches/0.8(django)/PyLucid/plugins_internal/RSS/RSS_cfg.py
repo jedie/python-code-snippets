@@ -1,8 +1,8 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 
-#___________________________________________________________________________________________________
-# Meta-Angaben
+#_____________________________________________________________________________
+# meta information
 
 __author__      = "Jens Diemer"
 __url__         = "http://www.PyLucid.org"
@@ -12,8 +12,8 @@ This lucidFunction read from a given URL the RSS feed ans integrade
 it on your CMS Page.
 """
 
-#___________________________________________________________________________________________________
-# Module-Manager Daten
+#_____________________________________________________________________________
+# plugin administration data
 
 plugin_manager_data = {
     "lucidFunction" : {

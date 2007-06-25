@@ -2,8 +2,7 @@
 # -*- coding: UTF-8 -*-
 
 #_____________________________________________________________________________
-# Meta-Angaben
-
+# meta information
 __author__              = "Jens Diemer"
 __url__                 = "http://www.PyLucid.org"
 __description__         = "A small Backlink generator"
@@ -11,8 +10,8 @@ __long_description__ = """
 Puts links to every lower level page into the CMS page.
 """
 
-#_______________________________________________________________________
-# Module-Manager Daten
+#_____________________________________________________________________________
+# plugin administration data
 
 plugin_manager_data = {
     "lucidTag" : {
@@ -20,6 +19,3 @@ plugin_manager_data = {
         "must_admin"    : False,
     }
 }
-
-#_______________________________________________________________________
-

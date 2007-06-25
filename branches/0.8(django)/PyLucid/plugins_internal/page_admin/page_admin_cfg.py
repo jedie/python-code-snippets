@@ -1,14 +1,8 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 
-# by jensdiemer.de (steht unter GPL-License)
-
-"""
-"""
-
 #_____________________________________________________________________________
-# Meta-Angaben
-
+# meta information
 __author__              = "Jens Diemer"
 __url__                 = "http://www.PyLucid.org"
 __description__         = "edit a CMS page"
@@ -16,13 +10,12 @@ __long_description__    = """Edit a normal CMS pages"""
 __can_deinstall__ = False
 
 #_____________________________________________________________________________
-# Module-Manager Daten
+# plugin administration data
 
 global_rights = {
     "must_login"    : True,
     "must_admin"    : False,
 }
-
 plugin_manager_data = {
     "edit_page" : {
         "must_login"    : True,
@@ -37,7 +30,6 @@ plugin_manager_data = {
     "preview"           : global_rights,
     "save"              : global_rights,
     "encode_from_db"    : global_rights,
-
     "tinyTextile_help" : {
         "must_login"    : False,
         "must_admin"    : False,
@@ -46,7 +38,6 @@ plugin_manager_data = {
             "markup"            : "tinyTextile",
         },
     },
-
     "select_edit_page" : {
         "must_login"    : True,
         "must_admin"    : False,
@@ -55,7 +46,6 @@ plugin_manager_data = {
             "markup"            : None,
         },
     },
-
     "delete_pages" : {
         "must_login"    : True,
         "must_admin"    : True,
@@ -64,7 +54,6 @@ plugin_manager_data = {
             "markup"            : None,
         },
     },
-
     "sequencing" : {
         "must_login"    : True,
         "must_admin"    : False,

@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 
 #_____________________________________________________________________________
-# Meta-Angaben
+# meta information
 
 __author__              = "Jens Diemer"
 __url__                 = "http://www.PyLucid.org"
@@ -14,14 +14,13 @@ can activate/deactivate this modules in the DB.
 __cannot_deinstall__ = True
 
 #_____________________________________________________________________________
-# Module-Manager Daten
+# plugin administration data
 
 plugin_manager_data = {
     "menu" : {
         "must_login"    : True,
         "must_admin"    : True,
     },
-
     "administation_menu" : {
         "must_login"        : True,
         "must_admin"        : True,
@@ -39,41 +38,33 @@ plugin_manager_data = {
         "menu_section"      : "misc",
         "menu_description"  : "debug install Modules/Plugins config data",
     },
-
     "first_time_install" : {
         "must_login"        : True,
         "must_admin"        : True,
         "menu_section"      : "misc",
         "menu_description"  : "first time install (deletes existing tables!)",
     },
-
     "install" : {
         "must_login"    : True,
         "must_admin"    : True,
     },
-
     "deinstall" : {
         "must_login"    : True,
         "must_admin"    : True,
     },
-
     "reinit" : {
         "must_login"    : True,
         "must_admin"    : True,
     },
-
     "activate" : {
         "must_login"    : True,
         "must_admin"    : True,
     },
-
     "deactivate" : {
         "must_login"    : True,
         "must_admin"    : True,
     },
-
     #_________________________________________________________________________
-
     "module_setup" : {
         "must_login"    : True,
         "must_admin"    : True,

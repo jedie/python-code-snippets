@@ -2,19 +2,15 @@
 # -*- coding: UTF-8 -*-
 
 #_____________________________________________________________________________
-# Meta-Angaben
+# meta information
 
 __author__              = "Jens Diemer"
 __url__                 = "http://www.PyLucid.org"
 __description__         = "User Handling"
 __long_description__    = """User data administration"""
-__essential_buildin__   = True
 
 #_____________________________________________________________________________
-# Module-Manager Daten
-
-#~ module_manager_debug = True
-module_manager_debug = False
+# plugin administration data
 
 module_manager_data = {
     "manage_user": {

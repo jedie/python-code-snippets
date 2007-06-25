@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 
 #_____________________________________________________________________________
-# Meta-Angaben
+# meta information
 
 __author__      = "Jens Diemer"
 __url__         = "http://www.PyLucid.org"
@@ -12,18 +12,16 @@ Shows internal, system and python information.
 """
 
 #_____________________________________________________________________________
-# Module-Manager Daten
+# plugin administration data
 
 global_rights = {
     "must_login"    : True,
     "must_admin"    : True,
 }
-
 plugin_manager_data = {
     "lucidTag"  : global_rights,
     "link"      : global_rights,
     "menu"      : global_rights,
-
     "system_info": {
         "must_login"        : True,
         "must_admin"        : True,
