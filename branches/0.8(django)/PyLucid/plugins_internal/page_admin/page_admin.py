@@ -62,7 +62,7 @@ class page_admin(PyLucidBaseModule):
             page_instance, fields=(
                 "content", "parent",
                 "name", "shortcut", "title",
-                "keywords", "description",
+                "keywords", "description", "markup",
             ),
         )
 

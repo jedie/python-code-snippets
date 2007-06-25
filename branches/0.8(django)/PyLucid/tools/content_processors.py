@@ -18,7 +18,6 @@
 
 from django.template import Template, Context
 
-from PyLucid.system.tinyTextile import TinyTextileParser
 from PyLucid.system.response import SimpleStringIO
 from PyLucid import settings
 
@@ -40,6 +39,7 @@ def apply_markup(content, context, markup_object):
     markup = markup_object.name
 
     if markup == 'tinyTextile':
+        from PyLucid.system.tinyTextile import TinyTextileParser
         out_obj = SimpleStringIO()
         markup_parser = TinyTextileParser(out_obj, context)
         markup_parser.parse(content)
@@ -48,7 +48,10 @@ def apply_markup(content, context, markup_object):
         try:
             import textile
         except ImportError:
-            page_msg("Markup error: The Python textile library isn't installed.")
+            page_msg(
+                "Markup error: The Python textile library isn't installed."
+                " Download: http://cheeseshop.python.org/pypi/textile"
+            )
             return content
         else:
             return textile.textile(
@@ -60,7 +63,10 @@ def apply_markup(content, context, markup_object):
         try:
             import markdown
         except ImportError:
-            page_msg("Markup error: The Python markdown library isn't installed.")
+            page_msg(
+                "Markup error: The Python markdown library isn't installed."
+                " Download: http://sourceforge.net/projects/python-markdown/"
+            )
             return content
         else:
             return markdown.markdown(content)
@@ -68,7 +74,10 @@ def apply_markup(content, context, markup_object):
         try:
             from docutils.core import publish_parts
         except ImportError:
-            page_msg("Markup error: The Python docutils library isn't installed.")
+            page_msg(
+                "Markup error: The Python docutils library isn't installed."
+                " Download: http://docutils.sourceforge.net/"
+            )
             return content
         else:
             docutils_settings = getattr(
@@ -87,9 +96,9 @@ def render_string_template(template, context):
     """
     Render a string-template with the given context
     """
-    ctx = Context(context)
-    tmpl = Template(template)
-    html = tmpl.render(ctx)
+    context = Context(context)
+    template = Template(template)
+    html = template.render(context)
     return html
 
 def render_template(content, global_context, local_context={}):
