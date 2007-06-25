@@ -56,7 +56,10 @@ class PyLucidBaseModule(object):
         self.response.write("</pre>")
         self.response.write("<legend>template:</legend>")
         self.response.write("<pre>")
-        self.response.write(cgi.escape(template))
+        template = cgi.escape(template)
+        # Escape all django template tags
+        template = template.replace("{", "&#x7B;").replace("}", "&#x7D;")
+        self.response.write(template)
         self.response.write("</pre></fieldset>")
 
     def _get_template(self, internal_page_name):
@@ -119,8 +122,9 @@ class PyLucidBaseModule(object):
 
     def _render_string_template(self, template, context, debug=False):
         """
-        Render a string-template with the given context and
-        returns the result as a HttpResponse object.
+        Render a string-template with the given context.
+        Should be only used for developing. The normal way is: Use a internal
+        page for templates.
         """
         html = self.__render(template, context, debug)
 
