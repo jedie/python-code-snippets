@@ -45,7 +45,7 @@ plugin_manager_data = {
         "internal_page_info" : {
             "name"              : "sub_menu",
             "description"       : "Administration sub menu",
-            "markup"            : "textile",
+            "markup"            : "tinyTextile",
         },
     },
 }

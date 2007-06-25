@@ -43,7 +43,7 @@ plugin_manager_data = {
         "must_admin"    : False,
         "internal_page_info" : {
             "description"       : "the tinyTextile help page",
-            "markup"            : "textile",
+            "markup"            : "tinyTextile",
         },
     },
 
