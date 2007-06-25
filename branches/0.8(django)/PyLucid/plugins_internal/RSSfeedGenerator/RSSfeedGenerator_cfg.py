@@ -1,8 +1,8 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 
-#___________________________________________________________________________________________________
-# Meta-Angaben
+#_____________________________________________________________________________
+# meta information
 
 __author__      = "Jens Diemer"
 __url__         = "http://www.PyLucid.org"
@@ -11,8 +11,8 @@ __long_description__ = """
 Create a RSS news feed from the last 15 page updates.
 """
 
-#___________________________________________________________________________________________________
-# Module-Manager Daten
+#_____________________________________________________________________________
+# plugin administration data
 
 plugin_manager_data = {
     "lucidTag" : {

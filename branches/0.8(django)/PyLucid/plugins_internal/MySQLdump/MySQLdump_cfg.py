@@ -1,8 +1,8 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 
-#___________________________________________________________________________________________________
-# Meta-Angaben
+#_____________________________________________________________________________
+# meta information
 
 __author__              = "Jens Diemer"
 __url__                 = "http://www.PyLucid.org"
@@ -12,7 +12,7 @@ You can make a SQL dump from you DB. Also you can make a install-dump.
 """
 
 #_____________________________________________________________________________
-# Module-Manager Daten
+# plugin administration data
 
 plugin_manager_data = {
     "menu" : {
@@ -42,7 +42,6 @@ plugin_manager_data = {
         "direct_out"    : True,
     }
 }
-
 plugin_cfg = {
     "default_no_data" : ["log", "session_data", "object_cache"],
     "default character set": "utf8",

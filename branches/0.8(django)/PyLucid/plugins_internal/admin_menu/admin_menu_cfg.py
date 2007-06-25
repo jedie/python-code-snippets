@@ -1,27 +1,22 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 
-#___________________________________________________________________________________________________
-# Meta-Angaben
-
+#_____________________________________________________________________________
+# meta information
 __author__      = "Jens Diemer"
 __url__         = "http://www.PyLucid.org"
 __description__ = "Administration Menu"
 __long_description__ = """"""
 __can_deinstall__ = False
 
-#___________________________________________________________________________________________________
-# Module-Manager Daten
-
-#~ module_manager_debug = True
-module_manager_debug = False
+#_____________________________________________________________________________
+# plugin administration data
 
 global_rights = {
     "must_login"    : True,
     "must_admin"    : True,
     "has_Tags"      : False,
 }
-
 plugin_manager_data = {
     "lucidTag" : {
         "must_login"    : True,

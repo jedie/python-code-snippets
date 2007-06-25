@@ -1,8 +1,8 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 
-#___________________________________________________________________________________________________
-# Meta-Angaben
+#_____________________________________________________________________________
+# meta information
 
 __author__              = "Jens Diemer"
 __url__                 = "http://www.PyLucid.org"
@@ -10,8 +10,8 @@ __description__         = "Stylesheet module"
 __long_description__ = """Puts the Stylesheet into the CMS page."""
 __can_deinstall__ = False
 
-#___________________________________________________________________________________________________
-# Module-Manager Daten
+#_____________________________________________________________________________
+# plugin administration data
 
 plugin_manager_data = {
     "lucidTag" : {
