@@ -1,24 +1,47 @@
 <fieldset>
-<legend>{% trans 'Edit the CMS page' %} '<strong title="{{ PAGE.title|escape }}">{{ PAGE.name|escape }}</strong>'</legend>
-<form action="." method="post">
-  <p id="action_buttons">
-       <input type="submit" value="{% trans 'Save' %}" />
-       <span class="separator">|||</span>
-    <input onclick="self.location.href='{{ url_abort }}'" name="abort" value="{% trans 'Abort' %}" type="reset" />
-       <span class="separator">|||</span>
-    <a href="{{ url_textile_help }}" onclick="OpenInWindow(this.href); return false">tinyTextile {% trans 'Help' %}</a>
-       <span class="separator">|||</span>
-    <a href="{{ url_taglist }}" onclick="OpenInWindow(this.href); return false" title="{% trans 'List of all available PyLucid template tags' %}">{% trans 'tag list' %}</a>
-       <span class="separator">|||</span>
-    <a href="{{ url_django_edit }}" title="{% trans 'Edit this page in the django admin panel.' %}">{% trans 'django panel edit' %}</a>
-       <span class="separator">|||</span>
-       <span class="resize_buttons">
-         <a href="JavaScript:resize_big('id_content');" title="{% trans 'makes the textarea bigger' %}">&nbsp;+&nbsp;</a>
-         <a href="JavaScript:resize_small('id_content');" title="{% trans 'makes the textarea smaller' %}">&nbsp;-&nbsp;</a><br />
-       </span>
-  </p>
-  <table class="form">
-     {{ edit_page_form }}
-  </table>
+<legend>
+    {% trans 'Edit the CMS page' %} '<strong title="{{ PAGE.title|escape }}">{{ PAGE.name|escape }}</strong>'
+</legend>
+<form action="." method="post" id="edit_page_form">
+    <ul id="action_buttons">
+        <li>
+            <input type="submit" value="{% trans 'Save' %}" />
+            <input onclick="self.location.href='{{ url_abort }}'" name="abort" value="{% trans 'Abort' %}" type="reset" />
+        </li><li>
+        <a href="{{ url_textile_help }}" title="tinyTextile {% trans 'help page' %}">
+            <button type="button" onclick="OpenInWindow('{{ url_textile_help }}'); return false">
+             tinyTextile {% trans 'help' %}
+            </button>
+        </a>
+        <a href="{{ url_taglist }}" title="{% trans 'List of all available PyLucid template tags' %}">
+            <button type="button" onclick="OpenInWindow('{{ url_taglist }}'); return false">
+             {% trans 'tag list' %}
+            </button>
+        </a>
+        <a href="{{ url_django_edit }}" title="{% trans 'Edit this page in the django admin panel.' %}">
+            <button type="button" onclick="OpenInWindow('{{ url_django_edit }}'); return false">
+             {% trans 'django panel edit' %}
+            </button>
+        </a>
+        </li><li>
+        <button type="button" class="resize_buttons" onclick="JavaScript:resize_big('id_content'); return false" title="{% trans 'makes the textarea bigger' %}">
+            +
+        </button>
+        <button type="button" class="resize_buttons" onclick="JavaScript:resize_small('id_content'); return false" title="{% trans 'makes the textarea smaller' %}">
+            -
+        </button>
+        </li>
+    </ul>
+    <hr class="seperator" />
+    <ul>
+        {% for field in edit_page_form %}
+            <li title="{{ field.help_text }}" class="{{ field.html_name }}">
+            <label for="{{ field.auto_id }}">{{ field.label }} :</label>
+            {{ field }}
+            <span class="field_help_text">{{ field.help_text }}</span>
+            {% if field.errors %}<li class="field_errors">{{ field.errors }}</li>{% endif %}
+        </li>
+        {% endfor %}
+    </ul>
 </form>
 </fieldset>
