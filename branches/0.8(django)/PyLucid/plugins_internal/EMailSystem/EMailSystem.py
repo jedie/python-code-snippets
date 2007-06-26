@@ -29,17 +29,6 @@ from PyLucid import settings
 TEMPLATE = """
 <form method="post" action=".">
   <table class="form">
-    {% trans 'Select users you a mail wants to send:' %}
-    <ul>
-    {% for user in user_list %}
-      <li>
-        <label>
-          <input id="id_user_list_{{ user.id }}" value="{{ user.id }}" name="user_list" type="checkbox" {% if user.checked %}checked="checked"{% endif %}>
-          {{ user.username }}
-        </label>
-      </li>
-    {% endfor %}
-    </ul>
     {{ form }}
   </table>
   <input type="submit" value="{% trans 'send email' %}" />
@@ -47,32 +36,72 @@ TEMPLATE = """
 """
 
 class MailForm(forms.Form):
+    users = forms.ModelMultipleChoiceField(
+        queryset=User.objects.all(),
+        widget=forms.CheckboxSelectMultiple,
+        help_text=_("Select users you a mail wants to send"),
+    )
     sender = forms.EmailField()
     subject = forms.CharField(
         help_text=_("(The prefix '%s' would be insert.)") % (
             settings.EMAIL_SUBJECT_PREFIX
-        ), min_length=10
+        ), min_length=5
     )
     mail_text = forms.CharField(widget=forms.Textarea,
         max_length=1024, min_length=20
     )
 
 
-class EMailSystem(PyLucidBaseModule):
-    def user_list(self):
 
-        user_list = User.objects.values(
-            "id", "username", "email",
-#            "first_name", "last_name",
-        )
+class EMailSystem(PyLucidBaseModule):
+    def _send_mail(self, cleaned_data):
+        """
+        send the mail. raise SendMailError() on errors.
+        """
+        subject = "%s%s" % (settings.EMAIL_SUBJECT_PREFIX, cleaned_data["subject"])
+
+        recipient_list = []
+        for user in cleaned_data["users"]:
+            if user.email=="":
+                self.page_msg(
+                    _("Can't send to user '%s',"
+                    " because he has a empty email adress!") % user.username
+                )
+            else:
+                recipient_list.append(user.email)
+
+        if recipient_list == []:
+            raise SendMailError(_("No recipient left."))
+
+        try:
+            send_mail(
+                subject = subject,
+                message = cleaned_data["mail_text"],
+                from_email = cleaned_data["sender"],
+                recipient_list = recipient_list,
+            )
+        except Exception, msg:
+            raise SendMailError(_("Error sending mail: %s") % msg)
+
+
+    def user_list(self):
+        """
+        form for sending mails to the django members.
+        """
+        if settings.ALLOW_SEND_MAILS != True:
+            self.page_msg(_("Sending mails deny in your settings.py!"))
+            return
 
         if self.request.method == 'POST':
             mail_form = MailForm(self.request.POST)
             if mail_form.is_valid():
-                # Create the new user
-                self.page_msg("send mail")
-            else:
-                self.page_msg(mail_form.errors)
+                try:
+                    self._send_mail(mail_form.cleaned_data)
+                except SendMailError, msg:
+                    self.page_msg.red(msg)
+                else:
+                    self.page_msg.green(_("Send mail, OK"))
+                    return
         else:
             host = self.request.META.get("HTTP_HOST", settings.EMAIL_HOST)
             # Cut the port number, if exists
@@ -83,22 +112,12 @@ class EMailSystem(PyLucidBaseModule):
             }
             mail_form = MailForm(form_data)
 
-        checked_user = self.request.POST.getlist("user_list")
-        try:
-            checked_user = [int(id) for id in checked_user]
-        except:
-            self.page_msg("Post error")
-        else:
-            for user in user_list:
-                if user["id"] in checked_user:
-                    user["checked"] = True
-
-#        html = mail_form.as_table()
-        html = mail_form.as_p()
-
         context = {
-            "form": html,
-            "user_list": user_list,
+            "form": mail_form.as_p(),
         }
 
-        return self._render_string_template(TEMPLATE, context, debug=True)
+        return self._render_string_template(TEMPLATE, context)#, debug=True)
+
+
+class SendMailError(Exception):
+    pass
