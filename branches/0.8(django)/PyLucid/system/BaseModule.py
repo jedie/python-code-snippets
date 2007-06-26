@@ -64,9 +64,9 @@ class PyLucidBaseModule(object):
 
 
     def _get_template(self, internal_page_name):
-        module_name = self.__class__.__name__ # Get the superior class name
+        plugin_name = self.__class__.__name__ # Get the superior class name
 
-        internal_page_name = ".".join([module_name, internal_page_name])
+        internal_page_name = ".".join([plugin_name, internal_page_name])
 
         # django bug work-a-round
         # http://groups.google.com/group/django-developers/browse_thread/thread/e1ed7f81e54e724a
