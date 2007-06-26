@@ -274,3 +274,6 @@ INSTALL_PASS = ""
 # The table prefix from a old PyLucid installation, if exist.
 # Only used for updating!
 OLD_TABLE_PREFIX = ""
+
+# Permit sending mails with the EMailSystem Plugin:
+ALLOW_SEND_MAILS = True
