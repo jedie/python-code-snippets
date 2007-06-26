@@ -37,6 +37,9 @@ from PyLucid.system.detect_page import get_default_page_id
 
 class EscapedTextarea(forms.Textarea):
     def render(self, name, value, attrs=None):
+        # override the default attributes and make the textarea bigger
+        # Node: The cols size are setup with CSS and "width:100%;"
+        attrs = {'rows': '15'}
         content = super(EscapedTextarea, self).render(name, value, attrs)
         content = content.replace("{", "&#x7B;").replace("}", "&#x7D;")
         return content
