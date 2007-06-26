@@ -62,16 +62,22 @@ class PyLucidBaseModule(object):
         self.response.write(template)
         self.response.write("</pre></fieldset>")
 
+
     def _get_template(self, internal_page_name):
         module_name = self.__class__.__name__ # Get the superior class name
 
         internal_page_name = ".".join([module_name, internal_page_name])
+
+        # django bug work-a-round
+        # http://groups.google.com/group/django-developers/browse_thread/thread/e1ed7f81e54e724a
+        internal_page_name = internal_page_name.replace("_", " ")
 
         try:
             return PagesInternal.objects.get(name = internal_page_name)
         except PagesInternal.DoesNotExist, err:
             msg = "internal page '%s' not found! (%s)" % (internal_page_name, err)
             raise PagesInternal.DoesNotExist(msg)
+
 
     def _add_js_css_data(self, internal_page):
         """
