@@ -313,6 +313,11 @@ def install_internalpage(plugin, package_name, plugin_name, plugin_config):
             print
 
         internal_page_name = ".".join([plugin_name, internal_page_name])
+
+        # django bug work-a-round
+        # http://groups.google.com/group/django-developers/browse_thread/thread/e1ed7f81e54e724a
+        internal_page_name = internal_page_name.replace("_", " ")
+
         print "install internal page '%s'..." % internal_page_name,
         internal_page = PagesInternal.objects.create(
             name = internal_page_name,
