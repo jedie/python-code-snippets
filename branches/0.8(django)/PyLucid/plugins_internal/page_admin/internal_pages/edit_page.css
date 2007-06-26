@@ -1,26 +1,55 @@
-#action_buttons {
-    padding: 0.1em 0.3em 0.1em 0.3em;
+#edit_page_form ul {
+    list-style-type:none;
+    padding: 0px;
+}
+#edit_page_form li {
+    padding: 4px;
+}
+#edit_page_form label {
+    float: left;
+    padding-right: 4px;
+    text-align: right;
+    width: 6.5em;
+}
+#edit_page_form input, #edit_page_form select {
+    width: 30%;
+}
+#edit_page_form .field_help_text {
+    font-size:0.7em;
+}
+
+#edit_page_form .content label, #edit_page_form .content .field_help_text {
+    /* hide label and help_text around the textarea */
+    display:none;
+}
+#edit_page_form .keywords input, #edit_page_form .description input {
+    /* make keywords and description input bigger */
+    width: 75%;
+}
+#edit_page_form .keywords .field_help_text, #edit_page_form .description .field_help_text {
+    /* setup the help text for keywords and description */
+    display: block;
+    padding-left: 10em;
+}
+#edit_page_form textarea, hr.seperator, #action_buttons {
+    /* make the space between the action buttons and the text area smaller */
+    margin: 0;
+    padding: 0;
+}
+
+#action_buttons li {
+    float: left;
+    padding: 5px 10px 5px 10px;
     background-color: #09C;
+}
+hr.seperator {
+    border: 0;
+    height: 0;
+    clear: both;
 }
 #action_buttons a {
     text-decoration:none;
-    margin: 0px;
-    padding: 0.1em 0.5em 0.1em 0.5em;
-    font-family:Verdana;
-    line-height:2em;
-    font-size:0.75em;
 }
-#action_buttons a:link {
-    color: black;
-    background-color: #f5f5f5;
-    border: 1px solid;
-    border-color: #ddd #555 #555 #ddd;
-}
-#action_buttons a:hover {
-    color: white;
-    background-color: #aaa;
-    border-color: #555 #ddd #ddd #555;
-}
-#action_buttons .separator {
-    padding: 0 0.3em 0 0.3em;
+#action_buttons .resize_buttons {
+    width: 30px;
 }

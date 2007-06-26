@@ -19,7 +19,7 @@ function tabs(e) {
     }
     //~ if (e.keyCode == lastkey) { return true; }
     //~ lastkey = e.keyCode
-    
+
     // For Internet Explorer
     if (document.selection && !textarea.selectionStart &&
         textarea.selectionStart != 0) {
@@ -55,12 +55,12 @@ function tabs_support(textarea_id) {
 page_content_changed = 0;
 
 // resize the textarea
-function resize_big() {
-    textarea = document.getElementById("page_content");
+function resize_big(textarea_id) {
+    textarea = document.getElementById(textarea_id);
     textarea.rows = textarea.rows*1.2;
 }
-function resize_small() {
-    textarea = document.getElementById("page_content");
+function resize_small(textarea_id) {
+    textarea = document.getElementById(textarea_id);
     textarea.rows = textarea.rows/1.2;
 }
 

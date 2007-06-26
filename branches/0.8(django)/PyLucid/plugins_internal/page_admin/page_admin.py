@@ -31,10 +31,31 @@ from PyLucid.db.page import flat_tree_list, get_sitemap_tree
 from PyLucid.system.BaseModule import PyLucidBaseModule
 from PyLucid.system.detect_page import get_default_page_id
 
+#______________________________________________________________________________
+# Escape TextFields
+# http://groups.google.com/group/django-users/browse_thread/thread/d4d9a8c5e7019762
+
+class EscapedTextarea(forms.Textarea):
+    def render(self, name, value, attrs=None):
+        content = super(EscapedTextarea, self).render(name, value, attrs)
+        content = content.replace("{", "&#x7B;").replace("}", "&#x7D;")
+        return content
+
+class EscapedTextField(forms.Field):
+    widget = EscapedTextarea
+
+def formfield_callback(field, **kwargs):
+    if isinstance(field, models.TextField):
+        return EscapedTextField(**kwargs)
+    else:
+        return field.formfield(**kwargs)
+
+#______________________________________________________________________________
 
 class SelectEditPageForm(forms.Form):
     page_id = forms.IntegerField()
 
+#______________________________________________________________________________
 
 class page_admin(PyLucidBaseModule):
 
@@ -58,12 +79,17 @@ class page_admin(PyLucidBaseModule):
             edit_page_id  = self.current_page.id
             page_instance = self.current_page
 
+        # FIXME: Quick hack 'escape' Template String.
+        # With the formfield_callback we switched the widget render method
+        # and escape the characters "{" and "}" so they are invisible to the
+        # django template engine and editable ;)
         PageForm = forms.models.form_for_instance(
             page_instance, fields=(
                 "content", "parent",
                 "name", "shortcut", "title",
                 "keywords", "description", "markup",
             ),
+            formfield_callback=formfield_callback
         )
 
         if self.request.method == 'POST':
@@ -77,25 +103,18 @@ class page_admin(PyLucidBaseModule):
         else:
             html_form = PageForm()
 
-        edit_page_form = html_form.as_p()
-
-        # FIXME: Quick hack 'escape' Template String.
-        # So they are invisible to the django template engine;)
-        edit_page_form = edit_page_form.replace("{", "&#x7B;")\
-                                                        .replace("}", "&#x7D;")
-
         url_django_edit = self.URLs.adminLink(
             "PyLucid/page/%s/" % edit_page_id
         )
 
         context = {
-            "edit_page_form" : edit_page_form,
+            "edit_page_form" : html_form,
             "url_django_edit": url_django_edit,
             "url_abort": "#",
             "url_textile_help": self.URLs.methodLink("tinyTextile_help"),
             "url_taglist": self.URLs.methodLink("tag_list"),
         }
-        self._render_template("edit_page", context)
+        self._render_template("edit_page", context)#, debug=True)
 
     def select_edit_page(self):
         """
