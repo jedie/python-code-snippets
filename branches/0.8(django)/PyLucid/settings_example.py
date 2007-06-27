@@ -165,6 +165,8 @@ CACHE_BACKEND = "dummy:///"
 CACHE_MIDDLEWARE_SECONDS = 240
 
 # Cache only anonymous requests, not those made by a logged-in user.
+# Note: The normal cms page request will always be cached only for
+#    anonymous users.
 CACHE_MIDDLEWARE_ANONYMOUS_ONLY = True
 
 

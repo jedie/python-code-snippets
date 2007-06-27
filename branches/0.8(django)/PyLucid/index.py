@@ -24,10 +24,11 @@
 #    from django.core import management
 #    management.setup_environ(settings) # init django
 
+import datetime, md5
 
 from django.http import HttpResponse
 from django.template import RequestContext
-from django.views.decorators.cache import cache_page
+from django.core.cache import cache
 
 from PyLucid import models, settings
 
@@ -111,20 +112,70 @@ def _get_context(request, current_page_obj):
     return context
 
 
+def patch_response_headers(response, cache_timeout, ETag,
+                                                                                    last_modified=None):
+    """
+    Adds some useful headers to the given HttpResponse object:
+        ETag, Last-Modified, Expires and Cache-Control
 
-# Cache every normal cms page view with django.middleware.cache.CacheMiddleware
-# Related Links:
-#  - http://code.djangoproject.com/ticket/4649
-#  - http://www.python-forum.de/post-71486.html
-@cache_page
+    Original version: django.utils.cache.patch_response_headers()
+    """
+    now = datetime.datetime.utcnow()
+    if not response.has_header('ETag'):
+        response['ETag'] = ETag
+    if not response.has_header('Last-Modified'):
+        if not last_modified:
+            last_modified = now
+        response['Last-Modified'] = last_modified.strftime(
+            '%a, %d %b %Y %H:%M:%S GMT'
+        )
+    if not response.has_header('Expires'):
+        expires = now + datetime.timedelta(0, cache_timeout)
+        response['Expires'] = expires.strftime(
+            '%a, %d %b %Y %H:%M:%S GMT'
+        )
+
+
 def index(request, url):
     """
     The main index method.
-    Response a normal page request: Display a requested cms page.
+    Return a normal cms page request.
+    Every Request will be cached for anonymous user.
     """
+    if request.user.is_authenticated():
+        # Don't cache for users how are log-in. Otherwise they don't see the
+        # admin menu.
+        use_cache = False
+    else:
+        use_cache = True
+        # Try to get the cms page request from the cache
+        cache_key = ["PyLucid_index_view"]
+        if url == "":
+            cache_key.append("/")
+        else:
+            cache_key.append(url)
+        cache_key = "_".join(cache_key)
+        cache_key = md5.new(cache_key).hexdigest()
+
+        response = cache.get(cache_key)
+        if response:
+            # This page has been cached in the past, use the cache data:
+            return response
+
+    # Get the response for the requested cms page:
     current_page_obj = get_current_page_obj(request, url)
     context = _get_context(request, current_page_obj)
-    return _render_cms_page(context)
+    response = _render_cms_page(context)
+
+    if use_cache:
+        # Cache the cms page
+        cache_timeout = settings.CACHE_MIDDLEWARE_SECONDS
+        lastupdatetime = current_page_obj.lastupdatetime
+        patch_response_headers(
+            response, cache_timeout, cache_key, lastupdatetime
+        )
+        cache.set(cache_key, response, cache_timeout)
+    return response
 
 
 def handle_command(request, page_id, module_name, method_name, url_args):
