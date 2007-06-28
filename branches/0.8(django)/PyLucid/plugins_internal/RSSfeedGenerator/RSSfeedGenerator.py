@@ -77,9 +77,13 @@ class RSSfeedGenerator(PyLucidBaseModule):
             self.page_msg("count:", count)
             self.page_msg("cache_key:", cache_key)
 
-        page_updates = cache.get(cache_key)
-
         context = {}
+
+        if self.request.user.is_anonymous():
+            # Use only the cache for anonymous users.
+            page_updates = cache.get(cache_key)
+        else:
+            page_updates = None
 
         if page_updates != None:
             context["from_cache"] = True
