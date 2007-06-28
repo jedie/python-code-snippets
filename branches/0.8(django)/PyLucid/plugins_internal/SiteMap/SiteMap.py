@@ -36,7 +36,6 @@ class SiteMap(PyLucidBaseModule):
 
         sitemap_tree = get_sitemap_tree()
         html = self.get_html(sitemap_tree)
-        cache.set(CACHE_KEY, html, 240)
 
         self.response.write(html)
 
