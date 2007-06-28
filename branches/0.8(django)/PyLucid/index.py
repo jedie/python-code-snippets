@@ -158,14 +158,11 @@ def index(request, url):
     Every Request will be cached for anonymous user. For the cache_key we use
     the page shortcut from the url.
     """
-    if request.user.is_authenticated():
-        # Don't cache for users how are log-in. Otherwise they don't see the
-        # admin menu.
-        use_cache = False
-    else:
+    # Cache only for anonymous users. Otherwise users how are log-in don't see
+    # the dynamic integrate admin menu.
+    use_cache = request.user.is_anonymous()
+    if use_cache:
         # Try to get the cms page request from the cache
-        use_cache = True
-
         cache_key, response = get_cached_data(url)
         if response:
             # This page has been cached in the past, use the cache data:

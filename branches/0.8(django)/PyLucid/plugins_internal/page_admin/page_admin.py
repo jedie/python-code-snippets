@@ -159,13 +159,19 @@ class page_admin(PyLucidBaseModule):
                 html_form.save()
                 # Delete the old page data cache:
                 self._delete_cache(page_instance)
-                # refresh the current page data:
-                self._refresh_curent_page(page_instance)
 
-                self.page_msg(_("New page data saved."))
+                if page_instance.id == self.current_page.id:
+                    # Normal page edit
+                    self.page_msg(_("Page data updated."))
+                    return
+                else:
+                    self.page_msg(_("The new page created."))
 
-                # The new content is only important for self.new_page():
-                return self.current_page.content
+                    # refresh the current page data:
+                    self._refresh_curent_page(page_instance)
+
+                    # return the new page content for rendering
+                    return self.current_page.content
         else:
             html_form = PageForm()
 
