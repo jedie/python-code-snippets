@@ -149,9 +149,23 @@ class Page(models.Model):
 
     def get_absolute_url(self):
         """
-        permanent link?
+        Get the absolute url (without the domain/host part)
         """
-        return "/_goto/%s" % self.shortcut
+        parent_shortcut = ""
+        if self.parent:
+            parent_shortcut = self.parent.get_absolute_url()
+            return parent_shortcut + self.shortcut + "/"
+        else:
+            return "/" + self.shortcut + "/"
+
+    def get_verbose_title(self):
+        """
+        TODO: Should we handle name and title on a other way...
+        """
+        if self.title and self.title != self.name:
+            return self.name + " - " + self.title
+        else:
+            return self.name
 
     def get_style_name(self):
         """
@@ -175,6 +189,7 @@ class Page(models.Model):
 
     def __unicode__(self):
         return self.shortcut
+
 
 class JS_LoginData(models.Model):
     user = models.ForeignKey(User)

@@ -38,7 +38,7 @@ class page_update_list(PyLucidBaseModule):
 
         context = {"page_updates": page_updates}
 
-        self._render_template("PageUpdateTable", context)
+        self._render_template("PageUpdateTable", context)#, debug=True)
 
 
 
