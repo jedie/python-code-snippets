@@ -69,8 +69,6 @@ def get_update_info(context, count=10):
     data = Page.objects.values(
         "id", "name", "title", "lastupdatetime", "lastupdateby"
     ).order_by('-lastupdatetime')
-    context["page_msg"](data)
-
     data = data.filter(showlinks = True)
 
     if request.user.is_anonymous():
