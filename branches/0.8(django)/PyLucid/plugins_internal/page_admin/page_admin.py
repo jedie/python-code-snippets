@@ -94,6 +94,8 @@ class page_admin(PyLucidBaseModule):
             edit_page_id  = self.current_page.id
             page_instance = self.current_page
 
+        page_instance.lastupdateby = self.request.user
+
         return edit_page_id, page_instance
 
 

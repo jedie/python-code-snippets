@@ -59,42 +59,20 @@ def get_absolute_link_by_id(context, page_id):
     url = get_link_by_id(page_id)
     return "".join((index, url))
 
+
 def get_update_info(context, count=10):
     """
     get the last >count< page updates.
     Used by page_update_list and the RSSfeedGenerator
     """
-    request = context["request"]
-
-    data = Page.objects.values(
-        "id", "name", "title", "lastupdatetime", "lastupdateby"
-    ).order_by('-lastupdatetime')
+    data = Page.objects.order_by('-lastupdatetime')
     data = data.filter(showlinks = True)
 
+    request = context["request"]
     if request.user.is_anonymous():
         data = data.exclude(permitViewPublic = False)
 
     data = data[:count]
-
-    userlist = list(set([item["lastupdateby"] for item in data]))
-    userlist = User.objects.in_bulk(userlist)
-
-    for item in data:
-        item["link"] = get_absolute_link_by_id(context, item["id"])
-
-        pageName = item["name"]
-        pageTitle = item["title"]
-        if pageTitle in (None, "", pageName):
-            # Eine Seite muß nicht zwingent ein Title haben
-            # oder title == name :(
-            item["name_title"] = pageName
-        else:
-            item["name_title"] = "%s - %s" % (pageName, pageTitle)
-
-        item["date"] = item["lastupdatetime"].strftime(_("%Y-%m-%d - %H:%M"))
-
-        item["user"] = userlist.get(item["lastupdateby"], "[%s]" % _("unknown"))
-
     return data
 
 
