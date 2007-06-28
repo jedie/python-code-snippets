@@ -33,7 +33,7 @@ class admin_menu(PyLucidBaseModule):
 
     def sub_menu(self):
         context = {
-            "commandURLprefix": self.URLs["commandBase"],
+            "commandURLprefix": self.URLs.get_command_base(),
             "adminURLprefix": self.URLs["adminBase"],
         }
 #        self.page_msg(context)

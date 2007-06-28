@@ -58,7 +58,7 @@ urls += (
     # For the cach system we make a hash from the url and in a normal
     # cms page request the url contains only the cms page shortcuts.
     # The shortcuts contains only these chars: [a-zA-Z0-9_/]
-    (r'^([\w/]*?)$', 'PyLucid.index.index'),
+    (r'^([\w/]*?)/?$', 'PyLucid.index.index'),
 )
 
 #print urls

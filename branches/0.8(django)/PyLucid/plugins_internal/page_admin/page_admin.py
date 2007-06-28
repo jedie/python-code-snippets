@@ -25,7 +25,9 @@ import cgi
 from django import newforms as forms
 from django.db import models
 from django.http import HttpResponse, HttpResponseRedirect
+from django.core.cache import cache
 
+from PyLucid import settings
 from PyLucid.models import Page, Plugin
 from PyLucid.db.page import flat_tree_list, get_sitemap_tree
 from PyLucid.system.BaseModule import PyLucidBaseModule
@@ -37,17 +39,23 @@ from PyLucid.system.detect_page import get_default_page_id
 
 class EscapedTextarea(forms.Textarea):
     def render(self, name, value, attrs=None):
-        # override the default attributes and make the textarea bigger
-        # Node: The cols size are setup with CSS and "width:100%;"
+        """
+        -Escape/Quote the django template tags chars "{" and "}" to the HTML
+            character entity.
+        -Override the default textarea attributes and make it bigger
+            Node: The cols size are setup with CSS and "width:100%;"
+        """
         attrs = {'rows': '15'}
         content = super(EscapedTextarea, self).render(name, value, attrs)
         content = content.replace("{", "&#x7B;").replace("}", "&#x7D;")
         return content
 
 class EscapedTextField(forms.Field):
+    "Change the textarea widget"
     widget = EscapedTextarea
 
 def formfield_callback(field, **kwargs):
+    "change text fields to our own EscapedTextField"
     if isinstance(field, models.TextField):
         return EscapedTextField(**kwargs)
     else:
@@ -62,34 +70,83 @@ class SelectEditPageForm(forms.Form):
 
 class page_admin(PyLucidBaseModule):
 
-    def edit_page(self, edit_page_id=None, page_instance=None):
+    def _get_edit_page(self, edit_page_id, new_page_instance):
         """
-        edit a existing page
+        returned the right id and instance for the edit form.
         """
-        if page_instance != None:
-            # Edit a new page
-            edit_page_id  = self.current_page.id
+        if new_page_instance != None:
+            # Edit a new page, the skeleton is given from self.new_page()
+            edit_page_id = self.current_page.id
+            page_instance = new_page_instance
+
         elif edit_page_id != None:
             # Edit the page with the given ID. ("select page to edit" function)
             try:
                 edit_page_id = int(edit_page_id.strip("/"))
+                #edit_page_id = 9999 # Test a wrong ID from the POST data
                 page_instance = Page.objects.get(id=edit_page_id)
-            except Exception, e:
-                self.page_msg("Wrong page ID! (%s)" % e)
-                return
+            except Page.DoesNotExist, msg:
+                raise Page.DoesNotExist(_("Wrong page ID! (%s)") % msg)
+
         else:
-            # Edit the current cms page
+            # No ID or instance given
+            # The "edit page" link was used -> Edit the current cms page
             edit_page_id  = self.current_page.id
             page_instance = self.current_page
 
+        return edit_page_id, page_instance
+
+
+    def _delete_cache(self, page_instance):
+        """
+        Delete the old page data in the cache, so anonymous users
+        see directly the new page content
+        """
+        shortcut = page_instance.shortcut
+        cache_key = settings.PAGE_CACHE_PREFIX + shortcut
+        cache.delete(cache_key)
+
+    def _refresh_curent_page(self, page_instance):
+        """
+        If a new page created, PyLucid should display this new page
+        and e.g. the URLs should used the new current page id. So here we
+        update the global current page object.
+        """
+        self.current_page.id = page_instance.id
+        self.current_page = page_instance
+        self.context["PAGE"] = page_instance
+
+
+    def edit_page(self, edit_page_id=None, new_page_instance=None):
+        """
+        Edit a cms page.
+            - Display the html form for inline editing.
+            - Save the new page data, sent by POST.
+
+        Used for:
+            - The admin menu "edit page" link.
+            - The "select page to edit" function. (self.select_edit_page)
+            - The admin menu "new page" link. (self.new_page)
+        """
+        try:
+            edit_page_id, page_instance = self._get_edit_page(
+                edit_page_id, new_page_instance
+            )
+        except Page.DoesNotExist, msg:
+            # The page ID from the "select page to edit" POST data is wrong.
+            self.page_msg.red(msg)
+            return
+
         # FIXME: Quick hack 'escape' Template String.
         # With the formfield_callback we switched the widget render method
-        # and escape the characters "{" and "}" so they are invisible to the
-        # django template engine and editable ;)
+        # and escape/quote the characters "{" and "}" so they are invisible to
+        # the django template engine and the tag (not the result of the tag) is
+        # editable ;)
+        # http://www.djangoproject.com/documentation/newforms/#overriding-the-default-field-types
         PageForm = forms.models.form_for_instance(
             page_instance, fields=(
                 "content", "parent",
-                "name", "shortcut", "title",
+                "name", "title",
                 "keywords", "description", "markup",
             ),
             formfield_callback=formfield_callback
@@ -98,11 +155,17 @@ class page_admin(PyLucidBaseModule):
         if self.request.method == 'POST':
             html_form = PageForm(self.request.POST)
             if html_form.is_valid():
-                # save the new page data
+                # Save the new page data into the database:
                 html_form.save()
-                self.current_page = html_form
-                self.page_msg("page updated.")
-                return
+                # Delete the old page data cache:
+                self._delete_cache(page_instance)
+                # refresh the current page data:
+                self._refresh_curent_page(page_instance)
+
+                self.page_msg(_("New page data saved."))
+
+                # The new content is only important for self.new_page():
+                return self.current_page.content
         else:
             html_form = PageForm()
 
@@ -147,9 +210,11 @@ class page_admin(PyLucidBaseModule):
     def new_page(self):
         """
         make a new CMS page.
+        Create a new page instance skeleton.
+        Inherit some things from the current page.
         """
         parent = self.current_page
-        # make a new page object:
+        # make a new page skeleton object:
         new_page = Page(
             name             = "New Page",
             shortcut         = "NewPage",
@@ -164,8 +229,11 @@ class page_admin(PyLucidBaseModule):
             permitEditGroup  = parent.permitEditGroup,
             parent           = parent,
         )
-        # display the normal edit page dialog for the new cms page:
-        self.edit_page(page_instance=new_page)
+        # Display the normal edit page dialog for the new cms page.
+        # After the html form sended via POST, the new page created in the
+        # database and PyLucid should render this new page and not the old
+        # current page. So here we retuned the new page content
+        return self.edit_page(new_page_instance=new_page)
 
     #___________________________________________________________________________
 
@@ -205,6 +273,12 @@ class page_admin(PyLucidBaseModule):
             raise DeletePageError(msg)
         else:
             self.page_msg(_("Page with id: %s delete successful.") % id)
+
+        if id == self.current_page.id:
+            # The current page was deleted, so we must go to a other page.
+            # The easyest way, if to go to the default page ;)
+            self.current_page.id = default_page_id
+            self.current_page = Page.objects.get(id=default_page_id)
 
 
     def _process_delete_pages(self):

@@ -48,3 +48,9 @@ INSTALL_HELP_URL = "http://www.pylucid.org/index.py/InstallPyLucid/"
 
 # How are the DB initial database data stored?
 INSTALL_DATA_DIR = 'PyLucid/db_dump_datadir'
+
+
+#_____________________________________________________________________________
+# chaching
+
+PAGE_CACHE_PREFIX = "PyLucid_page_cache_"

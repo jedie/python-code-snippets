@@ -35,7 +35,8 @@ class URLs(dict):
 
     def setup_URLs(self):
         """
-        Set some base urls, which are same for every Request.
+        Set some base urls, which are same for every Request and inside the
+        response would be built.
         """
         self["cwd"] = os.getcwdu()
         self["host"] = self.request.META['HTTP_HOST']
@@ -51,11 +52,6 @@ class URLs(dict):
 
         self["absoluteIndex"] = self.addSlash(
             "".join((self["hostname"], self["scriptRoot"]))
-        )
-
-        self["commandBase"] = posixpath.join(
-            self["scriptRoot"], settings.COMMAND_URL_PREFIX,
-            str(self.context["PAGE"].id)
         )
         self["adminBase"] = posixpath.join(
             self["scriptRoot"], settings.ADMIN_URL_PREFIX
@@ -96,13 +92,27 @@ class URLs(dict):
 
     #__________________________________________________________________________
 
+    def get_command_base(self):
+        """
+        Generate the command base for self.commandLink() and self.methodLink().
+        Note: This is extra not build in self.setup_URLs(), because a Plugin
+        can change the current page!
+        e.g.: After a new page created, PyLucid goto this new page and every
+        command/method link should use the new page id.
+        """
+        return posixpath.join(
+            self["scriptRoot"], settings.COMMAND_URL_PREFIX,
+            str(self.context["PAGE"].id)
+        )
+
     def commandLink(self, plugin_name, method_name, args=None, addSlash=True):
         """
         generate a command link to the given plugin and method
         - args can be a list, tuple or a string.
         - addSlash=False if the url has a filename.
         """
-        parts = [self["commandBase"], plugin_name, method_name]
+        command_base = self.get_command_base()
+        parts = [command_base, plugin_name, method_name]
         return self._generate_url(parts, args, addSlash)
 
     def methodLink(self, method_name, args=None, addSlash=True):
@@ -111,7 +121,8 @@ class URLs(dict):
         - args can be a list, tuple or a string.
         - addSlash=False if the url has a filename.
         """
-        parts = [self["commandBase"], self.current_plugin, method_name]
+        command_base = self.get_command_base()
+        parts = [command_base, self.current_plugin, method_name]
         return self._generate_url(parts, args, addSlash)
 
     def adminLink(self, url):

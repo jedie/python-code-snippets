@@ -28,21 +28,15 @@ __version__= "$Rev$"
 from PyLucid.db.page import get_sitemap_tree
 from PyLucid.system.BaseModule import PyLucidBaseModule
 
-from django.core.cache import cache
-CACHE_KEY = "sitemap"
 
 class SiteMap(PyLucidBaseModule):
 
     def lucidTag(self):
         """ Baut die SiteMap zusammen """
 
-        html = cache.get(CACHE_KEY)
-        if html == None:
-            sitemap_tree = get_sitemap_tree()
-            html = self.get_html(sitemap_tree)
-            cache.set(CACHE_KEY, html, 240)
-        else:
-            self.response.write("<small>(from the cache.)</small>")
+        sitemap_tree = get_sitemap_tree()
+        html = self.get_html(sitemap_tree)
+        cache.set(CACHE_KEY, html, 240)
 
         self.response.write(html)
 

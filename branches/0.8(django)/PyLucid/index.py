@@ -36,7 +36,7 @@ from PyLucid.system import plugin_manager
 from PyLucid.system.response import SimpleStringIO
 from PyLucid.system.exceptions import AccessDeny
 from PyLucid.system.page_msg import PageMessages
-from PyLucid.system.detect_page import get_current_page_obj
+from PyLucid.system.detect_page import get_current_page_obj, get_default_page_id
 from PyLucid.system.URLs import URLs
 
 from PyLucid.tools.content_processors import apply_markup, render_template
@@ -112,52 +112,61 @@ def _get_context(request, current_page_obj):
     return context
 
 
-def patch_response_headers(response, cache_timeout, ETag,
-                                                                                    last_modified=None):
+def patch_response_headers(response, cache_timeout, ETag, last_modified):
     """
     Adds some useful headers to the given HttpResponse object:
         ETag, Last-Modified, Expires and Cache-Control
 
     Original version: django.utils.cache.patch_response_headers()
     """
+    response['ETag'] = ETag
+    response['Last-Modified'] = last_modified.strftime(
+        '%a, %d %b %Y %H:%M:%S GMT'
+    )
     now = datetime.datetime.utcnow()
-    if not response.has_header('ETag'):
-        response['ETag'] = ETag
-    if not response.has_header('Last-Modified'):
-        if not last_modified:
-            last_modified = now
-        response['Last-Modified'] = last_modified.strftime(
-            '%a, %d %b %Y %H:%M:%S GMT'
-        )
-    if not response.has_header('Expires'):
-        expires = now + datetime.timedelta(0, cache_timeout)
-        response['Expires'] = expires.strftime(
-            '%a, %d %b %Y %H:%M:%S GMT'
-        )
+    expires = now + datetime.timedelta(0, cache_timeout)
+    response['Expires'] = expires.strftime('%a, %d %b %Y %H:%M:%S GMT')
+
+
+def get_cached_data(url):
+    """
+    -Build the cache_key from the given url. Use the last page shortcut.
+    -retuned the cache_key and the page data.
+    """
+    if url == "":
+        # Request without a shortcut -> request the default page
+        shortcut = "/"
+    else:
+        # Note: We use append_slash, but the url pattern striped the last
+        #     slash out.
+        # e.g.: '/page1/page2/page3' -> ['/page1/page2', 'page3'] -> 'page3'
+        shortcut = url.rsplit("/",1)[-1]
+
+    cache_key = settings.PAGE_CACHE_PREFIX + shortcut
+    #print "Used cache key:", cache_key
+
+    # Get the page data from the cache.
+    response = cache.get(cache_key)
+
+    return cache_key, response
 
 
 def index(request, url):
     """
     The main index method.
     Return a normal cms page request.
-    Every Request will be cached for anonymous user.
+    Every Request will be cached for anonymous user. For the cache_key we use
+    the page shortcut from the url.
     """
     if request.user.is_authenticated():
         # Don't cache for users how are log-in. Otherwise they don't see the
         # admin menu.
         use_cache = False
     else:
-        use_cache = True
         # Try to get the cms page request from the cache
-        cache_key = ["PyLucid_index_view"]
-        if url == "":
-            cache_key.append("/")
-        else:
-            cache_key.append(url)
-        cache_key = "_".join(cache_key)
-        cache_key = md5.new(cache_key).hexdigest()
+        use_cache = True
 
-        response = cache.get(cache_key)
+        cache_key, response = get_cached_data(url)
         if response:
             # This page has been cached in the past, use the cache data:
             return response
@@ -168,13 +177,17 @@ def index(request, url):
     response = _render_cms_page(context)
 
     if use_cache:
-        # Cache the cms page
+        # It's a anonymous user -> Cache the cms page.
         cache_timeout = settings.CACHE_MIDDLEWARE_SECONDS
-        lastupdatetime = current_page_obj.lastupdatetime
+        # Add some headers for the browser cache
         patch_response_headers(
-            response, cache_timeout, cache_key, lastupdatetime
+            response, cache_timeout,
+            ETag = md5.new(cache_key).hexdigest(),
+            last_modified = current_page_obj.lastupdatetime,
         )
+        # Save the page into the cache
         cache.set(cache_key, response, cache_timeout)
+
     return response
 
 
@@ -182,7 +195,19 @@ def handle_command(request, page_id, module_name, method_name, url_args):
     """
     handle a _command request
     """
-    current_page_obj = models.Page.objects.get(id=int(page_id))
+    try:
+        current_page_obj = models.Page.objects.get(id=int(page_id))
+    except models.Page.DoesNotExist:
+        # The ID in the url is wrong -> goto the default page
+        default_page_id = get_default_page_id()
+        current_page_obj = models.Page.objects.get(id=default_page_id)
+        request.user.message_set.create(
+            message=_(
+                "Info: The page ID in the url is wrong."
+                " (goto default page.)"
+            )
+        )
+
     context = _get_context(request, current_page_obj)
 
     local_response = SimpleStringIO()
