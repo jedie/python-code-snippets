@@ -49,7 +49,7 @@ a:hover {
 </head>
 <body>
 <a name="top"></a>
-<h3>PyLucid v{{ version }} - setup@<a href="{% url PyLucid.index.index . %}" title="{% trans 'goto your PyLucid CMS page' %}">{{ http_host }}</a></h3>
+<h3>PyLucid v{{ version }} - setup@<a href="/" title="{% trans 'goto your PyLucid CMS page' %}">{{ http_host }}</a></h3>
 {% if not no_menu_link %}<p><a href="{% url PyLucid.install.index.menu . %}">&#xAB; {% trans 'back to menu' %}</a></p>{% endif %}
 <lucidTag:page_msg/>
 {% block content %}{% endblock %}
