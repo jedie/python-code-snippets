@@ -69,6 +69,7 @@ def get_update_info(context, count=10):
     data = Page.objects.values(
         "id", "name", "title", "lastupdatetime", "lastupdateby"
     ).order_by('-lastupdatetime')
+    context["page_msg"](data)
 
     data = data.filter(showlinks = True)
 
@@ -94,7 +95,7 @@ def get_update_info(context, count=10):
 
         item["date"] = item["lastupdatetime"].strftime(_("%Y-%m-%d - %H:%M"))
 
-        item["user"] = userlist.get("lastupdateby", "[%s]" % _("unknown"))
+        item["user"] = userlist.get(item["lastupdateby"], "[%s]" % _("unknown"))
 
     return data
 
