@@ -104,7 +104,8 @@ class Page(models.Model):
 
     class Admin:
         list_display = (
-            "id", "shortcut", "name", "title", "description", "lastupdatetime"
+            "id", "shortcut", "name", "title", "description",
+            "lastupdatetime", "lastupdateby"
         )
         list_display_links = ("shortcut",)
         list_filter = (
@@ -142,6 +143,8 @@ class Page(models.Model):
             # A new page created
             exclude_shortcut = None
         self.shortcut = getUniqueShortcut(self.shortcut, exclude_shortcut)
+
+
         super(Page, self).save() # Call the "real" save() method
 
     def get_absolute_url(self):
@@ -260,6 +263,12 @@ class Plugin(models.Model):
     active = models.BooleanField(default=False,
         help_text="Is this plugin is enabled and useable?"
     )
+
+    class Meta:
+        permissions = (
+            # Permission identifier     human-readable permission name
+            ("can_use",                 "Can use the plugin"),
+        )
 
     class Admin:
         list_display = (
