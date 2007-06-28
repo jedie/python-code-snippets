@@ -131,43 +131,39 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = False   # Whether sessions expire when a user 
 
 #_____________________________________________________________________________
 # CACHE
+#
 # http://www.djangoproject.com/documentation/cache/
-
-# The cache backend to use. Must have for the CacheMiddleware.
+#
+# In PyLucid every normal cms page request would be cached for anonymous users.
+# For this cms page cache a working cache backend is needed.
+#
 # Note:
 #    -You can test available backends in the _install section!
 #
-# 'dummy:///' - Dummy caching:
+# Dummy caching ('dummy:///'):
 #    The default non-caching. It just implements the cache interface without
 #    doing anything.
+#
 # Database caching:
-#    You must create the cache tables manually in the shell. Look at the docs!
-# Filesystem caching:
+#    You must create the cache tables manually in the shell. Look at the django
+#    cache documentation!
+#
+# Filesystem caching (e.g. 'file:///tmp'):
 #    Usefull if memcache is not available. You should check if it allowed to
 #    make temp files! You can test this in the PyLucid _install section!
-# 'locmem:///' - Local-memory caching:
+#
+# Local-memory caching ('locmem:///'):
 #    Not useable with CGI! Every Request starts with a empty cache ;)
 #    Waring: On shared webhosting, the available memory can be limited.
-# 'simple:///' - Simple caching
-#    Only for development!
+#
+# Simple caching ('simple:///'):
+#    It should only be used in development or testing environments.
 
-# Default: "dummy:///" (No cache)
+# Default: "dummy:///" # (No caching)
 CACHE_BACKEND = "dummy:///"
 
-#_____________________________________________________________________________
-# PAGE CACHE
-#
-# In PyLucid every normal cms page request would be cached, if the CACHE_BACKEND
-# works.
-#
-
 # The number of seconds each cms page should be cached.
-CACHE_MIDDLEWARE_SECONDS = 240
-
-# Cache only anonymous requests, not those made by a logged-in user.
-# Note: The normal cms page request will always be cached only for
-#    anonymous users.
-CACHE_MIDDLEWARE_ANONYMOUS_ONLY = True
+CACHE_MIDDLEWARE_SECONDS = 600
 
 
 #_____________________________________________________________________________

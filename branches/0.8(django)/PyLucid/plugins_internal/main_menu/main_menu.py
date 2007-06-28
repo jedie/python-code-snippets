@@ -32,8 +32,6 @@ from PyLucid.system.BaseModule import PyLucidBaseModule
 from PyLucid.tools.tree_generator import TreeGenerator
 from PyLucid.models import Page
 
-from django.core.cache import cache
-CACHE_KEY = "main_menu"
 
 class main_menu(PyLucidBaseModule):
 
@@ -44,25 +42,14 @@ class main_menu(PyLucidBaseModule):
         current_page = self.context["PAGE"]
         self.current_page_id  = current_page.id
 
+        menu_data = Page.objects.values(
+            "id", "parent", "name", "title", "shortcut"
+        ).order_by("position")
+
         if self.request.user.is_anonymous():
-            cache_key = "%s_anonymous" % CACHE_KEY
-        else:
-            cache_key = CACHE_KEY
+            menu_data = menu_data.exclude(permitViewPublic = False)
 
-        tree = cache.get(cache_key)
-        if tree == None:
-            # Not in the cache available
-            menu_data = Page.objects.values(
-                "id", "parent", "name", "title", "shortcut"
-            ).order_by("position")
-
-            if self.request.user.is_anonymous():
-                menu_data = menu_data.exclude(permitViewPublic = False)
-
-            tree = TreeGenerator(menu_data)
-            cache.set(cache_key, tree, 120)
-#        else:
-#            self.page_msg("Menu data from the cache.")
+        tree = TreeGenerator(menu_data)
 
         # Generate the opened tree dict for the given page id
         menu_data = tree.get_menu_tree(self.current_page_id)
