@@ -38,7 +38,7 @@ class Page(models.Model):
     )
     position = models.IntegerField(
         default = 0,
-        help_text = "ordering (number between -10 and 10)"
+        help_text = "ordering weight for sorting the pages in the menu."
     )
 
     name = models.CharField(maxlength=150, help_text="A short page name")
