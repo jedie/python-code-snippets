@@ -1,6 +1,7 @@
-<form id="search_form" method="post" action="%(url)s">
-  <p>
-    <input name="search_string" type="text" value="%(old_search_string)s" size="20" maxlength="50" />
+<p>
+<form id="search_form" method="post" action=".">
+    {{ search_form }}
+    {% if search_form.errors %}<p class="search_form_errors">{{ search_form.errors }}</p>{% endif %}
     <input type="submit" name="search" value="search" />
-  </p>
 </form>
+</p>
