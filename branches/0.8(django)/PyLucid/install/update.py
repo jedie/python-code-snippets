@@ -441,34 +441,9 @@ def update(request):
 
 import re
 
-ADD_CODE = """
-<!-- additional javascript code - START -->
-{% if js_data %}
-{% for js in js_data %}
-<script type="text/javascript">
-/* <![CDATA[ */
-/* additional javascript from {{ js.from_info }} */
-{{ js.data }}
-/* ]]> */
-</script>
-{% endfor %}
-{% endif %}<!-- additional javascript code - END -->
-<!-- additional stylesheet code - START -->
-{% if css_data %}
-{% for css in css_data %}
-<style type="text/css">
-/* <![CDATA[ */
-/* additional stylesheets from {{ css.from_info }} */
-{{ css.data }}
-/* ]]> */
-</style>
-{% endfor %}
-{% endif %}<!-- additional stylesheet code - END -->
-"""
-
 REPLACE_DATA = (
     ("|escapexml ", "|escape "),
-    ("<PyLucidInternal:addCode/>", ADD_CODE)
+    ("<PyLucidInternal:addCode/>", "")
 )
 
 UNSUPPORTED_TAGS = ("{% recurse ",)
@@ -505,7 +480,7 @@ CHANGE_TAGS = {
 
     "script_duration": "<!-- script_duration -->",
 
-    "page_style":  "{% lucidTag page_style %}" + ADD_CODE,
+    "page_style":  "{% lucidTag page_style %}",
 }
 
 class UpdateTemplates(BaseInstall):
