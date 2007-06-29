@@ -1,3 +1,5 @@
+#!/usr/bin/python
+# -*- coding: UTF-8 -*-
 
 """
     {% lucidTag ... %}
@@ -78,9 +80,6 @@ class lucidTagNode(template.Node):
                 repr(output), type(output)
             )
             raise AssertionError(msg)
-
-#        print content
-#        print "---"
 
         return content
 
