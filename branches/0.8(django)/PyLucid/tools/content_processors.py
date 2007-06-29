@@ -1,3 +1,5 @@
+#!/usr/bin/python
+# -*- coding: UTF-8 -*-
 
 """
     PyLucid content processors
@@ -92,27 +94,11 @@ def apply_markup(content, context, markup_object):
         return content
 
 
-def render_string_template(template, context):
-    """
-    Render a string-template with the given context
-    """
-    context = Context(context)
-    template = Template(template)
-    html = template.render(context)
-    return html
-
-def render_template(content, global_context, local_context={}):
+def render_string_template(content, context):
     """
     Render a template.
-    1. put all local context items in the global context
-    2. render with the merged context
-    Note:
-    - The local_context are content for a internal page.
-    - We merged the local- and global-context together, so every internal
-    page can display something from the global context, like page name...
     """
-    global_context.update(local_context)
-
-    html = render_string_template(content, global_context)
-
+    context2 = Context(context)
+    template = Template(content)
+    html = template.render(context2)
     return html

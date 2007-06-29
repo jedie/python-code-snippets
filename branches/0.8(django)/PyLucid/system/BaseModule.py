@@ -2,36 +2,35 @@
 # -*- coding: UTF-8 -*-
 
 """
-Basis Modul von den andere Module erben können
+    PyLucid BaseModule
+    ~~~~~~~~~~~~~~~~~~
 
-Bsp.:
+    The base Plugin object. Every Plugin can inherit.
 
-from PyLucid.system.BaseModule import PyLucidBaseModule
+    e.g.:
 
-class Bsp(PyLucidBaseModule):
-    def __init__(self, *args, **kwargs):
-        super(Bsp, self).__init__(*args, **kwargs)
+        from PyLucid.system.BaseModule import PyLucidBaseModule
+
+        class Bsp(PyLucidBaseModule):
+            def __init__(self, *args, **kwargs):
+                super(Bsp, self).__init__(*args, **kwargs)
 
 
+    Last commit info:
+    ~~~~~~~~~~~~~~~~~
+    $LastChangedDate$
+    $Rev$
+    $Author$
 
-Last commit info:
-----------------------------------
-$LastChangedDate$
-$Rev$
-$Author$
-
-Created by Jens Diemer
-
-license:
-    GNU General Public License v2 or above
-    http://www.opensource.org/licenses/gpl-license.php
+    :copyright: 2007 by Jens Diemer
+    :license: GNU GPL, see LICENSE for more details
 """
 
-from PyLucid.models import PagesInternal
-from PyLucid.tools.content_processors import apply_markup, render_template
 
 
-#______________________________________________________________________________
+from PyLucid.db.internal_pages import get_internal_page
+from PyLucid.tools.content_processors import apply_markup, \
+                                                        render_string_template
 
 
 class PyLucidBaseModule(object):
@@ -64,20 +63,13 @@ class PyLucidBaseModule(object):
 
 
     def _get_template(self, internal_page_name):
-        plugin_name = self.__class__.__name__ # Get the superior class name
-
-        internal_page_name = ".".join([plugin_name, internal_page_name])
-
-        # django bug work-a-round
-        # http://groups.google.com/group/django-developers/browse_thread/thread/e1ed7f81e54e724a
-        internal_page_name = internal_page_name.replace("_", " ")
-
-        try:
-            return PagesInternal.objects.get(name = internal_page_name)
-        except PagesInternal.DoesNotExist, err:
-            msg = "internal page '%s' not found! (%s)" % (internal_page_name, err)
-            raise PagesInternal.DoesNotExist(msg)
-
+        """
+        retuned the internal page object
+        Get the plugin name throu the superior class name
+        """
+        plugin_name = self.__class__.__name__
+        internal_page = get_internal_page(plugin_name, internal_page_name)
+        return internal_page
 
     def _add_js_css_data(self, internal_page):
         """
@@ -133,20 +125,17 @@ class PyLucidBaseModule(object):
         page for templates.
         """
         html = self.__render(template, context, debug)
-
         self.response.write(html)
 
     def __render(self, content, context, debug=False):
         """
-        render the string with the given context
+        render the content string with the given context and returned it.
         -debug the context, if debug is on.
-        -prepare the context
-        -retunted the rendered page
         """
         if debug:
             self._debug_context(context, content)
 
-        html = render_template(content, self.context, context)
+        html = render_string_template(content, context)
         return html
 
 

@@ -39,7 +39,8 @@ from PyLucid.system.page_msg import PageMessages
 from PyLucid.system.detect_page import get_current_page_obj, get_default_page_id
 from PyLucid.system.URLs import URLs
 
-from PyLucid.tools.content_processors import apply_markup, render_template
+from PyLucid.tools.content_processors import apply_markup, \
+                                                        render_string_template
 
 
 def _render_cms_page(context, page_content=None):
@@ -62,18 +63,12 @@ def _render_cms_page(context, page_content=None):
             page_content, context, markup_object
         )
 
-    current_page.content = render_template(current_page.content, context)
+    current_page.content = render_string_template(current_page.content, context)
 
     template = current_page.template
     template_content = template.content
 
-    html = render_template(template_content, context)
-
-#    import cgi, pprint
-#    print context
-#    debug = "<hr/><pre>%s</pre></html>" % cgi.escape(pprint.pformat(context))
-#    html = html.replace("</html>", debug)
-
+    html = render_string_template(template_content, context)
     return HttpResponse(html)
 
 
@@ -106,8 +101,14 @@ def _get_context(request, current_page_obj):
 
     # For additional JavaScript and StyleSheet information.
     # JS+CSS from internal_pages or CSS data for pygments
+    # Add into the context object. Would be integraged in the page with the
+    # additional_content middleware.
     context["js_data"] = []
     context["css_data"] = []
+
+    # Add the context to the reponse object.
+    # Used in PyLucid.middlewares.additional_content
+    request.CONTEXT = context
 
     return context
 

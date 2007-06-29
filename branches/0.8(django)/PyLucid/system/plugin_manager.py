@@ -145,6 +145,7 @@ def _run(context, local_response, plugin_name, method_name, url_args, method_kwa
     unbound_method = getattr(class_instance, method_name)
 
     output = unbound_method(*url_args, **method_kwargs)
+
     return output
 
 

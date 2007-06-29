@@ -54,8 +54,10 @@ if DEBUG:
         Base class for HeaderChecker and StdErrorHandler
         -global header_send variable
         """
-        oldFileinfo = ""
-        header_send = False
+        def __init__(self, out):
+            self.out = out
+            self.oldFileinfo = ""
+            self.header_send = False
 
         def _get_fileinfo(self):
             """
@@ -86,8 +88,6 @@ if DEBUG:
             Write information about the file and line number, from which the
             message comes from.
             """
-            stack = inspect.stack()[1]
-#            fileinfo = (stack[1].split("/")[-1][-40:], stack[2])
             fileinfo = self._get_fileinfo()
 
             if fileinfo != self.oldFileinfo:
@@ -109,9 +109,6 @@ if DEBUG:
         Check if the first line is a html header. If not, a header line will
         be send.
         """
-        def __init__(self, out):
-            self.out = out
-
         def check(self, txt):
             txt_lower = txt.lower()
             for header in HEADERS:
@@ -134,7 +131,6 @@ if DEBUG:
             self.out.write(txt)
 
         def wrong_header_info(self):
-            # Angaben zur Datei, Zeilennummer, aus dem die Nachricht stammt
             self.out.write("Content-type: text/html; charset=utf-8\r\n\r\n")
             self.out.write("Wrong Header!!!\n")
             self.header_send = True
@@ -145,10 +141,6 @@ if DEBUG:
         redirects messages from stderr to stdout.
         Sends a header, if the header were not already sent.
         """
-        def __init__(self, out):
-            self.out = out
-            self.header_send = False
-
         def write(self, *txt):
             txt = " ".join([i for i in txt])
             if not self.header_send:

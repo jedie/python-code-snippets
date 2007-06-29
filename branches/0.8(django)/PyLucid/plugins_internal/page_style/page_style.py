@@ -8,6 +8,12 @@
     - Put the css html tag into the cms page.
     - Send the current stylesheet directly to the client.
 
+    Note:
+    The page_style.lucidTag() method adds the additional_content ADD_DATA_TAG
+    into the page.
+    The middleware PyLucid.middlewares.additional_content replace the tag and
+    puts the collected CSS/JS contents into the page.
+
     Last commit info:
     ~~~~~~~~~~~~~~~~~
     $LastChangedDate$
@@ -26,19 +32,18 @@ import sys, os, datetime
 
 from django.http import HttpResponse
 
+from PyLucid.middlewares.additional_content import ADD_DATA_TAG
 from PyLucid.models import Style
-
 from PyLucid.system.BaseModule import PyLucidBaseModule
 
 class page_style(PyLucidBaseModule):
 
-    #~ def __init__(self, *args, **kwargs):
-        #~ super(page_style, self).__init__(*args, **kwargs)
-
     def lucidTag(self):
-        # Schreibt den addCode-Tag, damit am Ende noch die CSS/JS Daten
-        # von Modulen eingefügt werden können
-        #~ self.response.write(self.response.addCode.tag)
+        """
+        -Put a link to sendStyle into the page.
+        -Insert the ADD_DATA_TAG for the additional_content middleware
+        """
+        self.response.write(ADD_DATA_TAG)
 
         current_page = self.context["PAGE"]
         style_name = current_page.style.name
@@ -48,31 +53,31 @@ class page_style(PyLucidBaseModule):
             "sendStyle", style_filename, addSlash=False
         )
         cssTag = '<link rel="stylesheet" type="text/css" href="%s" />\n' % url
-
         self.response.write(cssTag)
+
 
     def print_current_style(self):
         """
-        CSS direkt in die Seite einfügen
+        -Write the stylesheet directly into the page.
+        -Insert the ADD_DATA_TAG for the additional_content middleware
+        Used with the tag: {% lucidTag page_style.print_current_style %}
         """
-        # Schreibt den addCode-Tag, damit am Ende noch die CSS/JS Daten
-        # von Modulen eingefügt werden können
-        self.response.write(self.response.addCode.tag)
+        self.response.write(ADD_DATA_TAG)
 
-        page_id = self.session["page_id"]
-        getItems = ["content"]
-        css = self.db.side_style_by_id(page_id, getItems)
-        css = css["content"]
+        current_page = self.context["PAGE"]
+        stylesheet = current_page.style
 
-        self.response.write('<style type="text/css">')
-        self.response.write(css)
-        self.response.write('</style>')
+        context = {
+            "content": stylesheet.content,
+        }
+        self._render_template("write_styles", context)#, debug=True)
+
 
     def sendStyle(self, css_filename):
         """
-        Sendet das CSS als Datei, da in die Seite nur ein Link eingefügt, der
-        jetzt "ausgeführt" wird.
-        Dabei wird eine "Browsercache-Anfrage" berücksichtigt.
+        send the stylesheet as a file to the client.
+        It's the request started with the link tag from self.lucidTag() ;)
+        TODO: Should insert some Headers for the browser cache.
         """
         css_name = css_filename.split(".",1)[0]
 
@@ -88,84 +93,4 @@ class page_style(PyLucidBaseModule):
         response.write(content)
 
         return response
-
-        """
-        timeFormat = "%a, %d %b %Y %H:%M:%S GMT"
-
-        # Ein "wirklich" frisches response-Object nehmen:
-        response = HttpResponse()
-        response.headers['Content-Type'] = 'text/css; charset=utf-8'
-
-        # Hop-by-hop Headers ist mit wsgiref nicht erlaubt:
-        #~ response.headers['Connection'] = "Keep-Alive"
-
-        page_id = self.session["page_id"]
-        getItems = ["id", "content", "lastupdatetime"]
-        cssData = self.db.side_style_by_id(page_id, getItems)
-
-        lastupdatetime = cssData["lastupdatetime"] # datetime-Object!
-
-        #~ raise str(repr(lastupdatetime))
-
-        lastModified = lastupdatetime.strftime(timeFormat)
-        #~ print "lastModified:", lastModified
-
-        # 1Tag * 60Min * 60Sec = 3600Sec
-        response.headers['Cache-Control'] = 'max-age=3600'
-        delta = datetime.timedelta(days=1)
-        expires = lastupdatetime + delta
-        expires = expires.strftime(timeFormat)
-        #~ print "expires:", expires
-        response.headers['Expires'] = expires
-
-        # ID damit der Browser das Style eindeutige Identifizieren kann:
-        eTag = '"style-%s"' % cssData["id"]
-        response.headers['Etag'] = eTag
-
-        # Chaching im Browser überprüfen:
-        if "HTTP_IF_MODIFIED_SINCE" in self.environ and \
-                                        "HTTP_IF_NONE_MATCH" in self.environ:
-            # Der Browser fragt nach, ob es die Daten aus seinem Chache nehmen
-            # soll.
-            send_modified = self.environ["HTTP_IF_MODIFIED_SINCE"]
-            send_eTag = self.environ["HTTP_IF_NONE_MATCH"]
-            if send_eTag == eTag and send_modified == lastModified:
-                # CSS Daten haben sich nicht geändert!
-                response.status = 304 # HTTP/1.x 304 Not Modified
-                return response
-
-        # Die CSS Daten werden zum ersten mal gesendet oder diese haben
-        # sich seit dem letzten Aufruf geändert.
-
-        cssContent = cssData["content"]
-
-        # Content-Length kann nur in UTF8 und nicht richtig in Unicode
-        # ermittelt werden!!!
-        cssContent = cssContent.encode("utf8")
-        contentLen = len(cssContent)
-        response.headers['Content-Length'] = '%s' % contentLen
-
-        response.headers['Last-Modified'] = lastModified
-        response.headers['Content-Transfer-Encoding'] = '8bit' #'binary'
-        response.headers['Content-Type'] = \
-            'text/css; charset=utf-8'
-
-        response.write(cssContent)
-
-        # force Windows input/output to binary
-        if sys.platform == "win32":
-            try:
-                import msvcrt
-                msvcrt.setmode(sys.stdin.fileno(), os.O_BINARY)
-                msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
-            except:
-                pass
-
-        return response
-
-        """
-
-
-
-
 

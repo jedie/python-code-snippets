@@ -40,15 +40,3 @@ class page_update_list(PyLucidBaseModule):
 
         self._render_template("PageUpdateTable", context)#, debug=True)
 
-
-
-
-
-
-
-
-
-
-
-
-

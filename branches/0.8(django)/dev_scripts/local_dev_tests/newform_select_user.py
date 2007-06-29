@@ -50,6 +50,12 @@ users = User.objects.values(
 
 users_form = UsersForm(users)
 
+for field in users_form:
+    for i in dir(field):
+        print i
+    print field.auto_id
+    print field.html_name
+
 html = users_form.as_p()
 print html
 
