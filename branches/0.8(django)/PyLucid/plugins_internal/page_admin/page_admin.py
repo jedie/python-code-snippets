@@ -435,6 +435,122 @@ class page_admin(PyLucidBaseModule):
         html = self._get_rendered_template("tag_list", context)
         return HttpResponse(html)
 
+    #___________________________________________________________________________
+
+    def _save_sequencing(self, page_data):
+        """
+        Save the new position weight for every pages, if changed.
+        """
+        no_changes = True
+        for page in page_data:
+            try:
+                page_id = str(page.id)
+                #page_id = "Not exists test"
+                weight = self.request.POST[page_id]
+                #weight = "Not a number test"
+                weight = int(weight)
+            except (KeyError, ValueError), msg:
+                self.page_msg.red(_("Error: Wrong POST data!"))
+                if settings.DEBUG:
+                    self.page_msg.red("Debug: %s" % msg)
+                # abort!
+                return
+
+            if page.position == weight:
+                # No change needed for this page
+                continue
+
+            # Set new position weight and save:
+            page.position = weight
+            page.save()
+
+            no_changes = False
+            self.page_msg.green(
+                _("Set position weight %s for page '%s', ok.") % (
+                    weight, page.name
+                )
+            )
+
+        if no_changes:
+            # Give feedback for the user, if nothing to do...
+            self.page_msg.green(_("Nothing to change ;)"))
+
+
+    def _get_sequence_data(self, url_args):
+        """
+        returned the pages and the "use"-mode.
+        Based on the url, the pages are from the "parent", "current", "child"
+        level.
+        """
+        # Start with "current" level. Only if the url starts with "parent" or
+        # "child" change the level.
+        use = "current"
+        if url_args != None:
+            if url_args.startswith("parent"):
+                use = "parent"
+                parent_page = Page.objects.get(
+                    id=self.current_page.parent.id
+                )
+                parent_filter = parent_page.parent
+            elif url_args.startswith("child"):
+                use = "child"
+                parent_filter = self.current_page.id
+
+        if use == "current":
+            # "url_args == None" or the url is not well-formed: It doesn't
+            # starts with "parent" or "child"
+            parent_filter = self.current_page.parent
+
+        # Change a "parent__exact=None" query to "parent__isnull=True"
+        # see: http://www.djangoproject.com/documentation/db-api/#isnull
+        if parent_filter == None:
+            filter_kwargs = {"parent__isnull": True}
+        else:
+            filter_kwargs = {"parent": parent_filter}
+
+        page_data = Page.objects.filter(**filter_kwargs)
+
+        return use, page_data
+
+
+    def sequencing(self, url_args=None):
+        """
+        Set the position weight of the cms page to change the correct order.
+        TODO: Save the weight range in the preferences
+        """
+        use, page_data = self._get_sequence_data(url_args)
+
+        if self.request.method == 'POST':
+            # Save new position weight
+            self._save_sequencing(page_data)
+
+        # Order the pages *after* a sended POST data processed.
+        page_data = page_data.order_by("position")
+
+        childs = Page.objects.filter(parent=self.current_page.id).count()
+        has_childs = childs != 0
+
+        parents = Page.objects.filter(parent=self.current_page.parent).count()
+        has_parents = parents != 0
+
+#        self.page_msg("url_args:", url_args)
+#        self.page_msg("use:", use)
+#        self.page_msg("filter_kwargs:", filter_kwargs)
+#        self.page_msg("has_childs:", has_childs, " - has_parents:", has_parents)
+
+        context = {
+            "sequencing_data": page_data,
+            "weights": range(-10, 10),
+
+            "base_url": self.URLs.methodLink("sequencing"),
+
+            "has_childs": has_childs,
+            "has_parents": has_parents,
+        }
+        context["use_%s" % use] = True
+
+        self._render_template("sequencing", context)#, debug=True)
+
 
 class DeletePageError(Exception):
     """
