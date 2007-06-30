@@ -24,6 +24,7 @@ from django.template import Template, Context, loader
 #debug = True
 DEBUG = False
 
+COOKIE_NAME = "PyLucid_inst_pass"
 
 def check_install_password(password):
     """
@@ -48,25 +49,13 @@ def check_install_password(password):
         ))
 
 
-def save_password_cookie(password):
-    """
-    Store the verified password as a hash in a client cookie.
-    Return a HttpResponse object with cookie.
-    """
-    salt_hash = make_salt_hash(password)
-    response = HttpResponse()
-    response.set_cookie("instpass", value=salt_hash, max_age=None)
-    #, expires=None, path='/', domain=None, secure=None)
-    return response
-
-
 def check_cookie_pass(request):
     """
     check if the _install section password is stored in the cookie
     - returns True if the password hash is ok
     - returns False if there is no password or the hash test failed
     """
-    cookie_pass = request.COOKIES.get("instpass", None)
+    cookie_pass = request.COOKIES.get(COOKIE_NAME, None)
     if cookie_pass and check_salt_hash(INSTALL_PASS, cookie_pass) == True:
         # The salt-hash stored in the cookie is ok
         return True
@@ -78,6 +67,7 @@ class InstallPassForm(forms.Form):
     """ a django newforms for input the _install section password """
     password = forms.CharField(
         _('password'), min_length=8,
+        widget=forms.PasswordInput,
         help_text=_('The install password from your settings.py')
     )
 
@@ -95,16 +85,6 @@ LOGIN_TEMPLATE = """
   <input type="submit" value="{% trans 'Log in' %}" />
 </form>
 <p>{% trans 'Note: Cookies must be enabled.' %}</p>
-{% endblock %}
-"""
-LOGGED_IN_TEMPLATE = """
-{% extends "install_base.html" %}
-{% block content %}
-<h1>{% trans 'Login' %}</h1>
-
-<p>{% trans 'Access permit. Your logged in!' %}</p>
-<p><a href="{% url PyLucid.install.menu . %}">{% trans 'continue' %}</a></p>
-
 {% endblock %}
 """
 
@@ -162,10 +142,13 @@ class BaseInstall(object):
                     # Display the form again
                     self.context["msg"] = msg
                 else:
-                    # Password is ok. -> User login
-                    response = save_password_cookie(password)
-                    html = render_string_template(LOGGED_IN_TEMPLATE, self.context)
-                    response.write(html)
+                    # Password is ok. -> process the normal _instal view()
+                    response = self.view()
+                    # insert a cookie with the hashed password in the response
+                    salt_hash = make_salt_hash(password)
+                    response.set_cookie(
+                        COOKIE_NAME, value=salt_hash, max_age=None
+                    )
                     return response
         else:
             # Create a empty form
