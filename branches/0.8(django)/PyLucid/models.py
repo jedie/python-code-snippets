@@ -133,17 +133,35 @@ class Page(models.Model):
             }),
         )
 
+    def _check_parent(self, id):
+        """
+        Prevents inconsistent data (parent-child-loop).
+        Check recusive if a new parent can be attached and is not a loop.
+        TODO: This method should used in newform is_valid() ???
+        """
+        if not self.parent:
+            # No parent exist -> root arraived
+            return True
+
+        if self.parent.id == id:
+            # Error -> parent-loop found.
+            raise AssertionError("New parent is invalid. (parent-child-loop)")
+
+        # go a level deeper to the root
+        self.parent._check_parent(id)
+
     def save(self):
         """save a new page"""
-        # Make the shortcut unique:
-        if self.id != None:
-            # A existing page should update
+        if self.id != None:# A existing page should update
+            # check if a new parent is no parent-child-loop:
+            self._check_parent(self.id)
+            # Exclude the existing shortcut from the "black list":
             exclude_shortcut = Page.objects.get(id=self.id).shortcut
-        else:
-            # A new page created
+        else: # A new page created
             exclude_shortcut = None
-        self.shortcut = getUniqueShortcut(self.shortcut, exclude_shortcut)
 
+        # Make a new shortcut unique:
+        self.shortcut = getUniqueShortcut(self.shortcut, exclude_shortcut)
 
         super(Page, self).save() # Call the "real" save() method
 
@@ -166,14 +184,6 @@ class Page(models.Model):
             return self.name + " - " + self.title
         else:
             return self.name
-
-    def get_style_name(self):
-        """
-        returns the name of the current stylesheet
-        """
-        style_id = self.style
-        style = Style.objects.get(id__exact=style_id)
-        return style.name
 
     def __strftime(self, datetime_obj):
         if datetime_obj == None:
