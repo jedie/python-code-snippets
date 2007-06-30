@@ -24,6 +24,8 @@ import cgi
 
 from PyLucid.system.plugin_manager import run
 from PyLucid.system.response import SimpleStringIO
+from PyLucid.tools.shortcuts import makeUnique
+from PyLucid.settings import CSS_DIV_CLASS_NAME
 
 from django.conf import settings
 from django import template
@@ -56,6 +58,23 @@ class lucidTagNode(template.Node):
             self.plugin_name, self.method_name, self.method_kwargs
         )
 
+    def _add_unique_div(self, context, content):
+        """
+        Add a html DIV tag with a unique CSS-ID and a class name defined in
+        the settings.py
+        """
+        id = self.plugin_name + "_" + self.method_name
+        id = makeUnique(id, context["CSS_ID_list"])
+        context["CSS_ID_list"].append(id)
+
+        content = (
+            '<div class="%s" id="%s">\n'
+            '%s\n'
+            '</div>\n'
+        ) % (CSS_DIV_CLASS_NAME, id, content)
+
+        return content
+
     def render(self, context):
 #        print "lucidTag.render():", self.plugin_name, self.method_name
 
@@ -81,6 +100,8 @@ class lucidTagNode(template.Node):
             )
             raise AssertionError(msg)
 
+        content = self._add_unique_div(context, content)
+
         return content
 
 
@@ -103,7 +124,7 @@ def lucidTag(parser, token):
     plugin_name = kwargs.pop(0)
 
     if "." in plugin_name:
-        plugin_name, method_name = plugin_name.split(".")
+        plugin_name, method_name = plugin_name.split(".", 1)
     else:
         method_name = "lucidTag"
 

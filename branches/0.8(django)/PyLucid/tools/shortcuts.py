@@ -6,9 +6,9 @@
 
     Last commit info:
     ~~~~~~~~~~~~~~~~~
-    $LastChangedDate:$
-    $Rev:$
-    $Author:$
+    $LastChangedDate$
+    $Rev$
+    $Author$
 
     :copyright: 2007 by Jens Diemer.
     :license: GNU GPL, see LICENSE for more details
@@ -22,6 +22,9 @@ def makeUnique(item_name, name_list):
     returns a unique shortcut.
     - delete all non-ALLOW_CHARS characters.
     - if the shotcut already exists in name_list -> add a sequential number
+    Note:
+    Not only used for making page shortcuts unique.
+    Also used in PyLucid.defaulttags.lucidTag.lucidTagNode._add_unique_div()
     """
     # delete all non-ALLOW_CHARS characters and separate in parts
     parts = [""]

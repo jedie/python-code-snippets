@@ -135,6 +135,10 @@ def _get_context(request, current_page_obj):
     context["js_data"] = []
     context["css_data"] = []
 
+    # A list of every used html DIV CSS-ID.
+    # used in PyLucid.defaulttags.lucidTag.lucidTagNode._add_unique_div()
+    context["CSS_ID_list"] = []
+
     # Add the context to the reponse object.
     # Used in PyLucid.middlewares.additional_content
     request.CONTEXT = context
