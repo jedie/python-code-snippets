@@ -32,6 +32,7 @@ from PyLucid.models import Page, Plugin
 from PyLucid.db.page import flat_tree_list, get_sitemap_tree
 from PyLucid.system.BaseModule import PyLucidBaseModule
 from PyLucid.system.detect_page import get_default_page_id
+from PyLucid.tools.content_processors import replace_add_data
 
 #______________________________________________________________________________
 # Escape TextFields
@@ -385,8 +386,11 @@ class page_admin(PyLucidBaseModule):
         """
         Render the tinyTextile Help page.
         """
-        html = self._get_rendered_template("tinyTextile_help", context={})
-        return HttpResponse(html)
+        context = {"add_data_tag": settings.ADD_DATA_TAG}
+        content = self._get_rendered_template("tinyTextile_help", context)
+        # insert CSS data from the internal page into the rendered page:
+        content = replace_add_data(self.context, content)
+        return HttpResponse(content)
 
     #___________________________________________________________________________
 
@@ -431,9 +435,12 @@ class page_admin(PyLucidBaseModule):
         context = {
             "plugin_list": get_plugin_list(),
             "page_fields": get_page_fields(),
+            "add_data_tag": settings.ADD_DATA_TAG,
         }
-        html = self._get_rendered_template("tag_list", context)
-        return HttpResponse(html)
+        content = self._get_rendered_template("tag_list", context)
+        # insert CSS data from the internal page into the rendered page:
+        content = replace_add_data(self.context, content)
+        return HttpResponse(content)
 
     #___________________________________________________________________________
 
