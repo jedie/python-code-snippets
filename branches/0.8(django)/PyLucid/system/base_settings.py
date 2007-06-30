@@ -54,3 +54,11 @@ INSTALL_DATA_DIR = 'PyLucid/db_dump_datadir'
 # chaching
 
 PAGE_CACHE_PREFIX = "PyLucid_page_cache_"
+
+#_____________________________________________________________________________
+# Additional Data Tag
+
+# A temporary inserted Tag for Stylesheet and JavaScript data from the internal
+# pages. Added by PyLucid.plugins_internal.page_style and replaces in
+# PyLucid.index._replace_add_data()
+ADD_DATA_TAG = "<!-- additional_data -->"

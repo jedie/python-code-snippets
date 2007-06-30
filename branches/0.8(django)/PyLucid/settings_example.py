@@ -221,7 +221,7 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.middleware.doc.XViewMiddleware',
 
-    'PyLucid.middlewares.additional_content.AdditionalContentMiddleware',
+    'PyLucid.middlewares.pagestats.PageStatsMiddleware',
 )
 
 # A string representing the full Python import path to the PyLucid root URLconf.

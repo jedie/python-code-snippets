@@ -41,6 +41,30 @@ from PyLucid.system.URLs import URLs
 
 from PyLucid.tools.content_processors import apply_markup, \
                                                         render_string_template
+from PyLucid.db.internal_pages import get_internal_page
+
+
+
+def _replace_add_data(context, content):
+    """
+    Replace the temporary inserted "add data" tag, with all collected CSS/JS
+    contents, e.g. from the internal pages.
+    Note: The tag added in PyLucid.plugins_internal.page_style
+    """
+    try:
+        internal_page = get_internal_page("page_style", "add_data")
+        internal_page_content = internal_page.content_html
+
+        context = {
+            "js_data": context["js_data"],
+            "css_data": context["css_data"],
+        }
+        html = render_string_template(internal_page_content, context)
+    except Exception, msg:
+        html = "<!-- Replace the ADD_DATA_TAG error: %s -->" % msg
+
+    content = content.replace(settings.ADD_DATA_TAG, html)
+    return content
 
 
 def _render_cms_page(context, page_content=None):
@@ -68,8 +92,13 @@ def _render_cms_page(context, page_content=None):
     template = current_page.template
     template_content = template.content
 
-    html = render_string_template(template_content, context)
-    return HttpResponse(html)
+    content = render_string_template(template_content, context)
+
+    # insert JS/CSS data from any Plugin *after* the page rendered with the
+    # django template engine:
+    content = _replace_add_data(context, content)
+
+    return HttpResponse(content)
 
 
 def _get_context(request, current_page_obj):
