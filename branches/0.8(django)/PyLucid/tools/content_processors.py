@@ -21,6 +21,7 @@
 from django.template import Template, Context
 
 from PyLucid.system.response import SimpleStringIO
+from PyLucid.db.internal_pages import get_internal_page
 from PyLucid import settings
 
 
@@ -102,3 +103,25 @@ def render_string_template(content, context):
     template = Template(content)
     html = template.render(context2)
     return html
+
+
+def replace_add_data(context, content):
+    """
+    Replace the temporary inserted "add data" tag, with all collected CSS/JS
+    contents, e.g. from the internal pages.
+    Note: The tag added in PyLucid.plugins_internal.page_style
+    """
+    try:
+        internal_page = get_internal_page("page_style", "add_data")
+        internal_page_content = internal_page.content_html
+
+        context = {
+            "js_data": context["js_data"],
+            "css_data": context["css_data"],
+        }
+        html = render_string_template(internal_page_content, context)
+    except Exception, msg:
+        html = "<!-- Replace the ADD_DATA_TAG error: %s -->" % msg
+
+    content = content.replace(settings.ADD_DATA_TAG, html)
+    return content
