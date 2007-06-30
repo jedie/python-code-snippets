@@ -41,8 +41,8 @@ from PyLucid.tools.content_processors import replace_add_data
 class EscapedTextarea(forms.Textarea):
     def render(self, name, value, attrs=None):
         """
-        -Escape/Quote the django template tags chars "{" and "}" to the HTML
-            character entity.
+        -Escape/Quote the django template tags chars "{" and "}" to the
+            HTML character entity.
         -Override the default textarea attributes and make it bigger
             Node: The cols size are setup with CSS and "width:100%;"
         """
@@ -57,8 +57,14 @@ class EscapedTextField(forms.Field):
 
 def formfield_callback(field, **kwargs):
     "change text fields to our own EscapedTextField"
-    if isinstance(field, models.TextField):
+    print field.name
+    if field.name == "content":
+        # replace the field for the page content
         return EscapedTextField(**kwargs)
+    elif field.name == "parent":
+        # TODO: Change the parent field complete and insert a verbose ChoiceField!
+        kwargs["empty_label"] = '---[root]---'
+        return field.formfield(**kwargs)
     else:
         return field.formfield(**kwargs)
 
@@ -365,6 +371,7 @@ class page_admin(PyLucidBaseModule):
         """
         Render the delete page html form dialog.
         A sended html form would be
+        TODO: We should only display one page level (like sequencing do).
         """
         # Process a sended POST formular:
         self._process_delete_pages()
