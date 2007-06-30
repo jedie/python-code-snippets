@@ -9,10 +9,15 @@
     - Send the current stylesheet directly to the client.
 
     Note:
-    The page_style.lucidTag() method adds the additional_content ADD_DATA_TAG
-    into the page.
-    The middleware PyLucid.middlewares.additional_content replace the tag and
-    puts the collected CSS/JS contents into the page.
+    1. The page_style plugin insert the temporary ADD_DATA_TAG *before* the
+        global Stylesheet inserted. So the global Stylesheet can override CSS
+        properties from every internal page.
+        The ADD_DATA_TAG would be replaced with the collected CSS/JS contents
+        in PyLucid.index *after* the page rendered with the django template
+        engine.
+    2. In CGI environment you should use print_current_style() instead of
+        lucidTag! Because the lucidTag insert only the link to the stylesheet.
+        Every page request causes a stylesheet request, in addition!
 
     Last commit info:
     ~~~~~~~~~~~~~~~~~
@@ -32,7 +37,7 @@ import sys, os, datetime
 
 from django.http import HttpResponse
 
-from PyLucid.middlewares.additional_content import ADD_DATA_TAG
+from PyLucid.settings import ADD_DATA_TAG
 from PyLucid.models import Style
 from PyLucid.system.BaseModule import PyLucidBaseModule
 
@@ -41,7 +46,7 @@ class page_style(PyLucidBaseModule):
     def lucidTag(self):
         """
         -Put a link to sendStyle into the page.
-        -Insert the ADD_DATA_TAG for the additional_content middleware
+        -Insert ADD_DATA_TAG *before* the global Stylesheet link
         """
         self.response.write(ADD_DATA_TAG)
 
@@ -59,7 +64,8 @@ class page_style(PyLucidBaseModule):
     def print_current_style(self):
         """
         -Write the stylesheet directly into the page.
-        -Insert the ADD_DATA_TAG for the additional_content middleware
+        -Insert ADD_DATA_TAG *before* the global Stylesheet content.
+
         Used with the tag: {% lucidTag page_style.print_current_style %}
         """
         self.response.write(ADD_DATA_TAG)
