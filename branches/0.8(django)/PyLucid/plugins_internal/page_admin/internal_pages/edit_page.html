@@ -1,6 +1,6 @@
 <fieldset>
 <legend>
-    {% trans 'Edit the CMS page' %} '<strong title="{{ PAGE.title|escape }}">{{ PAGE.name|escape }}</strong>'
+    {% trans 'Edit the CMS page' %} '<strong title="{{ PAGE.get_verbose_title|escape }}">{{ PAGE.name|escape }}</strong>'
 </legend>
 <form action="." method="post" id="edit_page_form">
     <ul id="action_buttons">
