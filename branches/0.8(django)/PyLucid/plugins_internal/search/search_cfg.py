@@ -27,5 +27,10 @@ plugin_manager_data = {
     "do_search"       : {
         "must_login"    : False,
         "must_admin"    : False,
+        "internal_page_info" : {
+            "name"              : "result_page",
+            "description"       : "Display the search results.",
+            "markup"            : None
+        },
     },
 }
