@@ -33,7 +33,7 @@ def traceback_end():
 
 
 try:
-    from PyLucid.settings import DEBUG
+    from PyLucid.settings import DEBUG, INSTALL_HELP_URL
 except Exception, e:
     print "Content-type: text/plain; charset=utf-8\r\n\r\n"
     print "Low-Level-Error!"
@@ -185,13 +185,20 @@ except Exception, e:
     print
     print "-"*80
     print
-    if str(e) == "no such table: django_session":
-        print "You must install PyLucid first. Go into the _install section."
-        print
-        print "Deactivate temporaly the MIDDLEWARE_CLASSES:"
-        print " - django.contrib.sessions.middleware.SessionMiddleware"
-        print " - django.contrib.auth.middleware.AuthenticationMiddleware"
-        print
-        print "After 'syncdb' you must activate the middleware classes!"
+    print "Have you installed PyLucid?"
+    print
+    print "If not, follow the instruction here:"
+    print INSTALL_HELP_URL
+    print
+    print "Note:"
+    print "If you will go into the _install section, you must temporaly"
+    print "deactivate some middlewares in your settings.py:"
+    print
+    print "Edit the MIDDLEWARE_CLASSES data and deactivate:"
+    print " - django.contrib.sessions.middleware.SessionMiddleware"
+    print " - django.contrib.auth.middleware.AuthenticationMiddleware"
+    print
+    print "After 'syncdb' the needed tables created and you must activate the"
+    print "middleware classes!"
 
     traceback_end()
