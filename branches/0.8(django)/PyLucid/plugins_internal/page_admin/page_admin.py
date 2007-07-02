@@ -23,9 +23,11 @@ __version__= "$Rev:1070 $"
 import cgi
 
 from django import newforms as forms
+from django.newforms.util import ValidationError
 from django.db import models
 from django.http import HttpResponse, HttpResponseRedirect
 from django.core.cache import cache
+from django.utils.translation import ugettext
 
 from PyLucid import settings
 from PyLucid.models import Page, Plugin
@@ -55,17 +57,47 @@ class EscapedTextField(forms.Field):
     "Change the textarea widget"
     widget = EscapedTextarea
 
+class ParentMultipleChoiceField(forms.ChoiceField):
+    """
+    Change the "parent" choice field with a verbose name tree list.
+    TODO: We must ask the database a second time :(
+    """
+    def __init__(self, *args, **kwargs):
+        super(ParentMultipleChoiceField, self).__init__(*args, **kwargs)
+
+        page_list = flat_tree_list()
+        choices = [(None, "---[root]---")]
+        for page in page_list:
+            choices.append((page["id"], page["level_name"]))
+
+        self.choices = choices
+
+    def clean(self, value):
+        """
+        TODO: We should check if the parent_id is ok and not make a wrong
+        id-parent-loop. Now, this is checkt in PyLucid.models.Page.save()
+        """
+        try:
+            #value = "test int() error"
+            parent_id = int(value)
+            #parent_id = 999999999 # Not exists test
+            return Page.objects.get(id=parent_id)
+        except Exception, msg:
+            raise ValidationError(ugettext(u"Wrong parent POST data: %s" % msg))
+
 def formfield_callback(field, **kwargs):
-    "change text fields to our own EscapedTextField"
-    print field.name
+    """
+    -change the 'content' text fields to our own EscapedTextField
+    -change the 'parent' field to a "verbose name tree" choice field.
+    """
     if field.name == "content":
-        # replace the field for the page content
+        # replace the content field
         return EscapedTextField(**kwargs)
     elif field.name == "parent":
-        # TODO: Change the parent field complete and insert a verbose ChoiceField!
-        kwargs["empty_label"] = '---[root]---'
-        return field.formfield(**kwargs)
+        # replace the parent field
+        return ParentMultipleChoiceField(**kwargs)
     else:
+        # Do nothing with the other fields:
         return field.formfield(**kwargs)
 
 #______________________________________________________________________________
@@ -152,6 +184,7 @@ class page_admin(PyLucidBaseModule):
         # the django template engine and the tag (not the result of the tag) is
         # editable ;)
         # http://www.djangoproject.com/documentation/newforms/#overriding-the-default-field-types
+        # -With the formfield_callback we change the parent field, too.
         PageForm = forms.models.form_for_instance(
             page_instance, fields=(
                 "content", "parent",
@@ -165,6 +198,8 @@ class page_admin(PyLucidBaseModule):
             html_form = PageForm(self.request.POST)
             if html_form.is_valid():
                 # Save the new page data into the database:
+#                self.page_msg(self.request.POST)
+
                 try:
                     html_form.save()
                 except Exception, msg:
