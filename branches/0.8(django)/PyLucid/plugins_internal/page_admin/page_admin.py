@@ -77,6 +77,9 @@ class ParentMultipleChoiceField(forms.ChoiceField):
         TODO: We should check if the parent_id is ok and not make a wrong
         id-parent-loop. Now, this is checkt in PyLucid.models.Page.save()
         """
+        if value == "None":
+            # assigned to the tree root.
+            return None
         try:
             #value = "test int() error"
             parent_id = int(value)
