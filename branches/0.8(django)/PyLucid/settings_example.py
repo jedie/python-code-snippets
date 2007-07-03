@@ -100,7 +100,9 @@ LANGUAGE_CODE = 'en-us'
 MEDIA_ROOT = './media/'
 
 # URL that handles the media served from MEDIA_ROOT.
-# Example: "http://media.lawrence.com"
+# should have a trailing slash!
+# Example-1: "http://media.your_domain.net/"
+# Example-2: "/_static_files/"
 MEDIA_URL = '/_static_files/'
 PYLUCID_MEDIA_URL = '_static_files/PyLucid'
 

@@ -2,6 +2,7 @@
 
 {% block head %}
 <script type="text/javascript" src="/{{ media_prefix }}/sha1.js"></script>
+<script type="text/javascript" src="/{{ media_prefix }}/media_path_test.js"></script>
 <script type="text/javascript">
 /* <![CDATA[ */
 if (!document.getElementById) {
@@ -18,6 +19,10 @@ function make_hash() {
     source = document.getElementById("source").value;
 
     if (source.length<8) {
+        if (document.getElementById("hash").value != "") {
+            // make_hash() has created the hash in the past. Nothing to do
+            return false;
+        }
         alert("Password min len 8! - current len:" + source.length);
         return false;
     }
@@ -31,10 +36,16 @@ function make_hash() {
     }
 
     salt = make_salt();
-    sha = hex_sha1(salt + source)
-    hash = "sha$" + salt + "$" + sha
-    document.getElementById("hash").value = hash;
-    document.getElementById("source").value = "";
+    sha = hex_sha1(salt + source);
+    hash = "sha$" + salt + "$" + sha;
+
+    hash_obj = document.getElementById("hash")
+    hash_obj.value = hash;
+    hash_obj.style.backgroundColor = "lightgreen";
+
+    source_obj = document.getElementById("source")
+    source_obj.value = "";
+    source_obj.style.backgroundColor = "grey";
 }
 /* ]]> */
 </script>
@@ -46,6 +57,19 @@ function make_hash() {
 #hash {
     background-color: grey;
 }
+fieldset.error {
+    border:2px solid red;
+}
+#check_media {
+    /*
+    hide the check_media div.
+    If JavaScript is enabled the div unhide per JS
+    */
+    display: none;
+}
+#source, #source:active, #source:hover, #source:focus {
+    background-color: white;
+}
 /* ]]> */
 </style>
 {% endblock %}
@@ -56,8 +80,33 @@ function make_hash() {
 {% trans 'Here you can generate a password hash for the _install section access.' %}
 </p>
 <noscript>
-    <p><strong>{% trans 'JavaScript is needed!' %}</strong></p>
+    <fieldset class="error">
+    <legend>{% trans 'JavaScript Error.' %}</legend>
+        <strong>{% trans 'JavaScript is needed!' %}</strong>
+        {% trans 'Please enable JavaScript in your browser!' %}
+    </fieldset>
 </noscript>
+
+<div id="check_media">
+<fieldset class="error">
+    <legend>{% trans 'Error: Wrong media path.' %}</legend>
+    It seems
+    Needed JavaScript file not loaded!<br />
+    Please check your media path in your settings.py in the section "STATIC FILES".
+    <p>
+    media path test: Please check if you can see this file:
+    <a href="/{{ media_prefix }}/media_path_test.html">/{{ media_prefix }}/media_path_test.html</a>
+    </p>
+</fieldset>
+</div>
+<script type="text/javascript">
+    // Unhide the block:
+    object_id = 'check_media';
+    document.getElementById(object_id).style.display = 'block';
+
+    // Hide the block with external media_path_test.js file:
+    hide_by_id(object_id);
+</script>
 
 <fieldset>
     <legend>{% trans 'Generate password hash.' %}</legend>
@@ -69,13 +118,18 @@ function make_hash() {
     <p>
     <label for="hash">generated SHA-1 hash :</label>
     <input id="hash" type="text" value="(input password first)" size="49" maxlength="49" readonly="readonly" /><br />
-    <span class="help_text">{% trans 'You must copy/paste the hash into your settings.py file.' %}</span>
+    <span class="help_text">{% trans 'You must copy&paste the hash into your settings.py file.' %}</span>
     </p>
     <input type="button" value="make hash" onclick="make_hash();"><br />
 </fieldset>
 
-<p>
+<ul>
 <strong>{% trans 'Info:' %}</strong><br />
-{% trans 'The password would be hased with a JavaScript in your Browser. It will not send to the server back!' %}
-</p>
+<li>
+    {% trans 'The password would be hased with a JavaScript in your Browser. It will not send to the server back!' %}
+</li>
+<li>
+    {% trans 'After you have copy&paste the SHA hash into your settings.py, only reload this page.' %}
+</li>
+</ul>
 {% endblock %}

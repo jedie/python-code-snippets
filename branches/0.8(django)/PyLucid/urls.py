@@ -65,20 +65,20 @@ urls += (
         ) % settings.COMMAND_URL_PREFIX,
         'PyLucid.index.handle_command'
     ),
-    # STATIC FILES
-    # Using this method is inefficient and insecure.
-    # Do not use this in a production setting. Use this only for development.
-    # http://www.djangoproject.com/documentation/static_files/
-#    (
-#        '^%s/(?P<path>.*)$' % settings.MEDIA_URL,
-#        'django.views.static.serve',
-#        {'document_root': './%s' % settings.MEDIA_URL}
-#    ),
     # CMS PAGE VIEW
     # For the cach system we make a hash from the url and in a normal
     # cms page request the url contains only the cms page shortcuts.
     # The shortcuts contains only these chars: [a-zA-Z0-9_/]
     (r'^([\w/]*?)/?$', 'PyLucid.index.index'),
+    # STATIC FILES
+    # Using this method is inefficient and insecure.
+    # Do not use this in a production setting. Use this only for development.
+    # http://www.djangoproject.com/documentation/static_files/
+    (
+        '^%s(?P<path>.*)$' % settings.MEDIA_URL,
+        'django.views.static.serve',
+        {'document_root': './%s' % settings.MEDIA_URL}
+    ),
 )
 
 urlpatterns = patterns('', *urls)

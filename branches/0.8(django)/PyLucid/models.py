@@ -310,6 +310,7 @@ class Plugin(models.Model):
 class Preference(models.Model):
     plugin = models.ForeignKey(
         "Plugin", help_text="The associated plugin",
+#        to_field="plugin_name",
         null=True, blank=True
     )
     name = models.CharField(maxlength=150)

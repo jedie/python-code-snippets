@@ -31,12 +31,13 @@ class admin_menu(PyLucidBaseModule):
         edit_link = self.URLs.adminLink("PyLucid/page/%s/" % current_page_id)
 
         context = {
+            "PAGE"          : self.context["PAGE"],
             "login_link"    : self.context["login_link"],
             "edit_page_link": self.URLs.commandLink("page_admin", "edit_page"),
             "new_page_link" : self.URLs.commandLink("page_admin", "new_page"),
             "sub_menu_link" : self.URLs.methodLink("sub_menu"),
         }
-        self._render_template("top_menu", context)#, debug=True)
+        self._render_template("top_menu", context, debug=True)
 
     def sub_menu(self):
         """
