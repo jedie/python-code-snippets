@@ -8,6 +8,7 @@ TODO: rewrite _get_members
 
 import inspect
 
+from PyLucid.settings import INSTALL_COOKIE_NAME
 from PyLucid import install as install_package
 from PyLucid.install.BaseInstall import BaseInstall
 from PyLucid.tools.content_processors import render_string_template
@@ -135,7 +136,7 @@ class Index(BaseInstall):
         self.context["no_menu_link"] = True # no "back to menu" link
         html = render_string_template(LOGOUT_TEMPLATE, self.context)
         response = HttpResponse(html)
-        response.set_cookie("instpass", value="")
+        response.set_cookie(INSTALL_COOKIE_NAME, value="")
         return response
 
 

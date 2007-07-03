@@ -1,0 +1,71 @@
+{% extends "install_base.html" %}
+
+{% block head %}
+<script type="text/javascript" src="/{{ media_prefix }}/sha1.js"></script>
+<script type="text/javascript">
+/* <![CDATA[ */
+if (!document.getElementById) {
+    alert("Your Browser is not supported!");
+}
+function make_hash() {
+    salt = "{{ salt }}";
+    source = document.getElementById("source").value;
+
+    if (source.length<8) {
+        alert("Password min len 8! - current len:" + source.length);
+        return false;
+    }
+
+    for (var i = 1; i <= source.length; i++) {
+       unicode_charcode = source.charCodeAt(i);
+       if (unicode_charcode > 127) {
+            alert("Only ASCII letters are allowed!");
+            return false;
+       }
+    }
+
+    sha = hex_sha1(salt + source)
+    hash = "sha$" + salt + "$" + sha
+    document.getElementById("hash").value = hash;
+    document.getElementById("source").value = "";
+
+    document.login.submit();
+}
+/* ]]> */
+</script>
+<style type="text/css">
+/* <![CDATA[ */
+.help_text {
+    font-size:0.8em;
+}
+#hash {
+    background-color: grey;
+}
+/* ]]> */
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>{% trans 'Login into the _install section' %}</h1>
+
+<noscript>
+    <p><strong>{% trans 'JavaScript is needed!' %}</strong></p>
+</noscript>
+
+<fieldset>
+    <legend>{% trans 'Log in' %}</legend>
+    <label for="source">Input your Password here :</label>
+    <input id="source" type="text" name="{% trans 'Password' %}" size="20" onchange="make_hash();" /><br />
+    <form name="login" method="post" action=".">
+        <label for="hash">generated SHA-1 hash :</label>
+        <input id="hash" name="hash" type="text" value="(input password first)" size="49" maxlength="49" readonly="readonly" /><br />
+        <input type="submit" value="{% trans 'Log in' %}" onclick="make_hash();" />
+    </form>
+    <p>{% trans 'Note: Cookies must be enabled.' %}</p>
+</fieldset>
+
+<p>
+<strong>{% trans 'Info:' %}</strong><br />
+{% trans 'The password would be hased with a JavaScript in your Browser. It will not send to the server back!' %}
+</p>
+{% endblock %}
