@@ -97,7 +97,7 @@ LANGUAGE_CODE = 'en-us'
 
 # Absolute path to the directory that holds media.
 # Example: "/home/media/media.lawrence.com/"
-MEDIA_ROOT = ''
+MEDIA_ROOT = './media/'
 
 # URL that handles the media served from MEDIA_ROOT.
 # Example: "http://media.lawrence.com"
@@ -265,10 +265,8 @@ Note, you must edit MIDDLEWARE_CLASSES above, after installation!!!
 INSTALL_EVILEVAL = False
 
 # Install Password to login into the _install section.
-# The password must be min. 8 chars long.
-# Deactivate the _install section with: INSTALL_PASS = ""
-# After the installation you should deactivate it!
-INSTALL_PASS = ""
+ENABLE_INSTALL_SECTION = True
+INSTALL_PASS_HASH = ""
 
 # The table prefix from a old PyLucid installation, if exist.
 # Only used for updating!

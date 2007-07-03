@@ -62,3 +62,5 @@ PAGE_CACHE_PREFIX = "PyLucid_page_cache_"
 # pages. Added by PyLucid.plugins_internal.page_style and replaces in
 # PyLucid.index._replace_add_data()
 ADD_DATA_TAG = "<!-- additional_data -->"
+
+INSTALL_COOKIE_NAME = "PyLucid_inst_auth"

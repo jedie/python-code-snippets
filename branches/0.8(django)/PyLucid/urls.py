@@ -19,9 +19,11 @@ from django.conf.urls.defaults import include, patterns
 
 from PyLucid import settings
 
-if settings.INSTALL_PASS and len(settings.INSTALL_PASS)>=8:
-    # The _install section is activated
+if settings.ENABLE_INSTALL_SECTION == True:
+    # The _install section is activated.
+    # -> insert all available _install views
     urls = (
+        # RUN A VIEW
         (
             (
                 '^%s/'
@@ -31,20 +33,28 @@ if settings.INSTALL_PASS and len(settings.INSTALL_PASS)>=8:
             ) % settings.INSTALL_URL_PREFIX,
             "PyLucid.install.index.run_method",
         ),
+        # LOGOUT
         (
             '^%s/logout/$' % settings.INSTALL_URL_PREFIX,
             'PyLucid.install.index.logout'
         ),
+        # INSTALL MENU
+        (
+            '^%s/$' % settings.INSTALL_URL_PREFIX,
+            'PyLucid.install.index.menu'
+        ),
     )
 else:
+    # _install section is deactivated.
     urls = ()
 
 urls += (
-    (r'^%s/' % settings.ADMIN_URL_PREFIX, include('django.contrib.admin.urls')),
+    # DJANGO ADMIN PANEL
     (
-        '^%s/$' % settings.INSTALL_URL_PREFIX,
-        'PyLucid.install.index.menu'
+        r'^%s/' % settings.ADMIN_URL_PREFIX,
+        include('django.contrib.admin.urls')
     ),
+    # COMMAND VIEW
     (
         (
             '^%s/'
@@ -55,12 +65,20 @@ urls += (
         ) % settings.COMMAND_URL_PREFIX,
         'PyLucid.index.handle_command'
     ),
+    # STATIC FILES
+    # Using this method is inefficient and insecure.
+    # Do not use this in a production setting. Use this only for development.
+    # http://www.djangoproject.com/documentation/static_files/
+    (
+        '^%s/(?P<path>.*)$' % settings.MEDIA_URL,
+        'django.views.static.serve',
+        {'document_root': './%s' % settings.MEDIA_URL}
+    ),
+    # CMS PAGE VIEW
     # For the cach system we make a hash from the url and in a normal
     # cms page request the url contains only the cms page shortcuts.
     # The shortcuts contains only these chars: [a-zA-Z0-9_/]
     (r'^([\w/]*?)/?$', 'PyLucid.index.index'),
 )
-
-#print urls
 
 urlpatterns = patterns('', *urls)

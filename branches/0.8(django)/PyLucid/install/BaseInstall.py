@@ -5,12 +5,15 @@ A base class for every _install view.
 
 import sys
 
-from PyLucid.settings import INSTALL_PASS
+from PyLucid.settings import ENABLE_INSTALL_SECTION, \
+        INSTALL_PASS_HASH, PYLUCID_MEDIA_URL, INSTALL_COOKIE_NAME
 from PyLucid import PYLUCID_VERSION_STRING
 from PyLucid.system.response import SimpleStringIO
-from PyLucid.tools.crypt import make_salt_hash, check_salt_hash
+from PyLucid.tools.crypt import make_salt_hash, check_salt_hash, \
+                                                                                            salt_hash_to_dict
 from PyLucid.tools.content_processors import render_string_template
 
+from django.shortcuts import render_to_response
 from django import newforms as forms
 from django.http import HttpResponse, Http404
 from django.utils.translation import ugettext as _
@@ -24,29 +27,22 @@ from django.template import Template, Context, loader
 #debug = True
 DEBUG = False
 
-COOKIE_NAME = "PyLucid_inst_pass"
 
-def check_install_password(password):
+
+def check_password_hash(password_hash):
     """
-    compare the given >password< with the INSTALL_PASS.
-    raise a WrongPassword if the password is not the same.
     """
     def error(msg):
         msg = _("error:") + msg
         if DEBUG:
             msg += " [Debug: '%s' != '%s']" % (
-                password, INSTALL_PASS
+                password_hash, INSTALL_PASS_HASH
             )
         raise WrongPassword(msg)
-    if INSTALL_PASS in (None, ""):
-        error(_("no passwort set in your settings.py"))
-    elif len(INSTALL_PASS)<8:
-        error(_("The password in your settings.py is to short"))
-    elif password != INSTALL_PASS:
-        error(_(
-            "Your old password was entered incorrectly."
-            " Please enter it again."
-        ))
+    if len(password_hash)!=49:
+        error(_("Wrong password hash len."))
+    if password_hash != INSTALL_PASS_HASH:
+        error(_("Password compare fail."))
 
 
 def check_cookie_pass(request):
@@ -55,8 +51,15 @@ def check_cookie_pass(request):
     - returns True if the password hash is ok
     - returns False if there is no password or the hash test failed
     """
-    cookie_pass = request.COOKIES.get(COOKIE_NAME, None)
-    if cookie_pass and check_salt_hash(INSTALL_PASS, cookie_pass) == True:
+    cookie_pass = request.COOKIES.get(INSTALL_COOKIE_NAME, None)
+    try:
+        check = check_salt_hash(INSTALL_PASS_HASH, cookie_pass)
+    except Exception, msg:
+        if DEBUG:
+            raise Exception(msg)
+        else:
+            return False
+    if cookie_pass and check == True:
         # The salt-hash stored in the cookie is ok
         return True
     else:
@@ -65,28 +68,7 @@ def check_cookie_pass(request):
 
 class InstallPassForm(forms.Form):
     """ a django newforms for input the _install section password """
-    password = forms.CharField(
-        _('password'), min_length=8,
-        widget=forms.PasswordInput,
-        help_text=_('The install password from your settings.py')
-    )
-
-LOGIN_TEMPLATE = """
-{% extends "install_base.html" %}
-{% block content %}
-<h1>{% trans 'Log in' %}</h1>
-
-{% if msg %}<h3>{{ msg|escape }}</h3>{% endif %}
-
-<form method="post" action=".">
-  <table class="form">
-    {{ form }}
-  </table>
-  <input type="submit" value="{% trans 'Log in' %}" />
-</form>
-<p>{% trans 'Note: Cookies must be enabled.' %}</p>
-{% endblock %}
-"""
+    hash = forms.CharField(min_length=49, max_length=49)
 
 SIMPLE_RENDER_TEMPLATE = """
 {% extends "install_base.html" %}
@@ -101,16 +83,16 @@ class BaseInstall(object):
     Base class for all install views.
     """
     def __init__(self, request):
-        if INSTALL_PASS == None or len(INSTALL_PASS)<8:
-            raise Http404(
-                "Install password not set or too short."
-                " - Install section deactivated"
-            )
+        if ENABLE_INSTALL_SECTION != True:
+            # Should never nappen, because the urlpatterns deactivaed, too.
+            raise Http404("Install section disabled")
 
         self.request = request
         self.context = {
             "output": "",
+            "messages": [],
             "http_host": request.META.get("HTTP_HOST","cms page"),
+            "media_prefix": PYLUCID_MEDIA_URL,
             "version": PYLUCID_VERSION_STRING,
         }
 
@@ -126,39 +108,54 @@ class BaseInstall(object):
             # access ok -> start the normal _instal view() method
             return self.view()
 
+        if INSTALL_PASS_HASH in (None, ""):
+            self.context["messages"].append(
+                _("The _install section password hash is not set.")
+            )
+            # Display a html page for generating the password with sha1.js
+            return render_to_response(
+                "install_generate_hash.html", self.context
+            )
+        if len(INSTALL_PASS_HASH)!=49:
+            self.context["messages"].append(
+                _("Wrong hash len in your settings.py!")
+            )
+            return render_to_response(
+                "install_generate_hash.html", self.context
+            )
+
         # The _install section password is not in the cookie
         # -> display a html input form or check a submited form
-
         if self.request.method == 'POST':
             # A form was submit
             form = InstallPassForm(self.request.POST)
             if form.is_valid():
                 # The submited form is ok
                 form_data = form.cleaned_data
-                password = form_data["password"]
+                password_hash = form_data["hash"]
                 try:
-                    check_install_password(password)
+                    check_password_hash(password_hash)
                 except WrongPassword, msg:
                     # Display the form again
-                    self.context["msg"] = msg
+                    self.context["messages"].append(msg)
                 else:
                     # Password is ok. -> process the normal _instal view()
                     response = self.view()
                     # insert a cookie with the hashed password in the response
-                    salt_hash = make_salt_hash(password)
+                    salt_hash = make_salt_hash(password_hash)
                     response.set_cookie(
-                        COOKIE_NAME, value=salt_hash, max_age=None
+                        INSTALL_COOKIE_NAME, value=salt_hash, max_age=None
                     )
                     return response
-        else:
-            # Create a empty form
-            form = InstallPassForm()
 
-        self.context["form"] = form.as_table()
+        data = salt_hash_to_dict(INSTALL_PASS_HASH)
+        self.context["salt"] = data["salt"]
+
         self.context["no_menu_link"] = True # no "back to menu" link
-        return self._render(LOGIN_TEMPLATE)
+#        self.context["messages"].append(_("Please input the password"))
+        return render_to_response("install_login.html", self.context)
 
-    #___________________________________________________________________________
+   #___________________________________________________________________________
 
     def _redirect_execute(self, method, *args, **kwargs):
         """
