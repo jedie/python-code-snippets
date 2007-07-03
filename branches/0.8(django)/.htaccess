@@ -21,7 +21,7 @@ AddHandler cgi-script .cgi
 RewriteEngine On
 
 # leave out media files and cgi-bin
-RewriteRule ^media - [L]
+RewriteRule ^_static_files - [L]
 RewriteRule ^cgi-bin - [L]
 
 RewriteCond %{REQUEST_FILENAME} !-f
