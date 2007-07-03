@@ -171,7 +171,12 @@ def index(request, url):
     """
     # Cache only for anonymous users. Otherwise users how are log-in don't see
     # the dynamic integrate admin menu.
-    use_cache = request.user.is_anonymous()
+    try:
+        use_cache = request.user.is_anonymous()
+    except AttributeError, msg:
+        # TODO: middlewares not active -> _install section!
+        raise AttributeError(msg)
+
     if use_cache:
         # Try to get the cms page request from the cache
         cache_key, response = get_cached_data(url)

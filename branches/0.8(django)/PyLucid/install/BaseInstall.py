@@ -10,7 +10,7 @@ from PyLucid.settings import ENABLE_INSTALL_SECTION, \
 from PyLucid import PYLUCID_VERSION_STRING
 from PyLucid.system.response import SimpleStringIO
 from PyLucid.tools.crypt import make_salt_hash, check_salt_hash, \
-                                                                                            salt_hash_to_dict
+                                                            salt_hash_to_dict
 from PyLucid.tools.content_processors import render_string_template
 
 from django.shortcuts import render_to_response
@@ -24,7 +24,7 @@ from django.template import Template, Context, loader
 
 
 # Warning: If debug is on, the install password is in the traceback!!!
-#debug = True
+#DEBUG = True
 DEBUG = False
 
 
@@ -52,14 +52,10 @@ def check_cookie_pass(request):
     - returns False if there is no password or the hash test failed
     """
     cookie_pass = request.COOKIES.get(INSTALL_COOKIE_NAME, None)
-    try:
-        check = check_salt_hash(INSTALL_PASS_HASH, cookie_pass)
-    except Exception, msg:
-        if DEBUG:
-            raise Exception(msg)
-        else:
-            return False
-    if cookie_pass and check == True:
+    if cookie_pass in (None, ""):
+        return False
+    check = check_salt_hash(INSTALL_PASS_HASH, cookie_pass)
+    if check == True:
         # The salt-hash stored in the cookie is ok
         return True
     else:
@@ -104,14 +100,21 @@ class BaseInstall(object):
         - starts the self.view() if login ok
         - display the login form if login not ok
         """
-        if check_cookie_pass(self.request) == True:
+        try:
+            check = check_cookie_pass(self.request)
+        except Exception, msg:
+            if DEBUG:
+                self.context["messages"].append("DEBUG: %s" % msg)
+            check = False
+        if check == True:
             # access ok -> start the normal _instal view() method
             return self.view()
 
         if INSTALL_PASS_HASH in (None, ""):
-            self.context["messages"].append(
-                _("The _install section password hash is not set.")
-            )
+            if DEBUG:
+                self.context["messages"].append(
+                    _("The _install section password hash is not set.")
+                )
             # Display a html page for generating the password with sha1.js
             return render_to_response(
                 "install_generate_hash.html", self.context
