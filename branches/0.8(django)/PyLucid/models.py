@@ -165,9 +165,13 @@ class Page(models.Model):
         Check recusive if a new parent can be attached and is not a loop.
         TODO: This method should used in newform is_valid() ???
         """
+        if self.id == None:
+            # A new page should be saved -> do nothing
+            return
+
         if not self.parent:
             # No parent exist -> root arraived
-            return True
+            return
 
         if self.parent.id == id:
             # Error -> parent-loop found.
@@ -176,24 +180,41 @@ class Page(models.Model):
         # go a level deeper to the root
         self.parent._check_parent(id)
 
-    def save(self):
+    def _prepare_shortcut(self):
         """
-        save a new page
-        before save: check some data consistency.
+        prepare the page shortcut:
+        -rebuild shortcut (maybe)
+        -make shortcut unique
         """
-        # Check some settings for the default index page:
-        self._check_default_page_settings()
+        auto_shortcuts = Preference.objects.get(name='auto shortcuts').value
+        if auto_shortcuts in (1, True, "1"):
+            # We should rebuild the shortcut
+            self.shortcut = self.name
+
+        #______________________________________________________________________
+        # Make a new shortcut unique:
 
         if self.id != None:# A existing page should update
-            # check if a new parent is no parent-child-loop:
-            self._check_parent(self.id)
             # Exclude the existing shortcut from the "black list":
             exclude_shortcut = Page.objects.get(id=self.id).shortcut
         else: # A new page created
             exclude_shortcut = None
 
-        # Make a new shortcut unique:
         self.shortcut = getUniqueShortcut(self.shortcut, exclude_shortcut)
+
+    def save(self):
+        """
+        Save a new page or update changed page data.
+        before save: check some data consistency to prevents inconsistent data.
+        """
+        # Check some settings for the default index page:
+        self._check_default_page_settings()
+
+        # check if a new parent is no parent-child-loop:
+        self._check_parent(self.id)
+
+        # Rebuild shortcut / make shortcut unique:
+        self._prepare_shortcut()
 
         super(Page, self).save() # Call the "real" save() method
 
