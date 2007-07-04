@@ -102,15 +102,61 @@ def flat_tree_list():
 
     return page_list
 
-def get_sitemap_tree():
+
+#______________________________________________________________________________
+# Data access for main-/sub-menu and sitemap:
+
+
+def _get_page_data(request):
     """
-    Generate a tree of all pages.
+    shared function for get_sitemap_tree() and get_main_menu_tree()
     """
-    sitemap_data = Page.objects.values(
+    page_data = Page.objects.values(
         "id", "parent", "name", "title", "shortcut"
-    ).order_by("position")
-    #self.page_msg(values)
+    ).filter(showlinks = True).order_by("position")
+
+    if request.user.is_anonymous():
+        page_data = page_data.exclude(permitViewPublic = False)
+
+    return page_data
+
+
+def get_sitemap_tree(request):
+    """
+    Generate a tree of all pages for the sitemap.
+    """
+    # Get all pages from the database:
+    sitemap_data = _get_page_data(request)
     tree = TreeGenerator(sitemap_data)
     sitemap_tree = tree.get_sitemap_tree()
     return sitemap_tree
+
+
+def get_main_menu_tree(request, current_page_id):
+    """
+    Generate a opened tree dict for the given >current_page_id<.
+    """
+    # Get all pages from the database:
+    menu_data = _get_page_data(request)
+    # Build the tree:
+    tree = TreeGenerator(menu_data)
+    # Generate the opened tree dict:
+    menu_data = tree.get_menu_tree(current_page_id)
+    return menu_data
+
+
+def get_sub_menu_data(request, current_page_id):
+    """
+    returned a list of all sub pages for the >current_page_id<.
+    """
+    sub_pages = Page.objects.values(
+        "name", "shortcut", "title"
+    ).filter(
+        parent = current_page_id, showlinks = True
+    ).order_by('position')
+
+    if request.user.is_anonymous():
+        sub_pages = sub_pages.exclude(permitViewPublic = False)
+
+    return sub_pages
 
