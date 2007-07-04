@@ -308,9 +308,12 @@ class Plugin(models.Model):
 
 
 class Preference(models.Model):
+    """
+    TODO: Should we have a type attribute here?
+        (like CharField, TextField, BooleanField)
+    """
     plugin = models.ForeignKey(
         "Plugin", help_text="The associated plugin",
-#        to_field="plugin_name",
         null=True, blank=True
     )
     name = models.CharField(maxlength=150)
@@ -327,7 +330,7 @@ class Preference(models.Model):
         list_display = ("plugin", "name", "value", "description")
         list_display_links = ("name",)
         list_filter = ("plugin",)
-        ordering = ("plugin","name")
+        ordering = ("name",)
         search_fields = ["name", "value", "description"]
 
 
