@@ -28,6 +28,7 @@
 
 __version__= "$Rev$"
 
+from PyLucid.db.page import get_main_menu_tree
 from PyLucid.system.BaseModule import PyLucidBaseModule
 from PyLucid.tools.tree_generator import TreeGenerator
 from PyLucid.models import Page
@@ -42,20 +43,11 @@ class main_menu(PyLucidBaseModule):
         current_page = self.context["PAGE"]
         self.current_page_id  = current_page.id
 
-        menu_data = Page.objects.values(
-            "id", "parent", "name", "title", "shortcut"
-        ).order_by("position")
-
-        if self.request.user.is_anonymous():
-            menu_data = menu_data.exclude(permitViewPublic = False)
-
-        tree = TreeGenerator(menu_data)
-
-        # Generate the opened tree dict for the given page id
-        menu_data = tree.get_menu_tree(self.current_page_id)
+        # Get the menu tree dict from the database:
+        menu_tree = get_main_menu_tree(self.request, self.current_page_id)
 
         # Create from the tree dict a nested html list.
-        menu_data = self.get_html(menu_data)
+        menu_data = self.get_html(menu_tree)
 
         self.response.write(menu_data)
 

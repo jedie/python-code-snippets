@@ -128,9 +128,35 @@ class Page(models.Model):
             ('Advanced options', {
                 'classes': 'collapse',
                 'fields' : (
-                    'showlinks', 'permitViewGroup', 'permitEditGroup'
+                    'showlinks', 'permitViewPublic',
+                    'permitViewGroup', 'permitEditGroup'
                 ),
             }),
+        )
+
+    def _check_default_page_settings(self):
+        """
+        The default page must have some settings.
+        """
+        entry = Preference.objects.get(name="index page")
+        index_page_id = entry.value
+
+        if int(self.id) != int(index_page_id):
+            # This page is not the default index page
+            return
+
+        #______________________________________________________________________
+        # Check some settings for the default index page:
+
+        assert self.permitViewPublic == True, (
+            "Error save the new page data:"
+            " The default page must be viewable for anonymous users."
+            " (permitViewPublic must checked.)"
+        )
+        assert self.showlinks == True, (
+            "Error save the new page data:"
+            " The default page must displayed in the main menu."
+            " (showlinks must checked.)"
         )
 
     def _check_parent(self, id):
@@ -151,7 +177,13 @@ class Page(models.Model):
         self.parent._check_parent(id)
 
     def save(self):
-        """save a new page"""
+        """
+        save a new page
+        before save: check some data consistency.
+        """
+        # Check some settings for the default index page:
+        self._check_default_page_settings()
+
         if self.id != None:# A existing page should update
             # check if a new parent is no parent-child-loop:
             self._check_parent(self.id)

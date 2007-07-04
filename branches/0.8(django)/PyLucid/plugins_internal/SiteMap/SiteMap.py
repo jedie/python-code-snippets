@@ -34,7 +34,11 @@ class SiteMap(PyLucidBaseModule):
     def lucidTag(self):
         """ Baut die SiteMap zusammen """
 
-        sitemap_tree = get_sitemap_tree()
+        # Get a tree dict of all pages:
+        sitemap_tree = get_sitemap_tree(self.request)
+
+        # Generate the html page
+        # TODO: This nomaly is the job from the django template engine :(
         html = self.get_html(sitemap_tree)
 
         self.response.write(html)
