@@ -47,7 +47,7 @@ class admin_menu(PyLucidBaseModule):
             "commandURLprefix": self.URLs.get_command_base(),
             "adminURLprefix"  : self.URLs["adminBase"],
         }
-        self._render_template("sub_menu", context, debug=True)
+        self._render_template("sub_menu", context)#, debug=True)
 
 
 
