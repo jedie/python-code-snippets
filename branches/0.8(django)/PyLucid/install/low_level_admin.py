@@ -258,9 +258,12 @@ class CheckPreferences(BaseInstall):
         print "_"*80
         print "Check '%s'..." % name
         p = Preference.objects.get(name = name)
-        print "Description:", p.description
-        print "default value:", p.default_value
-        print "current value:", p.value
+        try:
+            print "Description:", p.description
+            print "default value:", p.default_value
+            print "current value:", p.value
+        except Exception, msg:
+            print "Error:", msg
         return p
 
     def _check_index_page(self):
