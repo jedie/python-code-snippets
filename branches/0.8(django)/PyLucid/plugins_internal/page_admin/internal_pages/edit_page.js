@@ -55,12 +55,12 @@ function tabs_support(textarea_id) {
 page_content_changed = 0;
 
 // resize the textarea
-function resize_big(textarea_id) {
-    textarea = document.getElementById(textarea_id);
+function resize_big() {
+    textarea = document.getElementsByTagName("textarea")[0]
     textarea.rows = textarea.rows*1.2;
 }
-function resize_small(textarea_id) {
-    textarea = document.getElementById(textarea_id);
+function resize_small() {
+    textarea = document.getElementsByTagName("textarea")[0]
     textarea.rows = textarea.rows/1.2;
 }
 
