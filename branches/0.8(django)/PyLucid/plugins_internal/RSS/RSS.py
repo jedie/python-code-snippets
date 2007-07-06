@@ -33,13 +33,13 @@ import socket
 socket.setdefaulttimeout(5)
 
 
-from PyLucid.system.BaseModule import PyLucidBaseModule
+from PyLucid.system.BasePlugin import PyLucidBasePlugin
 from PyLucid.tools.OutBuffer import OutBuffer
 from PyLucid.components.db_cache import DB_Cache, CacheObjectNotFound
 
 
 
-class RSS(PyLucidBaseModule):
+class RSS(PyLucidBasePlugin):
 
     info_txt = '<small class="RSS_info">\n\t%s\n</small>\n'
 

@@ -6,7 +6,7 @@
 
     The URLs class has some usefull methods for plugins to build links.
 
-    The view put a instance in context["URLs"]. The BaseModule bind the class
+    The view put a instance in context["URLs"]. The BasePlugin bind the class
     to self. So every plugin can easy access the methods with self.URLs.
 
     Last commit info:

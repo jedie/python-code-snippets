@@ -18,10 +18,10 @@
 """
 
 
-from PyLucid.system.BaseModule import PyLucidBaseModule
+from PyLucid.system.BasePlugin import PyLucidBasePlugin
 
 
-class admin_menu(PyLucidBaseModule):
+class admin_menu(PyLucidBasePlugin):
 
     def lucidTag(self):
         """

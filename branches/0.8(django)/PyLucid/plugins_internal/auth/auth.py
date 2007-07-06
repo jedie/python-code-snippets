@@ -42,7 +42,7 @@ debug = False
 # sondern direkt angezeigt!
 
 
-from PyLucid.system.BaseModule import PyLucidBaseModule
+from PyLucid.system.BasePlugin import PyLucidBasePlugin
 
 from PyLucid.modules.auth.exceptions import *
 from PyLucid.modules.auth.login_verifier import LoginVerifier
@@ -53,7 +53,7 @@ from PyLucid.modules.auth.auth_data import AuthData
 
 
 
-class auth(PyLucidBaseModule):
+class auth(PyLucidBasePlugin):
 
     def __init__(self, *args, **kwargs):
         super(auth, self).__init__(*args, **kwargs)

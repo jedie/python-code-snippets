@@ -39,9 +39,9 @@ from django.http import HttpResponse
 
 from PyLucid.settings import ADD_DATA_TAG
 from PyLucid.models import Style
-from PyLucid.system.BaseModule import PyLucidBaseModule
+from PyLucid.system.BasePlugin import PyLucidBasePlugin
 
-class page_style(PyLucidBaseModule):
+class page_style(PyLucidBasePlugin):
 
     def lucidTag(self):
         """

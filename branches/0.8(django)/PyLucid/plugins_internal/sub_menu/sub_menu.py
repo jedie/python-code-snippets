@@ -25,11 +25,11 @@ import re, os, sys, urllib, cgi
 
 
 from PyLucid.db.page import get_sub_menu_data
-from PyLucid.system.BaseModule import PyLucidBaseModule
+from PyLucid.system.BasePlugin import PyLucidBasePlugin
 from PyLucid.models import Page
 from PyLucid.db.page import get_link_by_id
 
-class sub_menu(PyLucidBaseModule):
+class sub_menu(PyLucidBasePlugin):
 
     def lucidTag( self ):
         """

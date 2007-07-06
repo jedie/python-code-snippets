@@ -34,9 +34,9 @@ import sys, os, cgi, sys
 
 
 
-from PyLucid.system.BaseModule import PyLucidBaseModule
+from PyLucid.system.BasePlugin import PyLucidBasePlugin
 
-class SourceCode(PyLucidBaseModule):
+class SourceCode(PyLucidBasePlugin):
 
     def lucidFunction( self, function_info ):
         filepath = function_info # Daten aus dem <lucidFunction>-Tag

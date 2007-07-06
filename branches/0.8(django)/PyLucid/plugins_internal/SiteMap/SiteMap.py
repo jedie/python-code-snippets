@@ -26,10 +26,10 @@ license:
 __version__= "$Rev$"
 
 from PyLucid.db.page import get_sitemap_tree
-from PyLucid.system.BaseModule import PyLucidBaseModule
+from PyLucid.system.BasePlugin import PyLucidBasePlugin
 
 
-class SiteMap(PyLucidBaseModule):
+class SiteMap(PyLucidBasePlugin):
 
     def lucidTag(self):
         """ Baut die SiteMap zusammen """

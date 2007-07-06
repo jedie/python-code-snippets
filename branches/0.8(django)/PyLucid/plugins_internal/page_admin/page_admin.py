@@ -32,7 +32,7 @@ from django.utils.translation import ugettext
 from PyLucid import settings
 from PyLucid.models import Page, Plugin
 from PyLucid.db.page import flat_tree_list, get_sitemap_tree
-from PyLucid.system.BaseModule import PyLucidBaseModule
+from PyLucid.system.BasePlugin import PyLucidBasePlugin
 from PyLucid.system.detect_page import get_default_page_id
 from PyLucid.tools.content_processors import replace_add_data
 
@@ -110,7 +110,7 @@ class SelectEditPageForm(forms.Form):
 
 #______________________________________________________________________________
 
-class page_admin(PyLucidBaseModule):
+class page_admin(PyLucidBasePlugin):
 
     def _get_edit_page(self, edit_page_id, new_page_instance):
         """

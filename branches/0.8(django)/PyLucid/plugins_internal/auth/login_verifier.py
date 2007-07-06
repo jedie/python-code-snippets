@@ -27,7 +27,7 @@ license:
 debug = False
 
 from PyLucid.system import crypt
-from PyLucid.system.BaseModule import PyLucidBaseModule
+from PyLucid.system.BasePlugin import PyLucidBasePlugin
 
 from PyLucid.modules.auth.exceptions import *
 
@@ -38,7 +38,7 @@ def md5(txt):
 
 
 
-class LoginVerifier(PyLucidBaseModule):
+class LoginVerifier(PyLucidBasePlugin):
 
     def check_plaintext_login(self, username, password):
         """

@@ -12,11 +12,11 @@ GPL-License
 
 import cgi
 
-from PyLucid.system.BaseModule import PyLucidBaseModule
+from PyLucid.system.BasePlugin import PyLucidBasePlugin
 
 from PyLucid.models import Page
 
-class back_links(PyLucidBaseModule):
+class back_links(PyLucidBasePlugin):
     indexlink = '<a href="/">Index</a>'
     backlink  = '<a href="%(url)s">%(title)s</a>'
 

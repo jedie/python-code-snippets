@@ -24,9 +24,9 @@ import cgi, sys, imp, time
 
 #from PyLucid.tools.formatter import filesizeformat
 
-from PyLucid.system.BaseModule import PyLucidBaseModule
+from PyLucid.system.BasePlugin import PyLucidBasePlugin
 
-class show_internals(PyLucidBaseModule):
+class show_internals(PyLucidBasePlugin):
     def link( self ):
         return '<a href="%smenu">show_internals</a>' % self.URLs["action"]
 

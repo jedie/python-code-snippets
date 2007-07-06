@@ -46,7 +46,7 @@ internal_page_css = "PyLucid/modules/module_admin/administation_menu.css"
 from PyLucid.components import plugin_cfg
 
 from PyLucid.system.exceptions import *
-from PyLucid.system.BaseModule import PyLucidBaseModule
+from PyLucid.system.BasePlugin import PyLucidBasePlugin
 
 
 
@@ -55,7 +55,7 @@ from PyLucid.system.BaseModule import PyLucidBaseModule
 
 
 
-class module_admin(PyLucidBaseModule):
+class module_admin(PyLucidBasePlugin):
     #~ def __init__(self, *args, **kwargs):
         #~ super(ModuleAdmin, self).__init__(*args, **kwargs)
 

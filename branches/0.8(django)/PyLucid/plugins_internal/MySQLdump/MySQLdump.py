@@ -30,10 +30,10 @@ from colubrid import HttpResponse
 
 from PyLucid.tools import formatter
 from PyLucid.components.plugin_cfg import PluginConfig
-from PyLucid.system.BaseModule import PyLucidBaseModule
+from PyLucid.system.BasePlugin import PyLucidBasePlugin
 
 
-class MySQLdump(PyLucidBaseModule):
+class MySQLdump(PyLucidBasePlugin):
 
     def __init__(self, request, response):
         super(MySQLdump, self).__init__(request, response)

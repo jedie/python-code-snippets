@@ -22,9 +22,9 @@ __version__= "$Rev$"
 
 import sys, os, locale
 
-from PyLucid.system.BaseModule import PyLucidBaseModule
+from PyLucid.system.BasePlugin import PyLucidBasePlugin
 
-class SystemInfo(PyLucidBaseModule):
+class SystemInfo(PyLucidBasePlugin):
     def display_all(self):
         self.response.write("<hr>")
 

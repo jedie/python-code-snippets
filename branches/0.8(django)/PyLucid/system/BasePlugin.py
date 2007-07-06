@@ -2,25 +2,25 @@
 # -*- coding: UTF-8 -*-
 
 """
-    PyLucid BaseModule
+    PyLucid BasePlugin
     ~~~~~~~~~~~~~~~~~~
 
     The base Plugin object. Every Plugin can inherit.
 
     e.g.:
 
-        from PyLucid.system.BaseModule import PyLucidBaseModule
+        from PyLucid.system.BasePlugin import PyLucidBasePlugin
 
-        class Bsp(PyLucidBaseModule):
+        class Bsp(PyLucidBasePlugin):
             def __init__(self, *args, **kwargs):
                 super(Bsp, self).__init__(*args, **kwargs)
 
 
     Last commit info:
     ~~~~~~~~~~~~~~~~~
-    $LastChangedDate$
-    $Rev$
-    $Author$
+    $LastChangedDate: 2007-06-29 18:05:08 +0200 (Fr, 29 Jun 2007) $
+    $Rev: 1127 $
+    $Author: JensDiemer $
 
     :copyright: 2007 by Jens Diemer
     :license: GNU GPL, see LICENSE for more details
@@ -33,7 +33,7 @@ from PyLucid.tools.content_processors import apply_markup, \
                                                         render_string_template
 
 
-class PyLucidBaseModule(object):
+class PyLucidBasePlugin(object):
 
     def __init__(self, context, response):
         self.context    = context

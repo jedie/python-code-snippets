@@ -28,7 +28,7 @@ RSS_FILENAME = "RSS.xml"
 #debug = True
 debug = False
 
-from PyLucid.system.BaseModule import PyLucidBaseModule
+from PyLucid.system.BasePlugin import PyLucidBasePlugin
 from PyLucid.db.page import get_update_info
 from PyLucid.system.exceptions import PluginError
 from PyLucid import PYLUCID_VERSION_STRING
@@ -39,7 +39,7 @@ from django.core.cache import cache
 # Same key used by the PageUpdateList Plugin, too!!!
 CACHE_KEY = "page_updates_data"
 
-class RSSfeedGenerator(PyLucidBaseModule):
+class RSSfeedGenerator(PyLucidBasePlugin):
 
     def lucidTag(self, count=10):
         """

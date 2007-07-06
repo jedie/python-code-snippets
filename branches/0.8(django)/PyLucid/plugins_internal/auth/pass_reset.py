@@ -31,14 +31,14 @@ debug = False
 
 
 from PyLucid.system import crypt
-from PyLucid.system.BaseModule import PyLucidBaseModule
+from PyLucid.system.BasePlugin import PyLucidBasePlugin
 from PyLucid.modules.auth.auth_data import AuthData
 from PyLucid.components.db_cache import DB_Cache, CacheObjectNotFound
 
 from PyLucid.modules.auth.exceptions import *
 
 
-class PassReset(PyLucidBaseModule):
+class PassReset(PyLucidBasePlugin):
     """
     Das Password eines Users wieder neu setzten
     """

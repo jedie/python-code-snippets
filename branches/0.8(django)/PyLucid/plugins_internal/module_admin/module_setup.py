@@ -21,9 +21,9 @@ __version__= "$Rev$"
 #~ debug = True
 debug = False
 
-from PyLucid.system.BaseModule import PyLucidBaseModule
+from PyLucid.system.BasePlugin import PyLucidBasePlugin
 
-class ModuleSetup(PyLucidBaseModule):
+class ModuleSetup(PyLucidBasePlugin):
     def module_setup(self, function_info):
         """
         built a simple select menu, from all modules/plugins how has a setup

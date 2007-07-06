@@ -20,10 +20,10 @@
 
 __version__= "$Rev$"
 
-from PyLucid.system.BaseModule import PyLucidBaseModule
+from PyLucid.system.BasePlugin import PyLucidBasePlugin
 from PyLucid.db.page import get_update_info
 
-class page_update_list(PyLucidBaseModule):
+class page_update_list(PyLucidBasePlugin):
 
     def lucidTag(self, count=10):
         try:
