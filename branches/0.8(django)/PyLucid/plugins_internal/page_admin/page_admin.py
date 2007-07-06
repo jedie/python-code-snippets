@@ -202,7 +202,6 @@ class page_admin(PyLucidBasePlugin):
             if html_form.is_valid():
                 # Save the new page data into the database:
 #                self.page_msg(self.request.POST)
-
                 try:
                     html_form.save()
                 except Exception, msg:
@@ -237,6 +236,22 @@ class page_admin(PyLucidBasePlugin):
             "url_textile_help": self.URLs.methodLink("tinyTextile_help"),
             "url_taglist": self.URLs.methodLink("tag_list"),
         }
+
+        if page_instance.markup.name == "None":
+            # If there is no markup engine used -> insert TinyMCE JS Editor
+            js_data = (
+                '<script language="javascript" type="text/javascript"'
+                ' src="%stiny_mce/tiny_mce.js"></script>'
+                '\n'
+                '<script language="javascript" type="text/javascript">\n'
+                '    tinyMCE.init({\n'
+                '        mode : "textareas",'
+                '        height : "480",'
+                '    });\n'
+                '</script>\n'
+            ) % settings.PYLUCID_MEDIA_URL
+            context["tinymce"] = js_data
+
         self._render_template("edit_page", context)#, debug=True)
 
     def select_edit_page(self):

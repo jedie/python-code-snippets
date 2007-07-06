@@ -23,14 +23,17 @@
              {% trans 'django panel edit' %}
             </button>
         </a>
-        </li><li>
-        <button type="button" class="resize_buttons" onclick="JavaScript:resize_big('id_content'); return false" title="{% trans 'makes the textarea bigger' %}">
+        </li>
+        {% if not tinymce %}
+        <li>
+        <button type="button" class="resize_buttons" onclick="JavaScript:resize_big(); return false" title="{% trans 'makes the textarea bigger' %}">
             +
         </button>
-        <button type="button" class="resize_buttons" onclick="JavaScript:resize_small('id_content'); return false" title="{% trans 'makes the textarea smaller' %}">
+        <button type="button" class="resize_buttons" onclick="JavaScript:resize_small(); return false" title="{% trans 'makes the textarea smaller' %}">
             -
         </button>
         </li>
+        {% endif %}
     </ul>
     <hr class="seperator" />
     <ul>
@@ -45,3 +48,4 @@
     </ul>
 </form>
 </fieldset>
+{% if tinymce %}{{ tinymce }}{% endif %}

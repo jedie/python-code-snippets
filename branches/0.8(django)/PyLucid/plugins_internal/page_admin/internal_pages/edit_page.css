@@ -53,3 +53,7 @@ hr.seperator {
 #action_buttons .resize_buttons {
     width: 30px;
 }
+.errorlist {
+    /* newforms errors */
+    border: 1px solid red;
+}
