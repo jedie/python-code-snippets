@@ -15,6 +15,8 @@
     :license: GNU GPL, see LICENSE for more details.
 """
 
+import pickle
+
 from django.db import models
 from django.contrib.auth.models import User, Group
 
@@ -362,29 +364,103 @@ class Plugin(models.Model):
 
 class Preference(models.Model):
     """
-    TODO: Should we have a type attribute here?
-        (like CharField, TextField, BooleanField)
+    Preferences for PyLucid system and all Plugins.
+    Any pickleable Python object can be stored.
+    Use a small cache, so the pickle.loads() method would only be used on the
+    first get_value.
+
+    Note:
+        -This model has no editable field. Because it makes no sense to edit
+             the pickled data string ;)
+        -There is a bug in django, if the users try to edit a entry:
+            http://code.djangoproject.com/ticket/3434
     """
+    def __init__(self, *args, **kwargs):
+        self._cache = {}
+        super(Preference, self).__init__(*args, **kwargs)
+
     plugin = models.ForeignKey(
         "Plugin", help_text="The associated plugin",
-        null=True, blank=True
+        null=True, blank=True, editable=False
     )
-    name = models.CharField(maxlength=150)
-    description = models.TextField()
-    value = models.CharField(maxlength=255)
+    name = models.CharField(maxlength=150, db_index=True, editable=False)
+    description = models.TextField(editable=False)
+
+    #__________________________________________________________________________
+    # The value of the entry
+
+    def __get_value(self):
+        if "value" in self._cache:
+            value = self._cache["value"]
+        else:
+            value = pickle.loads(self._value)
+            self._cache["value"] = value
+        return value
+
+    def __set_value(self, value):
+        self._cache["value"] = value
+        self._value = pickle.dumps(value)
+
+    _value = models.TextField(editable=False, help_text="Pickled Python object")
+    value = property(__get_value, __set_value)
+
+    #__________________________________________________________________________
+    # The default value.
+
+    def __get_default_value(self):
+        if "default_value" in self._cache:
+            default_value = self._cache["default_value"]
+        else:
+            default_value = pickle.loads(self._default_value)
+            self._cache["default_value"] = default_value
+        return default_value
+
+    def __set_default_value(self, default_value):
+        self._cache["default_value"] = default_value
+        self._default_value = pickle.dumps(default_value)
+
+    _default_value = models.TextField(editable=False,
+        help_text="Pickled Python object"
+    )
+    default_value = property(__get_default_value, __set_default_value)
+
+    #__________________________________________________________________________
+
+    field_type = models.CharField(maxlength=150, editable=False,
+        help_text="The data type for this entry (For building a html form)."
+    )
 
     lastupdatetime = models.DateTimeField(auto_now=True)
     lastupdateby = models.ForeignKey(
-        User, null=True, blank=True,
+        User, null=True, blank=True, editable=False,
         related_name="preferences_lastupdateby",
     )
 
+    def save(self):
+        """
+        Save a new page or update changed page data.
+        before save: check some data consistency to prevents inconsistent data.
+        """
+        if self.id == None:
+            # A new preferences should be saved.
+            if self._default_value == "":
+                # No default value given in the __init__ -> Use current value
+                self._default_value = self._value
+
+        super(Preference, self).save() # Call the "real" save() method
+
+    def __unicode__(self):
+#        <Preference: Preference object>
+        return "%s '%s'" % (self.plugin, self.name)
+
     class Admin:
-        list_display = ("plugin", "name", "value", "description")
+        list_display = (
+            "plugin", "name", "value", "default_value", "description"
+        )
         list_display_links = ("name",)
         list_filter = ("plugin",)
         ordering = ("name",)
-        search_fields = ["name", "value", "description"]
+        search_fields = ["name", "value", "default_value", "description"]
 
 
 class Style(models.Model):

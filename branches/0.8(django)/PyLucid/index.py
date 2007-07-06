@@ -29,6 +29,7 @@ import datetime, md5
 from django.http import HttpResponse
 from django.template import RequestContext
 from django.core.cache import cache
+from django.core.exceptions import ImproperlyConfigured
 
 from PyLucid import models, settings
 
@@ -175,7 +176,13 @@ def index(request, url):
         use_cache = request.user.is_anonymous()
     except AttributeError, msg:
         # TODO: middlewares not active -> _install section!
-        raise AttributeError(msg)
+        msg = (
+            "After syncdb you must activated some middlewares."
+            " Please look into your settings.py and modify the value"
+            " MIDDLEWARE_CLASSES."
+            " - Original Error: %s"
+        ) % msg
+        raise ImproperlyConfigured(msg)
 
     if use_cache:
         # Try to get the cms page request from the cache
