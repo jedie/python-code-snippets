@@ -4,7 +4,6 @@
 
     The urls, manage the PyLucid CMS.
 
-
     Last commit info:
     ~~~~~~~~~~~~~~~~~
     $LastChangedDate: $
@@ -19,10 +18,11 @@ from django.conf.urls.defaults import include, patterns
 
 from PyLucid import settings
 
+
+# We insert the _install URLs only, if the _install section is activated.
 if settings.ENABLE_INSTALL_SECTION == True:
-    # The _install section is activated.
-    # -> insert all available _install views
     urls = (
+        #_____________________________________
         # RUN A VIEW
         (
             (
@@ -33,11 +33,13 @@ if settings.ENABLE_INSTALL_SECTION == True:
             ) % settings.INSTALL_URL_PREFIX,
             "PyLucid.install.index.run_method",
         ),
+        #_____________________________________
         # LOGOUT
         (
             '^%s/logout/$' % settings.INSTALL_URL_PREFIX,
             'PyLucid.install.index.logout'
         ),
+        #_____________________________________
         # INSTALL MENU
         (
             '^%s/$' % settings.INSTALL_URL_PREFIX,
@@ -45,15 +47,14 @@ if settings.ENABLE_INSTALL_SECTION == True:
         ),
     )
 else:
-    # _install section is deactivated.
+    # _install section is deactivated -> start with a empty urls
     urls = ()
 
+#______________________________________________________________________________
+# The normal views:
+
 urls += (
-    # DJANGO ADMIN PANEL
-    (
-        r'^%s/' % settings.ADMIN_URL_PREFIX,
-        include('django.contrib.admin.urls')
-    ),
+    #_____________________________________
     # COMMAND VIEW
     (
         (
@@ -65,20 +66,32 @@ urls += (
         ) % settings.COMMAND_URL_PREFIX,
         'PyLucid.index.handle_command'
     ),
+    #_____________________________________
+    # DJANGO ADMIN PANEL
+    (
+        r'^%s/' % settings.ADMIN_URL_PREFIX,
+        include('django.contrib.admin.urls')
+    ),
+    #_____________________________________
     # CMS PAGE VIEW
-    # For the cach system we make a hash from the url and in a normal
-    # cms page request the url contains only the cms page shortcuts.
+    # A normal CMS page url simply consists of the page shortcuts.
     # The shortcuts contains only these chars: [a-zA-Z0-9_/]
     (r'^([\w/]*?)/?$', 'PyLucid.index.index'),
+
+    #_____________________________________
     # STATIC FILES
     # Using this method is inefficient and insecure.
     # Do not use this in a production setting. Use this only for development.
     # http://www.djangoproject.com/documentation/static_files/
-    (
-        '^%s(?P<path>.*)$' % settings.MEDIA_URL,
-        'django.views.static.serve',
-        {'document_root': './%s' % settings.MEDIA_URL}
-    ),
+    #
+    # uncomment the lines, if you use the dajngo development server:
+    #--------------------------------------------------------------------------
+#    (
+#        '^%s(?P<path>.*)$' % settings.MEDIA_URL,
+#        'django.views.static.serve',
+#        {'document_root': './%s' % settings.MEDIA_URL}
+#    ),
+    #--------------------------------------------------------------------------
 )
 
 urlpatterns = patterns('', *urls)

@@ -5,12 +5,10 @@ A base class for every _install view.
 
 import sys
 
-from PyLucid.settings import ENABLE_INSTALL_SECTION, \
-        INSTALL_PASS_HASH, PYLUCID_MEDIA_URL, INSTALL_COOKIE_NAME
+from PyLucid import settings
 from PyLucid import PYLUCID_VERSION_STRING
 from PyLucid.system.response import SimpleStringIO
-from PyLucid.tools.crypt import make_salt_hash, check_salt_hash, \
-                                                            salt_hash_to_dict
+from PyLucid.tools import crypt
 from PyLucid.tools.content_processors import render_string_template
 
 from django.shortcuts import render_to_response
@@ -36,12 +34,12 @@ def check_password_hash(password_hash):
         msg = _("error:") + msg
         if DEBUG:
             msg += " [Debug: '%s' != '%s']" % (
-                password_hash, INSTALL_PASS_HASH
+                password_hash, settings.INSTALL_PASS_HASH
             )
         raise WrongPassword(msg)
     if len(password_hash)!=49:
         error(_("Wrong password hash len."))
-    if password_hash != INSTALL_PASS_HASH:
+    if password_hash != settings.INSTALL_PASS_HASH:
         error(_("Password compare fail."))
 
 
@@ -51,10 +49,10 @@ def check_cookie_pass(request):
     - returns True if the password hash is ok
     - returns False if there is no password or the hash test failed
     """
-    cookie_pass = request.COOKIES.get(INSTALL_COOKIE_NAME, None)
+    cookie_pass = request.COOKIES.get(settings.INSTALL_COOKIE_NAME, None)
     if cookie_pass in (None, ""):
         return False
-    check = check_salt_hash(INSTALL_PASS_HASH, cookie_pass)
+    check = crypt.check_salt_hash(settings.INSTALL_PASS_HASH, cookie_pass)
     if check == True:
         # The salt-hash stored in the cookie is ok
         return True
@@ -79,7 +77,7 @@ class BaseInstall(object):
     Base class for all install views.
     """
     def __init__(self, request):
-        if ENABLE_INSTALL_SECTION != True:
+        if settings.ENABLE_INSTALL_SECTION != True:
             # Should never nappen, because the urlpatterns deactivaed, too.
             raise Http404("Install section disabled")
 
@@ -88,11 +86,25 @@ class BaseInstall(object):
             "output": "",
             "messages": [],
             "http_host": request.META.get("HTTP_HOST","cms page"),
-            "media_prefix": PYLUCID_MEDIA_URL,
+            "PyLucid_media_url": settings.PYLUCID_MEDIA_URL,
             "version": PYLUCID_VERSION_STRING,
         }
 
     #___________________________________________________________________________
+
+    def __render_generate_hash(self, msg):
+        """
+        Display a html page for generating the password with sha1.js
+        """
+        # Do not display the "back to menu" link:
+        self.context["no_menu_link"] = True
+
+        if msg: # insert the messages:
+            self.context["messages"].append(msg)
+
+        return render_to_response(
+            "install_generate_hash.html", self.context
+        )
 
     def start_view(self):
         """
@@ -110,22 +122,23 @@ class BaseInstall(object):
             # access ok -> start the normal _instal view() method
             return self.view()
 
-        if INSTALL_PASS_HASH in (None, ""):
+        if settings.INSTALL_PASS_HASH in (None, ""):
             if DEBUG:
-                self.context["messages"].append(
-                    _("The _install section password hash is not set.")
-                )
-            # Display a html page for generating the password with sha1.js
-            return render_to_response(
-                "install_generate_hash.html", self.context
+                msg = _("The _install section password hash is not set.")
+            else:
+                msg = None
+
+            return self.__render_generate_hash(msg)
+
+        if len(settings.INSTALL_PASS_HASH)!=49:
+            return self.__render_generate_hash(
+                "Wrong hash len in your settings.py!"
             )
-        if len(INSTALL_PASS_HASH)!=49:
-            self.context["messages"].append(
-                _("Wrong hash len in your settings.py!")
+        if not settings.INSTALL_PASS_HASH.startswith("sha$"):
+            return self.__render_generate_hash(
+                "Wrong hash format in your settings.py!"
             )
-            return render_to_response(
-                "install_generate_hash.html", self.context
-            )
+
 
         # The _install section password is not in the cookie
         # -> display a html input form or check a submited form
@@ -145,13 +158,13 @@ class BaseInstall(object):
                     # Password is ok. -> process the normal _instal view()
                     response = self.view()
                     # insert a cookie with the hashed password in the response
-                    salt_hash = make_salt_hash(password_hash)
+                    salt_hash = crypt.make_salt_hash(password_hash)
                     response.set_cookie(
-                        INSTALL_COOKIE_NAME, value=salt_hash, max_age=None
+                        settings.INSTALL_COOKIE_NAME, value=salt_hash, max_age=None
                     )
                     return response
 
-        data = salt_hash_to_dict(INSTALL_PASS_HASH)
+        data = crypt.salt_hash_to_dict(settings.INSTALL_PASS_HASH)
         self.context["salt"] = data["salt"]
 
         self.context["no_menu_link"] = True # no "back to menu" link

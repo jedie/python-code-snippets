@@ -75,7 +75,7 @@ LOGOUT_TEMPLATE = """
 <p><a href="{% url PyLucid.install.index.menu . %}">{% trans 'continue' %}</a></p>
 <p>
 {% trans 'You should disable the _install section!' %}<br />
-{% trans 'Set "INSTALL_PASS = None" in your settings.py' %}
+{% trans 'Set "ENABLE_INSTALL_SECTION = False" in your settings.py' %}
 </p>
 
 {% endblock %}

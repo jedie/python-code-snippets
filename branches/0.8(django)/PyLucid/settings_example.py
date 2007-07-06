@@ -94,23 +94,36 @@ LANGUAGE_CODE = 'en-us'
 #_____________________________________________________________________________
 # STATIC FILES
 # http://www.djangoproject.com/documentation/static_files/
+#
+# Note: Every URL/path...
+# ...must be a absolute path.
+# ...must have a trailing slash.
 
-# Absolute path to the directory that holds media.
-# Example: "/home/media/media.lawrence.com/"
-MEDIA_ROOT = './media/'
+# Absolute _local_filesystem_path_ to the directory that holds media.
+#     Example-1: "./media/" (default)
+#     Example-2: "/home/foo/htdocs/media/"
+MEDIA_ROOT = "./media/"
+
 
 # URL that handles the media served from MEDIA_ROOT.
-# should have a trailing slash!
-# Example-1: "http://media.your_domain.net/"
-# Example-2: "/_static_files/"
-MEDIA_URL = '/_static_files/'
-PYLUCID_MEDIA_URL = '_static_files/PyLucid'
+#     Example-1: "/media/" (default)
+#     Examlpe-2: "http://other_domain.net/media/"
+#     Example-3: "http://media.your_domain.net/"
+MEDIA_URL = "/media/"
 
-# URL prefix for admin media -- CSS, JavaScript and images. Make sure to use a
-# trailing slash.
-# Examples: "http://foo.com/media/", "/media/".
-#~ ADMIN_MEDIA_PREFIX = '/media/'
-ADMIN_MEDIA_PREFIX = '/django/contrib/admin/media/'
+
+# URL for the PyLucid media files.
+#     Example-1: "/media/PyLucid/" (default)
+#     Examlpe-2: "http://other_domain.net/media/PyLucid/"
+#     Example-3: "http://pylucid.media.your_domain.net/"
+PYLUCID_MEDIA_URL = "/media/PyLucid/"
+
+
+# URL prefix for admin media -- CSS, JavaScript and images.
+#     Examples-1: "/django/contrib/admin/media/" (default)
+#     Examples-2: "http://other_domain.net/media/django/"
+#     Examples-3: "http://django.media.your_domain.net/"
+ADMIN_MEDIA_PREFIX = "/django/contrib/admin/media/"
 
 
 #_____________________________________________________________________________
