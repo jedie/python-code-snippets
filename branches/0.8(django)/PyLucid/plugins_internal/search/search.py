@@ -28,7 +28,7 @@ import time, cgi
 from django import newforms as forms
 
 from PyLucid.models import Page
-from PyLucid.system.BaseModule import PyLucidBaseModule
+from PyLucid.system.BasePlugin import PyLucidBasePlugin
 
 
 
@@ -51,7 +51,7 @@ class SearchForm(forms.Form):
     search_string = forms.CharField(min_length = 3, max_length = 50)
 
 
-class search(PyLucidBaseModule):
+class search(PyLucidBasePlugin):
 
     def lucidTag(self):
         """

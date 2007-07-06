@@ -23,7 +23,7 @@ from django import newforms as forms
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
 
-from PyLucid.system.BaseModule import PyLucidBaseModule
+from PyLucid.system.BasePlugin import PyLucidBasePlugin
 from PyLucid import settings
 
 TEMPLATE = """
@@ -53,7 +53,7 @@ class MailForm(forms.Form):
 
 
 
-class EMailSystem(PyLucidBaseModule):
+class EMailSystem(PyLucidBasePlugin):
     def _send_mail(self, cleaned_data):
         """
         send the mail. raise SendMailError() on errors.

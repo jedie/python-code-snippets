@@ -26,10 +26,10 @@ v0.0.1
 import socket, urllib2, re, time
 
 
-from PyLucid.system.BaseModule import PyLucidBaseModule
+from PyLucid.system.BasePlugin import PyLucidBasePlugin
 
 
-class IncludeRemote(PyLucidBaseModule):
+class IncludeRemote(PyLucidBasePlugin):
 
     def lucidFunction( self, function_info ):
         """

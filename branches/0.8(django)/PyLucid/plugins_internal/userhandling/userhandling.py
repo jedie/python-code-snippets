@@ -34,14 +34,14 @@ import os, sys, cgi, md5
 from PyLucid.system import crypt
 
 from PyLucid.system.exceptions import *
-from PyLucid.system.BaseModule import PyLucidBaseModule
+from PyLucid.system.BasePlugin import PyLucidBasePlugin
 
 
 #~ debug = True
 debug = False
 
 
-class userhandling(PyLucidBaseModule):
+class userhandling(PyLucidBasePlugin):
     """
     Verwaltung von Userdaten in der DB
     """

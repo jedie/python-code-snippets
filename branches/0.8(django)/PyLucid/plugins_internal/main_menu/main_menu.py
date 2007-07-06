@@ -29,12 +29,12 @@
 __version__= "$Rev$"
 
 from PyLucid.db.page import get_main_menu_tree
-from PyLucid.system.BaseModule import PyLucidBaseModule
+from PyLucid.system.BasePlugin import PyLucidBasePlugin
 from PyLucid.tools.tree_generator import TreeGenerator
 from PyLucid.models import Page
 
 
-class main_menu(PyLucidBaseModule):
+class main_menu(PyLucidBasePlugin):
 
     def lucidTag(self):
         """
