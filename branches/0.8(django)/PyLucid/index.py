@@ -38,11 +38,11 @@ from PyLucid.system.response import SimpleStringIO
 from PyLucid.system.exceptions import AccessDeny
 from PyLucid.system.page_msg import PageMessages
 from PyLucid.system.detect_page import get_current_page_obj, \
-                                                                                    get_default_page_id
+                                                            get_default_page_id
 from PyLucid.system.URLs import URLs
 
 from PyLucid.tools.content_processors import apply_markup, \
-                                                render_string_template, replace_add_data
+                                        render_string_template, replace_add_data
 
 
 def _render_cms_page(context, page_content=None):

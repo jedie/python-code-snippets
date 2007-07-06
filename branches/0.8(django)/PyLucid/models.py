@@ -167,10 +167,6 @@ class Page(models.Model):
         Check recusive if a new parent can be attached and is not a loop.
         TODO: This method should used in newform is_valid() ???
         """
-        if self.id == None:
-            # A new page should be saved -> do nothing
-            return
-
         if not self.parent:
             # No parent exist -> root arraived
             return
@@ -209,11 +205,14 @@ class Page(models.Model):
         Save a new page or update changed page data.
         before save: check some data consistency to prevents inconsistent data.
         """
-        # Check some settings for the default index page:
-        self._check_default_page_settings()
+        if self.id != None:
+            # a existing page should be updated (It's not a new page ;)
 
-        # check if a new parent is no parent-child-loop:
-        self._check_parent(self.id)
+            # Check some settings for the default index page:
+            self._check_default_page_settings()
+
+            # check if a new parent is no parent-child-loop:
+            self._check_parent(self.id)
 
         # Rebuild shortcut / make shortcut unique:
         self._prepare_shortcut()
