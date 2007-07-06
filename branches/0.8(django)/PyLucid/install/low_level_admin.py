@@ -264,12 +264,12 @@ class CheckPreferences(BaseInstall):
         return p
 
     def _check_index_page(self):
-        p = self._verbose_get("index page")
-        page_id = p.value
         try:
+            p = self._verbose_get("index page")
+            page_id = p.value
             # page_id = 9999999 # Not exist test
             page = Page.objects.get(id = page_id)
-        except Page.DoesNotExist, msg:
+        except Exception, msg:
             print "Error:", msg
             page = Page.objects.all().order_by("parent", "position")[0]
             print "Assign the page:", page
@@ -280,17 +280,19 @@ class CheckPreferences(BaseInstall):
             print "OK"
 
     def _check_auto_shortcuts(self):
-        p = self._verbose_get('auto shortcuts')
-        value = p.value
-        # value = 123 # Failed test
-        if value in (True, False):
-            print "OK"
-        else:
-            print "Error. Is not a bool"
+        try:
+            p = self._verbose_get('auto shortcuts')
+            value = p.value
+            # value = 123 # Failed test
+            assert value in (True, False)
+        except Exception, msg:
+            print "Error:", msg
             print "set to 'True'"
             p.value = True
             p.save()
             print "saved."
+        else:
+            print "OK"
 
 def check_preferences(request):
     """
