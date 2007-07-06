@@ -9,7 +9,7 @@ http://code.djangoproject.com/wiki/CookBookScriptsMiniFlush
 import pickle
 
 from PyLucid import settings
-
+from PyLucid.models import Preference, Page, Markup, Template
 from PyLucid.install.BaseInstall import BaseInstall
 
 from django import newforms as forms
@@ -181,7 +181,7 @@ class CleanupDjangoTables(BaseInstall):
 
 def cleanup_django_tables(request):
     """
-    2. cleanup django tables
+    cleanup django tables
     """
     return CleanupDjangoTables(request).start_view()
 
@@ -233,10 +233,69 @@ class RecreateDjangoTables(Sync_DB):
             cursor.execute(SQL)
             print "OK"
 
-
-
 def recreate_django_tables(request):
     """
-    2. Recreate all django tables (user/groups/permission lost!)
+    Recreate all django tables (user/groups/permission lost!)
     """
     return RecreateDjangoTables(request).start_view()
+
+
+
+
+
+class CheckPreferences(BaseInstall):
+    def view(self):
+        self._redirect_execute(
+            self.check_preferences
+        )
+        return self._simple_render(headline="Check and correct Preferences")
+
+    def check_preferences(self):
+        self._check_index_page()
+        self._check_auto_shortcuts()
+
+    def _verbose_get(self, name):
+        print "_"*80
+        print "Check '%s'..." % name
+        p = Preference.objects.get(name = name)
+        print "Description:", p.description
+        print "default value:", p.default_value
+        print "current value:", p.value
+        return p
+
+    def _check_index_page(self):
+        p = self._verbose_get("index page")
+        page_id = p.value
+        try:
+            # page_id = 9999999 # Not exist test
+            page = Page.objects.get(id = page_id)
+        except Page.DoesNotExist, msg:
+            print "Error:", msg
+            page = Page.objects.all().order_by("parent", "position")[0]
+            print "Assign the page:", page
+            p.value = page.id
+            p.save
+            print "saved."
+        else:
+            print "OK"
+
+    def _check_auto_shortcuts(self):
+        p = self._verbose_get('auto shortcuts')
+        value = p.value
+        # value = 123 # Failed test
+        if value in (True, False):
+            print "OK"
+        else:
+            print "Error. Is not a bool"
+            print "set to 'True'"
+            p.value = True
+            p.save()
+            print "saved."
+
+def check_preferences(request):
+    """
+    Check and correct Preferences.
+    """
+    return CheckPreferences(request).start_view()
+
+
