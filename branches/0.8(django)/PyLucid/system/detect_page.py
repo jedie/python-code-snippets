@@ -1,22 +1,20 @@
-#!/usr/bin/python
-# -*- coding: UTF-8 -*-
-
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 """
-Last commit info:
-----------------------------------
-$LastChangedDate$
-$Rev$
-$Author$
+    PyLucid
+    ~~~~~
 
-Created by Jens Diemer
+    TODO: Big TODO: rewrite all. Put this into ./PyLucid/db/page.py !!!!
 
-license:
-    GNU General Public License v2 or above
-    http://www.opensource.org/licenses/gpl-license.php
+    Last commit info:
+    ~~~~~~~~~~~~~~~~~
+    $LastChangedDate$
+    $Rev$
+    $Author$
+
+    :copyright: 2007 by Jens Diemer
+    :license: GNU GPL, see LICENSE for more details
 """
-
-#~ debug = True
-debug = False
 
 from PyLucid.models import Page, Preference
 
@@ -29,29 +27,24 @@ def get_default_page_id():
     """
     try:
         default_page = Preference.objects.get(name__exact="index page")
+#        default_page = "raise!"
+        return int(default_page.value)
     except Exception, e:
-        from PyLucid.settings import INSTALL_HELP_URL
-        msg = (
-           "Can't get the default page ID: '%s'"
-           " - Did you install PyLucid correctly?"
-           " Please look at: %s"
-        ) % (e, INSTALL_HELP_URL)
-        raise ImproperlyConfigured(msg)
-    id = default_page.value
-    id = int(id)
-    return id
+        # TODO: make a page message for the admin
+        # Get the first page
+        page = Page.objects.all().order_by("parent", "position")[0]
+        return page.id
 
 def get_default_page(request):
     page_id = get_default_page_id()
     try:
-        page = Page.objects.get(id__exact=page_id)
+#        page_id = "wrong test"
+        return Page.objects.get(id__exact=page_id)
     except Exception, e:
         # The defaultPage-ID from the Preferences is wrong!
-        page = Page.objects.all()[:1]
-        print page
-        page = page[0]
-        print page
-    return page
+        # TODO: make a page message for the admin
+        return Page.objects.all().order_by("parent", "position")[0]
+
 
 def get_current_page_obj(request, url_info):
     """
@@ -70,11 +63,10 @@ def get_current_page_obj(request, url_info):
 
     # bsp/und%2Foder -> ['bsp', 'und%2Foder']
     shortcuts = page_name.split("/")
-    #~ response.write("<p>shortcuts: %s</p>" % shortcuts)
+
     shortcuts.reverse()
     wrong_shutcuts = []
     for shortcut in shortcuts:
-        #~ print shortcut
         try:
             return Page.objects.get(shortcut__exact=shortcut)
         except Page.DoesNotExist:
