@@ -68,7 +68,7 @@ function make_hash() {
     <input id="source" type="password" name="{% trans 'Password' %}" size="20" onchange="make_hash();" /><br />
     <form name="login" method="post" action=".">
         <label for="hash">generated SHA-1 hash :</label>
-        <input id="hash" name="hash" type="text" value="(input password first)" size="49" maxlength="49" readonly="readonly" /><br />
+        <input id="hash" name="hash" type="text" value="(input password first)" size="60" maxlength="49" readonly="readonly" /><br />
         <input type="submit" value="{% trans 'Log in' %}" onclick="make_hash();" />
     </form>
 </fieldset>
