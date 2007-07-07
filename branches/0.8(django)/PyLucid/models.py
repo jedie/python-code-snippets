@@ -392,6 +392,7 @@ class Preference(models.Model):
         if "value" in self._cache:
             value = self._cache["value"]
         else:
+            self._value = str(self._value)
             value = pickle.loads(self._value)
             self._cache["value"] = value
         return value
@@ -410,6 +411,7 @@ class Preference(models.Model):
         if "default_value" in self._cache:
             default_value = self._cache["default_value"]
         else:
+            self._default_value = str(self._default_value)
             default_value = pickle.loads(self._default_value)
             self._cache["default_value"] = default_value
         return default_value

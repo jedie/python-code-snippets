@@ -167,7 +167,7 @@ class TestPreference(unittest.TestCase):
         # insert the _install dump:
         make_insert_dump(extra_verbose=False)
 
-        self.assertEqual(Preference.objects.all().count(), 5)
+        self.assertEqual(Preference.objects.all().count(), 2)
 
         # Build a new dict, from the current _install dump:
 #        for entry in Preference.objects.all():
@@ -176,9 +176,6 @@ class TestPreference(unittest.TestCase):
 
         defaults = {
             "index page": 1,
-            "default markup": 2,
-            "default template": 1,
-            "default stylesheet": 1,
             "auto shortcuts": True,
         }
         for name,value in defaults.iteritems():
