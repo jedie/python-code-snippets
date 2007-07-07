@@ -87,7 +87,7 @@ urls += (
     # uncomment the lines, if you use the dajngo development server:
     #--------------------------------------------------------------------------
 #    (
-#        '^%s(?P<path>.*)$' % settings.MEDIA_URL,
+#        '^%s(?P<path>.*)$' % settings.MEDIA_URL.lstrip("/"),
 #        'django.views.static.serve',
 #        {'document_root': './%s' % settings.MEDIA_URL}
 #    ),
