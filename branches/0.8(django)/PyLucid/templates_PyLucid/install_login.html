@@ -59,17 +59,17 @@ function make_hash() {
 <h1>{% trans 'Login into the _install section' %}</h1>
 
 <noscript>
-    <p><strong>{% trans 'JavaScript is needed!' %}</strong></p>
+    <p><strong>{% trans 'JavaScript is required!' %}</strong></p>
 </noscript>
 
 <fieldset>
     <legend>{% trans 'Log in' %}</legend>
-    <label for="source">Input your Password here :</label>
-    <input id="source" type="password" name="{% trans 'Password' %}" size="20" onchange="make_hash();" /><br />
     <form name="login" method="post" action=".">
-        <label for="hash">generated SHA-1 hash :</label>
-        <input id="hash" name="hash" type="text" value="(input password first)" size="60" maxlength="49" readonly="readonly" /><br />
-        <input type="submit" value="{% trans 'Log in' %}" onclick="make_hash();" />
+      <label for="source">Input your Password here :</label>
+      <input id="source" type="password" name="{% trans 'Password' %}" size="20" onchange="make_hash();" /><br />
+      <label for="hash">generated SHA-1 hash :</label>
+      <input id="hash" name="hash" type="text" value="(input password first)" size="60" maxlength="49" readonly="readonly" /><br />
+      <input type="submit" value="{% trans 'Log in' %}" onclick="make_hash();" />
     </form>
 </fieldset>
 
