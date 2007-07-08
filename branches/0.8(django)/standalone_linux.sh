@@ -9,7 +9,7 @@ while :
 do
     echo 'Starting django development server...'
 
-    python ./django/bin/django-admin.py runserver --settings=PyLucid.settings $*
+    python ./django/bin/django-admin.py runserver --settings=PyLucid.settings 5000$*
 
     ping localhost -n 1>NUL
 

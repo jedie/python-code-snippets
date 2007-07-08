@@ -6,9 +6,9 @@
 
     Last commit info:
     ~~~~~~~~~~~~~~~~~
-    $LastChangedDate: $
-    $Rev: $
-    $Author: $
+    $LastChangedDate$
+    $Rev$
+    $Author$
 
     :copyright: 2007 by the PyLucid team.
     :license: GNU GPL, see LICENSE for more details.
