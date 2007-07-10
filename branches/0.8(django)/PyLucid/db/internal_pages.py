@@ -9,12 +9,12 @@
 
     Last commit info:
     ~~~~~~~~~~~~~~~~~
-    $LastChangedDate:$
-    $Rev:$
-    $Author: JensDiemer $
+    $LastChangedDate$
+    $Rev$
+    $Author$
 
     :copyright: 2007 by Jens Diemer
-    :license: GNU GPL, see LICENSE for more details
+    :license: GNU GPL v3, see LICENSE.txt for more details.
 """
 
 from PyLucid.models import PagesInternal

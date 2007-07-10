@@ -13,12 +13,12 @@
 
     Last commit info:
     ~~~~~~~~~~~~~~~~~
-    $LastChangedDate:$
-    $Rev:$
-    $Author:$
+    $LastChangedDate$
+    $Rev$
+    $Author$
 
     :copyright: 2007 by Jens Diemer and Marc Rintsch.
-    :license: GNU GPL, see LICENSE for more details
+    :license: GNU GPL v3, see LICENSE.txt for more details.
 """
 
 
