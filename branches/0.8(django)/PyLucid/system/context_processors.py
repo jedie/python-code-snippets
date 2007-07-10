@@ -6,8 +6,13 @@ setup some "static" variables
 from django.utils.translation import ugettext as _
 
 from PyLucid import PYLUCID_VERSION_STRING
+from PyLucid import settings
 
 def static(request):
+    """
+    A django TEMPLATE_CONTEXT_PROCESSORS
+    http://www.djangoproject.com/documentation/templates_python/#writing-your-own-context-processors
+    """
     context_extras = {}
 
     #___________________________________________________________________________
@@ -26,14 +31,26 @@ def static(request):
 
     #___________________________________________________________________________
 
-    if request.user.username != "":
-        # User is loged in
-        context_extras["login_link"] = (
-            '<a href="/_admin/logout">%s [%s]</a>'
-        ) % (_("Log out"), request.user.username)
-    else:
-        context_extras["login_link"] = '<a href="/_admin">%s</a>' % _("Log in")
+    return context_extras
+
+
+
+def add_dynamic_context(request, context):
+    """
+    Add some dynamic stuff into the context.
+    """
+    URLs = context["URLs"]
 
     #___________________________________________________________________________
 
-    return context_extras
+    if request.user.username != "":
+        # User is loged in
+        url = URLs.commandLink("auth", "logout")
+        txt = "%s [%s]" % (_("Log out"), request.user.username)
+    else:
+        url = URLs.commandLink("auth", "login")
+        txt = _("Log in")
+
+    context["login_link"] = '<a href="%s">%s</a>' % (url, txt)
+
+

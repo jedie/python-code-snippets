@@ -2,309 +2,143 @@
 # -*- coding: UTF-8 -*-
 
 """
-Abwicklung von Login/Logout
+    PyLucid JS-SHA-Login
+    ~~~~~~~~~~~~~~~~~~~~
 
-Last commit info:
-----------------------------------
-LastChangedDate: $LastChangedDate$
-Revision.......: $Rev$
-Author.........: $Author$
+    A secure JavaScript SHA-1 Login.
 
-Created by Jens Diemer
+    TODO: Only plaintext login implemented!!!
 
-license:
-    GNU General Public License v2 or above
-    http://www.opensource.org/licenses/gpl-license.php
+    Last commit info:
+    ~~~~~~~~~
+    LastChangedDate: $LastChangedDate$
+    Revision.......: $Rev$
+    Author.........: $Author$
+
+    :copyright: 2007 by Jens Diemer
+    :license: GNU GPL v3, see LICENSE for more details
 """
 
 __version__ = "$Rev$"
 
+from django import newforms as forms
+from django.contrib.auth.models import User
+from django.contrib.auth import authenticate, login, logout
+
+from PyLucid.tools import crypt
 
 
-# Standart Python Module
-import os, sys, md5, datetime, cgi
-#~ from Cookie import SimpleCookie
-
-## Dynamisch geladene Module:
-## import random -> auth.make_login_page()
-
-
-from PyLucid.system import crypt
-
-
-# =True: Login-Fehler sind aussagekräftiger: Sollte allerdings
-# wirklich nur zu Debug-Zwecke eingesetzt werden!!!
-# Gleichzeitig wird Modul-Manager Debug ein/aus geschaltet
-#~ debug = True
-debug = False
-# WICHTIG:
-# Ist debug eingeschaltet, wird keine Password-Reset Email verschickt,
-# sondern direkt angezeigt!
+DEBUG = True
+#DEBUG = False
+# IMPORTANT:
+# Should realy only use for debugging!!!
 
 
 from PyLucid.system.BasePlugin import PyLucidBasePlugin
+from PyLucid.system.context_processors import add_dynamic_context
 
-from PyLucid.modules.auth.exceptions import *
-from PyLucid.modules.auth.login_verifier import LoginVerifier
-from PyLucid.modules.auth.auth_data import AuthData
+USERNAME_SESSION_KEY = "login_username"
 
-
-
-
-
+class WrongPassword(Exception):
+    pass
 
 class auth(PyLucidBasePlugin):
+    def login(self):
+        if USERNAME_SESSION_KEY in self.request.session:
+            # Username has been inputed in the past
+            return self.input_pass()
 
-    def __init__(self, *args, **kwargs):
-        super(auth, self).__init__(*args, **kwargs)
+        UsernameForm = forms.form_for_model(User, fields=("username",))
 
-        self.staticTags = self.request.staticTags
-        self.auth_data = AuthData(self.session["client_IP"])
-
-    def login(self, function_info=None):
-        """
-        Login Step 1 - Usernamen eingeben
-
-        Er muß erstmal den Usernamen eingeben werden.
-        """
-        if debug:
-            self.page_msg("form data:", self.request.form)
-            self.page_msg("cookie data:", self.request.cookies)
-
-        if "md5_a2" in self.request.form and "md5_b" in self.request.form:
-            # Passwort wurde eingegeben
-            self.check_login()
-            return
-        elif "username" in self.request.form:
-            # Username wurde eingegeben
-            self.password_input()
-            return
-
-        self.write_login_form()
-
-    def insecure_login(self):
-        """
-        -Zeigt das Login-Formular.
-        -Wertet ein Login aus.
-        """
-        username = ""
-        if self.request.form != {}: # Formular wurde abgeschickt
-            try:
-                username = self.request.form["username"]
-                password = self.request.form["password"]
-                if len(username)<3:
-                    raise ValueError("Username to short.")
-                if len(password)<8:
-                    raise ValueError("Password to short.")
-            except KeyError:
-                self.page_msg.red("Form Error.")
-            except ValueError, e:
-                self.page_msg.red(e)
-            else:
-                # Verarbeiten eines logins
-                verifier = LoginVerifier(self.request, self.response)
+        if self.request.method == 'POST':
+            username_form = UsernameForm(self.request.POST)
+            if username_form.is_valid():
+                username = username_form.cleaned_data["username"]
                 try:
-                    userdata = verifier.check_plaintext_login(username, password)
-                except PasswordError, e:
-                    self.page_msg.red(e)
+                    return self.input_pass(username)
+                except User.DoesNotExist, msg:
+                    self.page_msg(_("User does not exist."))
+                    if DEBUG:
+                        self.page_msg(msg)
+        else:
+            username_form = UsernameForm()
+
+        context = {
+            "fallback_url": self.URLs.adminLink(""),
+            "form": username_form,
+        }
+        self._render_template("input_username", context)#, debug=True)
+
+
+    def input_pass(self, username=None):
+        if username:
+            # login()
+            user = User.objects.get(username = username)
+            # Save username in Session:
+            self.request.session[USERNAME_SESSION_KEY] = user.id
+        else:
+            # Username from session
+            if DEBUG: self.page_msg("get user id from session.")
+            user_id = self.request.session[USERNAME_SESSION_KEY]
+            user = User.objects.get(id = user_id)
+
+        self.page_msg("user:", user)
+
+        PasswordForm = forms.form_for_model(User, fields=("password",))
+
+        if self.request.method == 'POST':
+            password_form = PasswordForm(self.request.POST)
+            if password_form.is_valid():
+                password = password_form.cleaned_data["password"]
+                try:
+                    self._check_plaintext_password(password, user)
+                except WrongPassword, msg:
+                    self.page_msg.red(msg)
                 else:
-                    # Alles in Ordnung, User wird nun eingeloggt:
-                    self.login_user(userdata)
+                    # Login ok
                     return
+        else:
+            password_form = PasswordForm()
 
         context = {
-            "url": self.URLs.currentAction(),
-            "username": cgi.escape(username), # Alter Username
+            "form": password_form,
         }
-        self.templates.write("insecure_login", context, debug)
+        self._render_template("input_password", context)#, debug=True)
 
 
-    def write_login_form(self):
-        # Formular zum eingeben des Usernamens:
-        context = {
-            "url": self.URLs.actionLink("login"),
-            "fallback_url": self.URLs.actionLink("insecure_login"),
-        }
-        self.templates.write("input_username", context, debug)
+    def _check_plaintext_password(self, input_pass, user):
+        db_pass = user.password
+        self.page_msg("password:", input_pass, db_pass)
 
-    def password_input(self, display_reset_link=False):
-        """
-        Login Step 2 - Passwort eingeben
+        user = authenticate(username=user.username, password=input_pass)
 
-        -Anhand des Usernamens (als MD5 Summe) wird der Passwort 'salt' Wert
-        aus der DB geholt.
-        -Der User kann nun das Passwort eingeben
-        """
-        if debug:
-            self.page_msg("form data:", self.request.form)
+        if user == None:
+            raise WrongPassword("Wrong password.")
+        if not user.is_active:
+            raise WrongPassword("Error: Your account is disabled!")
 
 
-        try:
-            username = self.request.form["username"]
-            if len(username)<3:
-                raise ValueError
-        except (KeyError, ValueError):
-            self.page_msg.red("Form error!")
-            self.write_login_form()
-            return
-        else:
-            self.auth_data.username = username
+        self.page_msg.green("Password ok.")
+        login(self.request, user)
 
-        try:
-            salt = self.db.get_userdata_by_username(
-                self.auth_data.username, "salt"
-            )
-            salt = salt["salt"]
-        except (KeyError, IndexError):
-            self.page_msg.red("Username unknown!")
-            self.auth_data.reset()
-            self.write_login_form()
-            return
+        # rebuild the login/logout link:
+        add_dynamic_context(self.request, self.context)
 
-        if salt<10000 or salt>99999:
-            self.page_msg.red("Internal Error: Salt value out of range.")
-            if debug:
-                self.page_msg("salt value from db: '%s'" % salt)
-            self.page_msg("You must reset your password!")
-            self.pass_reset_form()
-            return
-        else:
-            self.auth_data.salt = salt
-
-        self.auth_data.make_new_challenge()
-        #~ self.auth_data.challenge = "12345"
-
-        self.session.makeSession() # Eine Session eröffnen
-
-        # Zufallszahl "merken"
-        self.session["challenge"] = self.auth_data.challenge
-
-        if debug == True:
-            self.session.debug()
-
-        context = {
-            "username"      : self.auth_data.username,
-            "salt"          : self.auth_data.salt,
-            "challenge"     : self.auth_data.challenge,
-            "default_action": self.URLs.currentAction("error"),
-            "url"           : self.URLs.actionLink("login"),
-        }
-        if display_reset_link:
-            context["reset_link"] = self.URLs.actionLink("pass_reset_form")
-
-        self.templates.write("input_password", context, debug)
-
-    def check_login(self):
-        """
-        Login Step 2 - Passwort überprüfen
-
-        Überprüft die Daten vom abgeschickten LogIn-Formular und logt den User
-        ein.
-        - Der Username wurde vorher schon eingebenen und verifiziert.
-
-        """
-        verifier = LoginVerifier(self.request, self.response)
-        try:
-            userdata = verifier.check_md5_login()
-        except PasswordError, e: # Das eingegebene Passwort war falsch
-            msg = "LogInError!"
-            if debug:
-                msg += " (%s)" % e
-            self.page_msg.red(msg)
-            self.password_input(display_reset_link=True)
-            return
-        else:
-            if debug:
-                self.page_msg("Login check OK")
-                self.page_msg(userdata)
-
-        db_md5checksum = userdata["md5checksum"]
-
-        # Alles in Ordnung, User wird nun eingeloggt:
-        self.login_user(userdata)
-
-    def login_user(self, userdata):
-        """
-        Login war ok, User wird eingeloggt.
-        """
-        # Sessiondaten festhalten
-        self.session["user_id"]     = userdata["id"]
-        self.session["user"]        = userdata["name"]
-        #~ sefl.session["user_group"]
-        self.session["last_action"] = "login"
-        if userdata['admin'] == 1:
-            self.session["isadmin"] = True
-        else:
-            self.session["isadmin"] = False
-
-        self.log.write(
-            "OK:Session erstellt. User:'%s' sID:'%s'" % (
-                self.session["user"], self.session["session_id"]
-            )
-        )
-        self.page_msg.green("You are logged in.")
-
-        # Login/Logout-Link aktualisieren
-        self.staticTags.setup_login_link()
-
-        # Nach dem Ausführen durch den ModuleManager, soll die aktuelle CMS
-        # Seite angezeigt werden, ansonsten wäre die Seite leer.
-        self.session["render follow"] = True
-
-    def exist_one_user_test(self):
-        """
-        Schaut nach ob überhaupt irgendein User existiert.
-        """
-        test = self.db.select(
-            select_items    = ["id"],
-            from_table      = "md5users",
-            limit           = 1,
-        )
-        if test != []:
-            return
-
-        # Es existieren überhaupt keine User!
-        log_msg = public_msg = (
-            "There exist no User!"
-            " Please add a User in the _install section first."
-        )
-        self._error(log_msg, public_msg)
-
-    #_________________________________________________________________________
 
     def logout(self):
-        self.session.delete_session()
-        self.page_msg.green("You are logged out.")
+        logout(self.request)
 
-        # Damit der Logout-Link zu einem Login-Link wird...
-        self.staticTags.setup()
+        # rebuild the login/logout link:
+        add_dynamic_context(self.request, self.context)
 
-        # Nach dem Ausführen durch den ModuleManager, soll die aktuelle CMS
-        # Seite angezeigt werden, ansonsten wäre die Seite leer.
-        self.session["render follow"] = True
+        self.page_msg.green("You logged out.")
 
-    #_________________________________________________________________________
-    # Passwort reset
 
-    def _get_pass_reset(self):
-        """ Gibt instanzierte Klasse rück """
-        from PyLucid.modules.auth.pass_reset import PassReset
-        return PassReset(self.request, self.response)
 
-    def pass_reset_form(self, function_info=""):
-        """ Formular für Passwort reset. (Eingabe: Username + EMail) """
-        pass_reset = self._get_pass_reset()
-        pass_reset.pass_reset_form(function_info)
 
-    def check_pass_reset(self):
-        """ Abgeschickes "password reset" Formular überprüfen. """
-        pass_reset = self._get_pass_reset()
-        pass_reset.check_pass_reset()
 
-    def pass_reset(self, function_info=""):
-        """ Überprüft eine Passwort reset Anforderung """
-        pass_reset = self._get_pass_reset()
-        pass_reset.pass_reset(function_info)
+
+
 
 
 
