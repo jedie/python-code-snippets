@@ -25,6 +25,26 @@ from django.template import Template, Context, loader
 #DEBUG = True
 DEBUG = False
 
+class WrongInstallPassHash(Exception):
+    pass
+
+def check_install_pass():
+    """
+    Check if the install pass hash set in the settings.py and if the length
+    and type is ok.
+    """
+    if settings.INSTALL_PASS_HASH in (None, ""):
+        if DEBUG:
+            msg = _("The _install section password hash is not set.")
+        else:
+            msg = ""
+        raise WrongInstallPassHash(msg)
+
+    if len(settings.INSTALL_PASS_HASH)!=49:
+        raise WrongInstallPassHash("Wrong hash len in your settings.py!")
+
+    if not settings.INSTALL_PASS_HASH.startswith("sha$"):
+        raise WrongInstallPassHash("Wrong hash format in your settings.py!")
 
 
 def check_password_hash(password_hash):
@@ -43,21 +63,6 @@ def check_password_hash(password_hash):
         error(_("Password compare fail."))
 
 
-def check_cookie_pass(request):
-    """
-    check if the _install section password is stored in the cookie
-    - returns True if the password hash is ok
-    - returns False if there is no password or the hash test failed
-    """
-    cookie_pass = request.COOKIES.get(settings.INSTALL_COOKIE_NAME, None)
-    if cookie_pass in (None, ""):
-        return False
-    check = crypt.check_salt_hash(settings.INSTALL_PASS_HASH, cookie_pass)
-    if check == True:
-        # The salt-hash stored in the cookie is ok
-        return True
-    else:
-        return False
 
 
 class InstallPassForm(forms.Form):
@@ -113,32 +118,24 @@ class BaseInstall(object):
         - display the login form if login not ok
         """
         try:
-            check = check_cookie_pass(self.request)
-        except Exception, msg:
-            if DEBUG:
-                self.context["messages"].append("DEBUG: %s" % msg)
-            check = False
-        if check == True:
-            # access ok -> start the normal _instal view() method
-            return self.view()
-
-        if settings.INSTALL_PASS_HASH in (None, ""):
-            if DEBUG:
-                msg = _("The _install section password hash is not set.")
-            else:
-                msg = None
-
+            # Check the install hash in the settings.py
+            check_install_pass()
+        except WrongInstallPassHash, msg:
             return self.__render_generate_hash(msg)
 
-        if len(settings.INSTALL_PASS_HASH)!=49:
-            return self.__render_generate_hash(
-                "Wrong hash len in your settings.py!"
-            )
-        if not settings.INSTALL_PASS_HASH.startswith("sha$"):
-            return self.__render_generate_hash(
-                "Wrong hash format in your settings.py!"
-            )
-
+        try:
+            # check if the _install section password is stored in the cookie
+            # and if the salt hash value is ok
+            cookie_pass = self.request.COOKIES.get(settings.INSTALL_COOKIE_NAME)
+            assert cookie_pass != "", "No password hash in cookie"
+            crypt.check_salt_hash(settings.INSTALL_PASS_HASH, cookie_pass)
+        except Exception, msg:
+            # Cookie is not set or the salt hash value compair failed
+            if DEBUG:
+                self.context["messages"].append("DEBUG: %s" % msg)
+        else:
+            # access ok -> start the normal _instal view() method
+            return self.view()
 
         # The _install section password is not in the cookie
         # -> display a html input form or check a submited form
@@ -158,7 +155,7 @@ class BaseInstall(object):
                     # Password is ok. -> process the normal _instal view()
                     response = self.view()
                     # insert a cookie with the hashed password in the response
-                    salt_hash = crypt.make_salt_hash(password_hash)
+                    salt_hash = crypt.make_salt_hash(str(password_hash))
                     response.set_cookie(
                         settings.INSTALL_COOKIE_NAME, value=salt_hash, max_age=None
                     )
