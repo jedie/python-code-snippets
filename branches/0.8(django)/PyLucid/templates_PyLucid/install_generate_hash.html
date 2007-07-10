@@ -9,10 +9,12 @@ if (!document.getElementById) {
     alert("Your Browser is not supported!");
 }
 function make_salt() {
-    /* return a random four digit number */
+    /* return a random string: six digit number */
     salt = Math.random();
-    salt = salt*10000;
-    salt = Math.round(salt);
+    // convert to a string:
+    salt = "" + salt;
+    // get 6 decimal places after the comma:
+    salt = salt.substring(2, 8);
     return salt
 }
 function make_hash() {
