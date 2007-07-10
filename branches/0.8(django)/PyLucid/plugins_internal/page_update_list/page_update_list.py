@@ -14,7 +14,7 @@
     $Author$
 
     :copyright: 2007 by Jens Diemer
-    :license: GNU GPL, see LICENSE for more detailsp
+    :license: GNU GPL v3, see LICENSE.txt for more details.p
 
 """
 

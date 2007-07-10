@@ -20,7 +20,7 @@
     $Author$
 
     :copyright: 2007 by Jens Diemer
-    :license: GNU GPL, see LICENSE for more details.
+    :license: GNU GPL v3, see LICENSE.txt for more details.
 """
 
 import sys, os
@@ -43,9 +43,14 @@ except ImportError, e:
 
 config = Config
 config.repository = "." # PyLucid
-config.skip_dirs = ("./django", "./pygments")
-config.simulation = False
-#config.simulation = True
+config.skip_dirs = (
+    "./django", "./pygments",
+    "./PyLucid/db_dump_datadir/",
+    "./media/PyLucid/tiny_mce",
+)
+config.skip_file_ext = (".pyc",".gif", ".png")
+#config.simulation = False
+config.simulation = True
 
 
 if __name__ == "__main__":

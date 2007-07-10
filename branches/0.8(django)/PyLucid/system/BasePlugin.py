@@ -18,12 +18,12 @@
 
     Last commit info:
     ~~~~~~~~~~~~~~~~~
-    $LastChangedDate: 2007-06-29 18:05:08 +0200 (Fr, 29 Jun 2007) $
-    $Rev: 1127 $
-    $Author: JensDiemer $
+    $LastChangedDate$
+    $Rev$
+    $Author$
 
     :copyright: 2007 by Jens Diemer
-    :license: GNU GPL, see LICENSE for more details
+    :license: GNU GPL v3, see LICENSE.txt for more details.
 """
 
 

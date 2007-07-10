@@ -9,9 +9,9 @@
 
     Last commit info:
     ~~~~~~~~~~~~~~~~~
-    $LastChangedDate: 2007-06-26 10:37:35 +0200 (Di, 26 Jun 2007) $
-    $Rev: 1111 $
-    $Author: JensDiemer $
+    $LastChangedDate$
+    $Rev$
+    $Author$
 
     :copyright: 2007 by Jens Diemer
     :license: GNU GPL v2 or above, see LICENSE for more details

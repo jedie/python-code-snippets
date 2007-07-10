@@ -12,7 +12,7 @@ http://www.ohloh.net/projects/5642
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
+as published by the Free Software Foundation; either version 3
 of the License, or any later version.
 
 This program is distributed in the hope that it will be useful,
@@ -27,7 +27,7 @@ http://www.pylucid.org/index.py/GPL/
  Lizenz DE
 ~~~~~~~~~~~
 
-PyLucid steht unter GPL v2 oder neuer.
+PyLucid steht unter GPL v3 or later.
 
 Allgemeine Information:
   http://de.wikipedia.org/wiki/GNU_General_Public_License
