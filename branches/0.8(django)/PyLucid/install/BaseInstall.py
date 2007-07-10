@@ -25,6 +25,7 @@ from django.template import Template, Context, loader
 #DEBUG = True
 DEBUG = False
 
+
 class WrongInstallPassHash(Exception):
     pass
 
@@ -40,10 +41,16 @@ def check_install_pass():
             msg = ""
         raise WrongInstallPassHash(msg)
 
-    if len(settings.INSTALL_PASS_HASH)!=49:
-        raise WrongInstallPassHash("Wrong hash len in your settings.py!")
+    current_len = len(settings.INSTALL_PASS_HASH)
+    if current_len != crypt.SALT_HASH_LEN:
+        msg = "Wrong hash len in your settings.py!"
+        if DEBUG:
+            msg += " - Should be: %s current length is: %s" % (
+                crypt.SALT_HASH_LEN, current_len
+            )
+        raise WrongInstallPassHash(msg)
 
-    if not settings.INSTALL_PASS_HASH.startswith("sha$"):
+    if not settings.INSTALL_PASS_HASH.startswith("sha1$"):
         raise WrongInstallPassHash("Wrong hash format in your settings.py!")
 
 
@@ -57,7 +64,7 @@ def check_password_hash(password_hash):
                 password_hash, settings.INSTALL_PASS_HASH
             )
         raise WrongPassword(msg)
-    if len(password_hash)!=49:
+    if len(password_hash) != crypt.SALT_HASH_LEN:
         error(_("Wrong password hash len."))
     if password_hash != settings.INSTALL_PASS_HASH:
         error(_("Password compare fail."))
@@ -67,7 +74,7 @@ def check_password_hash(password_hash):
 
 class InstallPassForm(forms.Form):
     """ a django newforms for input the _install section password """
-    hash = forms.CharField(min_length=49, max_length=49)
+    hash = forms.CharField(min_length=crypt.SALT_HASH_LEN, max_length=crypt.SALT_HASH_LEN)
 
 SIMPLE_RENDER_TEMPLATE = """
 {% extends "install_base.html" %}

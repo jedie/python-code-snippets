@@ -12,9 +12,9 @@
 
     Last commit info:
     ~~~~~~~~~~~~~~~~~
-    $LastChangedDate: $
-    $Rev: $
-    $Author: $
+    $LastChangedDate$
+    $Rev$
+    $Author$
 
     :copyright: 2007 by Jens Diemer.
     :license: GNU GPL v3, see LICENSE.txt for more details.
@@ -24,8 +24,8 @@
 import sha, random
 
 SALT_LEN = 6
-# SHA string length + "sha" + (2x "$") + salt length
-SALT_HASH_LEN = 45 + SALT_LEN
+# SHA-1 hexdigest (40) + "sha1" + (2x "$") + salt length
+SALT_HASH_LEN = 40 + 4 + 2 + SALT_LEN
 
 
 class SaltHashError(Exception):

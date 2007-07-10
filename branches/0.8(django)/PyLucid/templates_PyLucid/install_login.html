@@ -29,7 +29,7 @@ function make_hash() {
     }
 
     sha = hex_sha1(salt + source);
-    hash = "sha$" + salt + "$" + sha;
+    hash = "sha1$" + salt + "$" + sha;
 
     hash_obj = document.getElementById("hash");
     hash_obj.value = hash;
@@ -68,7 +68,7 @@ function make_hash() {
       <label for="source">Input your Password here :</label>
       <input id="source" type="password" name="{% trans 'Password' %}" size="20" onchange="make_hash();" /><br />
       <label for="hash">generated SHA-1 hash :</label>
-      <input id="hash" name="hash" type="text" value="(input password first)" size="60" maxlength="49" readonly="readonly" /><br />
+      <input id="hash" name="hash" type="text" value="(input password first)" size="60" readonly="readonly" /><br />
       <input type="submit" value="{% trans 'Log in' %}" onclick="make_hash();" />
     </form>
 </fieldset>

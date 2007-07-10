@@ -39,7 +39,7 @@ function make_hash() {
 
     salt = make_salt();
     sha = hex_sha1(salt + source);
-    hash = "sha$" + salt + "$" + sha;
+    hash = "sha1$" + salt + "$" + sha;
 
     hash_obj = document.getElementById("hash")
     hash_obj.value = hash;
@@ -123,7 +123,7 @@ fieldset.error {
     <span class="help_text">{% trans '(at least 8 chars long and only ASCII letters are allowed!)' %}</span>
     <p>
     <label for="hash">generated SHA-1 hash :</label>
-    <input id="hash" type="text" value="(input the password first)" size="60" maxlength="49" readonly="readonly" /><br />
+    <input id="hash" type="text" value="(input the password first)" size="60" readonly="readonly" /><br />
     <span class="help_text">{% trans 'You must copy and paste the hash into your settings.py file.' %}</span>
     </p>
     <input type="button" value="make hash" onclick="make_hash();"><br />
