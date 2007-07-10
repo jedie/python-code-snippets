@@ -46,7 +46,7 @@ def make_salt_hash(txt):
 
     salt = sha.new(str(random.random())).hexdigest()[:SALT_LEN]
     hash = sha.new(salt + txt).hexdigest()
-    salt_hash = "sha$%s$%s" % (salt, hash)
+    salt_hash = "sha1$%s$%s" % (salt, hash)
     return salt_hash
 
 
@@ -54,6 +54,9 @@ def check_salt_hash(txt, salt_hash):
     """
     compare txt with the salt-hash.
     returns a bool.
+
+    TODO: Should we used the django function for this?
+        Look at: django.contrib.auth.models.check_password
 
     >>> salt_hash = make_salt_hash("test")
     >>> check_salt_hash("test", salt_hash)
@@ -69,7 +72,7 @@ def check_salt_hash(txt, salt_hash):
     except ValueError:
         raise SaltHashError("Wrong salt-hash format.")
 
-    if type != "sha":
+    if type != "sha1":
         raise SaltHashError("Unsupported hash method.")
 
     test_hash = sha.new(salt + txt).hexdigest()

@@ -5,39 +5,28 @@
 # meta information
 __author__      = "Jens Diemer"
 __url__         = "http://www.PyLucid.org"
-__description__ = "JS-MD5-Login/-Logout"
-__long_description__ = """The JS-MD5-Login handler"""
+__description__ = "JS-SHA-Login/-Logout"
+__long_description__ = """The JS-SHA-Login handler"""
 
 #_____________________________________________________________________________
 # plugin administration data
 
-module_manager_data = {
+plugin_manager_data = {
     "login" : {
         "must_login"    : False,
         "must_admin"    : False,
         "internal_page_info" : {
-            "name"              : "input_password",
-            "description"       : "Login Step-2: Password input form",
-            "template_engine"   : "jinja",
+            "name"              : "input_username",
+            "description"       : "Login Step-1: Username input form",
             "markup"            : None
         },
     },
-    "login fake": { # Fake Methode, nur für die zusätzliche interne Seite!
+    "input_pass": { # Fake Methode, only for the internal page.
         "must_login"    : True,
         "must_admin"    : True,
         "internal_page_info" : {
-            "name"              : "input_username",
-            "description"       : "Login Step-1: Username input form",
-            "template_engine"   : "jinja",
-            "markup"            : None
-        },
-    },
-    "insecure_login": {
-        "must_login"    : False,
-        "must_admin"    : False,
-        "internal_page_info" : {
-            "description"       : "insecure non-JS Login form",
-            "template_engine"   : "jinja",
+            "name"              : "input_password",
+            "description"       : "Login Step-2: input the password",
             "markup"            : None
         },
     },
@@ -45,27 +34,38 @@ module_manager_data = {
         "must_login"    : False,
         "must_admin"    : False,
     },
-    "pass_reset_form" : {
-        "must_login"    : False,
-        "must_admin"    : False,
-        "internal_page_info" : {
-            "description"       : "The password reset html form page",
-            "template_engine"   : "jinja",
-            "markup"            : None
-        },
-    },
-    "check_pass_reset" : {
-        "must_login"    : False,
-        "must_admin"    : False,
-        "internal_page_info" : {
-            "name"              : "pass_reset_email",
-            "description"       : "The email with the password reset link",
-            "template_engine"   : "jinja",
-            "markup"            : None
-        },
-    },
-    "pass_reset" : {
-        "must_login"    : False,
-        "must_admin"    : False,
-    },
+
+
+#    "insecure_login": {
+#        "must_login"    : False,
+#        "must_admin"    : False,
+#        "internal_page_info" : {
+#            "description"       : "insecure non-JS Login form",
+#            "template_engine"   : "jinja",
+#            "markup"            : None
+#        },
+#    },
+#    "pass_reset_form" : {
+#        "must_login"    : False,
+#        "must_admin"    : False,
+#        "internal_page_info" : {
+#            "description"       : "The password reset html form page",
+#            "template_engine"   : "jinja",
+#            "markup"            : None
+#        },
+#    },
+#    "check_pass_reset" : {
+#        "must_login"    : False,
+#        "must_admin"    : False,
+#        "internal_page_info" : {
+#            "name"              : "pass_reset_email",
+#            "description"       : "The email with the password reset link",
+#            "template_engine"   : "jinja",
+#            "markup"            : None
+#        },
+#    },
+#    "pass_reset" : {
+#        "must_login"    : False,
+#        "must_admin"    : False,
+#    },
 }

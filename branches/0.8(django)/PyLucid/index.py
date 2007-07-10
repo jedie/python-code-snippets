@@ -40,6 +40,7 @@ from PyLucid.system.page_msg import PageMessages
 from PyLucid.system.detect_page import get_current_page_obj, \
                                                             get_default_page_id
 from PyLucid.system.URLs import URLs
+from PyLucid.system.context_processors import add_dynamic_context
 
 from PyLucid.tools.content_processors import apply_markup, \
                                         render_string_template, replace_add_data
@@ -116,6 +117,9 @@ def _get_context(request, current_page_obj):
     # A list of every used html DIV CSS-ID.
     # used in PyLucid.defaulttags.lucidTag.lucidTagNode._add_unique_div()
     context["CSS_ID_list"] = []
+
+    # add dynamic content into the context (like: login/logout link)
+    add_dynamic_context(request, context)
 
     # Add the context to the reponse object.
     # Used in PyLucid.middlewares.additional_content
