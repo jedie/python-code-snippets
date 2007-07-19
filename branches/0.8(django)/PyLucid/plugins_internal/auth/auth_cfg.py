@@ -21,12 +21,12 @@ plugin_manager_data = {
             "markup"            : None
         },
     },
-    "input_pass": { # Fake Methode, only for the internal page.
+    "_plaintext_login": { # Fake Methode, only for the internal page.
         "must_login"    : True,
         "must_admin"    : True,
         "internal_page_info" : {
-            "name"              : "input_password",
-            "description"       : "Login Step-2: input the password",
+            "name"              : "plaintext_login",
+            "description"       : "Login Step-2: input plaintext password",
             "markup"            : None
         },
     },

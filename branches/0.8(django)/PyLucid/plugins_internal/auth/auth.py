@@ -9,6 +9,9 @@
 
     TODO: Only plaintext login implemented!!!
 
+    TODO: Clearing the session table?
+    http://www.djangoproject.com/documentation/sessions/#clearing-the-session-table
+
     Last commit info:
     ~~~~~~~~~
     LastChangedDate: $LastChangedDate$
@@ -37,29 +40,29 @@ DEBUG = True
 from PyLucid.system.BasePlugin import PyLucidBasePlugin
 from PyLucid.system.context_processors import add_dynamic_context
 
-USERNAME_SESSION_KEY = "login_username"
-
 class WrongPassword(Exception):
     pass
 
 class auth(PyLucidBasePlugin):
     def login(self):
-        if USERNAME_SESSION_KEY in self.request.session:
-            # Username has been inputed in the past
-            return self.input_pass()
-
         UsernameForm = forms.form_for_model(User, fields=("username",))
 
         if self.request.method == 'POST':
+            if DEBUG: self.page_msg(self.request.POST)
             username_form = UsernameForm(self.request.POST)
             if username_form.is_valid():
                 username = username_form.cleaned_data["username"]
                 try:
-                    return self.input_pass(username)
+                    user = User.objects.get(username = username)
                 except User.DoesNotExist, msg:
                     self.page_msg(_("User does not exist."))
                     if DEBUG:
                         self.page_msg(msg)
+                else:
+                    if "plaintext_login" in self.request.POST:
+                        return self._plaintext_login(user)
+                    else:
+                        return self._sha_login(user)
         else:
             username_form = UsernameForm()
 
@@ -69,24 +72,13 @@ class auth(PyLucidBasePlugin):
         }
         self._render_template("input_username", context)#, debug=True)
 
-
-    def input_pass(self, username=None):
-        if username:
-            # login()
-            user = User.objects.get(username = username)
-            # Save username in Session:
-            self.request.session[USERNAME_SESSION_KEY] = user.id
-        else:
-            # Username from session
-            if DEBUG: self.page_msg("get user id from session.")
-            user_id = self.request.session[USERNAME_SESSION_KEY]
-            user = User.objects.get(id = user_id)
-
-        self.page_msg("user:", user)
-
+    def _plaintext_login(self, user):
         PasswordForm = forms.form_for_model(User, fields=("password",))
 
-        if self.request.method == 'POST':
+        # Delete the default django help text:
+        PasswordForm.base_fields['password'].help_text = ""
+
+        if self.request.method == 'POST' and "password" in self.request.POST:
             password_form = PasswordForm(self.request.POST)
             if password_form.is_valid():
                 password = password_form.cleaned_data["password"]
@@ -101,10 +93,11 @@ class auth(PyLucidBasePlugin):
             password_form = PasswordForm()
 
         context = {
+            "username": user.username,
+            "logout_url": self.URLs.methodLink("logout"),
             "form": password_form,
         }
-        self._render_template("input_password", context)#, debug=True)
-
+        self._render_template("plaintext_login", context)#, debug=True)
 
     def _check_plaintext_password(self, input_pass, user):
         db_pass = user.password
@@ -124,6 +117,8 @@ class auth(PyLucidBasePlugin):
         # rebuild the login/logout link:
         add_dynamic_context(self.request, self.context)
 
+    def _sha_login(self, user):
+        self.page_msg("SHA-1 - Not implemented, yet :(")
 
     def logout(self):
         logout(self.request)
