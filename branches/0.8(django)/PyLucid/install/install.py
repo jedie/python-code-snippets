@@ -24,22 +24,54 @@ syncdb_template = """
 {% endblock %}
 """
 class Sync_DB(BaseInstall):
+
+    # Drop this tables before syncdb:
+    DROP_TABLES = ("PyLucid_preference",)
+
     def view(self):
-        self._redirect_execute(self.syncdb)
+        from django.core import management
+        # Output without escape sequences:
+        management.disable_termcolors()
+
+        self._redirect_execute(self.drop_tables, management)
+        self._redirect_execute(self.syncdb, management)
         return self._render(syncdb_template)
 
-    def syncdb(self):
-        from django.core import management
+    def drop_tables(self, management):
+        print
+        print "drop tables:"
+        print "-"*80
+        from django.db import connection
+        from django.db.models import get_app
 
-        print "syncdb:"
+        app = get_app("PyLucid")
+        statements = management.get_sql_delete(app)
+
+        cursor = connection.cursor()
+        for statement in statements:
+            for table_name in self.DROP_TABLES:
+                if table_name in statement:
+                    print "Delete table '%s' (%s):" % (table_name, statement),
+                    try:
+                        cursor.execute(statement)
+                    except Exception, e:
+                        print "Error:", e
+                    else:
+                        print "OK"
         print "-"*80
 
-        management.syncdb(verbosity=2, interactive=False)
+    def syncdb(self, management):
+        print
+        print "syncdb:"
+        print "-"*80
+        management.syncdb(verbosity=1, interactive=False)
+        print "-"*80
+        print "syncdb ok."
 
 
 def syncdb(request):
     """
-    1. install Db tables (syncdb)
+    1. install Db tables (syncdb, Note: old preferences lost!)
     """
     return Sync_DB(request).start_view()
 
