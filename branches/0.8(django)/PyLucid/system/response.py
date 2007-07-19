@@ -55,14 +55,6 @@ class SimpleStringIO(object):
         content = ''.join(self._container)
         return content
 
-    def isatty(self):
-        """
-        for PyLucid.install.tests.SQLInfo
-        and django.core.management respectively
-        must returned False, otherwise escape sequences are in the output.
-        """
-        return False
-
 #if __name__ == "__main__":
 #     A local test: You must uncomment the django local init part above!
 #    response = SimpleStringIO()

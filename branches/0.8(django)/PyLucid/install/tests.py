@@ -144,9 +144,11 @@ class SQLInfo(BaseInstall):
         )
 
     def print_info(self):
-        from django.core.management import get_sql_create, get_custom_sql, \
-                                                                get_sql_indexes
+        from django.core import management
         from django.db.models import get_apps
+
+        # Output without escape sequences:
+        management.disable_termcolors()
 
         app_list = get_apps()
 #        output.append("App list: %s" % app_list)
@@ -165,9 +167,9 @@ class SQLInfo(BaseInstall):
             print "--\n--",
             print "_"*77
             print "-- %s\n--" % app.__name__
-            write_lines(get_sql_create, app, "get_sql_create")
-            write_lines(get_custom_sql, app, "get_custom_sql")
-            write_lines(get_sql_indexes, app, "get_sql_indexes")
+            write_lines(management.get_sql_create, app, "get_sql_create")
+            write_lines(management.get_custom_sql, app, "get_custom_sql")
+            write_lines(management.get_sql_indexes, app, "get_sql_indexes")
 
 def sql_info(request):
     "2. SQL info"
