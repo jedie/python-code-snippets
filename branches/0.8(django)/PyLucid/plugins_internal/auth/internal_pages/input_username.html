@@ -8,8 +8,10 @@
 <form method="post" action=".">
   {{ form }}
   <br />
-  <input type="submit" value="{% trans 'Log in' %}" />
+  {% trans 'Log in' %}:
+  <input type="submit" id="sha_button" name="SHA1_login" value="SHA-1 login" />
+  <input type="submit" id="plaintext_button" name="plaintext_login" value="unsecure plaintext login" onclick="return confirm('Do you realy want to send your password in plaintext?')"/>
 </form>
 </fieldset>
 
-<script type="text/javascript">document.getElementById("username").focus();</script>
+<script type="text/javascript">document.getElementById("id_username").focus();</script>
