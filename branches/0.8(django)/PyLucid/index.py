@@ -17,13 +17,6 @@
     :license: GNU GPL v3, see LICENSE.txt for more details.
 """
 
-#if __name__ == "__main__": # A local test. THIS SHOULD BE COMMENTED!!!
-#    import os
-#    os.environ["DJANGO_SETTINGS_MODULE"] = "PyLucid.settings"
-#    from PyLucid import settings
-#    from django.core import management
-#    management.setup_environ(settings) # init django
-
 import datetime, md5
 
 from django.http import HttpResponse
