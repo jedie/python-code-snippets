@@ -8,6 +8,7 @@ import sys
 from PyLucid import settings
 from PyLucid import PYLUCID_VERSION_STRING
 from PyLucid.system.response import SimpleStringIO
+from PyLucid.system.page_msg import PageMessages
 from PyLucid.tools import crypt
 from PyLucid.tools.content_processors import render_string_template
 
@@ -71,7 +72,6 @@ def check_password_hash(password_hash):
 
 
 
-
 class InstallPassForm(forms.Form):
     """ a django newforms for input the _install section password """
     hash = forms.CharField(min_length=crypt.SALT_HASH_LEN, max_length=crypt.SALT_HASH_LEN)
@@ -96,11 +96,11 @@ class BaseInstall(object):
         self.request = request
         self.context = {
             "output": "",
-            "messages": [],
             "http_host": request.META.get("HTTP_HOST","cms page"),
             "PyLucid_media_url": settings.PYLUCID_MEDIA_URL,
             "version": PYLUCID_VERSION_STRING,
         }
+        self.context["page_msg"] = PageMessages(self.context)
 
     #___________________________________________________________________________
 
@@ -111,8 +111,8 @@ class BaseInstall(object):
         # Do not display the "back to menu" link:
         self.context["no_menu_link"] = True
 
-        if msg: # insert the messages:
-            self.context["messages"].append(msg)
+        if msg and msg != "": # insert the messages:
+            self.context["page_msg"].write(msg)
 
         return render_to_response(
             "install_generate_hash.html", self.context
@@ -128,7 +128,7 @@ class BaseInstall(object):
             # Check the install hash in the settings.py
             check_install_pass()
         except WrongInstallPassHash, msg:
-            return self.__render_generate_hash(msg)
+            return self.__render_generate_hash(msg.args[0])
 
         try:
             # check if the _install section password is stored in the cookie
@@ -139,7 +139,7 @@ class BaseInstall(object):
         except Exception, msg:
             # Cookie is not set or the salt hash value compair failed
             if DEBUG:
-                self.context["messages"].append("DEBUG: %s" % msg)
+                self.context["page_msg"].write("DEBUG: %s" % msg)
         else:
             # access ok -> start the normal _instal view() method
             return self.view()
@@ -157,7 +157,7 @@ class BaseInstall(object):
                     check_password_hash(password_hash)
                 except WrongPassword, msg:
                     # Display the form again
-                    self.context["messages"].append(msg)
+                    self.context["page_msg"].write(msg)
                 else:
                     # Password is ok. -> process the normal _instal view()
                     response = self.view()
@@ -172,7 +172,7 @@ class BaseInstall(object):
         self.context["salt"] = data["salt"]
 
         self.context["no_menu_link"] = True # no "back to menu" link
-#        self.context["messages"].append(_("Please input the password"))
+#        self.context["page_msg"].write(_("Please input the password"))
         return render_to_response("install_login.html", self.context)
 
    #___________________________________________________________________________

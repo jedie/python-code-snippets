@@ -13,10 +13,10 @@
 <a name="top"></a>
 <h3>PyLucid v{{ version }} - setup@<a href="/" title="{% trans 'goto your PyLucid CMS page' %}">{{ http_host }}</a></h3>
 {% if not no_menu_link %}<p><a href="{% url PyLucid.install.index.menu . %}">&#xAB; {% trans 'back to menu' %}</a></p>{% endif %}
-{% if messages %}
-    <fieldset id="page_msg"><legend>page message</legend>
-    {% for message in messages %}
-      {{ message|escape }}<br />
+{% if page_msg %}
+    <fieldset id="page_msg"><legend>page messages</legend>
+    {% for message in page_msg %}
+      {{ message }}<br />
     {% endfor %}
     </fieldset>
 {% endif %}
