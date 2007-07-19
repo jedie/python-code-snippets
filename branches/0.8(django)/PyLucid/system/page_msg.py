@@ -81,16 +81,20 @@ import inspect
 
 class PageMessages(object):
     """
-    self.raw - Für Ausgaben ohne <br />
-
     http://www.djangoproject.com/documentation/authentication/#messages
-
+    TODO: Should be inherit from dict.
     """
-    raw = False
+    raw = False # Append <br /> ?
     debug_mode = settings.DEBUG
 
     def __init__(self, context):
-        self.messages = context["messages"]
+        try:
+            self.messages = context["messages"]
+        except KeyError:
+            # No django messages inserted by RequestContext
+            # In the _install section we use no RequestContext ;)
+            self.messages = []
+
         self._charset = settings.DEFAULT_CHARSET
 
     #_________________________________________________________________________
@@ -194,6 +198,22 @@ class PageMessages(object):
             return str(txt)
         except:
             return repr(txt)
+
+    #________________________________________________________________
+    # Some methods for the django template engine:
+
+    def __iter__(self):
+        """
+        used in: {% for message in page_msg %}
+        """
+        for message in self.messages:
+            yield message
+
+    def __len__(self):
+        """
+        used in: {% if page_msg %}
+        """
+        return len(self.messages)
 
 
 
