@@ -28,17 +28,15 @@ from django import newforms as forms
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 
-from PyLucid.tools import crypt
-
-
 DEBUG = True
 #DEBUG = False
 # IMPORTANT:
 # Should realy only use for debugging!!!
 
-
+from PyLucid.tools import crypt
 from PyLucid.system.BasePlugin import PyLucidBasePlugin
 from PyLucid.system.context_processors import add_dynamic_context
+from PyLucid.models import JS_LoginData
 
 class WrongPassword(Exception):
     pass
@@ -118,7 +116,10 @@ class auth(PyLucidBasePlugin):
         add_dynamic_context(self.request, self.context)
 
     def _sha_login(self, user):
-        self.page_msg("SHA-1 - Not implemented, yet :(")
+        self.page_msg(user)
+        js_login_data = JS_LoginData.objects.get(user = user)
+        self.page_msg(js_login_data)
+        self.page_msg("SHA-1 - Not implemented completly, yet :(")
 
     def logout(self):
         logout(self.request)

@@ -56,8 +56,8 @@ sha_b = sha_hash[16:]
 print "sha_a: '%s' sha_b: '%s'" % (sha_a, sha_b)
 
 print "\n 2.2. encrypt(sha_a, key=sha_b):",
-shachecksum = encrypt(sha_a, key=sha_b)
-print "'%s'" % shachecksum
+sha_checksum = encrypt(sha_a, key=sha_b)
+print "'%s'" % sha_checksum
 
 print "\n 2.3. Speichern nur der verschlüsselten Checksum + salt\n"
 
@@ -90,13 +90,13 @@ print "\n 3.6. Übermittlung von sha_a2 und sha_b."
 
 print "\n\n------------ 4. check auf dem Server------------"
 
-print "\n 4.1. aus der DB shachecksum: '%s'" % shachecksum
+print "\n 4.1. aus der DB sha_checksum: '%s'" % sha_checksum
 
-print "\n 4.2. decrypt(shachecksum, key=sha_b):",
-shachecksum = decrypt(shachecksum, key=sha_b)
-print "'%s'" % shachecksum
+print "\n 4.2. decrypt(sha_checksum, key=sha_b):",
+sha_checksum = decrypt(sha_checksum, key=sha_b)
+print "'%s'" % sha_checksum
 
-print "\n 4.3. sha(shachecksum + challenge):",
-shacheck = sha(shachecksum + challenge)
+print "\n 4.3. sha(sha_checksum + challenge):",
+shacheck = sha(sha_checksum + challenge)
 print "'%s'" % shacheck
 print "\n 4.4. Vergleich: %s == %s" % (shacheck, sha_a2)

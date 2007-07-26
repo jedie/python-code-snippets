@@ -195,6 +195,7 @@ class CreateUser(BaseInstall):
         """
         print "Create a new superuser:"
 
+        print "Create normal django user entry:"
         user_data = user_form.cleaned_data
         try:
             user = User.objects.create_user(
@@ -206,6 +207,17 @@ class CreateUser(BaseInstall):
             user.first_name = user_data["first_name"]
             user.last_name = user_data["last_name"]
             user.save()
+        except Exception, e:
+            print "ERROR: %s" % e
+        else:
+            print "OK"
+
+        print "Save additional JS-SHA-Login data:"
+        try:
+            from PyLucid.models import JS_LoginData
+            sha_checksum = plaintext_to_js_sha_checksum(user_data["password"])
+            js_login_data = JS_LoginData(user=user, sha_checksum = sha_checksum)
+            js_login_data.save()
         except Exception, e:
             print "ERROR: %s" % e
         else:
