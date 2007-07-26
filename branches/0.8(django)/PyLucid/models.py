@@ -258,7 +258,7 @@ class Page(models.Model):
 class JS_LoginData(models.Model):
     user = models.ForeignKey(User)
 
-    md5checksum = models.CharField(maxlength=192)
+    sha_checksum = models.CharField(maxlength=192)
     salt = models.IntegerField()
 
     createtime = models.DateTimeField(auto_now_add=True)
