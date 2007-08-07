@@ -44,8 +44,9 @@ class Update(Sync_DB):
                 headline=headline
             )
 
-        # self.syncdb is inherited from the Sync_DB class
-        self._redirect_execute(self.syncdb)
+        # self._get_management and self._syncdb are inherited from Sync_DB
+        management = self._get_management()
+        self._redirect_execute(self._syncdb, management)
 
         self._redirect_execute(self.move_data)
 
@@ -63,12 +64,13 @@ class Update(Sync_DB):
         cursor = connection.cursor()
 
         # FIXME: Truncate tables only for Testing!!!
+        # So we can call the update routines repeatedly, without "Duplicate
+        # entry" errors
         cursor.execute("TRUNCATE TABLE auth_user;")
         cursor.execute("TRUNCATE TABLE PyLucid_js_logindata;")
         cursor.execute("TRUNCATE TABLE PyLucid_template;")
         cursor.execute("TRUNCATE TABLE PyLucid_style;")
         cursor.execute("TRUNCATE TABLE PyLucid_page;")
-        cursor.execute("TRUNCATE TABLE PyLucid_preference;")
 
         user_map = self._convert_users()
 
@@ -80,9 +82,10 @@ class Update(Sync_DB):
             user_map, template_map, style_map, markup_id_map
         )
 
-        self._convert_preferences(
-            page_map, user_map, template_map, style_map, markup_name_map
-        )
+        try:
+            self._setup_preferences(page_map)
+        except Exception, e:
+            print "Error:", e
 
     def __to_dict(self, data, keylist):
         """
@@ -352,18 +355,18 @@ class Update(Sync_DB):
             old_id = user_dict["id"]
             user_map[old_id] = user
 
-            print "old ID: %s - new ID: %s;" % (old_id, user.id),
+            print "old ID: %s - new ID: %s;" % (old_id, user.id)
 
-            print "Put md5data into DB:",
-            if not user_dict["salt"] in (None, 0):
-                js_data = JS_LoginData(
-                    user=user, md5checksum=user_dict["md5checksum"],
-                    salt=user_dict["salt"]
-                )
-                js_data.save()
-                print "OK"
-            else:
-                print "Skip, no valid data. Passreset needed."
+#            print "Put md5data into DB:",
+#            if not user_dict["salt"] in (None, 0):
+#                js_data = JS_LoginData(
+#                    user=user, md5checksum=user_dict["md5checksum"],
+#                    salt=user_dict["salt"]
+#                )
+#                js_data.save()
+#                print "OK"
+#            else:
+#                print "Skip, no valid data. Passreset needed."
 
         print "="*80
         print
@@ -372,63 +375,35 @@ class Update(Sync_DB):
 
 
 
-    def _convert_preferences(self, page_map, user_map, template_map, style_map,
-                                                                    markup_map):
+    def _setup_preferences(self, page_map):
         """
-        move some preferences
+        setup some preferences
         """
         print "_"*80
-        print "Move the preferences..."
+        print "Setup preferences..."
         print
+
         cursor = connection.cursor()
-
-        table_keys = (
-            "name", "description", "value"
-        )
-        needed = {
-            "Default Page": "index page",
-            "Preferred Text Markup": "default markup",
-            "Default Template Name": "default template",
-            "Default Style Name": "default stylesheet",
-        }
-        where = " OR ".join(["name='%s'" % i for i in needed.keys()])
-        SQLcommand = "SELECT %s FROM %spreferences WHERE %s;" % (
-            ",".join(table_keys), OLD_TABLE_PREFIX, where
-        )
+        SQLcommand = (
+            "SELECT value FROM %spreferences WHERE varName='defaultPage';"
+        ) % OLD_TABLE_PREFIX
         cursor.execute(SQLcommand)
+        defaultPageID = int(cursor.fetchone()[0])
 
-        preferences = cursor.fetchall()
-        for p in preferences:
-            p_dict = self.__to_dict(p, table_keys)
-            print p_dict
-            old_value = p_dict["value"]
-            old_name = p_dict["name"]
+        print "default page:", defaultPageID
 
-            # get it a short new name
-            p_dict["name"] = name = needed[old_name]
+        new_index_page = page_map[defaultPageID]
+        print "page:", new_index_page
+        id = new_index_page.id
+        print "id:", id
 
-            # update the value
-            if name == "index page":
-                page_obj = page_map[int(old_value)]
-                new_value = page_obj.id
-            elif name == "default markup":
-                markup_obj = markup_map[old_value]
-                new_value = markup_obj.id
-            elif name == "default template":
-                template_obj = template_map[int(old_value)]
-                new_value = template_obj.id
-            elif name == "default stylesheet":
-                style_obj = style_map[int(old_value)]
-                new_value = style_obj.id
-            else:
-                raise # Should never happen.
+        print "Save new page ID...",
+        p = Preference.objects.get(name = "index page")
+        p.value = id
+        p.save()
+        print "OK"
 
-            p = Preference(
-                plugin=None, name=name,
-                description = p_dict["description"],
-                value = new_value,
-            )
-            p.save()
+
 
 
 def update(request):
