@@ -51,8 +51,8 @@ print "\n 1.4. Übermittlung der SHA-1 Summe zum Server."
 print "\n\n------------ 2. speichern des Users auf dem Server------------"
 
 print "\n 2.1. Server trennt die SHA-1 in:",
-sha_a = sha_hash[:16]
-sha_b = sha_hash[16:]
+sha_a = sha_hash[:20]
+sha_b = sha_hash[20:]
 print "sha_a: '%s' sha_b: '%s'" % (sha_a, sha_b)
 
 print "\n 2.2. encrypt(sha_a, key=sha_b):",
@@ -78,8 +78,8 @@ sha_hash = sha(password + salt)
 print "'%s'" % sha_hash
 
 print "\n 3.4. trennen der SHA-1 in:",
-sha_a = sha_hash[:16]
-sha_b = sha_hash[16:]
+sha_a = sha_hash[:20]
+sha_b = sha_hash[20:]
 print "sha_a: '%s' sha_b: '%s'" % (sha_a, sha_b)
 
 print "\n 3.5. sha_a2 = sha(sha_a + challenge):",
@@ -97,6 +97,6 @@ sha_checksum = decrypt(sha_checksum, key=sha_b)
 print "'%s'" % sha_checksum
 
 print "\n 4.3. sha(sha_checksum + challenge):",
-shacheck = sha(sha_checksum + challenge)
-print "'%s'" % shacheck
-print "\n 4.4. Vergleich: %s == %s" % (shacheck, sha_a2)
+sha_check = sha(sha_checksum + challenge)
+print "'%s'" % sha_check
+print "\n 4.4. Vergleich: %s == %s" % (sha_check, sha_a2)

@@ -30,6 +30,15 @@ plugin_manager_data = {
             "markup"            : None
         },
     },
+    "_sha_login": { # Fake Methode, only for the internal page.
+        "must_login"    : True,
+        "must_admin"    : True,
+        "internal_page_info" : {
+            "name"              : "input_password",
+            "description"       : "Login Step-2: input password for SHA-Login",
+            "markup"            : None
+        },
+    },
     "logout" : {
         "must_login"    : False,
         "must_admin"    : False,

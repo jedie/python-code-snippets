@@ -39,7 +39,7 @@ class URLs(dict):
         response would be built.
         """
         self["cwd"] = os.getcwdu()
-        self["host"] = self.request.META['HTTP_HOST']
+        self["host"] = self.request.META.get('HTTP_HOST')
         self["hostname"] = "%s://%s" % (
             self.request.META.get('wsgi.url_scheme', "http"),
             self["host"],

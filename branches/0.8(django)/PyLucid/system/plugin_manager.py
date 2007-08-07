@@ -60,7 +60,7 @@ def get_plugin_class(package_name, plugin_name):
     return plugin_class
 
 def get_plugin_config(package_name, plugin_name, dissolve_version_string=False,
-                                                            print_debug=False):
+                                                            extra_verbose=False):
     """
     imports the plugin and the config plugin and returns a merge config-object
 
@@ -71,7 +71,7 @@ def get_plugin_config(package_name, plugin_name, dissolve_version_string=False,
 
     def get_plugin(object_name):
         from_name = ".".join([package_name, plugin_name, object_name])
-        if print_debug:
+        if extra_verbose:
             print "from %s import %s" % (from_name, object_name)
         return _import(from_name, object_name)
 
@@ -88,7 +88,8 @@ def get_plugin_config(package_name, plugin_name, dissolve_version_string=False,
 
     return config_plugin
 
-def _run(context, local_response, plugin_name, method_name, url_args, method_kwargs):
+def _run(context, local_response, plugin_name, method_name, url_args,
+                                                                method_kwargs):
     """
     get the plugin and call the method
     """
@@ -215,11 +216,13 @@ def get_external_plugin_list():
     return get_plugin_list(settings.EXTERNAL_PLUGIN_PATH)
 
 
-def install_plugin(package_name, plugin_name, plugin_config, active):
+def install_plugin(package_name, plugin_name, plugin_config, active,
+                                                                extra_verbose):
     """
     insert a plugin/plugin in the 'plugin' table
     """
-    print "Install %s.%s..." % (package_name, plugin_name),
+    if extra_verbose:
+        print "Install %s.%s..." % (package_name, plugin_name),
     plugin = Plugin.objects.create(
         package_name = package_name,
         plugin_name = plugin_name,
@@ -231,7 +234,8 @@ def install_plugin(package_name, plugin_name, plugin_config, active):
         can_deinstall = getattr(plugin_config, "__can_deinstall__", True),
         active = active,
     )
-    print "OK, ID:", plugin.id
+    if extra_verbose:
+        print "OK, ID:", plugin.id
     return plugin
 
 def get_internalpage_files(package_name, plugin_name, internal_page_name):
@@ -260,7 +264,8 @@ def get_internalpage_files(package_name, plugin_name, internal_page_name):
     return html, js, css
 
 
-def install_internalpage(plugin, package_name, plugin_name, plugin_config):
+def install_internalpage(plugin, package_name, plugin_name, plugin_config,
+                                                                extra_verbose):
     """
     install all internal pages for the given plugin.
 
@@ -319,7 +324,8 @@ def install_internalpage(plugin, package_name, plugin_name, plugin_config):
         # http://groups.google.com/group/django-developers/browse_thread/thread/e1ed7f81e54e724a
         internal_page_name = internal_page_name.replace("_", " ")
 
-        print "install internal page '%s'..." % internal_page_name,
+        if extra_verbose:
+            print "install internal page '%s'..." % internal_page_name,
         internal_page = PagesInternal.objects.create(
             name = internal_page_name,
             plugin = plugin, # The associated plugin
@@ -330,9 +336,10 @@ def install_internalpage(plugin, package_name, plugin_name, plugin_config):
             content_css = css,
             description = internal_page_info['description'],
         )
-        print "OK"
+        if extra_verbose:
+            print "OK"
 
-def install_internal_plugins():
+def install_internal_plugins(extra_verbose=True):
     """
     Install all internal plugin how are markt as important or essential.
     """
@@ -344,11 +351,12 @@ def install_internal_plugins():
     plugin_list = get_plugin_list(plugin_path)
 
     for plugin_name in plugin_list:
-        print "\n\ninstall plugin: *** %s ***\n" % plugin_name
+        if extra_verbose:
+            print "\n\ninstall plugin: *** %s ***\n" % plugin_name
         try:
             plugin_config = get_plugin_config(
                 package_name, plugin_name,
-                dissolve_version_string=True, print_debug=True
+                dissolve_version_string=True, extra_verbose=extra_verbose
             )
         except ImportError, e:
             print "ImportError:", e
@@ -362,15 +370,15 @@ def install_internal_plugins():
             print "*** DeprecationWarning: ***"
             print " - '__important_buildin__' or '__essential_buildin__' are obsolete."
 
-
-
         plugin = install_plugin(
-            package_name, plugin_name, plugin_config, active=True
+            package_name, plugin_name, plugin_config, active=True,
+            extra_verbose=extra_verbose
         )
         install_internalpage(
-            plugin, package_name, plugin_name, plugin_config
+            plugin, package_name, plugin_name, plugin_config, extra_verbose
         )
-        print "OK, plugins installed."
+        if extra_verbose:
+            print "OK, plugins installed."
 
 if __name__ == "__main__":
     os.chdir("../..") # go into root dir

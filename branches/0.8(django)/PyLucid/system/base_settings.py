@@ -63,4 +63,13 @@ PAGE_CACHE_PREFIX = "PyLucid_page_cache_"
 # PyLucid.index._replace_add_data()
 ADD_DATA_TAG = "<!-- additional_data -->"
 
+#______________________________________________________________________________
+# JS-SHA1-Login
+
 INSTALL_COOKIE_NAME = "PyLucid_inst_auth"
+
+# http://www.djangoproject.com/documentation/authentication/#other-authentication-sources
+AUTHENTICATION_BACKENDS = (
+    "django.contrib.auth.backends.ModelBackend",
+    "PyLucid.plugins_internal.auth.auth_backend.JS_SHA_Backend",
+)
