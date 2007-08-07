@@ -18,9 +18,12 @@
 import pickle
 
 from django.db import models
+from django.dispatch import dispatcher
 from django.contrib.auth.models import User, Group
 
 from PyLucid.tools.shortcuts import getUniqueShortcut
+
+
 
 
 class Page(models.Model):
@@ -255,11 +258,14 @@ class Page(models.Model):
         return self.shortcut
 
 
+#______________________________________________________________________________
+
+
 class JS_LoginData(models.Model):
     user = models.ForeignKey(User)
 
     sha_checksum = models.CharField(maxlength=192)
-    salt = models.IntegerField()
+    salt = models.CharField(maxlength=6)
 
     createtime = models.DateTimeField(auto_now_add=True)
     lastupdatetime = models.DateTimeField(auto_now=True)
@@ -269,11 +275,73 @@ class JS_LoginData(models.Model):
 
     class Admin:
         list_display = (
-            'user', 'md5checksum', 'salt', 'createtime', 'lastupdatetime'
+            'user', 'sha_checksum', 'salt', 'createtime', 'lastupdatetime'
         )
 
     class Meta:
         verbose_name = verbose_name_plural = 'JS-LoginData'
+
+
+#class User(User):
+#    def save(self, *args, **kwargs):
+#        super(User, self).save(*args, **kwargs)
+#        print "JOJOJO"
+#User = User
+
+#old_passwords = {}
+#def save_old_pass(sender, instance, signal, *args, **kwargs):
+#    """
+#    save the old password for update_js_login_data()
+#    """
+#    print "111", sender, instance, signal
+#    user_obj = instance
+##    user_obj.message_set.create(message="save_old_pass")
+#    old_pass = user_obj.password
+#    old_passwords[user_obj] = old_pass
+
+
+def update_js_login_data(sender, instance, signal, *args, **kwargs):
+    """
+    Update the JS_LoginData if the user password has been changed in the
+    django User model.
+    """
+    user_obj = instance
+    django_salt_hash = user_obj.password
+
+    if not django_salt_hash:
+        return
+
+    from PyLucid.tools.crypt import django_to_sha_checksum
+
+    sha_checksum, password_salt = django_to_sha_checksum(django_salt_hash)
+
+    data, created = JS_LoginData.objects.get_or_create(
+        user = user_obj,
+        defaults = {"sha_checksum": sha_checksum, "salt": password_salt}
+    )
+    if created:
+        msg = _("creaded a new PyLucid JS-Login-Data entry, OK")
+    else:
+        if data.sha_checksum == sha_checksum:
+            msg = "nothing to do"
+        else:
+            msg = _("update a existing PyLucid JS-Login-Data entry, OK")
+            data.sha_checksum = sha_checksum
+            data.salt = password_salt
+            data.save()
+
+    user_obj.message_set.create(message=msg)
+
+
+#dispatcher.connect(
+#    save_old_pass, signal=models.signals.post_init, sender=User
+#)
+dispatcher.connect(
+    update_js_login_data, signal=models.signals.post_save, sender=User
+)
+
+
+#______________________________________________________________________________
 
 
 class Markup(models.Model):

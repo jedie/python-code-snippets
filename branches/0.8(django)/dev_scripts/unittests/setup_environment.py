@@ -47,10 +47,19 @@ def make_insert_dump(extra_verbose):
     fake_options.verbose = extra_verbose
     loaddb(app_labels = [], format = "py", options = fake_options)
 
+def install_internal_plugins(extra_verbose):
+    print "- install internal plugins...",
+#    if extra_verbose:
+#        print
+
+    from PyLucid.system import plugin_manager
+
+    plugin_manager.install_internal_plugins(extra_verbose)
+    print "OK"
 
 
 def setup(chdir="../../", path_info=True, extra_verbose=True, syncdb=True,
-                                                            insert_dump=True):
+                            insert_dump=True, install_plugins=False):
     """
     setup a test environment
     """
@@ -62,6 +71,9 @@ def setup(chdir="../../", path_info=True, extra_verbose=True, syncdb=True,
 
     if insert_dump:
         make_insert_dump(extra_verbose)
+
+    if install_plugins:
+        install_internal_plugins(extra_verbose)
 
     print "-"*80
     print

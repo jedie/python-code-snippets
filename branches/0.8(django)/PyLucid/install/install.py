@@ -10,7 +10,8 @@ from PyLucid import settings
 from PyLucid.install.BaseInstall import BaseInstall
 
 from django import newforms as forms
-from django.contrib.auth.models import User
+#from django.contrib.auth.models import User
+from PyLucid.models import User
 
 import sys, os
 
@@ -26,18 +27,18 @@ syncdb_template = """
 class Sync_DB(BaseInstall):
 
     # Drop this tables before syncdb:
-    DROP_TABLES = ("PyLucid_preference",)
+    DROP_TABLES = ("PyLucid_preference", "PyLucid_js_logindata")
 
     def view(self):
         from django.core import management
         # Output without escape sequences:
         management.disable_termcolors()
 
-        self._redirect_execute(self.drop_tables, management)
-        self._redirect_execute(self.syncdb, management)
+        self._redirect_execute(self._drop_tables, management)
+        self._redirect_execute(self._syncdb, management)
         return self._render(syncdb_template)
 
-    def drop_tables(self, management):
+    def _drop_tables(self, management):
         print
         print "drop tables:"
         print "-"*80
@@ -60,7 +61,7 @@ class Sync_DB(BaseInstall):
                         print "OK"
         print "-"*80
 
-    def syncdb(self, management):
+    def _syncdb(self, management):
         print
         print "syncdb:"
         print "-"*80
@@ -71,7 +72,7 @@ class Sync_DB(BaseInstall):
 
 def syncdb(request):
     """
-    1. install Db tables (syncdb, Note: old preferences lost!)
+    1. install Db tables (syncdb, Note: preferences, JS_LoginData lost!)
     """
     return Sync_DB(request).start_view()
 
@@ -164,6 +165,34 @@ create_user_template = """{% load i18n %}
 
 {% endblock %}
 """
+def _create_new_superuser(user_data):
+    """
+    create a new user in the database.
+    This function used in CreateUser() and in the SHA1-JS-Unittest!
+    """
+    print "Create a new django superuser:"
+    raw_password = user_data.pop("password")
+    try:
+        user, created = User.objects.get_or_create(
+            username = user_data["username"],
+            defaults = user_data
+        )
+        user.is_staff = True
+        user.is_active = True
+        user.is_superuser = True
+        user.first_name = user_data["first_name"]
+        user.last_name = user_data["last_name"]
+        user.set_password(raw_password)
+        user.save()
+    except Exception, e:
+        print "ERROR: %s" % e
+    else:
+        if created:
+            print _("creaded a new User, OK")
+        else:
+            print _("update a existing User, OK")
+
+
 class CreateUser(BaseInstall):
     def view(self):
         """
@@ -180,7 +209,8 @@ class CreateUser(BaseInstall):
             user_form = UserForm(self.request.POST)
             if user_form.is_valid():
                 # Create the new user
-                self._redirect_execute(self.create_user, user_form)
+                user_data = user_form.cleaned_data
+                self._redirect_execute(_create_new_superuser, user_data)
         else:
             user_form = UserForm()
 
@@ -189,39 +219,6 @@ class CreateUser(BaseInstall):
 
         return self._render(create_user_template)
 
-    def create_user(self, user_form):
-        """
-        create a new user in the database
-        """
-        print "Create a new superuser:"
-
-        print "Create normal django user entry:"
-        user_data = user_form.cleaned_data
-        try:
-            user = User.objects.create_user(
-                user_data["username"], user_data["email"], user_data["password"]
-            )
-            user.is_staff = True
-            user.is_active = True
-            user.is_superuser = True
-            user.first_name = user_data["first_name"]
-            user.last_name = user_data["last_name"]
-            user.save()
-        except Exception, e:
-            print "ERROR: %s" % e
-        else:
-            print "OK"
-
-        print "Save additional JS-SHA-Login data:"
-        try:
-            from PyLucid.models import JS_LoginData
-            sha_checksum = plaintext_to_js_sha_checksum(user_data["password"])
-            js_login_data = JS_LoginData(user=user, sha_checksum = sha_checksum)
-            js_login_data.save()
-        except Exception, e:
-            print "ERROR: %s" % e
-        else:
-            print "OK"
 
 
 def create_user(request):

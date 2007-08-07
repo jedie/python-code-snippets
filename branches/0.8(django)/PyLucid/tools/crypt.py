@@ -23,6 +23,12 @@
 
 import sha, random, base64
 
+from django.utils.encoding import smart_str
+
+# Warning: Debug must always be False in productiv environment!
+#DEBUG = True
+DEBUG = False
+
 HASH_TYP = "sha1"
 
 SALT_LEN = 6 # length of the random salt value
@@ -35,19 +41,48 @@ SALT_HASH_LEN = HASH_LEN + 4 + 2 + SALT_LEN
 class SaltHashError(Exception):
     pass
 
-def get_salt_and_hash(txt, _debug=False):
+
+def get_new_salt(can_debug = True):
+    """
+    Generate a new, random salt value.
+    >>> get_new_salt() # DEBUG is True in DocTest!
+    'DEBUG!'
+    >>> salt = get_new_salt(can_debug=False)
+    >>> assert salt != 'DEBUG!', "salt is: %s" % salt
+    """
+    if can_debug and DEBUG:
+        salt = "DEBUG!_1234567890"
+    else:
+        salt = sha.new(str(random.random())).hexdigest()
+
+    return salt[:SALT_LEN]
+
+def make_hash(txt, salt):
+    """
+    make a SHA1 hexdigest from the given >txt< and >salt<.
+    IMPORTANT:
+        This routine must work like
+        django.contrib.auth.models.User.set_password()!
+
+    >>> make_hash(txt="test", salt='DEBUG!')
+    '0398bf140231dbfa1e0fb13421e176a1bb27bc72'
+    """
+    hash = sha.new(salt + smart_str(txt)).hexdigest()
+    return hash
+
+def get_salt_and_hash(txt):
     """
     Generate a hast value with a random salt
     returned salt and hash as a tuple
 
     >>> get_salt_and_hash("test")
-    ('sha1', '356a19', '23eb48afb36f672541cab5ee5f07255b3e8bda67')
+    ('sha1', 'DEBUG!', '0398bf140231dbfa1e0fb13421e176a1bb27bc72')
     """
     if not isinstance(txt, str):
         raise SaltHashError("Only string allowed!")
 
-    salt = sha.new(str(random.random())).hexdigest()[:SALT_LEN]
-    hash = sha.new(salt + txt).hexdigest()
+    salt = get_new_salt()
+    hash = make_hash(txt, salt)
 
     return (HASH_TYP, salt, hash)
 
@@ -58,7 +93,7 @@ def make_salt_hash(txt):
     returned one string back
 
     >>> make_salt_hash("test")
-    'sha1$356a19$23eb48afb36f672541cab5ee5f07255b3e8bda67'
+    'sha1$DEBUG!$0398bf140231dbfa1e0fb13421e176a1bb27bc72'
     """
     salt_hash = "$".join(get_salt_and_hash(txt))
     return salt_hash
@@ -67,16 +102,18 @@ def make_salt_hash(txt):
 def check_salt_hash(txt, salt_hash):
     """
     compare txt with the salt-hash.
-    returns a bool.
 
     TODO: Should we used the django function for this?
         Look at: django.contrib.auth.models.check_password
 
     >>> salt_hash = make_salt_hash("test")
+    >>> salt_hash
+    'sha1$DEBUG!$0398bf140231dbfa1e0fb13421e176a1bb27bc72'
     >>> check_salt_hash("test", salt_hash)
+    True
     """
-    if not (isinstance(txt, str) and isinstance(salt_hash, str)):
-        raise SaltHashError("Only string allowed!")
+#    if not (isinstance(txt, str) and isinstance(salt_hash, str)):
+#        raise SaltHashError("Only string allowed!")
 
     if len(salt_hash) != SALT_HASH_LEN:
         raise SaltHashError("Wrong salt-hash length.")
@@ -89,10 +126,17 @@ def check_salt_hash(txt, salt_hash):
     if type != "sha1":
         raise SaltHashError("Unsupported hash method.")
 
-    test_hash = sha.new(salt + txt).hexdigest()
-
+    test_hash = make_hash(txt, salt)
+#    raise
     if hash != test_hash:
-        raise SaltHashError("salt-hash compare failed.")
+        msg = "salt-hash compare failed."
+        if DEBUG:
+            msg += " (txt: '%s', salt: '%s', hash: '%s', test_hash: '%s')" % (
+                txt, salt, hash, test_hash
+            )
+        raise SaltHashError(msg)
+
+    return True
 
 
 def salt_hash_to_dict(salt_hash):
@@ -125,41 +169,59 @@ def crypt(txt, key):
     return u"".join(crypted)
 
 
-def encrypt(txt, key, use_base64=True):
+def encrypt(txt, key, use_base64=True, can_debug = True):
     """
     XOR ciphering with a SHA salt-hash checksum
 
-    >>> encrypt(u"1234", u"ABCD")
-    'sha1$356a19$24352b9033d86754a51117349820c5b84cd2be71cHBwcA=='
+    >>> encrypt(u"1234", u"ABCD") # DEBUG is True in DocTest!
+    u'crypt 1234 with ABCD'
 
-    >>> encrypt(u"1234", u"ABCD", use_base64=False)
-    u'sha1$356a19$24352b9033d86754a51117349820c5b84cd2be71pppp'
+    >>> encrypt(u"1234", u"ABCD", can_debug=False)
+    u'sha1$DEBUG!$1c3f99b739c59c6569800f0b9e6bd426f3dcd063cHBwcA=='
+
+    >>> encrypt(u"1234", u"ABCD", use_base64=False, can_debug=False)
+    u'sha1$DEBUG!$1c3f99b739c59c6569800f0b9e6bd426f3dcd063pppp'
     """
     if not (isinstance(txt, unicode) and isinstance(key, unicode)):
         raise UnicodeError("Only unicode allowed!")
 
+    if can_debug and DEBUG:
+        return "crypt %s with %s" % (txt, key)
+
     salt_hash = make_salt_hash(repr(txt))
+    salt_hash = unicode(salt_hash)
+
     crypted = crypt(txt, key)
     if use_base64==True:
         crypted = base64.b64encode(crypted)
     return salt_hash + crypted
 
 
-def decrypt(crypted, key, use_base64=True):
+def decrypt(crypted, key, use_base64=True, can_debug = True):
     """
     1. Decrypt a XOR crypted String.
     2. Compare the inserted sSHA salt-hash checksum.
 
-    >>> crypted = encrypt(u"1234", u"ABCD")
-    >>> decrypt(crypted, u"ABCD")
+    >>> decrypt(u'crypt 1234 with ABCD', u"ABCD") # DEBUG is True in DocTest!
     u'1234'
 
-    >>> crypted = encrypt(u"1234", u"ABCD", use_base64=False)
-    >>> decrypt(crypted, u"ABCD", use_base64=False)
+    >>> crypted = encrypt(u"1234", u"ABCD", can_debug=False)
+    >>> crypted
+    u'sha1$DEBUG!$1c3f99b739c59c6569800f0b9e6bd426f3dcd063cHBwcA=='
+    >>> decrypt(crypted, u"ABCD", can_debug=False)
+    u'1234'
+
+    >>> crypted = encrypt(u"1234", u"ABCD", use_base64=False, can_debug=False)
+    >>> decrypt(crypted, u"ABCD", use_base64=False, can_debug=False)
     u'1234'
     """
-#    if not (isinstance(crypted, unicode) and isinstance(key, unicode)):
-#        raise UnicodeError("Only unicode allowed!")
+    if not (isinstance(crypted, unicode) and isinstance(key, unicode)):
+        raise UnicodeError("Only unicode allowed!")
+
+    if can_debug and DEBUG:
+        txt, _, key2 = crypted.split(" ", 3)[1:]
+        assert key == key2, "key: %s != key2: %s" % (key, key2)
+        return txt
 
     salt_hash = str(crypted[:SALT_HASH_LEN])
     crypted = crypted[SALT_HASH_LEN:]
@@ -177,27 +239,19 @@ def decrypt(crypted, key, use_base64=True):
 
 #______________________________________________________________________________
 
-def plaintext_to_js_sha_checksum(password):
+def django_to_sha_checksum(django_salt_hash):
     """
-    Create a Checksum for the PyLucid JS-SHA-Login from a plaintext password.
+    Create a JS-SHA-Checksum from the django user password.
 
-    >>> plaintext_to_js_sha_checksum("test")
-    'sha1$356a19$20e35f157a99b6c1dc888da19a1631a6cb289b84UAYABwFeUVFQBgMEBVIKV1BQVVY='
+    The >django_salt_hash< is:
+        user = User.objects.get(...)
+        django_salt_hash = user.password
+
+    >>> django_to_sha_checksum("sha1$DEBUG!$50b412a7ef09f4035f2daca882a1f8bfbe263b62")
+    (u'crypt 50b412a7ef09f4035f2d with aca882a1f8bfbe263b62', 'DEBUG!')
     """
-    hash_typ, salt, hash = get_salt_and_hash(password)
-    sha_checksum = salt_hash_to_js_sha_checksum(salt, hash)
-    return sha_checksum
-
-
-def salt_hash_to_js_sha_checksum(salt, hash):
-    """
-    Create a Checksum for the PyLucid JS-SHA-Login from a salt and hash value.
-
-    >>> salt = "356a19"
-    >>> hash = "23eb48afb36f672541cab5ee5f07255b3e8bda67"
-    >>> salt_hash_to_js_sha_checksum(salt, hash)
-    'sha1$356a19$20e35f157a99b6c1dc888da19a1631a6cb289b84UAYABwFeUVFQBgMEBVIKV1BQVVY='
-    """
+    hash_typ, salt, hash = django_salt_hash.split("$")
+    assert hash_typ == "sha1", "hash typ not supported!"
     assert len(hash) == HASH_LEN, "Wrong hash length! (Not a SHA1 hash?)"
 
     # Split the SHA1-Hash in two pieces
@@ -208,17 +262,62 @@ def salt_hash_to_js_sha_checksum(salt, hash):
     sha_b = unicode(sha_b)
     sha_checksum = encrypt(txt=sha_a, key=sha_b)
 
-    return sha_checksum
+    return sha_checksum, salt
 
 
-def _test():
-    # Patch random to make it not random ;)
-    global random
-    random = type('Mock', (object,), {})()
-    random.random=lambda:1
+def check_js_sha_checksum(challenge, sha_a2, sha_b, sha_checksum):
+    """
+    Check a PyLucid JS-SHA-Login
+
+    >>> salt1 = "a salt value"
+    >>> challenge = "debug"
+    >>> password = "test"
+    >>>
+    >>> hash = make_hash(password, salt1)
+    >>> hash
+    'f893fc3ebdfd886836822161b6bc2ccac955e014'
+    >>> django_salt_hash = "$".join(["sha1", salt1, hash])
+    >>> sha_checksum, salt2 = django_to_sha_checksum(django_salt_hash)
+    >>> sha_checksum
+    u'crypt f893fc3ebdfd88683682 with 2161b6bc2ccac955e014'
+    >>> assert salt1 == salt2
+    >>>
+    >>> sha_a = hash[:(HASH_LEN/2)]
+    >>> sha_a
+    'f893fc3ebdfd88683682'
+    >>> sha_b = hash[(HASH_LEN/2):]
+    >>> sha_b
+    '2161b6bc2ccac955e014'
+    >>> sha_a2 = make_hash(sha_a, challenge)
+    >>> sha_a2
+    '0d96f2fdda9c6f633ba0f5c2619aa7706abc492d'
+    >>>
+    >>> check_js_sha_checksum(challenge, sha_a2, sha_b, sha_checksum)
+    True
+    """
+    sha_checksum = unicode(sha_checksum)
+    sha_b = unicode(sha_b)
+
+    encrypted_checksum = decrypt(sha_checksum, sha_b)
+    client_checksum = make_hash(encrypted_checksum, challenge)
+
+    if client_checksum == sha_a2:
+        return True
+
+    return False
+
+
+
+
+def _doc_test(verbose):
+    global DEBUG
+    DEBUG = True
 
     import doctest
-    doctest.testmod()
+    doctest.testmod(verbose=verbose)
 
 if __name__ == "__main__":
-    _test()
+    print "Make a DocTest..."
+    _doc_test(verbose=False)
+#    _doc_test(verbose=True)
+    print "DocTest end."
