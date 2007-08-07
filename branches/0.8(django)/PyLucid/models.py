@@ -143,7 +143,12 @@ class Page(models.Model):
         """
         The default page must have some settings.
         """
-        entry = Preference.objects.get(name="index page")
+        try:
+            entry = Preference.objects.get(name="index page")
+        except Preference.DoesNotExist:
+            # Update old PyLucid installation?
+            return
+
         index_page_id = entry.value
 
         if int(self.id) != int(index_page_id):
@@ -187,7 +192,12 @@ class Page(models.Model):
         -rebuild shortcut (maybe)
         -make shortcut unique
         """
-        auto_shortcuts = Preference.objects.get(name='auto shortcuts').value
+        try:
+            auto_shortcuts = Preference.objects.get(name='auto shortcuts').value
+        except Preference.DoesNotExist:
+            # Update old PyLucid installation?
+            auto_shortcuts = True
+
         if auto_shortcuts in (1, True, "1"):
             # We should rebuild the shortcut
             self.shortcut = self.name

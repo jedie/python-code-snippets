@@ -29,10 +29,14 @@ class Sync_DB(BaseInstall):
     # Drop this tables before syncdb:
     DROP_TABLES = ("PyLucid_preference", "PyLucid_js_logindata")
 
-    def view(self):
+    def _get_management(self):
         from django.core import management
         # Output without escape sequences:
         management.disable_termcolors()
+        return management
+
+    def view(self):
+        management = self._get_management()
 
         self._redirect_execute(self._drop_tables, management)
         self._redirect_execute(self._syncdb, management)
