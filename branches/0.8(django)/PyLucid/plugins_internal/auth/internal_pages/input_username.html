@@ -6,7 +6,7 @@
 </noscript>
 
 <form method="post" action=".">
-  {{ form }}
+  {{ form.as_p }}
   <br />
   {% trans 'Log in' %}:
   <input type="submit" id="sha_button" name="sha_login" value="SHA-1 login" />

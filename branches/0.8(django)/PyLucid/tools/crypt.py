@@ -21,7 +21,19 @@
 """
 
 
-import sha, random, base64
+import os, sys, time, sha, random, base64
+
+try:
+    from django.conf import settings
+except ImportError, e:
+    if __name__ == "__main__":
+        # Local DocTest
+        settings = type('Mock', (object,), {})()
+        settings.SECRET_KEY = "DocTest"
+        os.chdir("../../") # go into PyLucid App root folder
+        sys.path.insert(0, os.getcwd())
+    else:
+        raise ImportError, e
 
 from django.utils.encoding import smart_str
 
@@ -42,20 +54,32 @@ class SaltHashError(Exception):
     pass
 
 
-def get_new_salt(can_debug = True):
+def get_new_salt(cut_length=True, can_debug = True):
     """
     Generate a new, random salt value.
     >>> get_new_salt() # DEBUG is True in DocTest!
     'DEBUG!'
+    >>> get_new_salt(cut_length=False)
+    'DEBUG!_1234567890'
     >>> salt = get_new_salt(can_debug=False)
     >>> assert salt != 'DEBUG!', "salt is: %s" % salt
+    >>> assert len(salt) == SALT_LEN, "Wrong length 1"
+    >>> salt = get_new_salt(cut_length=False, can_debug=False)
+    >>> assert len(salt) == HASH_LEN, "Wrong length 2"
     """
     if can_debug and DEBUG:
         salt = "DEBUG!_1234567890"
     else:
-        salt = sha.new(str(random.random())).hexdigest()
+        seed = "%s%s%s%s" % (
+            random.randint(0, sys.maxint - 1), os.getpid(), time.time(),
+            settings.SECRET_KEY
+        )
+        salt = sha.new(seed).hexdigest()
 
-    return salt[:SALT_LEN]
+    if cut_length:
+        return salt[:SALT_LEN]
+    else:
+        return salt
 
 def make_hash(txt, salt):
     """
