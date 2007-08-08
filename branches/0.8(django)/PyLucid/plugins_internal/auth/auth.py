@@ -56,10 +56,15 @@ class auth(PyLucidBasePlugin):
     def login(self):
         UsernameForm = forms.form_for_model(User, fields=("username",))
 
-        if self.request.method == 'POST':
+        if self.request.method != 'POST':
+            username_form = UsernameForm()
+        else:
             if DEBUG: self.page_msg(self.request.POST)
             username_form = UsernameForm(self.request.POST)
-            if username_form.is_valid():
+            if not username_form.is_valid():
+                if DEBUG:
+                    self.page_msg("username_form is not valid.")
+            else:
                 username = username_form.cleaned_data["username"]
                 try:
                     user = User.objects.get(username = username)
@@ -77,10 +82,8 @@ class auth(PyLucidBasePlugin):
                         return self._sha_login(user)
                     else:
                         self.page_msg.red("Wrong POST data.")
-            else:
-                if DEBUG: self.page_msg("username_form is not valid.")
-        else:
-            username_form = UsernameForm()
+
+
 
         context = {
             "fallback_url": self.URLs.adminLink(""),
@@ -144,8 +147,17 @@ class auth(PyLucidBasePlugin):
         """
         Login with the JS-SHA1-Login procedure.
         """
-        js_login_data = JS_LoginData.objects.get(user = user)
+        try:
+            js_login_data = JS_LoginData.objects.get(user = user)
+        except JS_LoginData.DoesNotExist, e:
+            msg = "JS-SHA-Login data error."
+            if DEBUG:
+                msg += " %s" % e
+            self.page_msg.red(msg)
+            return
+
         salt = js_login_data.salt
+        display_reset_link = False
 
         if "sha_a2" in self.request.POST and "sha_b" in self.request.POST:
             SHA_login_form = SHA_LoginForm(self.request.POST)
@@ -192,6 +204,7 @@ class auth(PyLucidBasePlugin):
                     if user:
                         self._login_user(user)
                         return
+                display_reset_link = True
                 self.page_msg.red(msg)
             else:
                 self.page_msg.red(_("Data are not valid"))
@@ -228,6 +241,9 @@ class auth(PyLucidBasePlugin):
             "challenge": challenge,
             "PyLucid_media_url": settings.PYLUCID_MEDIA_URL,
         }
+        if display_reset_link:
+            context["pass_reset_link"] = self.URLs.methodLink("pass_reset_form")
+
         if DEBUG == True:
             # For JavaScript debug
             context["debug"] = "true"
@@ -245,8 +261,41 @@ class auth(PyLucidBasePlugin):
 
         self.page_msg.green("You logged out.")
 
+    #__________________________________________________________________________
+    # Password reset
 
+    def pass_reset_form(self):
+        """
+        Input username and email for a password reset.
+        """
+        ResetForm = forms.form_for_model(User, fields=("username", "email"))
 
+        if self.request.method != 'POST':
+            reset_form = ResetForm()
+        else:
+            if DEBUG: self.page_msg(self.request.POST)
+            reset_form = ResetForm(self.request.POST)
+            if not reset_form.is_valid():
+                if DEBUG:
+                    self.page_msg("reset_form is not valid.")
+            else:
+                username = reset_form.cleaned_data["username"]
+                email = reset_form.cleaned_data["email"]
+                if not "@" in email:
+                    # FIXME: Better check, if a email Adress is in the DB!
+                    self.page_msg.red(
+                        _("Can't reset password. No email address.")
+                    )
+                    return
+
+                seed = crypt.get_new_salt(cut_length=False)
+                self.request.session['pass_reset_ID'] = seed
+                self.page_msg("TODO:", seed)
+
+        context = {
+            "form": reset_form
+        }
+        self._render_template("pass_reset_form", context)#, debug=True)
 
 
 

@@ -43,26 +43,15 @@ plugin_manager_data = {
         "must_login"    : False,
         "must_admin"    : False,
     },
+    "pass_reset_form" : {
+        "must_login"    : False,
+        "must_admin"    : False,
+        "internal_page_info" : {
+            "description"       : "The password reset html form page",
+            "markup"            : None
+        },
+    },
 
-
-#    "insecure_login": {
-#        "must_login"    : False,
-#        "must_admin"    : False,
-#        "internal_page_info" : {
-#            "description"       : "insecure non-JS Login form",
-#            "template_engine"   : "jinja",
-#            "markup"            : None
-#        },
-#    },
-#    "pass_reset_form" : {
-#        "must_login"    : False,
-#        "must_admin"    : False,
-#        "internal_page_info" : {
-#            "description"       : "The password reset html form page",
-#            "template_engine"   : "jinja",
-#            "markup"            : None
-#        },
-#    },
 #    "check_pass_reset" : {
 #        "must_login"    : False,
 #        "must_admin"    : False,
