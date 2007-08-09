@@ -73,6 +73,18 @@ def _render_cms_page(context, page_content=None):
     return HttpResponse(content)
 
 
+def _redirect_warnings(context):
+    """
+    Redirect every "warning" messages into the page_msg
+    """
+    import warnings
+#    old_showwarning = warnings.showwarning
+    def showwarning(message, category, filename, lineno):
+        context["page_msg"](
+            "%s (%s: %s - line %s)" % (message, category, filename, lineno)
+        )
+    warnings.showwarning = showwarning
+
 def _get_context(request, current_page_obj):
     """
     Setup the context with PyLucid objects.
@@ -96,6 +108,7 @@ def _get_context(request, current_page_obj):
             raise AttributeError(err)
 
     context["page_msg"] = PageMessages(context)
+    _redirect_warnings(context)
     context["PAGE"] = current_page_obj
     context["URLs"] = URLs(context)
 #    context["URLs"].debug()
