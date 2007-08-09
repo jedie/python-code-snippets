@@ -26,7 +26,6 @@ __todo__ = """
 
 
 # Standart Python Module
-import cgitb;cgitb.enable()
 import os, sys, cgi, md5
 
 
