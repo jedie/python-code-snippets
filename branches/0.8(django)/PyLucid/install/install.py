@@ -27,7 +27,9 @@ syncdb_template = """
 class Sync_DB(BaseInstall):
 
     # Drop this tables before syncdb:
-    DROP_TABLES = ("PyLucid_preference", "PyLucid_js_logindata")
+    DROP_TABLES = (
+        "PyLucid_preference", "PyLucid_js_logindata", "PyLucid_markup"
+    )
 
     def _get_management(self):
         from django.core import management
@@ -76,7 +78,7 @@ class Sync_DB(BaseInstall):
 
 def syncdb(request):
     """
-    1. install Db tables (syncdb, Note: preferences, JS_LoginData lost!)
+    1. install Db tables (syncdb, Note: preferences, JS_LoginData, markup lost!)
     """
     return Sync_DB(request).start_view()
 
