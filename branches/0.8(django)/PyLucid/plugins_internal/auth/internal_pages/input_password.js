@@ -116,7 +116,7 @@ function check() {
     change_color("sha_b", "lightgreen");
 
     document.getElementById("plaintext_pass").value = "";
-    change_color("sha_b", "grey");
+    change_color("plaintext_pass", "grey");
 
     document.login.action = submit_url;
 

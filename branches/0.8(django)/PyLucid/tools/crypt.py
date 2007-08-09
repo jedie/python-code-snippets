@@ -23,23 +23,22 @@
 
 import os, sys, time, sha, random, base64
 
-try:
+if __name__ == "__main__":
+    print "Local DocTest..."
+    settings = type('Mock', (object,), {})()
+    settings.SECRET_KEY = "DocTest"
+    smart_str = str
+else:
     from django.conf import settings
-except ImportError, e:
-    if __name__ == "__main__":
-        # Local DocTest
-        settings = type('Mock', (object,), {})()
-        settings.SECRET_KEY = "DocTest"
-        os.chdir("../../") # go into PyLucid App root folder
-        sys.path.insert(0, os.getcwd())
-    else:
-        raise ImportError, e
+    from django.utils.encoding import smart_str
 
-from django.utils.encoding import smart_str
 
 # Warning: Debug must always be False in productiv environment!
-#DEBUG = True
-DEBUG = False
+DEBUG = True
+#DEBUG = False
+if DEBUG:
+    import warnings
+    warnings.warn("Debugmode is on", UserWarning)
 
 HASH_TYP = "sha1"
 
@@ -54,32 +53,41 @@ class SaltHashError(Exception):
     pass
 
 
-def get_new_salt(cut_length=True, can_debug = True):
+def get_new_seed(can_debug = True):
     """
-    Generate a new, random salt value.
-    >>> get_new_salt() # DEBUG is True in DocTest!
-    'DEBUG!'
-    >>> get_new_salt(cut_length=False)
+    Generate a new, random seed value.
+
+    >>> get_new_seed() # DEBUG is True in DocTest!
     'DEBUG!_1234567890'
-    >>> salt = get_new_salt(can_debug=False)
-    >>> assert salt != 'DEBUG!', "salt is: %s" % salt
-    >>> assert len(salt) == SALT_LEN, "Wrong length 1"
-    >>> salt = get_new_salt(cut_length=False, can_debug=False)
-    >>> assert len(salt) == HASH_LEN, "Wrong length 2"
+    >>> seed = get_new_seed(can_debug=False)
+    >>> assert seed != 'DEBUG!', "seed is: %s" % seed
+    >>> assert len(seed) == HASH_LEN, "Wrong length: %s" % len(seed)
     """
     if can_debug and DEBUG:
-        salt = "DEBUG!_1234567890"
+        seed = "DEBUG!_1234567890"
     else:
-        seed = "%s%s%s%s" % (
+        raw_seed = "%s%s%s%s" % (
             random.randint(0, sys.maxint - 1), os.getpid(), time.time(),
             settings.SECRET_KEY
         )
-        salt = sha.new(seed).hexdigest()
+        seed = sha.new(raw_seed).hexdigest()
 
-    if cut_length:
-        return salt[:SALT_LEN]
-    else:
-        return salt
+    return seed
+
+
+def get_new_salt(can_debug = True):
+    """
+    Generate a new, random salt value.
+
+    >>> get_new_salt() # DEBUG is True in DocTest!
+    'DEBUG!'
+    >>> salt = get_new_salt(can_debug=False)
+    >>> assert salt != 'DEBUG!_1234567890', "salt is: %s" % salt
+    >>> assert len(salt) == SALT_LEN, "Wrong length: %s" % len(salt)
+    """
+    seed = get_new_seed(can_debug)
+    return seed[:SALT_LEN]
+
 
 def make_hash(txt, salt):
     """
@@ -341,7 +349,6 @@ def _doc_test(verbose):
     doctest.testmod(verbose=verbose)
 
 if __name__ == "__main__":
-    print "Make a DocTest..."
     _doc_test(verbose=False)
 #    _doc_test(verbose=True)
     print "DocTest end."
