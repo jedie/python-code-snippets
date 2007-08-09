@@ -309,6 +309,12 @@ def install_internalpage(plugin, package_name, plugin_name, plugin_config,
         markup_name = internal_page_info.get("markup", None)
         if markup_name == None:
             markup_name = "None"
+        elif markup_name == "tinyTextile":
+            print "*** DeprecationWarning: ***"
+            print " - Markup name 'tinyTextile' was renamed to 'textile'!"
+            print " - Please correct the config entry."
+            markup_name = "textile"
+
         markup = Markup.objects.get(name=markup_name)
 
         template_engine = internal_page_info.get("template_engine", None)
