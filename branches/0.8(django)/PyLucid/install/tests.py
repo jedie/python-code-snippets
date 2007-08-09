@@ -398,27 +398,25 @@ Execute code with Python v{{ sysversion }}:<br />
     {{ PythonEvalForm }}
     <input value="execute" name="execute" type="submit">
 </form>
-<p>
-    With access to pylucid objects you can use this objects:<br />
-    <ul>{% for item in objectlist %}<li>{{ item }}</li>{% endfor %}</ul>
-    Use <em>help(object)</em> for more information ;)
-</p>
 {% if output %}
 <fieldset><legend>executed in {{ duration|stringformat:".1f" }}ms:</legend>
     <pre>{{ output }}</pre>
 </fieldset>
 {% endif %}
+<p>
+    With 'Object access' you can use every object binded to 'self'.<br />
+    Use 'print dir(self)' to print out a list.<br />
+    A usefull object are: 'self.request'
+</p>
 <br />
 {% endblock %}
 """
-def _execute_codeblock(codeblock, object_access):
+def _execute_codeblock(codeblock, globals):
     code = compile(codeblock, "<stdin>", "exec", 0, 1)
-    if object_access:
-        exec code
-    else:
-        globals = {}
-        locals = {}
-        exec code in globals, locals
+
+    locals = {}
+    exec code in globals, locals
+
 class EvilEval(BaseInstall):
     def view(self):
         from PyLucid.settings import INSTALL_EVILEVAL
@@ -443,19 +441,22 @@ class EvilEval(BaseInstall):
         self.context.update({
             "sysversion": sys.version,
             "PythonEvalForm": eval_form.as_p(),
-            "objectlist": ["request"],
         })
 
         if "codeblock" in self.request.POST and eval_form.is_valid():
             # a codeblock was submited and the form is valid -> run the code
             codeblock = eval_form.cleaned_data["codeblock"]
             codeblock = codeblock.replace("\r\n", "\n") # Windows
-            object_access = eval_form.cleaned_data["object_access"]
+
+            if eval_form.cleaned_data["object_access"] == True:
+                globals = {"self": self}
+            else:
+                globals = {}
 
             start_time = time.time()
             try:
                 self._redirect_execute(
-                    _execute_codeblock, codeblock, object_access
+                    _execute_codeblock, codeblock, globals
                 )
             except:
                 import traceback
