@@ -43,27 +43,31 @@ plugin_manager_data = {
         "must_login"    : False,
         "must_admin"    : False,
     },
-    "pass_reset_form" : {
+    "pass_reset" : {
         "must_login"    : False,
         "must_admin"    : False,
         "internal_page_info" : {
+            "name"              : "pass_reset_form",
             "description"       : "The password reset html form page",
             "markup"            : None
         },
     },
-
-#    "check_pass_reset" : {
-#        "must_login"    : False,
-#        "must_admin"    : False,
+    "_send_reset_mail" : {
+        "must_login"    : False,
+        "must_admin"    : False,
+        "internal_page_info" : {
+            "name"              : "pass_reset_email",
+            "description"       : "The email with the password reset link",
+            "markup"            : None
+        },
+    },
+    "new_password" : {
+        "must_login"    : False,
+        "must_admin"    : False,
 #        "internal_page_info" : {
-#            "name"              : "pass_reset_email",
-#            "description"       : "The email with the password reset link",
-#            "template_engine"   : "jinja",
+#            "name"              : "pass_reset_form",
+#            "description"       : "The password reset html form page",
 #            "markup"            : None
 #        },
-#    },
-#    "pass_reset" : {
-#        "must_login"    : False,
-#        "must_admin"    : False,
-#    },
+    },
 }

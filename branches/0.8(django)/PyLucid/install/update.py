@@ -296,8 +296,7 @@ class Update(Sync_DB):
         cursor = connection.cursor()
 
         user_table_keys = (
-            "id", "name", "realname", "email", "md5checksum", "salt", "admin",
-            "createtime"
+            "id", "name", "realname", "email", "admin", "createtime"
         )
 
         SQLcommand = "SELECT %s FROM %smd5users;" % (
@@ -329,11 +328,12 @@ class Update(Sync_DB):
 
             # The pass would be hased. So is it not useable for the User!
             user = User.objects.create_user(
-                user_dict["name"], user_dict["email"], user_dict["md5checksum"]
+                user_dict["name"], user_dict["email"]
             )
 
             user.is_staff = True
             user.is_active = True
+            user.set_unusable_password()
 
             if user_dict["admin"] == 1:
                 user.is_superuser = True
@@ -357,16 +357,7 @@ class Update(Sync_DB):
 
             print "old ID: %s - new ID: %s;" % (old_id, user.id)
 
-#            print "Put md5data into DB:",
-#            if not user_dict["salt"] in (None, 0):
-#                js_data = JS_LoginData(
-#                    user=user, md5checksum=user_dict["md5checksum"],
-#                    salt=user_dict["salt"]
-#                )
-#                js_data.save()
-#                print "OK"
-#            else:
-#                print "Skip, no valid data. Passreset needed."
+        print "\nNote:\n * For all Users a password reset is needed!"
 
         print "="*80
         print

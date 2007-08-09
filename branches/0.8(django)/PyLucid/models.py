@@ -291,24 +291,8 @@ class JS_LoginData(models.Model):
     class Meta:
         verbose_name = verbose_name_plural = 'JS-LoginData'
 
-
-#class User(User):
-#    def save(self, *args, **kwargs):
-#        super(User, self).save(*args, **kwargs)
-#        print "JOJOJO"
-#User = User
-
-#old_passwords = {}
-#def save_old_pass(sender, instance, signal, *args, **kwargs):
-#    """
-#    save the old password for update_js_login_data()
-#    """
-#    print "111", sender, instance, signal
-#    user_obj = instance
-##    user_obj.message_set.create(message="save_old_pass")
-#    old_pass = user_obj.password
-#    old_passwords[user_obj] = old_pass
-
+# FIXME: If a django user would be deleted, the JS_LoginData entry should be
+# deleted, too!
 
 def update_js_login_data(sender, instance, signal, *args, **kwargs):
     """
@@ -316,6 +300,18 @@ def update_js_login_data(sender, instance, signal, *args, **kwargs):
     django User model.
     """
     user_obj = instance
+    if not user_obj.has_usable_password():
+        # a unusable password was set with user.set_unusable_password()
+        try:
+            user = JS_LoginData.objects.get(user = user_obj)
+        except JS_LoginData.DoesNotExist:
+            # OK, there is no old JS_LoginData entry
+            return
+        else:
+            # Delete the old existing JS_LoginData entry
+            user.delete()
+            return
+
     django_salt_hash = user_obj.password
 
     if not django_salt_hash:

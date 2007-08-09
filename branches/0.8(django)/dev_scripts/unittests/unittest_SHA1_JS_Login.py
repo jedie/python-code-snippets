@@ -29,33 +29,30 @@ setup(
 
 import unittest, sys, re, tempfile, os, webbrowser, traceback, time
 
-from django.test.client import Client
-
 from PyLucid import models
 from PyLucid.plugins_internal.auth.auth import auth
-from PyLucid.settings import COMMAND_URL_PREFIX, ADMIN_URL_PREFIX
 from PyLucid.models import User, JS_LoginData
 from PyLucid.install.install import _create_new_superuser
 from PyLucid.tools import crypt
+
+from django.test.client import Client
+from django.conf import settings
 
 
 # Set the Debug mode on:
 crypt.DEBUG = True
 
 
+# The global test user for many testes.
+# creaded in TestUserModels().test_create_new_superuser()
 TEST_USERNAME = "unittest"
+TEST_USER_EMAIL = "a_test@email-adress.org"
 TEST_PASSWORD = "test"
 
+# A user with a unusable password
+# creaded in TestUserModels().test_unusable_password()
+TEST_UNUSABLE_USER = "unitest2"
 
-def create_test_user():
-    print "Create test User..."
-    user_data = {
-        "username": TEST_USERNAME,
-        "password": TEST_PASSWORD,
-        "first_name": "", "last_name": ""
-    }
-    _create_new_superuser(user_data)
-    print "OK"
 
 
 # Bug with Firefox under Ubuntu.
@@ -68,7 +65,7 @@ def debug_response(response, msg=""):
     Display the response content in a webbrowser.
     """
     content = response.content
-    
+
     stack = traceback.format_stack(limit=3)[:-1]
     stack.append(msg)
     stack_info = "".join(stack)
@@ -79,8 +76,8 @@ def debug_response(response, msg=""):
     ) % stack_info
 
     content = content.replace("</body>", info)
-    
-    
+
+
     fd, file_path = tempfile.mkstemp(prefix="PyLucid_unittest_", suffix=".html")
     os.write(fd, content)
     os.close(fd)
@@ -88,8 +85,8 @@ def debug_response(response, msg=""):
     print "\nDEBUG html page in Browser! (url: %s)" % url
     webbrowser.open(url)
 
-    time.sleep(0.5)
-    os.remove(file_path)
+#    time.sleep(0.5)
+#    os.remove(file_path)
 
 
 regex = re.compile(r"(\w+)\s*=\s*['\"]*([^'\"]+)['\"]*;")
@@ -202,13 +199,56 @@ class TestUserModels(unittest.TestCase):
         self._check_userpassword(username = "testuser")
 
 
-    def test_user_model2(self):
+    def test_create_new_superuser(self):
         """
-        Check the User Password and JS_LoginData for the test user created in
-        def create_test_user() - the _install routine to create a first user.
-        (see above)
+        Test the create_new_superuser routine from the _install section.
+        Check the User Password and JS_LoginData.
         """
+        user_data = {
+            "username": TEST_USERNAME,
+            "password": TEST_PASSWORD,
+            "email": TEST_USER_EMAIL,
+            "first_name": "", "last_name": ""
+        }
+        _create_new_superuser(user_data)
+
         self._check_userpassword(username = TEST_USERNAME)
+
+        user = User.objects.get(username = TEST_USERNAME)
+        self.failUnless(user.email == TEST_USER_EMAIL)
+
+    def test_unusable_password(self):
+        """
+        if a user has a unusable password, the JS_LoginData entry must be not
+        exists.
+        """
+        def set_and_check(user):
+            "set a unusable password and check the JS_LoginData entry"
+            user.set_unusable_password()
+            user.save()
+
+            try:
+                JS_LoginData.objects.get(user = user)
+            except JS_LoginData.DoesNotExist:
+                pass
+            else:
+                self.fail(
+                    "There should be no JS_LoginData"
+                    " for a user with a unusable password"
+                )
+
+        user = User.objects.create_user(TEST_UNUSABLE_USER, '', '')
+        # Set a unusable password and check:
+        set_and_check(user)
+
+        # set a password and check it.
+        user.set_password('testpw')
+        user.save()
+        # Check if the JS_LoginData are correct.
+        self._check_userpassword(username = TEST_UNUSABLE_USER)
+
+        # set the password back to a unusable password and check:
+        set_and_check(user)
 
 
     def test_login(self):
@@ -255,7 +295,10 @@ class TestSHA1Login(unittest.TestCase):
     _open = []
 
     def setUp(self):
-        self.login_url = '/%s/1/auth/login/' % COMMAND_URL_PREFIX
+        url_base = "/%s/1/auth/%%s/" % settings.COMMAND_URL_PREFIX
+        self.login_url = url_base % "login"
+        self.pass_reset_url = url_base % "pass_reset"
+
         self.client = Client()
 
     def assertStatusCode(self, response, status_code, msg=None):
@@ -266,27 +309,29 @@ class TestSHA1Login(unittest.TestCase):
         debug_response(response)
         self.fail(msg)
 
-    def assertResponse(self, response, text_list):
-        make_debug = True
-        for txt in text_list:
-            if not txt in response.content:
-                msg = "Text not in response: '%s'" % txt
-                if make_debug:
-                    debug_response(response, msg)
-                make_debug = False
+    def assertResponse(self, response, must_contain, must_not_contain=()):
+        def error(respose, msg):
+            debug_response(response, msg)
+            raise self.failureException, msg
 
-                raise self.failureException, msg
+        for txt in must_contain:
+            if not txt in response.content:
+                error(response, "Text not in response: '%s'" % txt)
+
+        for txt in must_not_contain:
+            if txt in response.content:
+                error(response, "Text should not be in response: '%s'" % txt)
 
     #__________________________________________________________________________
 
     def test_django_login(self):
         # Request a django admin panel login
-        response = self.client.get("/%s/" % ADMIN_URL_PREFIX)
+        response = self.client.get("/%s/" % settings.ADMIN_URL_PREFIX)
         self.assertStatusCode(response, 200)
 
         # login into the django admin panel
         response = self.client.post(
-            "/%s/" % ADMIN_URL_PREFIX,
+            "/%s/" % settings.ADMIN_URL_PREFIX,
             {
                 "username": TEST_USERNAME,
                 "password": TEST_PASSWORD,
@@ -303,7 +348,7 @@ class TestSHA1Login(unittest.TestCase):
             self.login_url, {"username": "not exists"}
         )
         self.assertStatusCode(response, 200)
-        self.assertResponse(response, text_list=("User does not exist.",))
+        self.assertResponse(response, must_contain=("User does not exist.",))
 
     #__________________________________________________________________________
 
@@ -317,7 +362,7 @@ class TestSHA1Login(unittest.TestCase):
         )
         self.assertStatusCode(response, 200)
         self.assertResponse(response,
-            text_list=(
+            must_contain=(
                 "PyLucid unsecure plaintext LogIn - step 2",
                 "Password:"
             )
@@ -334,10 +379,11 @@ class TestSHA1Login(unittest.TestCase):
         )
         self.assertStatusCode(response, 200)
         self.assertResponse(response,
-            text_list=(
+            must_contain=(
                 "Wrong password.",
                 "PyLucid unsecure plaintext LogIn - step 2",
-                "Password:"
+                "Password:",
+                "Request a password reset.",
             )
         )
 
@@ -352,7 +398,7 @@ class TestSHA1Login(unittest.TestCase):
         )
         self.assertStatusCode(response, 200)
         self.assertResponse(response,
-            text_list=(
+            must_contain=(
                 "Password ok.",
                 "Log out [%s]" % TEST_USERNAME
             )
@@ -370,7 +416,7 @@ class TestSHA1Login(unittest.TestCase):
         )
         self.assertStatusCode(response, 200)
         self.assertResponse(response,
-            text_list=(
+            must_contain=(
                 "step 2",
                 "Log in"
             )
@@ -385,13 +431,13 @@ class TestSHA1Login(unittest.TestCase):
                 "sha_login" : True
             }
         )
+#        debug_response(response)
         self.assertStatusCode(response, 200)
         self.assertResponse(response,
-            text_list=(
-                "step 2",
-                "Log in",
-                "Data are not valid"
-            )
+            must_contain=(
+                "step 2", "Log in", "Form data is not valid. Please correct."
+            ),
+            must_not_contain=("Request a password reset.",),
         )
 
     def test_SHA_wrong2(self):
@@ -408,7 +454,11 @@ class TestSHA1Login(unittest.TestCase):
             }
         )
         self.assertStatusCode(response, 200)
-        self.assertResponse(response, text_list=("Log in", "Wrong data."))
+        self.assertResponse(response,
+            must_contain=("Log in", "Form data is not valid. Please correct."),
+            must_not_contain=("Request a password reset.",),
+
+        )
 #        debug_response(response)
 
     def test_SHA_wrong3(self):
@@ -425,7 +475,10 @@ class TestSHA1Login(unittest.TestCase):
             }
         )
         self.assertStatusCode(response, 200)
-        self.assertResponse(response, text_list=("Log in", "Session Error."))
+        self.assertResponse(response,
+            must_contain=("Log in", "Session Error."),
+            must_not_contain=("Request a password reset.",),
+        )
 #        debug_response(response)
 
     def test_SHA_wrong4(self):
@@ -445,12 +498,16 @@ class TestSHA1Login(unittest.TestCase):
             }
         )
         self.assertStatusCode(response, 200)
-        self.assertResponse(response, text_list=("Log in", "Wrong password."))
+        self.assertResponse(response,
+            must_contain=(
+                "Log in", "Wrong password.", "Request a password reset."
+            )
+        )
 #        debug_response(response)
 
     def test_SHA_login(self):
         """
-        Wrong Password
+        Test a SHA login with a correct password.
         """
         # Make a session.
         response = self.client.post(
@@ -476,26 +533,135 @@ class TestSHA1Login(unittest.TestCase):
 #        debug_response(response)
         self.assertStatusCode(response, 200)
         self.assertResponse(response,
-            text_list=(
+            must_contain=(
                 "Password ok.",
                 "Log out [%s]" % TEST_USERNAME
             )
         )
 
+    def test_pass_reset_form1(self):
+        """
+        Check if we get the password reset form.
+        """
+        response = self.client.get(self.pass_reset_url)
+#        debug_response(response)
+        self.assertResponse(response, must_contain=("Reset your password:",))
+
+
+    def test_pass_reset_form2(self):
+        """
+        Check if we get the password reset form, after we send a SHA-Login
+        for a user with a unusable password.
+        """
+        response = self.client.post(
+            self.login_url,
+            {
+                "username": TEST_UNUSABLE_USER,
+                "sha_login" : True
+            }
+        )
+#        debug_response(response)
+        self.assertResponse(response,
+            must_contain=(
+                "The JS-SHA-Login data doesn't exist.",
+                "You must reset your password.",
+                "Reset your password:",
+                TEST_UNUSABLE_USER,
+            )
+        )
+
+    def test_pass_reset_form3(self):
+        """
+        Check if we get the password reset form, after we send a plain text
+        Login for a user with a unusable password.
+        """
+        response = self.client.post(
+            self.login_url,
+            {
+                "username": TEST_UNUSABLE_USER,
+                "plaintext_login" : True
+            }
+        )
+#        debug_response(response)
+        self.assertResponse(response,
+            must_contain=(
+                "No usable password was saved.",
+                "You must reset your password.",
+                "Reset your password:",
+                TEST_UNUSABLE_USER,
+            )
+        )
+
+
+    def test_pass_reset_form_errors1(self):
+        """
+        form validating test: Check with no username and no email.
+        """
+        response = self.client.post(self.pass_reset_url)
+        self.assertResponse(
+            response, must_contain=("Form data is not valid. Please correct.",)
+        )
+
+
+    def test_pass_reset_form_errors2(self):
+        """
+        form validating test: Check with not existing user.
+        """
+        response = self.client.post(self.pass_reset_url,
+            {"username": "wrong_user"}
+        )
+        self.assertResponse(response, must_contain=("User does not exist.",))
+
+
+    def test_pass_reset_form_errors3(self):
+        """
+        form validating test: Check with valid, but wrong email adress.
+        """
+        response = self.client.post(self.pass_reset_url,
+            {
+                "username": TEST_USERNAME,
+                "email": "wrong@email-adress.org"
+            }
+        )
+        self.assertResponse(response,
+            must_contain=("Wrong email address. Please correct.",)
+        )
+
+
+    def test_pass_reset(self):
+        """
+        form validating test: Check with wrong email adress.
+        """
+        response = self.client.post(self.pass_reset_url,
+            {
+                "username": TEST_USERNAME,
+                "email": TEST_USER_EMAIL
+            }
+        )
+        debug_response(response)
+#        self.assertResponse(response, must_contain=("User does not exist.",))
+
 
 def suite():
+    # Check if the middlewares are on. Otherwise every unitest failed ;)
+    middlewares = (
+        'django.contrib.sessions.middleware.SessionMiddleware',
+        'django.contrib.auth.middleware.AuthenticationMiddleware',
+    )
+    for m in middlewares:
+        if not m in settings.MIDDLEWARE_CLASSES:
+            raise EnvironmentError, "Middleware class '%s' not installed!" % m
+
     suite = unittest.TestSuite()
+
     suite.addTest(unittest.makeSuite(TestCryptModul))
     suite.addTest(unittest.makeSuite(TestUserModels))
     suite.addTest(unittest.makeSuite(TestSHA1Login))
     return suite
 
 if __name__ == "__main__":
-    create_test_user()
     print
     print ">>> Unitest"
     print "_"*79
     runner = unittest.TextTestRunner()
     runner.run(suite())
-    #unittest.main()
-    #sys.exit()
