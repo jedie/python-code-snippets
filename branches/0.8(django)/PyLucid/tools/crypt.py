@@ -34,8 +34,8 @@ else:
 
 
 # Warning: Debug must always be False in productiv environment!
-DEBUG = True
-#DEBUG = False
+#DEBUG = True
+DEBUG = False
 if DEBUG:
     import warnings
     warnings.warn("Debugmode is on", UserWarning)
@@ -51,6 +51,37 @@ SALT_HASH_LEN = HASH_LEN + 4 + 2 + SALT_LEN
 
 class SaltHashError(Exception):
     pass
+
+#______________________________________________________________________________
+
+def validate_sha_value(sha_value):
+    """
+    Check if the given >sha_value< is a possible SHA1 hexdigest ;)
+    returned true or false
+
+    Should we better use a RE method?
+    http://www.python-forum.de/post-74657.html
+
+    >>> validate_sha_value("wrong length")
+    False
+    >>> validate_sha_value(1234)
+    False
+    >>> validate_sha_value("right length but not a SHA1 hexdigest!!!")
+    False
+    >>> validate_sha_value("0398bf140231dbfa1e0fb13421e176a1bb27bc72")
+    True
+    """
+    if not (isinstance(sha_value, basestring) and len(sha_value) == HASH_LEN):
+        return False
+
+    try:
+        int(sha_value, 16)
+    except (ValueError, OverflowError), e:
+        return False
+    else:
+        return True
+
+#______________________________________________________________________________
 
 
 def get_new_seed(can_debug = True):
@@ -271,30 +302,21 @@ def decrypt(crypted, key, use_base64=True, can_debug = True):
 
 #______________________________________________________________________________
 
-def django_to_sha_checksum(django_salt_hash):
+def make_sha_checksum(hash_value):
     """
-    Create a JS-SHA-Checksum from the django user password.
-
-    The >django_salt_hash< is:
-        user = User.objects.get(...)
-        django_salt_hash = user.password
-
-    >>> django_to_sha_checksum("sha1$DEBUG!$50b412a7ef09f4035f2daca882a1f8bfbe263b62")
-    (u'crypt 50b412a7ef09f4035f2d with aca882a1f8bfbe263b62', 'DEBUG!')
+    Made the needed sha_checksum for the SHA1-JS-Login.
+    
+    >>> make_sha_checksum("50b412a7ef09f4035f2daca882a1f8bfbe263b62")
+    u'crypt 50b412a7ef09f4035f2d with aca882a1f8bfbe263b62'
     """
-    hash_typ, salt, hash = django_salt_hash.split("$")
-    assert hash_typ == "sha1", "hash typ not supported!"
-    assert len(hash) == HASH_LEN, "Wrong hash length! (Not a SHA1 hash?)"
-
     # Split the SHA1-Hash in two pieces
-    sha_a = hash[:(HASH_LEN/2)]
-    sha_b = hash[(HASH_LEN/2):]
+    sha_a = hash_value[:(HASH_LEN/2)]
+    sha_b = hash_value[(HASH_LEN/2):]
 
     sha_a = unicode(sha_a)
     sha_b = unicode(sha_b)
     sha_checksum = encrypt(txt=sha_a, key=sha_b)
-
-    return sha_checksum, salt
+    return sha_checksum
 
 
 def check_js_sha_checksum(challenge, sha_a2, sha_b, sha_checksum):
@@ -305,19 +327,17 @@ def check_js_sha_checksum(challenge, sha_a2, sha_b, sha_checksum):
     >>> challenge = "debug"
     >>> password = "test"
     >>>
-    >>> hash = make_hash(password, salt1)
-    >>> hash
+    >>> hash_value = make_hash(password, salt1)
+    >>> hash_value
     'f893fc3ebdfd886836822161b6bc2ccac955e014'
-    >>> django_salt_hash = "$".join(["sha1", salt1, hash])
-    >>> sha_checksum, salt2 = django_to_sha_checksum(django_salt_hash)
+    >>> sha_checksum = make_sha_checksum(hash_value)
     >>> sha_checksum
     u'crypt f893fc3ebdfd88683682 with 2161b6bc2ccac955e014'
-    >>> assert salt1 == salt2
     >>>
-    >>> sha_a = hash[:(HASH_LEN/2)]
+    >>> sha_a = hash_value[:(HASH_LEN/2)]
     >>> sha_a
     'f893fc3ebdfd88683682'
-    >>> sha_b = hash[(HASH_LEN/2):]
+    >>> sha_b = hash_value[(HASH_LEN/2):]
     >>> sha_b
     '2161b6bc2ccac955e014'
     >>> sha_a2 = make_hash(sha_a, challenge)

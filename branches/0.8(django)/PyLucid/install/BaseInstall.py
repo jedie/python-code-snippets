@@ -5,13 +5,14 @@ A base class for every _install view.
 
 import sys
 
-from PyLucid import settings
 from PyLucid import PYLUCID_VERSION_STRING
 from PyLucid.system.response import SimpleStringIO
 from PyLucid.system.page_msg import PageMessages
 from PyLucid.tools import crypt
-from PyLucid.tools.content_processors import render_string_template
+from PyLucid.tools.content_processors import render_string_template, \
+                                                            redirect_warnings
 
+from django.conf import settings
 from django.shortcuts import render_to_response
 from django import newforms as forms
 from django.http import HttpResponse, Http404
@@ -101,6 +102,9 @@ class BaseInstall(object):
             "version": PYLUCID_VERSION_STRING,
         }
         self.context["page_msg"] = PageMessages(self.context)
+
+        # Redirect every "warning" messages into context["page_msg"]:
+        redirect_warnings(self.context["page_msg"])
 
     #___________________________________________________________________________
 

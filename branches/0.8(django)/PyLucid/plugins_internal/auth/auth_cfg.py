@@ -64,10 +64,10 @@ plugin_manager_data = {
     "new_password" : {
         "must_login"    : False,
         "must_admin"    : False,
-#        "internal_page_info" : {
-#            "name"              : "pass_reset_form",
-#            "description"       : "The password reset html form page",
-#            "markup"            : None
-#        },
+        "internal_page_info" : {
+            "name"              : "new_password_form",
+            "description"       : "Input a new pasword.",
+            "markup"            : None
+        },
     },
 }
