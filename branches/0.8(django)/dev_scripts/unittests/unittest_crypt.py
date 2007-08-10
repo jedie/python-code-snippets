@@ -17,6 +17,16 @@
     :license: GNU GPL v3, see LICENSE.txt for more details.
 """
 
+from setup_environment import setup, make_insert_dump
+setup(
+    path_info=False, extra_verbose=False,
+    syncdb=False, insert_dump=False,
+    install_plugins=False
+)
+
+#______________________________________________________________________________
+# Test:
+
 import unittest
 
 
@@ -98,8 +108,8 @@ class TestCrypt(unittest.TestCase):
         """
         txt = u"".join([unichr(i) for i in xrange(0, 256)])
         key = u"".join([unichr(i) for i in xrange(256, 0, -1)])
-        crypted = encrypt(txt, key)
-        decrypted = decrypt(crypted, key)
+        crypted = encrypt(txt, key, use_base64=False)
+        decrypted = decrypt(crypted, key, use_base64=False)
         self._assert_tests(txt, key, crypted, decrypted)
 
     def test_unicode(self):
@@ -108,8 +118,8 @@ class TestCrypt(unittest.TestCase):
         """
         txt = u"".join([unichr(i) for i in xrange(0, 65535, 65535 / 9999)])
         key = u"".join([unichr(i) for i in xrange(2, 65535, 65535 / 9999)])
-        crypted = encrypt(txt, key)
-        decrypted = decrypt(crypted, key)
+        crypted = encrypt(txt, key, use_base64=False)
+        decrypted = decrypt(crypted, key, use_base64=False)
         self._assert_tests(txt, key, crypted, decrypted)
 
     def test_is_unicode(self):
@@ -134,7 +144,7 @@ class TestCrypt(unittest.TestCase):
         """
         txt = u"".join([unichr(i) for i in xrange(0, 256)])
         key = u"".join([unichr(i) for i in xrange(256, 0, -1)])
-        original_crypted = encrypt(txt, key)
+        original_crypted = encrypt(txt, key, use_base64=False)
 
         for i in xrange(len(original_crypted)):
             if original_crypted[i] == u"\x00":
@@ -146,7 +156,7 @@ class TestCrypt(unittest.TestCase):
                 original_crypted[:i], wrong_char, original_crypted[i+1:]
             ])
             try:
-                decrypt(invalid_crypted, key)
+                decrypt(invalid_crypted, key, use_base64=False)
             except SaltHashError:
                 # OK
                 pass
@@ -162,5 +172,8 @@ class TestCrypt(unittest.TestCase):
 if __name__ == "__main__":
     print
     print ">>> Unitest: PyLucid.tools.crypt"
+    print
+    print "Note the crypt.py has DocTests, too ;)"
+    print
     print "_"*79
     unittest.main()
