@@ -46,9 +46,9 @@ class RSSfeedGenerator(PyLucidBasePlugin):
         Put a link to the RSS feed file into the cms page.
         """
         count = self.prepare_count(count)
-        url = self.URLs.methodLink(
-            "download", RSS_FILENAME, addSlash=False
-        )
+        url = self.URLs.methodLink("download")
+        url = url + RSS_FILENAME
+
         # FIXME: We should better use a small internal page for this:
         html = (
             '<a href="%s?count=%s" type="application/rss+xml" title="RSS">'
