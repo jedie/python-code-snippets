@@ -54,9 +54,9 @@ class page_style(PyLucidBasePlugin):
         style_name = current_page.style.name
         style_filename = "%s.css" % style_name
 
-        url = self.URLs.methodLink(
-            "sendStyle", style_filename, addSlash=False
-        )
+        url = self.URLs.methodLink("sendStyle")
+        url = url + style_filename
+
         cssTag = '<link rel="stylesheet" type="text/css" href="%s" />\n' % url
         self.response.write(cssTag)
 

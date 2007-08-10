@@ -79,6 +79,51 @@ def setup(chdir="../../", path_info=True, extra_verbose=True, syncdb=True,
     print
 
 
+#______________________________________________________________________________
+# Fake PyLucid Environment
+
+class FakePageMsg(object):
+    def __call__(self, *msg):
+        for line in msg:
+            print line
+
+class FakeUser(object):
+    def is_anonymous(self):
+        return True
+
+class FakeRequest(object):
+    user = FakeUser()
+    META = {"HTTP_HOST": "unitest_HTTP_HOST_fake",}
+
+class FakePage(object):
+    id = 1
+
+fakeURLs = {
+    "absoluteIndex": "/",
+}
+
+#response = sys.stdout
+def get_fake_context():
+    from PyLucid.models import Page
+    try:
+        context["PAGE"] = Page.objects.order_by('id')[1]
+    except Exception:
+        # Does only works, if the PyLucid dump inserted to the database
+        page = FakePage()
+
+    fake_context = {
+        "request": FakeRequest(),
+        "page_msg": FakePageMsg(),
+        "URLs": fakeURLs,
+        "PAGE": page,
+
+    }
+
+    return fake_context
+
+
+#______________________________________________________________________________
+
 
 if __name__ == "__main__":
     print "Local Test:"
