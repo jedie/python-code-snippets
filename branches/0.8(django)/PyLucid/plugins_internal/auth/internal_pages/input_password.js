@@ -1,57 +1,10 @@
-if (!document.getElementById) {
-  alert("Error: Your Browser is not supported!");
-}
-
-if (navigator.cookieEnabled) {
-  if (navigator.cookieEnabled != true) {
-    alert("You must enable Cookies in your Browser!");
-  }
-}
-
-check_ok = false;
-debug_msg = false;
-HASH_LEN = 40;
-
-/* ___________________________________________________________________________
- *  debugging
- */
-
-function init_debug() {
-    if (debug_msg != true) { return; }
-    property = "dependent=yes,resizable=yes,width=350,height=400,top=1,left=" + window.outerWidth;
-    debug_window = window.open("about:blank", "Debug", property);
-    debug_window.focus();
-    debug_win = debug_window.document;
-    debug_win.writeln("<style>* { font-size: 0.85em; }</style>");
-    debug_win.writeln("<h1>JS Debug:</h1>");
-    debug_win.writeln("---[DEBUG START]---");
-    debug_win.writeln("cookie:" + document.cookie +"<br />");
-
-    document.body.onunload = "debug_window.close();";
-}
-function debug(msg) {
-   if (debug_msg != true) { return; }
-   debug_win.writeln(msg + "<br />");
-}
-function debug_confirm() {
-   if (debug_msg != true) { return; }
-   debug_window.focus();
-   debug_win.writeln("---[DEBUG END]---");
-   alert('OK for submit.');
-   debug_window.close();
-}
-
 /* ___________________________________________________________________________
  *  password input
  */
 
-function set_focus(object_id) {
-   debug("set focus on id:" + object_id);
-   document.getElementById(object_id).focus();
-}
 
 function init() {
-    init_debug()
+    init_debug() // from: shared_sha_tools.js
 
     debug("salt value from server:" + salt);
     if (salt.length<5) {
@@ -66,11 +19,6 @@ function init() {
     set_focus(focus_id);
 
     check_ok = true;
-}
-
-function change_color(id_name, color_name) {
-    obj = document.getElementById(id_name);
-    obj.style.backgroundColor = color_name;
 }
 
 function check() {

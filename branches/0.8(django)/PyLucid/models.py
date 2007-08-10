@@ -283,6 +283,23 @@ class JS_LoginData(models.Model):
     def __unicode__(self):
         return self.user.username
 
+    def set_password(self, salt_1, sha_1, salt_2, sha_2):
+        """
+        set a new password for the normal django account and for the PyLucid
+        SHA1-JS-Login (self.sha_checksum)
+        """
+        django_salt_hash = "sha1$%s$%s" % (salt_1, sha_1)
+        self.user.password = django_salt_hash
+        self.user.save()
+
+        from PyLucid.tools.crypt import make_sha_checksum
+        sha_checksum = make_sha_checksum(sha_2)
+
+        self.salt = salt_2
+        self.sha_checksum = sha_checksum
+        self.save()
+
+
     class Admin:
         list_display = (
             'user', 'sha_checksum', 'salt', 'createtime', 'lastupdatetime'
@@ -294,57 +311,57 @@ class JS_LoginData(models.Model):
 # FIXME: If a django user would be deleted, the JS_LoginData entry should be
 # deleted, too!
 
-def update_js_login_data(sender, instance, signal, *args, **kwargs):
-    """
-    Update the JS_LoginData if the user password has been changed in the
-    django User model.
-    """
-    user_obj = instance
-    if not user_obj.has_usable_password():
-        # a unusable password was set with user.set_unusable_password()
-        try:
-            user = JS_LoginData.objects.get(user = user_obj)
-        except JS_LoginData.DoesNotExist:
-            # OK, there is no old JS_LoginData entry
-            return
-        else:
-            # Delete the old existing JS_LoginData entry
-            user.delete()
-            return
-
-    django_salt_hash = user_obj.password
-
-    if not django_salt_hash:
-        return
-
-    from PyLucid.tools.crypt import django_to_sha_checksum
-
-    sha_checksum, password_salt = django_to_sha_checksum(django_salt_hash)
-
-    data, created = JS_LoginData.objects.get_or_create(
-        user = user_obj,
-        defaults = {"sha_checksum": sha_checksum, "salt": password_salt}
-    )
-    if created:
-        msg = _("creaded a new PyLucid JS-Login-Data entry, OK")
-    else:
-        if data.sha_checksum == sha_checksum:
-            msg = "nothing to do"
-        else:
-            msg = _("update a existing PyLucid JS-Login-Data entry, OK")
-            data.sha_checksum = sha_checksum
-            data.salt = password_salt
-            data.save()
-
-    user_obj.message_set.create(message=msg)
+#def update_js_login_data(sender, instance, signal, *args, **kwargs):
+#    """
+#    Update the JS_LoginData if the user password has been changed in the
+#    django User model.
+#    """
+#    user_obj = instance
+#    if not user_obj.has_usable_password():
+#        # a unusable password was set with user.set_unusable_password()
+#        try:
+#            user = JS_LoginData.objects.get(user = user_obj)
+#        except JS_LoginData.DoesNotExist:
+#            # OK, there is no old JS_LoginData entry
+#            return
+#        else:
+#            # Delete the old existing JS_LoginData entry
+#            user.delete()
+#            return
+#
+#    django_salt_hash = user_obj.password
+#
+#    if not django_salt_hash:
+#        return
+#
+#    from PyLucid.tools.crypt import django_to_sha_checksum
+#
+#    sha_checksum, password_salt = django_to_sha_checksum(django_salt_hash)
+#
+#    data, created = JS_LoginData.objects.get_or_create(
+#        user = user_obj,
+#        defaults = {"sha_checksum": sha_checksum, "salt": password_salt}
+#    )
+#    if created:
+#        msg = _("creaded a new PyLucid JS-Login-Data entry, OK")
+#    else:
+#        if data.sha_checksum == sha_checksum:
+#            msg = "nothing to do"
+#        else:
+#            msg = _("update a existing PyLucid JS-Login-Data entry, OK")
+#            data.sha_checksum = sha_checksum
+#            data.salt = password_salt
+#            data.save()
+#
+#    user_obj.message_set.create(message=msg)
 
 
 #dispatcher.connect(
 #    save_old_pass, signal=models.signals.post_init, sender=User
 #)
-dispatcher.connect(
-    update_js_login_data, signal=models.signals.post_save, sender=User
-)
+#dispatcher.connect(
+#    update_js_login_data, signal=models.signals.post_save, sender=User
+#)
 
 
 #______________________________________________________________________________

@@ -53,7 +53,25 @@ class WrongPassword(Exception):
     pass
 
 
+def validate_sha1(key_name, cleaned_data):
+    """
+    A universal routine to validate a SHA1 hexdigest for newforms.
+    """
+    if not key_name in cleaned_data:
+        raise forms.ValidationError(u"No '%s' data in the form." % key_name)
+
+    sha_value = cleaned_data[key_name]
+
+    if crypt.validate_sha_value(sha_value) == True:
+        return sha_value
+    else:
+        raise forms.ValidationError(u"Wrong '%s' data." % key_name)
+
+
 class SHA_LoginForm(forms.Form):
+    """
+    Form for the SHA1-JavaScript-Login.
+    """
     sha_a2 = forms.CharField(
         min_length=crypt.HASH_LEN, max_length=crypt.HASH_LEN
     )
@@ -61,34 +79,47 @@ class SHA_LoginForm(forms.Form):
         min_length=crypt.HASH_LEN/2, max_length=crypt.HASH_LEN/2
     )
 
-    def _check_sha(self, key_name):
-        if not key_name in self.cleaned_data:
-            raise forms.ValidationError(u"No '%s' data in the form." % key_name)
-
-        # Should we better use this:
-        # http://www.python-forum.de/post-74578.html#74578
-
-        sha_value = self.cleaned_data[key_name]
-        try:
-            int(sha_value, 16)
-        except (ValueError, OverflowError), e:
-            raise forms.ValidationError(u"Wrong '%s' data." % key_name)
-
-        return sha_value
+    #__________________________________________________________________________
+    # Validate the SHA1 hexdigest values:
 
     def clean_sha_a2(self):
-        """
-        Validates that sha_a2 can be a valid SHA1 value.
-        """
-        return self._check_sha("sha_a2")
+        return validate_sha1("sha_a2", self.cleaned_data)
 
     def clean_sha_b(self):
-        """
-        Validates that sha_a2 can be a valid SHA1 value.
-        """
-        return self._check_sha("sha_b")
+        return validate_sha1("sha_b", self.cleaned_data)
 
 
+class NewPasswordForm(forms.Form):
+    username = forms.CharField(
+        help_text="(required)", min_length=3, max_length=30
+    )
+
+    # Should normaly never be send back!
+    raw_password = forms.CharField(
+        help_text="(required)", required=False, widget = forms.PasswordInput()
+    )
+
+    sha_1 = forms.CharField(
+        label="SHA1 for django",
+        help_text="(automatic generated with JavaScript.)",
+        widget = forms.TextInput(attrs={"readonly":"readonly", "size":"40"}),
+        min_length=crypt.HASH_LEN, max_length=crypt.HASH_LEN
+    )
+    sha_2 = forms.CharField(
+        label="SHA1 for PyLucid",
+        help_text="(automatic generated with JavaScript.)",
+        widget = forms.TextInput(attrs={"readonly":"readonly", "size":"40"}),
+        min_length=crypt.HASH_LEN, max_length=crypt.HASH_LEN
+    )
+
+    #__________________________________________________________________________
+    # Validate the SHA1 hexdigest values:
+
+    def clean_sha_1(self):
+        return validate_sha1("sha_1", self.cleaned_data)
+
+    def clean_sha_2(self):
+        return validate_sha1("sha_2", self.cleaned_data)
 
 
 class auth(PyLucidBasePlugin):
@@ -220,7 +251,6 @@ class auth(PyLucidBasePlugin):
         except JS_LoginData.DoesNotExist, e:
             msg = _(
                 "The JS-SHA-Login data doesn't exist."
-
             )
             if DEBUG:
                 msg += " %s" % e
@@ -392,16 +422,13 @@ class auth(PyLucidBasePlugin):
         self.request.session['pass_reset_ID'] = seed
         self.page_msg("TODO:", seed)
 
-
-        from django.contrib.sessions.models import Session
-        session_cookie_name = settings.SESSION_COOKIE_NAME
-        current_session_id = self.request.COOKIES[session_cookie_name]
-        s = Session.objects.get(pk=current_session_id)
-        expiry_date = s.expire_date
-
+        now = datetime.datetime.now()
         expiry_time = settings.SESSION_COOKIE_AGE
+        cookie_age = datetime.timedelta(seconds=expiry_time)
+        expiry_date = now + cookie_age
 
         reset_link = self.URLs.methodLink("new_password", args=(seed,))
+        reset_link = self.URLs.make_absolute_url(reset_link)
 
         # FIXME: convert to users local time.
         now = datetime.datetime.now()
@@ -438,8 +465,85 @@ class auth(PyLucidBasePlugin):
         }
         self._render_template("pass_reset_form", context)#, debug=True)
 
-    def new_password(self):
+    def new_password(self, client_reset_ID = None):
+        if client_reset_ID == None:
+            self.page_msg.red(_("Request Error!"))
+            return
+        if not "pass_reset_ID" in self.request.session:
+            self.page_msg.red(
+                _("Session expired! Set a new password it is not possible.")
+            )
+            return self.pass_reset()
+
+        client_reset_ID = client_reset_ID.strip("/")
+        pass_reset_ID = self.request.session['pass_reset_ID']
+        if client_reset_ID != pass_reset_ID:
+            self.page_msg.red(
+                _("Wrong ID! Set a new password it is not possible.")
+            )
+            if DEBUG:
+                self.page_msg("%s != %s" % (client_reset_ID, pass_reset_ID))
+            return self.pass_reset()
+
         self.page_msg("TODO: set a new password!")
+
+        def get_data(form):
+            if not form.is_valid():
+                self.page_msg.red("Form data is not valid. Please correct.")
+                if DEBUG: self.page_msg(form.errors)
+                return
+
+            sha_1 = form.cleaned_data["sha_1"]
+            sha_2 = form.cleaned_data["sha_2"]
+
+            return (sha_1, sha_2)
+
+        if self.request.method == 'POST':
+            if DEBUG: self.page_msg(self.request.POST)
+            new_pass_form = NewPasswordForm(self.request.POST)
+
+            sha_values = get_data(new_pass_form)
+            if sha_values != None:
+                sha_1, sha_2 = sha_values
+                salt_1 = self.request.session["salt_1"]
+                salt_2 = self.request.session["salt_2"]
+                username = new_pass_form.cleaned_data["username"]
+
+                try:
+                    user = User.objects.get(username = username)
+                    js_login_data = JS_LoginData.objects.get_or_create(user = user)[0]
+                except (User.DoesNotExist, JS_LoginData.DoesNotExist), e:
+                    self.page_msg.red(_("Wrong Username!"))
+                    if DEBUG:
+                        self.page_msg("Username:", username)
+                        self.page_msg(e)
+                    return
+
+                js_login_data.set_password(salt_1, sha_1, salt_2, sha_2)
+                self.page_msg.green(_("New password saved."))
+                return
+        else:
+            new_pass_form = NewPasswordForm()
+
+        salt_1 = crypt.get_new_salt()
+        salt_2 = crypt.get_new_salt()
+        self.request.session["salt_1"] = salt_1
+        self.request.session["salt_2"] = salt_2
+
+        context = {
+            "form": new_pass_form,
+            "salt_1": salt_1,
+            "salt_2": salt_2,
+            "PyLucid_media_url": settings.PYLUCID_MEDIA_URL,
+        }
+        if DEBUG == True:
+            # For JavaScript debug
+            context["debug"] = "true"
+        else:
+            context["debug"] = "false"
+
+        self._render_template("new_password_form", context)#, debug=True)
+
 
 
 

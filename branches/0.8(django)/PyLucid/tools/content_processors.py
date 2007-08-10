@@ -18,11 +18,13 @@
     :license: GNU GPL v2 or above, see LICENSE for more details
 """
 
+import warnings
+
 from django.template import Template, Context
+from django.conf import settings
 
 from PyLucid.system.response import SimpleStringIO
 from PyLucid.db.internal_pages import get_internal_page
-from PyLucid import settings
 
 
 # use the undocumented django function to add the "lucidTag" to the tag library.
@@ -125,3 +127,18 @@ def replace_add_data(context, content):
 
     content = content.replace(settings.ADD_DATA_TAG, html)
     return content
+
+
+def redirect_warnings(out_obj):
+    """
+    Redirect every "warning" messages into the out_obj.
+    """
+#    old_showwarning = warnings.showwarning
+    def showwarning(message, category, filename, lineno):
+        msg = unicode(message)
+        if settings.DEBUG:
+            filename = u"..." + filename[-30:]
+            msg += u" (%s - line %s)" % (filename, lineno)
+        out_obj.write(msg)
+
+    warnings.showwarning = showwarning

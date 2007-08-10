@@ -23,8 +23,9 @@ from django.http import HttpResponse
 from django.template import RequestContext
 from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured
+from django.conf import settings
 
-from PyLucid import models, settings
+from PyLucid import models
 
 from PyLucid.system import plugin_manager
 from PyLucid.system.response import SimpleStringIO
@@ -36,7 +37,7 @@ from PyLucid.system.URLs import URLs
 from PyLucid.system.context_processors import add_dynamic_context
 
 from PyLucid.tools.content_processors import apply_markup, \
-                                        render_string_template, replace_add_data
+                    render_string_template, replace_add_data, redirect_warnings
 
 
 def _render_cms_page(context, page_content=None):
@@ -73,17 +74,7 @@ def _render_cms_page(context, page_content=None):
     return HttpResponse(content)
 
 
-def _redirect_warnings(context):
-    """
-    Redirect every "warning" messages into the page_msg
-    """
-    import warnings
-#    old_showwarning = warnings.showwarning
-    def showwarning(message, category, filename, lineno):
-        context["page_msg"](
-            "%s (%s: %s - line %s)" % (message, category, filename, lineno)
-        )
-    warnings.showwarning = showwarning
+
 
 def _get_context(request, current_page_obj):
     """
@@ -108,7 +99,10 @@ def _get_context(request, current_page_obj):
             raise AttributeError(err)
 
     context["page_msg"] = PageMessages(context)
-    _redirect_warnings(context)
+
+    # Redirect every "warning" messages into the page_msg:
+    redirect_warnings(context["page_msg"])
+
     context["PAGE"] = current_page_obj
     context["URLs"] = URLs(context)
 #    context["URLs"].debug()
