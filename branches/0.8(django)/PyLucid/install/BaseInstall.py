@@ -101,7 +101,8 @@ class BaseInstall(object):
             "PyLucid_media_url": settings.PYLUCID_MEDIA_URL,
             "version": PYLUCID_VERSION_STRING,
         }
-        self.context["page_msg"] = PageMessages(self.context)
+        self.page_msg = PageMessages(self.context)
+        self.context["page_msg"] = self.page_msg
 
         # Redirect every "warning" messages into context["page_msg"]:
         redirect_warnings(self.context["page_msg"])
@@ -122,7 +123,7 @@ class BaseInstall(object):
             "install_generate_hash.html", self.context
         )
 
-    def start_view(self):
+    def start_view(self, *args):
         """
         - Check the install password / login cookie
         - starts the self.view() if login ok
@@ -145,8 +146,8 @@ class BaseInstall(object):
             if DEBUG:
                 self.context["page_msg"].write("DEBUG: %s" % msg)
         else:
-            # access ok -> start the normal _instal view() method
-            return self.view()
+            # access ok -> start the normal _install view() method
+            return self.view(*args)
 
         # The _install section password is not in the cookie
         # -> display a html input form or check a submited form
@@ -164,7 +165,7 @@ class BaseInstall(object):
                     self.context["page_msg"].write(msg)
                 else:
                     # Password is ok. -> process the normal _instal view()
-                    response = self.view()
+                    response = self.view(*args)
                     # insert a cookie with the hashed password in the response
                     salt_hash = crypt.make_salt_hash(str(password_hash))
                     response.set_cookie(

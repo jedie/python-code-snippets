@@ -26,6 +26,7 @@ __version__ = "$Rev$"
 
 import datetime
 
+from django.core import mail
 from django import newforms as forms
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
@@ -33,8 +34,8 @@ from django.contrib.auth import authenticate, login, logout
 
 # DEBUG is usefull for debugging password reset. It send no email, it puts the
 # email text direclty into the CMS page.
-DEBUG = True
-#DEBUG = False
+#DEBUG = True
+DEBUG = False
 # IMPORTANT:
 # Should realy only use for debugging!!!
 if DEBUG:
@@ -53,14 +54,17 @@ class WrongPassword(Exception):
     pass
 
 
+def get_newforms_data(key_name, cleaned_data):
+    if not key_name in cleaned_data:
+        raise forms.ValidationError(u"No '%s' data in the form." % key_name)
+    return cleaned_data[key_name]
+
+
 def validate_sha1(key_name, cleaned_data):
     """
     A universal routine to validate a SHA1 hexdigest for newforms.
     """
-    if not key_name in cleaned_data:
-        raise forms.ValidationError(u"No '%s' data in the form." % key_name)
-
-    sha_value = cleaned_data[key_name]
+    sha_value = get_newforms_data(key_name, cleaned_data)
 
     if crypt.validate_sha_value(sha_value) == True:
         return sha_value
@@ -86,7 +90,20 @@ class SHA_LoginForm(forms.Form):
         return validate_sha1("sha_a2", self.cleaned_data)
 
     def clean_sha_b(self):
-        return validate_sha1("sha_b", self.cleaned_data)
+        """
+        The sha_b value is only a part of a SHA1 hexdigest. So we need to add
+        some characers to use the rypt.validate_sha_value() method.
+        """
+        sha_value = get_newforms_data("sha_b", self.cleaned_data)
+
+        # Fill with null, to match the full SHA1 hexdigest length.
+        fill_len = crypt.HASH_LEN - (crypt.HASH_LEN/2)
+        temp_value = ("0" * fill_len) + sha_value
+
+        if crypt.validate_sha_value(temp_value) == True:
+            return sha_value
+        else:
+            raise forms.ValidationError(u"Wrong sha_b data.")
 
 
 class NewPasswordForm(forms.Form):
@@ -130,12 +147,8 @@ class auth(PyLucidBasePlugin):
             )
 
         UsernameForm = forms.form_for_model(User, fields=("username",))
-        username_form = UsernameForm(self.request.POST)
 
         def get_data(form):
-            if self.request.method != 'POST':
-                return
-
             if DEBUG: self.page_msg(self.request.POST)
 
             if not form.is_valid():
@@ -158,15 +171,24 @@ class auth(PyLucidBasePlugin):
 
             return user
 
+        if self.request.method != 'POST':
+            username_form = UsernameForm()
+        else:
+            username_form = UsernameForm(self.request.POST)
+            user = get_data(username_form)
+            if user != None: # A valid form with a existing user was send.
+                if not user.has_usable_password():
+                    msg = _("No usable password was saved.")
+                    # Display the pass reset form
+                    self.pass_reset(user.username, msg)
+                    return
 
-        user = get_data(username_form)
-        if user != None: # A valid form with a existing user was send.
-            if "plaintext_login" in self.request.POST:
-                return self._plaintext_login(user)
-            elif "sha_login" in self.request.POST:
-                return self._sha_login(user)
-            else:
-                self.page_msg.red("Wrong POST data.")
+                if "plaintext_login" in self.request.POST:
+                    return self._plaintext_login(user)
+                elif "sha_login" in self.request.POST:
+                    return self._sha_login(user)
+                else:
+                    self.page_msg.red("Wrong POST data.")
 
 
         context = {
@@ -183,10 +205,6 @@ class auth(PyLucidBasePlugin):
         context["pass_reset_link"] = self.URLs.methodLink("pass_reset")
 
     def _plaintext_login(self, user):
-        if not user.has_usable_password():
-            msg = _("No usable password was saved.")
-            self.pass_reset(user.username, msg) # Display the pass reset form
-            return
 
         PasswordForm = forms.form_for_model(User, fields=("password",))
 
@@ -365,7 +383,6 @@ class auth(PyLucidBasePlugin):
             self.page_msg.green(_("You must reset your password."))
 
         ResetForm = forms.form_for_model(User, fields=("username", "email"))
-        reset_form = ResetForm(self.request.POST)
 
         def get_data(form):
             if not form.is_valid():
@@ -402,10 +419,15 @@ class auth(PyLucidBasePlugin):
         if self.request.method == 'POST' and username==None:
             if DEBUG: self.page_msg(self.request.POST)
 
+            reset_form = ResetForm(self.request.POST)
+
             user = get_data(reset_form)
             if user != None: # A valid form was sended in the past
                 self._send_reset_mail(user)
                 return
+        else:
+            reset_form = ResetForm()
+
 
         context = {
             "submited": False,
@@ -414,13 +436,13 @@ class auth(PyLucidBasePlugin):
         }
         self._render_template("pass_reset_form", context)#, debug=True)
 
+
     def _send_reset_mail(self, user):
         """
         Send a mail to the user with a password reset link.
         """
         seed = crypt.get_new_seed()
         self.request.session['pass_reset_ID'] = seed
-        self.page_msg("TODO:", seed)
 
         now = datetime.datetime.now()
         expiry_time = settings.SESSION_COOKIE_AGE
@@ -438,7 +460,7 @@ class auth(PyLucidBasePlugin):
             "base_url": self.URLs["hostname"],
             "reset_link": reset_link,
             "expiry_date": expiry_date,
-            "ip": self.request.META['REMOTE_ADDR']
+            "ip": self.request.META.get('REMOTE_ADDR', "unknown") # unittest!
         }
         emailtext = self._get_rendered_template(
             "pass_reset_email", email_context,
@@ -452,10 +474,18 @@ class auth(PyLucidBasePlugin):
             self.response.write(emailtext)
             self.response.write("</pre></fieldset>")
         else:
-            from django.core.mail import send_mail
-            # TODO
-#            send_mail('Subject here', 'Here is the message.', 'from@example.com',
-#                ['to@example.com'], fail_silently=False)
+            # TODO: current_domain = Site.objects.get_current().domain
+            from_email = settings.DEFAULT_FROM_EMAIL
+            to_email = user.email
+
+            try:
+                mail.send_mail(
+                    'Password reset.', emailtext, from_email,
+                    [to_email], fail_silently=False
+                )
+            except Exception, e:
+                self.page_msg.red("Error, can't send mail: %s" % e)
+                return
 
         context = {
             "submited": True,
@@ -465,7 +495,11 @@ class auth(PyLucidBasePlugin):
         }
         self._render_template("pass_reset_form", context)#, debug=True)
 
+
     def new_password(self, client_reset_ID = None):
+        """
+        view to set a new password.
+        """
         if client_reset_ID == None:
             self.page_msg.red(_("Request Error!"))
             return
@@ -473,6 +507,7 @@ class auth(PyLucidBasePlugin):
             self.page_msg.red(
                 _("Session expired! Set a new password it is not possible.")
             )
+            self.page_msg.green(_("Please start a new password reset mail:"))
             return self.pass_reset()
 
         client_reset_ID = client_reset_ID.strip("/")
@@ -484,8 +519,6 @@ class auth(PyLucidBasePlugin):
             if DEBUG:
                 self.page_msg("%s != %s" % (client_reset_ID, pass_reset_ID))
             return self.pass_reset()
-
-        self.page_msg("TODO: set a new password!")
 
         def get_data(form):
             if not form.is_valid():
@@ -505,22 +538,25 @@ class auth(PyLucidBasePlugin):
             sha_values = get_data(new_pass_form)
             if sha_values != None:
                 sha_1, sha_2 = sha_values
-                salt_1 = self.request.session["salt_1"]
-                salt_2 = self.request.session["salt_2"]
                 username = new_pass_form.cleaned_data["username"]
 
                 try:
-                    user = User.objects.get(username = username)
-                    js_login_data = JS_LoginData.objects.get_or_create(user = user)[0]
-                except (User.DoesNotExist, JS_LoginData.DoesNotExist), e:
+                    JS_LoginData.objects.set_new_password(
+                        username,
+                        django_salt  = self.request.session["salt_1"],
+                        django_sha   = sha_1,
+                        pylucid_salt = self.request.session["salt_2"],
+                        pylucid_sha  = sha_2
+                    )
+                except JS_LoginData.DoesNotExist, e:
                     self.page_msg.red(_("Wrong Username!"))
                     if DEBUG:
                         self.page_msg("Username:", username)
                         self.page_msg(e)
-                    return
+                else:
+                    self.page_msg.green(_("New password saved."))
+                    del(self.request.session['pass_reset_ID'])
 
-                js_login_data.set_password(salt_1, sha_1, salt_2, sha_2)
-                self.page_msg.green(_("New password saved."))
                 return
         else:
             new_pass_form = NewPasswordForm()

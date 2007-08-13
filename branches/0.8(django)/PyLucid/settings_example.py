@@ -24,6 +24,8 @@
     :license: GNU GPL v3, see LICENSE.txt for more details.
 """
 
+import os
+
 #_____________________________________________________________________________
 # DEBUGGING
 
@@ -64,6 +66,11 @@ DATABASE_PORT = ''             # Set to empty string for default. Not used with 
 #_____________________________________________________________________________
 # EMAIL
 # http://www.djangoproject.com/documentation/email/
+
+# Default e-mail address to use for various automated correspondence
+# Replace with a normal String like:
+# DEFAULT_FROM_EMAIL = "webmaster@example.org"
+DEFAULT_FROM_EMAIL = "webmaster@" + os.environ.get("HTTP_HOST", "localhost")
 
 # Host for sending e-mail.
 EMAIL_HOST = 'localhost'

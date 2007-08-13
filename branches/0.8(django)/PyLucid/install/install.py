@@ -11,7 +11,7 @@ from PyLucid.install.BaseInstall import BaseInstall
 
 from django import newforms as forms
 #from django.contrib.auth.models import User
-from PyLucid.models import User
+from PyLucid.models import JS_LoginData
 
 import sys, os
 
@@ -177,26 +177,15 @@ def _create_new_superuser(user_data):
     This function used in CreateUser() and in the SHA1-JS-Unittest!
     """
     print "Create a new django superuser:"
-    raw_password = user_data.pop("password")
-    try:
-        user, created = User.objects.get_or_create(
-            username = user_data["username"],
-            defaults = user_data
-        )
-        user.is_staff = True
-        user.is_active = True
-        user.is_superuser = True
-        user.first_name = user_data["first_name"]
-        user.last_name = user_data["last_name"]
-        user.set_password(raw_password)
-        user.save()
-    except Exception, e:
-        print "ERROR: %s" % e
+
+    created = JS_LoginData.objects.create_or_update_user(
+        user_data,
+        is_staff = True, is_active = True, is_superuser = True
+    )
+    if created:
+        print _("creaded a new User, OK")
     else:
-        if created:
-            print _("creaded a new User, OK")
-        else:
-            print _("update a existing User, OK")
+        print _("update a existing User, OK")
 
 
 class CreateUser(BaseInstall):
@@ -204,6 +193,7 @@ class CreateUser(BaseInstall):
         """
         Display the user form.
         """
+        from django.contrib.auth.models import User
         UserForm = forms.form_for_model(
             User,
             fields=("username", "first_name", "last_name", "email", "password")
