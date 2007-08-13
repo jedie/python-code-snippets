@@ -35,6 +35,7 @@ from PyLucid.models import User, JS_LoginData
 from PyLucid.install.install import _create_new_superuser
 from PyLucid.tools import crypt
 
+from django.contrib.auth.models import UNUSABLE_PASSWORD
 from django.test.client import Client
 from django.conf import settings
 
@@ -59,15 +60,29 @@ TEST_UNUSABLE_USER = "unitest2"
 # http://www.python-forum.de/topic-11568.html
 webbrowser._tryorder.insert(0, 'epiphany') # Use Epiphany, if installed.
 
+ONE_DEBUG_DISPLAYED = False
 
-def debug_response(response, msg=""):
+def debug_response(response, msg="", display_tb=True):
     """
     Display the response content in a webbrowser.
     """
+    global ONE_DEBUG_DISPLAYED
+    if ONE_DEBUG_DISPLAYED:
+        return
+    else:
+        ONE_DEBUG_DISPLAYED = True
+
     content = response.content
 
     stack = traceback.format_stack(limit=3)[:-1]
     stack.append(msg)
+    if display_tb:
+        print
+        print "debug_response:"
+        print "-"*80
+        print "\n".join(stack)
+        print "-"*80
+
     stack_info = "".join(stack)
     info = (
         "\n<br /><hr />\n"
@@ -89,13 +104,20 @@ def debug_response(response, msg=""):
 #    os.remove(file_path)
 
 
-regex = re.compile(r"(\w+)\s*=\s*['\"]*([^'\"]+)['\"]*;")
+js_regex1 = re.compile(r'<script .+?>(.*?)</script>(?imuxs)')
+js_regex2 = re.compile(r"(\w+)\s*=\s*['\"]*([^'\"]+)['\"]*;")
 
 def _get_JS_data(content):
     """
     retuned the JS variable statements from the given html page content.
     """
-    return dict(regex.findall(content))
+    result = {}
+    for txt in js_regex1.findall(content):
+        data = dict(js_regex2.findall(txt))
+        result.update(data)
+
+    return result
+
 
 
 def _build_sha_data(JS_data, password):
@@ -120,6 +142,11 @@ def _build_sha_data(JS_data, password):
     sha_a2 = crypt.make_hash(sha_a, challenge)
 
     return sha_a2, sha_b
+
+
+
+
+
 
 
 
@@ -149,57 +176,148 @@ class TestCryptModul(unittest.TestCase):
 
 
 
-class TestUserModels(unittest.TestCase):
+#______________________________________________________________________________
+#______________________________________________________________________________
+#______________________________________________________________________________
+
+
+
+class TestBase(unittest.TestCase):
+
+    _open = []
+
+    def _create_test_user(self):
+        user_data = {
+            "username": TEST_USERNAME,
+            "password": TEST_PASSWORD,
+            "email": TEST_USER_EMAIL,
+            "first_name": "", "last_name": ""
+        }
+        JS_LoginData.objects.create_or_update_user(
+            user_data,
+            is_staff = True, is_active = True, is_superuser = True
+        )
+
+    def _create_test_unusable_user(self):
+        user_data = {
+            "username": TEST_UNUSABLE_USER,
+            "password": "",
+        }
+        JS_LoginData.objects.create_or_update_user(
+            user_data,
+            is_staff = True, is_active = True, is_superuser = True
+        )
+        JS_LoginData.objects.set_unusable_password(TEST_UNUSABLE_USER)
+
+    def setUp(self):
+        url_base = "/%s/1/auth/%%s/" % settings.COMMAND_URL_PREFIX
+        self.login_url = url_base % "login"
+        self.pass_reset_url = url_base % "pass_reset"
+
+        self._create_test_user()
+        self._create_test_unusable_user()
+
+        self.client = Client()
+
+    def assertStatusCode(self, response, status_code, msg=None):
+        if response.status_code == status_code:
+            # Page ok
+            return
+
+        debug_response(response)
+        self.fail(msg)
+
+    def assertResponse(self, response, must_contain, must_not_contain=()):
+        def error(respose, msg):
+            debug_response(response, msg, display_tb=False)
+            raise self.failureException, msg
+
+        for txt in must_contain:
+            if not txt in response.content:
+                error(response, "Text not in response: '%s'" % txt)
+
+        for txt in must_not_contain:
+            if txt in response.content:
+                error(response, "Text should not be in response: '%s'" % txt)
+
+#______________________________________________________________________________
+#______________________________________________________________________________
+#______________________________________________________________________________
+
+class TestUserModels(TestBase):
     """
     Test the JS_LoginData
     """
-
-    def _get_LoginData(self, username):
-        user = User.objects.get(username = username)
-        js_login_data = JS_LoginData.objects.get(user = user)
-
-        return user, js_login_data
 
     def _check_userpassword(self, username):
         """
         Get the userdata from the database and check the creaded JS_LoginData.
         """
-        user, js_login_data = self._get_LoginData(username)
+        user, js_login_data = JS_LoginData.objects.get_user(username)
 
-        sha_checksum, salt = crypt.django_to_sha_checksum(user.password)
-        assert salt == js_login_data.salt
-        assert js_login_data.sha_checksum == sha_checksum, (
-            "sha_checksum wrong:\n"
-            " -django user table:\n"
-            "    Username: '%(user)s',\n"
-            "    password: '%(pass)s'\n"
-            " -JS_LoginData table:\n"
-            "    sha_checksum: '%(checksum1)s'\n"
-            "    salt: '%(salt)s'\n"
-            " -generated data:\n"
-            "    sha_checksum: '%(checksum2)s'\n"
-        ) % {
-            "user": user.username,
-            "pass": user.password,
-            "checksum1": js_login_data.sha_checksum,
-            "salt": js_login_data.salt,
-            "checksum2": sha_checksum,
-            "salt2": salt,
-        }
+        salt, sha_checksum = crypt.django_to_sha_checksum(user.password)
 
-    def test_user_model1(self):
+        DEBUG_HASH_LEN = 52
+
+#        print "user:", user
+#        print "js_login_data:", js_login_data
+#        print "user.password:", user.password
+#        print "js_login_data.salt:", js_login_data.salt
+#        print "js_login_data.sha_checksum:", js_login_data.sha_checksum
+#        print "DEBUG_HASH_LEN:", DEBUG_HASH_LEN
+
+        assert salt != js_login_data.salt
+        assert sha_checksum != js_login_data.sha_checksum
+        assert len(user.password) == crypt.SALT_HASH_LEN
+        assert len(sha_checksum) == DEBUG_HASH_LEN, "%s %s %s" % (
+            sha_checksum, len(sha_checksum)
+        )
+        assert len(js_login_data.sha_checksum) == DEBUG_HASH_LEN, "%s %s" % (
+            js_login_data.sha_checksum, len(js_login_data.sha_checksum)
+        )
+
+    def test_normal_test_user(self):
         """
-        Create a django user with the interface given from the django user
-        manager and check the JS_LoginData.
-        http://www.djangoproject.com/documentation/authentication/#id1
+        Test the "normal test user"
         """
-        u = User.objects.create_user('testuser', '', 'testpw')
-        u.save()
+        # Check the
+        self._check_userpassword(username = TEST_USERNAME)
 
-        self._check_userpassword(username = "testuser")
+    def test_unusable_test_user(self):
+        """
+        Test the "unusable test user"
+        """
+        user, js_login_data = JS_LoginData.objects.get_user(TEST_UNUSABLE_USER)
+
+        self.assertEqual(user.password, UNUSABLE_PASSWORD)
+        self.assertEqual(js_login_data.salt, UNUSABLE_PASSWORD)
+        self.assertEqual(js_login_data.sha_checksum, UNUSABLE_PASSWORD)
 
 
-    def test_create_new_superuser(self):
+    def test_delete_user(self):
+        """
+        Delete the user and check if he still exists
+        """
+        user, js_login_data = JS_LoginData.objects.get_user(TEST_USERNAME)
+        old_id = js_login_data.id
+
+        JS_LoginData.objects.delete_user(TEST_USERNAME)
+        try:
+            user = User.objects.get(username = TEST_USERNAME)
+        except User.DoesNotExist:
+            pass
+        else:
+            self.fail("Django User account still exists!")
+
+        try:
+            js_login_data = JS_LoginData.objects.get(id = old_id)
+        except JS_LoginData.DoesNotExist:
+            pass
+        else:
+            self.fail("JS_LoginData entry still exists!")
+
+
+    def test_create_new_superuser2(self):
         """
         Test the create_new_superuser routine from the _install section.
         Check the User Password and JS_LoginData.
@@ -217,117 +335,34 @@ class TestUserModels(unittest.TestCase):
         user = User.objects.get(username = TEST_USERNAME)
         self.failUnless(user.email == TEST_USER_EMAIL)
 
-    def test_unusable_password(self):
-        """
-        if a user has a unusable password, the JS_LoginData entry must be not
-        exists.
-        """
-        def set_and_check(user):
-            "set a unusable password and check the JS_LoginData entry"
-            user.set_unusable_password()
-            user.save()
 
-            try:
-                JS_LoginData.objects.get(user = user)
-            except JS_LoginData.DoesNotExist:
-                pass
-            else:
-                self.fail(
-                    "There should be no JS_LoginData"
-                    " for a user with a unusable password"
-                )
+#______________________________________________________________________________
 
-        user = User.objects.create_user(TEST_UNUSABLE_USER, '', '')
-        # Set a unusable password and check:
-        set_and_check(user)
+class TestDjangoLogin(TestBase):
+    """
+    Test the django admin panel login
+    FIXME!!!
+    """
+    def test_user_account(self):
+        self.client.login(username=TEST_USERNAME, password=TEST_PASSWORD)
 
-        # set a password and check it.
-        user.set_password('testpw')
-        user.save()
-        # Check if the JS_LoginData are correct.
-        self._check_userpassword(username = TEST_UNUSABLE_USER)
-
-        # set the password back to a unusable password and check:
-        set_and_check(user)
-
-
-    def test_login(self):
-        username = TEST_USERNAME
-
-        user, js_login_data = self._get_LoginData(username)
-
-        sha_checksum = js_login_data.sha_checksum
-        salt = js_login_data.salt
-
-        challenge = "test_challenge"
-        JS_data = {
-            "salt": salt,
-            "challenge": challenge,
-        }
-
-        sha_a2, sha_b = _build_sha_data(JS_data, TEST_PASSWORD)
-
-        try:
-            check = crypt.check_js_sha_checksum(
-                challenge, sha_a2, sha_b, sha_checksum
-            )
-        except Exception, e:
-            msg = (
-                "check_js_sha_checksum error: %s\n"
-                "    user: %s\n"
-                " - JS Data:\n"
-                "    sha_checksum: %s\n"
-                "    salt: %s\n"
-                "    challenge: %s\n"
-                " - _build_sha_data():\n"
-                "    sha_a2: %s\n"
-                "    sha_b: %s\n"
-            ) % (
-                e, username, sha_checksum, salt, challenge, sha_a2, sha_b
-            )
-            self.fail(msg)
-
-
-
-
-class TestSHA1Login(unittest.TestCase):
-
-    _open = []
-
-    def setUp(self):
-        url_base = "/%s/1/auth/%%s/" % settings.COMMAND_URL_PREFIX
-        self.login_url = url_base % "login"
-        self.pass_reset_url = url_base % "pass_reset"
-
-        self.client = Client()
-
-    def assertStatusCode(self, response, status_code, msg=None):
-        if response.status_code == status_code:
-            # Page ok
-            return
-
-        debug_response(response)
-        self.fail(msg)
-
-    def assertResponse(self, response, must_contain, must_not_contain=()):
-        def error(respose, msg):
-            debug_response(response, msg)
-            raise self.failureException, msg
-
-        for txt in must_contain:
-            if not txt in response.content:
-                error(response, "Text not in response: '%s'" % txt)
-
-        for txt in must_not_contain:
-            if txt in response.content:
-                error(response, "Text should not be in response: '%s'" % txt)
-
-    #__________________________________________________________________________
-
-    def test_django_login(self):
-        # Request a django admin panel login
         response = self.client.get("/%s/" % settings.ADMIN_URL_PREFIX)
         self.assertStatusCode(response, 200)
+#        self.assertResponse(
+#            response, must_contain=("Log in", "PyLucid site admin")
+#        )
+
+    def test_django_login(self):
+        # Make a session
+#        del(self.client.cookies)
+        print self.client.cookies
+        response = self.client.get("/%s/" % settings.ADMIN_URL_PREFIX)
+        self.assertStatusCode(response, 200)
+        self.assertResponse(
+            response, must_contain=("Log in", "PyLucid site admin")
+        )
+        print self.client.cookies
+        print self.client.exc_info
 
         # login into the django admin panel
         response = self.client.post(
@@ -338,6 +373,13 @@ class TestSHA1Login(unittest.TestCase):
             }
         )
         self.assertStatusCode(response, 200)
+        print self.client.cookies
+        print self.client.exc_info
+        self.assertResponse(
+            response, must_contain=("Log in", "PyLucid site admin"),
+            must_not_contain=("log in again", "session has expired")
+        )
+#        debug_response(response)
 
     def test_username_input(self):
         response = self.client.get(self.login_url)
@@ -350,7 +392,9 @@ class TestSHA1Login(unittest.TestCase):
         self.assertStatusCode(response, 200)
         self.assertResponse(response, must_contain=("User does not exist.",))
 
-    #__________________________________________________________________________
+#______________________________________________________________________________
+
+class TestPlaintextLogin(TestBase):
 
     def test_send_username(self):
         response = self.client.post(
@@ -404,7 +448,32 @@ class TestSHA1Login(unittest.TestCase):
             )
         )
 
-    #__________________________________________________________________________
+    def test_unusable_password(self):
+        """
+        Check if we get the password reset form, after we send a SHA-Login
+        for a user with a unusable password.
+        """
+        response = self.client.post(
+            self.login_url,
+            {
+                "username": TEST_UNUSABLE_USER,
+                "plaintext_login" : True
+            }
+        )
+#        debug_response(response)
+        self.assertResponse(response,
+            must_contain=(
+                "No usable password was saved.",
+                "You must reset your password.",
+                "Reset your password:",
+                TEST_UNUSABLE_USER,
+            )
+        )
+
+#______________________________________________________________________________
+
+
+class TestSHALogin(TestBase):
 
     def test_send_username2(self):
         response = self.client.post(
@@ -539,16 +608,24 @@ class TestSHA1Login(unittest.TestCase):
             )
         )
 
+#______________________________________________________________________________
+
+
+class TestPasswordReset(TestBase):
+
     def test_pass_reset_form1(self):
         """
         Check if we get the password reset form.
         """
-        response = self.client.get(self.pass_reset_url)
+        response = self.client.get(
+            self.pass_reset_url,
+
+        )
 #        debug_response(response)
         self.assertResponse(response, must_contain=("Reset your password:",))
 
 
-    def test_pass_reset_form2(self):
+    def test_unusable_password_sha_login(self):
         """
         Check if we get the password reset form, after we send a SHA-Login
         for a user with a unusable password.
@@ -563,14 +640,13 @@ class TestSHA1Login(unittest.TestCase):
 #        debug_response(response)
         self.assertResponse(response,
             must_contain=(
-                "The JS-SHA-Login data doesn't exist.",
+                "No usable password was saved.",
                 "You must reset your password.",
                 "Reset your password:",
-                TEST_UNUSABLE_USER,
             )
         )
 
-    def test_pass_reset_form3(self):
+    def test_unusable_password_plaintext_login(self):
         """
         Check if we get the password reset form, after we send a plain text
         Login for a user with a unusable password.
@@ -588,7 +664,6 @@ class TestSHA1Login(unittest.TestCase):
                 "No usable password was saved.",
                 "You must reset your password.",
                 "Reset your password:",
-                TEST_UNUSABLE_USER,
             )
         )
 
@@ -632,14 +707,84 @@ class TestSHA1Login(unittest.TestCase):
         """
         form validating test: Check with wrong email adress.
         """
+        RESET_URL = "/_command/1/auth/new_password/DEBUG_1234567890/"
+
+        # Send username and email to get a "reset email"
         response = self.client.post(self.pass_reset_url,
             {
                 "username": TEST_USERNAME,
                 "email": TEST_USER_EMAIL
-            }
+            },
+            extra={"REMOTE_ADDR": "unitest REMOTE_ADDR"}
         )
-        debug_response(response)
-#        self.assertResponse(response, must_contain=("User does not exist.",))
+        from PyLucid.plugins_internal.auth.auth import DEBUG
+        if DEBUG == True:
+            self.assertResponse(response,
+                must_contain=(
+                    RESET_URL,
+                    "Debug! No Email was sended!",
+                    "A 'password reset' email was send to you.",
+                )
+            )
+        else:
+            self.assertResponse(response,
+                must_contain=(
+                    "A 'password reset' email was send to you.",
+                ),
+                must_not_contain = (
+                    RESET_URL,
+                    "Debug! No Email was sended!",
+                )
+            )
+            from django.core import mail
+            self.assertEqual(mail.outbox[0].subject, 'Password reset.')
+            assert RESET_URL in mail.outbox[0].body
+
+
+        # GET the new password input form
+        # We need two differend salt values. So we turn debug mode off:
+        crypt.DEBUG = False
+
+        response = self.client.get(RESET_URL)
+        self.assertResponse(response,
+            must_contain=(
+                'Set a new password',
+                'SHA1 for django', 'SHA1 for PyLucid',
+                'src="/media/PyLucid/sha.js"',
+                'src="/media/PyLucid/shared_sha_tools.js"',
+            )
+        )
+
+        js_data = _get_JS_data(response.content)
+#        print js_data
+        salt_1 = js_data["salt_1"]
+        salt_2 = js_data["salt_2"]
+
+        sha_1 = crypt.make_hash(TEST_PASSWORD, salt_1)
+        sha_2 = crypt.make_hash(TEST_PASSWORD, salt_2)
+
+        # Send a new password
+        response = self.client.post(RESET_URL,
+            {
+                "username": TEST_USERNAME,
+                "email": TEST_USER_EMAIL,
+                "sha_1": sha_1,
+                "sha_2": sha_2,
+                "raw_password": "",
+            },
+            extra={"REMOTE_ADDR": "unitest REMOTE_ADDR"}
+        )
+#        debug_response(response)
+        self.assertResponse(response, must_contain=("New password saved.",))
+
+        user, js_login_data = JS_LoginData.objects.get_user(TEST_USERNAME)
+        test = "sha1$%s$%s" % (salt_1, sha_1)
+        self.assertEqual(test, user.password)
+        self.assertEqual(js_login_data.salt, salt_2)
+
+
+
+
 
 
 def suite():
@@ -654,9 +799,13 @@ def suite():
 
     suite = unittest.TestSuite()
 
-    suite.addTest(unittest.makeSuite(TestCryptModul))
-    suite.addTest(unittest.makeSuite(TestUserModels))
-    suite.addTest(unittest.makeSuite(TestSHA1Login))
+#    suite.addTest(unittest.makeSuite(TestCryptModul))
+#    suite.addTest(unittest.makeSuite(TestUserModels))
+#    suite.addTest(unittest.makeSuite(TestDjangoLogin))
+#    suite.addTest(unittest.makeSuite(TestPlaintextLogin))
+#    suite.addTest(unittest.makeSuite(TestSHALogin))
+    suite.addTest(unittest.makeSuite(TestPasswordReset))
+
     return suite
 
 if __name__ == "__main__":

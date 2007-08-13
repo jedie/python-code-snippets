@@ -304,3 +304,89 @@ def check_preferences(request):
     return CheckPreferences(request).start_view()
 
 
+
+user_admin_template = """
+{% extends "install_base.html" %}
+{% block content %}
+<h1>Low level user administration</h1>
+<strong>Note:</strong> Passwords will send in plain text :(
+<form method="post">
+{% if user_form %}
+    <h3>set a new password:</h3>
+    {{ user_form.as_p }}
+    <input value="save" name="save" type="submit">
+{% else %}
+    <h3>user list</h3>
+    <ul>
+    {% for user in user_list %}
+        <li>
+            {{ user.username }}
+            <input value="change_pass" name="{{ user.id }}" type="submit">
+        </li>
+    {% endfor %}
+    </ul>
+{% endif %}
+</form>
+{% endblock %}
+"""
+class PasswordForm(forms.Form):
+    password = forms.CharField(
+        min_length=8, max_length=128,
+        widget = forms.PasswordInput()
+    )
+    user_id = forms.IntegerField(widget = forms.HiddenInput())
+
+
+class UserAdmin(BaseInstall):
+    """
+    This is a quick but bad way to change the user password.
+    """
+    def view(self, *url_args):
+        self._build_context()
+#        self.page_msg(self.context)
+        return self._render(user_admin_template)
+
+    def _put_userlist(self):
+        from PyLucid.models import User
+        user_list = User.objects.all()
+        self.context["user_list"] = user_list
+
+    def _build_context(self):
+        from PyLucid.models import User, JS_LoginData
+
+        if not self.request.POST:
+            self._put_userlist()
+            return
+
+#        self.page_msg(self.request.POST)
+
+        if "save" in self.request.POST:
+            pass_form = PasswordForm(self.request.POST)
+            if pass_form.is_valid():
+                raw_password = pass_form.cleaned_data["password"]
+                user_id = pass_form.cleaned_data["user_id"]
+                user = User.objects.get(id = user_id)
+                username = user.username
+                user, js_login_data = JS_LoginData.objects.get_user(username)
+                js_login_data.set_password_from_raw(raw_password)
+                js_login_data.save()
+                self.page_msg.green("New password saved.")
+                self._put_userlist()
+                return
+        elif len(self.request.POST) == 1:
+            try:
+                user_id = int(self.request.POST.keys()[0])
+                user = User.objects.get(id = user_id)
+                self.context["user_id"] = user_id
+                self.context["user_form"] = PasswordForm({"user_id": user_id})
+            except Exception, e:
+                self.page_msg.red("Error: %s" % e)
+        else:
+            self.page_msg.red("POST Error!")
+
+
+def user_admin(request, *url_args):
+    """
+    User administration
+    """
+    return UserAdmin(request).start_view(*url_args)

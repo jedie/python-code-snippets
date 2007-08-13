@@ -7,12 +7,12 @@ function init() {
     init_debug(); // from: shared_sha_tools.js
 
     debug("salt_1 value from server:" + salt_1);
-    if (salt_1.length!=6) {
+    if (salt_1.length != 5) {
         alert("salt_1 from Server fail! len:" + salt_1.length); return false;
     }
 
     debug("salt_2 value from server:" + salt_2);
-    if (salt_2.length!=6) {
+    if (salt_2.length != 5) {
         alert("salt_2 from Server fail!"); return false;
     }
     if (salt_2 == salt_1) {

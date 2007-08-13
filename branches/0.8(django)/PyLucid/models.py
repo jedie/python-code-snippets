@@ -20,9 +20,10 @@ import pickle
 from django.db import models
 from django.dispatch import dispatcher
 from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import UNUSABLE_PASSWORD
 
 from PyLucid.tools.shortcuts import getUniqueShortcut
-
+from PyLucid.tools import crypt
 
 
 
@@ -271,34 +272,108 @@ class Page(models.Model):
 #______________________________________________________________________________
 
 
-class JS_LoginData(models.Model):
-    user = models.ForeignKey(User)
+class RegistrationManager(models.Manager):
+    """
+    Custom manager for JS_LoginData.
+    """
+    def create_or_update_user(self, user_data, is_staff=False, is_active=False,
+                                                            is_superuser=False):
 
-    sha_checksum = models.CharField(maxlength=192)
-    salt = models.CharField(maxlength=6)
+        raw_password = user_data.pop("password")
 
-    createtime = models.DateTimeField(auto_now_add=True)
-    lastupdatetime = models.DateTimeField(auto_now=True)
+        # create the django user account:
+        user, created = User.objects.get_or_create(
+            username = user_data["username"],
+            defaults = user_data
+        )
+        user.is_staff = is_staff
+        user.is_active = is_active
+        user.is_superuser = is_superuser
+        user.first_name = user_data.get("first_name", "")
+        user.last_name = user_data.get("last_name", "")
+        user.set_password(raw_password)
+        user.save()
 
-    def __unicode__(self):
-        return self.user.username
+        # create the PyLucid JS-LoginData:
+        js_login_data = self.get_or_create(user = user)[0]
+        js_login_data.set_password_from_raw(raw_password)
+        js_login_data.save()
 
-    def set_password(self, salt_1, sha_1, salt_2, sha_2):
+        return created
+
+    def set_unusable_password(self, username):
+        user, js_login_data = self.get_user(username)
+        user.set_unusable_password()
+        user.save()
+        js_login_data.set_unusable_password()
+        js_login_data.save()
+
+    def set_new_password(self, username, django_salt, django_sha, pylucid_salt,
+                                                                pylucid_sha):
         """
         set a new password for the normal django account and for the PyLucid
         SHA1-JS-Login (self.sha_checksum)
         """
-        django_salt_hash = "sha1$%s$%s" % (salt_1, sha_1)
-        self.user.password = django_salt_hash
-        self.user.save()
+        assert django_salt != pylucid_salt
+        assert django_sha != pylucid_sha
 
-        from PyLucid.tools.crypt import make_sha_checksum
-        sha_checksum = make_sha_checksum(sha_2)
+        user = User.objects.get(username = username)
+        js_login_data = self.get_or_create(user = user)[0]
 
-        self.salt = salt_2
+        # Update the django user account:
+        django_salt_hash = "sha1$%s$%s" % (django_salt, django_sha)
+        user.password = django_salt_hash
+        user.save()
+
+        # Update the PyLucid JS-LoginData:
+        js_login_data.set_password_from_salt_hash(pylucid_salt, pylucid_sha)
+        js_login_data.save()
+
+    def get_user(self, username):
+        """
+        returns the django user object and the JS-LoginData entry object.
+        """
+        user = User.objects.get(username = username)
+        js_login_data = self.get(user = user)
+        return user, js_login_data
+
+    def delete_user(self, username):
+        """
+        Delete the django user account and the JS-LoginData entry
+        """
+        user, js_login_data = self.get_user(username)
+        js_login_data.delete()
+        user.delete()
+
+
+class JS_LoginData(models.Model):
+    user = models.ForeignKey(User)
+
+    sha_checksum = models.CharField(maxlength=192)
+    salt = models.CharField(maxlength=5)
+
+    createtime = models.DateTimeField(auto_now_add=True)
+    lastupdatetime = models.DateTimeField(auto_now=True)
+
+    objects = RegistrationManager()
+
+    def set_unusable_password(self):
+        self.salt = UNUSABLE_PASSWORD
+        self.sha_checksum = UNUSABLE_PASSWORD
+
+    def set_password_from_salt_hash(self, salt, sha):
+        self.salt = salt
+        sha_checksum = crypt.make_sha_checksum(sha)
+        self.sha = sha_checksum
+
+    def set_password_from_raw(self, raw_password):
+        raw_password = str(raw_password)
+        salt, sha_checksum = crypt.make_sha_checksum2(raw_password)
+        self.salt = salt
         self.sha_checksum = sha_checksum
-        self.save()
 
+    def __unicode__(self):
+        return self.user.username
 
     class Admin:
         list_display = (
@@ -307,62 +382,6 @@ class JS_LoginData(models.Model):
 
     class Meta:
         verbose_name = verbose_name_plural = 'JS-LoginData'
-
-# FIXME: If a django user would be deleted, the JS_LoginData entry should be
-# deleted, too!
-
-#def update_js_login_data(sender, instance, signal, *args, **kwargs):
-#    """
-#    Update the JS_LoginData if the user password has been changed in the
-#    django User model.
-#    """
-#    user_obj = instance
-#    if not user_obj.has_usable_password():
-#        # a unusable password was set with user.set_unusable_password()
-#        try:
-#            user = JS_LoginData.objects.get(user = user_obj)
-#        except JS_LoginData.DoesNotExist:
-#            # OK, there is no old JS_LoginData entry
-#            return
-#        else:
-#            # Delete the old existing JS_LoginData entry
-#            user.delete()
-#            return
-#
-#    django_salt_hash = user_obj.password
-#
-#    if not django_salt_hash:
-#        return
-#
-#    from PyLucid.tools.crypt import django_to_sha_checksum
-#
-#    sha_checksum, password_salt = django_to_sha_checksum(django_salt_hash)
-#
-#    data, created = JS_LoginData.objects.get_or_create(
-#        user = user_obj,
-#        defaults = {"sha_checksum": sha_checksum, "salt": password_salt}
-#    )
-#    if created:
-#        msg = _("creaded a new PyLucid JS-Login-Data entry, OK")
-#    else:
-#        if data.sha_checksum == sha_checksum:
-#            msg = "nothing to do"
-#        else:
-#            msg = _("update a existing PyLucid JS-Login-Data entry, OK")
-#            data.sha_checksum = sha_checksum
-#            data.salt = password_salt
-#            data.save()
-#
-#    user_obj.message_set.create(message=msg)
-
-
-#dispatcher.connect(
-#    save_old_pass, signal=models.signals.post_init, sender=User
-#)
-#dispatcher.connect(
-#    update_js_login_data, signal=models.signals.post_save, sender=User
-#)
-
 
 #______________________________________________________________________________
 

@@ -28,6 +28,8 @@ def setup_django_environ():
     print "- setup the django environ...",
     from django.core import management
     management.setup_environ(settings) # init django
+    from django.test.utils import setup_test_environment
+    setup_test_environment() # django global pre-test setup
     print "OK"
 
 def make_syncdb():
