@@ -276,6 +276,7 @@ class CheckPreferences(BaseInstall):
             print "Error:", msg
             page = Page.objects.all().order_by("parent", "position")[0]
             print "Assign the page:", page
+            p = Preference.objects.get(name = "index page")
             p.value = page.id
             p.save
             print "saved."
@@ -291,6 +292,7 @@ class CheckPreferences(BaseInstall):
         except Exception, msg:
             print "Error:", msg
             print "set to 'True'"
+            p = Preference.objects.get(name = "auto shortcuts")
             p.value = True
             p.save()
             print "saved."
