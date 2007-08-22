@@ -34,10 +34,13 @@
 # Update 1.6 2007-04-09
 #    * Add float support
 #
-# Update 1.7 2007-05.24
+# Update 1.7 2007-05-24
 #    * Backwards-incompatible change update by Jens Diemer:
 #        May 8, 2007: Generic relations have moved
 #
+# Update 1.8 2007-08-22
+#    * Backwards-incompatible change update by Jens Diemer:
+#        http://www.djangosnippets.org/snippets/14/#c423
 
 import os, sys
 from optparse import OptionParser
@@ -138,15 +141,15 @@ def loaddb(app_labels, format, options):
             success = False
             errornum += 1
 
-    if success:
-        transaction.commit_unless_managed()
-    else:
-        transaction.rollback_unless_managed()
+#    if success:
+    transaction.commit_unless_managed()
+#    else:
+#        transaction.rollback_unless_managed()
 
-    if errornum:
-        print "There are %d errors found! The database has been rollbacked!" % errornum
-    else:
-        print "Successful!"
+#    if errornum:
+#        print "There are %d errors found! The database has been rollbacked!" % errornum
+#    else:
+#        print "Successful!"
 
 def load_model(cursor, model, format, options):
     from django.db import backend
@@ -235,8 +238,8 @@ def load_model(cursor, model, format, options):
                 if v is not None:
                     sql_fields.append(fd)
                     sql_values.append(v)
-            e_sql = sql % (backend.quote_name(table),
-                ','.join(map(backend.quote_name, sql_fields)), ','.join(['%s'] * len(sql_fields)))
+            e_sql = sql % (backend.DatabaseOperations().quote_name(table),
+                ','.join(map(backend.DatabaseOperations().quote_name, sql_fields)), ','.join(['%s'] * len(sql_fields)))
             if stdout:
                 print e_sql, sql_values, '\n'
             else:
@@ -332,7 +335,7 @@ def dump_model(model):
     cursor = connection.cursor()
     fields, default = get_model_stru(model)
     cursor.execute('select %s from %s' %
-        (','.join(map(backend.quote_name, fields)), backend.quote_name(opts.db_table)))
+        (','.join(map(backend.DatabaseOperations().quote_name, fields)), backend.quote_name(opts.db_table)))
     return call_cursor(opts.db_table, fields, cursor)
 
 def call_cursor(table, fields, cursor):
@@ -365,7 +368,7 @@ def dump_many2many(model):
 
     for table, fields in get_model_many2many_stru(model):
         cursor.execute('select %s from %s' %
-            (','.join(map(backend.quote_name, fields)), backend.quote_name(table)))
+            (','.join(map(backend.DatabaseOperations().quote_name, fields)), backend.quote_name(table)))
         yield call_cursor(table, fields, cursor)
 
 def write_result(result, format, options):

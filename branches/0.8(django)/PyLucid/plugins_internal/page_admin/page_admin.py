@@ -430,7 +430,7 @@ class page_admin(PyLucidBasePlugin):
         self._process_delete_pages()
 
         # Get the needed data for build the html form:
-        page_tree = get_sitemap_tree()
+        page_tree = get_sitemap_tree(self.request)
 
         # The default page can't delete, so we need the ID of these page:
         default_page_id = get_default_page_id()

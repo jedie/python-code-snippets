@@ -31,20 +31,12 @@ class Sync_DB(BaseInstall):
         "PyLucid_preference", "PyLucid_js_logindata", "PyLucid_markup"
     )
 
-    def _get_management(self):
-        from django.core import management
-        # Output without escape sequences:
-        management.disable_termcolors()
-        return management
-
     def view(self):
-        management = self._get_management()
-
-        self._redirect_execute(self._drop_tables, management)
-        self._redirect_execute(self._syncdb, management)
+        self._redirect_execute(self._drop_tables)
+        self._redirect_execute(self._syncdb)
         return self._render(syncdb_template)
 
-    def _drop_tables(self, management):
+    def _drop_tables(self):
         print
         print "drop tables:"
         print "-"*80
@@ -52,7 +44,10 @@ class Sync_DB(BaseInstall):
         from django.db.models import get_app
 
         app = get_app("PyLucid")
-        statements = management.get_sql_delete(app)
+
+        from django.core.management import sql
+        from django.core.management.color import no_style
+        statements = sql.sql_delete(app, no_style())
 
         cursor = connection.cursor()
         for statement in statements:
@@ -67,11 +62,12 @@ class Sync_DB(BaseInstall):
                         print "OK"
         print "-"*80
 
-    def _syncdb(self, management):
+    def _syncdb(self):
         print
         print "syncdb:"
         print "-"*80
-        management.syncdb(verbosity=1, interactive=False)
+        from django.core import management
+        management.call_command('syncdb', verbosity=1, interactive=False)
         print "-"*80
         print "syncdb ok."
 
