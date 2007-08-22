@@ -55,6 +55,13 @@ class SimpleStringIO(object):
         content = ''.join(self._container)
         return content
 
+    def isatty(self):
+        """
+        Used for the _install section: Redirected the syncdb command.
+        It checks sys.stdout.isatty() in django.core.management.color
+        """
+        return False
+
 #if __name__ == "__main__":
 #     A local test: You must uncomment the django local init part above!
 #    response = SimpleStringIO()

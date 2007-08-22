@@ -43,7 +43,7 @@ def apply_markup(content, context, markup_object):
     page_msg = context["page_msg"]
     markup = markup_object.name
 
-    if markup == 'tinyTextile':
+    if markup == 'textile':
         from PyLucid.system.tinyTextile import TinyTextileParser
         out_obj = SimpleStringIO()
         markup_parser = TinyTextileParser(out_obj, context)
