@@ -10,8 +10,7 @@ from PyLucid import settings
 from PyLucid.install.BaseInstall import BaseInstall
 
 from django import newforms as forms
-#from django.contrib.auth.models import User
-from PyLucid.models import JS_LoginData
+from django.contrib.auth.models import User
 
 import sys, os
 
@@ -167,21 +166,22 @@ create_user_template = """{% load i18n %}
 
 {% endblock %}
 """
-def _create_new_superuser(user_data):
-    """
-    create a new user in the database.
-    This function used in CreateUser() and in the SHA1-JS-Unittest!
-    """
-    print "Create a new django superuser:"
-
-    created = JS_LoginData.objects.create_or_update_user(
-        user_data,
-        is_staff = True, is_active = True, is_superuser = True
-    )
-    if created:
-        print _("creaded a new User, OK")
-    else:
-        print _("update a existing User, OK")
+#def _create_new_superuser(user_data):
+#    """
+#    create a new user in the database.
+#    This function used in CreateUser() and in the SHA1-JS-Unittest!
+#    """
+#    print "Create a new django superuser:"
+#
+#    user, created = User.objects.get_or_create(
+#        user_data,
+#        is_staff = True, is_active = True, is_superuser = True
+#    )
+#    user.save()
+#    if created:
+#        print _("creaded a new User, OK")
+#    else:
+#        print _("update a existing User, OK")
 
 
 class CreateUser(BaseInstall):
@@ -189,7 +189,10 @@ class CreateUser(BaseInstall):
         """
         Display the user form.
         """
-        from django.contrib.auth.models import User
+        self._redirect_execute(self.create_user)
+        return self._render(create_user_template)
+
+    def create_user(self):
         UserForm = forms.form_for_model(
             User,
             fields=("username", "first_name", "last_name", "email", "password")
@@ -200,22 +203,26 @@ class CreateUser(BaseInstall):
         if self.request.method == 'POST':
             user_form = UserForm(self.request.POST)
             if user_form.is_valid():
-                # Create the new user
-                user_data = user_form.cleaned_data
-                self._redirect_execute(_create_new_superuser, user_data)
+                user_form.is_staff = True
+                user_form.is_active = True
+                user_form.is_superuser = True
+                try:
+                    user_form.save()
+                except Exception, e:
+                    print "Error:", e
+                else:
+                    print "User data saved."
         else:
             user_form = UserForm()
 
         self.context["form"] = user_form.as_table()
         self.context["admin_url_prefix"] = settings.ADMIN_URL_PREFIX
 
-        return self._render(create_user_template)
-
 
 
 def create_user(request):
     """
-    4. create the first superuser
+    4. create or update a superuser
     """
     return CreateUser(request).start_view()
 

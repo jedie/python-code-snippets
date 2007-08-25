@@ -29,7 +29,7 @@ setup(
 
 import unittest, sys, re, tempfile, os, webbrowser, traceback, time
 
-from PyLucid import models
+from PyLucid import models, settings
 from PyLucid.plugins_internal.auth.auth import auth
 from PyLucid.models import User, JS_LoginData
 from PyLucid.install.install import _create_new_superuser
@@ -37,7 +37,6 @@ from PyLucid.tools import crypt
 
 from django.contrib.auth.models import UNUSABLE_PASSWORD
 from django.test.client import Client
-from django.conf import settings
 
 
 # Set the Debug mode on:
@@ -187,27 +186,21 @@ class TestBase(unittest.TestCase):
     _open = []
 
     def _create_test_user(self):
-        user_data = {
-            "username": TEST_USERNAME,
-            "password": TEST_PASSWORD,
-            "email": TEST_USER_EMAIL,
-            "first_name": "", "last_name": ""
-        }
-        JS_LoginData.objects.create_or_update_user(
-            user_data,
-            is_staff = True, is_active = True, is_superuser = True
+        user = User.objects.create_user(
+            TEST_USERNAME, TEST_USER_EMAIL, TEST_PASSWORD
         )
+        user.is_staff = True
+        user.is_active = True
+        user.is_superuser = True
+        user.save()
 
     def _create_test_unusable_user(self):
-        user_data = {
-            "username": TEST_UNUSABLE_USER,
-            "password": "",
-        }
-        JS_LoginData.objects.create_or_update_user(
-            user_data,
-            is_staff = True, is_active = True, is_superuser = True
-        )
-        JS_LoginData.objects.set_unusable_password(TEST_UNUSABLE_USER)
+        user = User.objects.create_user(TEST_UNUSABLE_USER, "", "")
+        user.is_staff = True
+        user.is_active = True
+        user.is_superuser = True
+        user.set_unusable_password()
+        user.save()
 
     def setUp(self):
         url_base = "/%s/1/auth/%%s/" % settings.COMMAND_URL_PREFIX

@@ -32,6 +32,23 @@ function set_focus(object_id) {
     }
 }
 
+function hide_by_id(object_id) {
+    try {
+	    obj = document.getElementById(object_id);
+    	obj.style.display = 'none';
+    } catch (e) {
+        alert("hide_by_id() error:" + e);
+    }
+}
+function unhide_by_id(object_id) {
+    try {
+	    obj = document.getElementById(object_id);
+    	obj.style.display = 'block';
+    } catch (e) {
+        alert("unhide_by_id() error:" + e);
+    }
+}
+
 function change_color(id_name, color_name) {
     try {
         obj = document.getElementById(id_name);
@@ -40,6 +57,17 @@ function change_color(id_name, color_name) {
         alert("change_color() error:" + e);
     }
 }
+
+function check_ascii_only(data) {
+    for (var i = 1; i <= data.length; i++) {
+       unicode_charcode = data.charCodeAt(i);
+       if (unicode_charcode > 127) {
+            alert("Only ASCII letters are allowed!");
+            return false;
+       }
+    }
+    return true;
+ }
 
 function get_plaintext_pass(object_id) {
     try {
@@ -50,13 +78,9 @@ function get_plaintext_pass(object_id) {
             return false;
         }
 
-        for (var i = 1; i <= in_pass.length; i++) {
-           unicode_charcode = in_pass.charCodeAt(i);
-           if (unicode_charcode > 127) {
-               alert("Only ASCII letters are allowed!");
-               return false;
-           }
-        }
+		if (check_ascii_only(in_pass) == false) {
+			return false
+		}
         return in_pass;
     } catch (e) {
         alert("get_plaintext_pass() error:" + e);

@@ -35,7 +35,7 @@ def setup_django_environ():
 def make_syncdb():
     print "- create the model tables...",
     from django.core import management
-    management.syncdb(verbosity=0, interactive=False) # Create Tables
+    management.call_command('syncdb', verbosity=0, interactive=False)
     print "OK"
 
 def make_insert_dump(extra_verbose):
@@ -48,6 +48,7 @@ def make_insert_dump(extra_verbose):
     fake_options = DB_DumpFakeOptions()
     fake_options.verbose = extra_verbose
     loaddb(app_labels = [], format = "py", options = fake_options)
+    print "OK"
 
 def install_internal_plugins(extra_verbose):
     print "- install internal plugins...",
