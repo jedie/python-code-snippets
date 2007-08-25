@@ -40,3 +40,15 @@ a:hover {
     color:#000000;
     background-color: #F4F4D2;
 }
+fieldset.error {
+    border:2px solid red;
+}
+.help_text {
+    font-size:0.8em;
+}
+#hash {
+    background-color: grey;
+}
+#source, #source:active, #source:hover, #source:focus {
+    background-color: white;
+}

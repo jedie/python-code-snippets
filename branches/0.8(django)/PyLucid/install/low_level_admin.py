@@ -222,7 +222,9 @@ class RecreateDjangoTables(Sync_DB):
         cursor = connection.cursor()
         SQLcommand = "Drop table %s;"
 
-        table_list = get_all_tables()
+        from django.core.management import sql
+        table_list = sql.table_list()
+
         for table_name in table_list:
             prefix = table_name.split("_")[0]
             if not prefix in self.DJANGO_TABLE_PREFIXES:

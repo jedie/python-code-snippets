@@ -4,9 +4,6 @@
 <script type="text/javascript" src="{{ PyLucid_media_url }}sha.js"></script>
 <script type="text/javascript">
 /* <![CDATA[ */
-if (!document.getElementById) {
-    alert("Your Browser is not supported!");
-}
 function make_hash() {
     salt = "{{ salt }}";
     source = document.getElementById("source").value;
@@ -19,28 +16,24 @@ function make_hash() {
         alert("Password min len 8! - current len:" + source.length);
         return false;
     }
-
-    for (var i = 1; i <= source.length; i++) {
-       unicode_charcode = source.charCodeAt(i);
-       if (unicode_charcode > 127) {
-            alert("Only ASCII letters are allowed!");
-            return false;
-       }
-    }
+	if (check_ascii_only(source) == false) {
+		return false
+	}
 
     sha = hex_sha1(salt + source);
     hash = "sha1$" + salt + "$" + sha;
 
     hash_obj = document.getElementById("hash");
     hash_obj.value = hash;
-    hash_obj.style.backgroundColor = "lightgreen";
+	change_color("hash", "lightgreen");
 
     source_obj = document.getElementById("source")
     source_obj.value = "";
-    source_obj.style.backgroundColor = "grey";
+    change_color("source", "grey");
 
     document.login.submit();
 }
+
 /* ]]> */
 </script>
 <style type="text/css">
@@ -58,10 +51,6 @@ function make_hash() {
 {% block content %}
 <h1>{% trans 'Login into the _install section' %}</h1>
 
-<noscript>
-    <p><strong>{% trans 'JavaScript is required!' %}</strong></p>
-</noscript>
-
 <fieldset>
     <legend>{% trans 'Log in' %}</legend>
     <form name="login" method="post" action=".">
@@ -73,8 +62,5 @@ function make_hash() {
     </form>
 </fieldset>
 
-<ul>
-<strong>{% trans 'Info:' %}</strong><br />
-<li>{% trans 'Cookies must be enabled!' %}</li>
-</ul>
+<script type="text/javascript">init();</script>
 {% endblock %}

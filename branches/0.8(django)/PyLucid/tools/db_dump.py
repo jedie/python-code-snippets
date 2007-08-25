@@ -335,7 +335,7 @@ def dump_model(model):
     cursor = connection.cursor()
     fields, default = get_model_stru(model)
     cursor.execute('select %s from %s' %
-        (','.join(map(backend.DatabaseOperations().quote_name, fields)), backend.quote_name(opts.db_table)))
+        (','.join(map(backend.DatabaseOperations().quote_name, fields)), backend.DatabaseOperations().quote_name(opts.db_table)))
     return call_cursor(opts.db_table, fields, cursor)
 
 def call_cursor(table, fields, cursor):
@@ -368,7 +368,7 @@ def dump_many2many(model):
 
     for table, fields in get_model_many2many_stru(model):
         cursor.execute('select %s from %s' %
-            (','.join(map(backend.DatabaseOperations().quote_name, fields)), backend.quote_name(table)))
+            (','.join(map(backend.DatabaseOperations().quote_name, fields)), backend.DatabaseOperations().quote_name(table)))
         yield call_cursor(table, fields, cursor)
 
 def write_result(result, format, options):

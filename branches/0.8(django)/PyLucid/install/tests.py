@@ -6,6 +6,7 @@
 from PyLucid.install.BaseInstall import BaseInstall
 from PyLucid.system.response import SimpleStringIO
 
+from django.core import management
 from django import newforms as forms
 
 import os, cgi, sys, time
@@ -118,15 +119,11 @@ def cache_backend_test(request):
 
 class InspectDB(BaseInstall):
     def view(self):
-        from django.core.management import inspectdb
+        self._redirect_execute(self._inspectdb)
+        return self._simple_render(headline="inspectdb")
 
-        # ToDo: anders interieren und mit try-except umschliessen.
-        try:
-            output = "\n".join(inspectdb())
-        except Exception, e:
-            output = "inspect db error: %s" % e
-
-        return self._simple_render(output, headline="inspectdb")
+    def _inspectdb(self):
+        management.call_command('inspectdb')
 
 def inspectdb(request):
     """
@@ -144,32 +141,35 @@ class SQLInfo(BaseInstall):
         )
 
     def print_info(self):
-        from django.core import management
         from django.db.models import get_apps
-
-        # Output without escape sequences:
-        management.disable_termcolors()
 
         app_list = get_apps()
 #        output.append("App list: %s" % app_list)
 
-        def write_lines(method, app, txt):
-            lines = method(app)
-            if lines==[]:
+        from django.core.management import sql
+        from django.core.management.color import no_style
+
+        def print_out(app, method_name):
+            method = getattr(sql, method_name)
+            try:
+                output = method(app, no_style())
+            except:
+                # sql_custom takes no stype... why?
+                output = method(app)
+            if output==[]:
                 return
-
-            print "--\n-- %s:\n--" % txt
-
-            for line in lines:
+            print "--\n-- %s:\n--" % method_name
+            for line in output:
                 print line
 
         for app in app_list:
             print "--\n--",
             print "_"*77
             print "-- %s\n--" % app.__name__
-            write_lines(management.get_sql_create, app, "get_sql_create")
-            write_lines(management.get_custom_sql, app, "get_custom_sql")
-            write_lines(management.get_sql_indexes, app, "get_sql_indexes")
+
+            print_out(app, "sql_create")
+            print_out(app, "sql_custom")
+            print_out(app, "sql_indexes")
 
 def sql_info(request):
     "2. SQL info"
@@ -319,10 +319,12 @@ class Info(BaseInstall):
             return info
         self.context["current_settings"] = get_obj_infos(settings)
 
-        self.context["user_info"] = get_obj_infos(self.request.user)
+        if "django.contrib.sessions.middleware.SessionMiddleware" in \
+                                                    settings.MIDDLEWARE_CLASSES:
+            self.context["user_info"] = get_obj_infos(self.request.user)
 
-        from django.template import RequestContext
-        self.context["request_context"] = RequestContext(self.request)
+            from django.template import RequestContext
+            self.context["request_context"] = RequestContext(self.request)
 
         return self._render(info_template)
 
@@ -351,14 +353,14 @@ url_info_template = """
 """
 class URL_Info(BaseInstall):
     def view(self):
-        from django.contrib.sites.models import Site
+#        from django.contrib.sites.models import Site
         from PyLucid.urls import urls
 
         self.context["url_info"] = urls
 
-        current_site = Site.objects.get_current()
-        domain = current_site.domain
-        self.context["domain"] = domain
+#        current_site = Site.objects.get_current()
+#        domain = current_site.domain
+#        self.context["domain"] = domain
 
         return self._render(url_info_template)
 
