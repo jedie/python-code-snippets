@@ -16,10 +16,24 @@
     :license: GNU GPL v3, see LICENSE.txt for more details.
 """
 
-from PyLucid.models import Page, Preference
+from PyLucid.models import Page, Preference, Template
 
 from django.core.exceptions import ImproperlyConfigured
 from django.http import Http404
+
+def get_a_page():
+    """
+    Try to get and return a existing page.
+    Create a first page, if no page exists.
+    """
+    try:
+        return Page.objects.all().order_by("parent", "position")[0]
+    except IndexError:
+        raise ImproperlyConfigured(
+            "Error: There exists no pages!"
+            " (Have you installed PyLucid currectly?)"
+        )
+
 
 def get_default_page_id():
     """
@@ -32,8 +46,7 @@ def get_default_page_id():
     except Exception, e:
         # TODO: make a page message for the admin
         # Get the first page
-        page = Page.objects.all().order_by("parent", "position")[0]
-        return page.id
+        return get_a_page().id
 
 def get_default_page(request):
     page_id = get_default_page_id()
@@ -42,8 +55,7 @@ def get_default_page(request):
         return Page.objects.get(id__exact=page_id)
     except Exception, e:
         # The defaultPage-ID from the Preferences is wrong!
-        # TODO: make a page message for the admin
-        return Page.objects.all().order_by("parent", "position")[0]
+        return get_a_page()
 
 
 def get_current_page_obj(request, url_info):
