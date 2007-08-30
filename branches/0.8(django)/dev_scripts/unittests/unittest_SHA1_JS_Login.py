@@ -32,7 +32,7 @@ import unittest, sys, re, tempfile, os, webbrowser, traceback, time
 from PyLucid import models, settings
 from PyLucid.plugins_internal.auth.auth import auth
 from PyLucid.models import User, JS_LoginData
-from PyLucid.install.install import _create_new_superuser
+from PyLucid.install.install import create_or_update_superuser
 from PyLucid.tools import crypt
 
 from django.contrib.auth.models import UNUSABLE_PASSWORD
@@ -44,7 +44,7 @@ crypt.DEBUG = True
 
 
 # The global test user for many testes.
-# creaded in TestUserModels().test_create_new_superuser()
+# creaded in TestUserModels().testcreate_or_update_superuser()
 TEST_USERNAME = "unittest"
 TEST_USER_EMAIL = "a_test@email-adress.org"
 TEST_PASSWORD = "test"
@@ -184,23 +184,31 @@ class TestCryptModul(unittest.TestCase):
 class TestBase(unittest.TestCase):
 
     _open = []
+    
+    def _create_or_update_user(self, username, email, password):
+        """
+        Delete a existing User and create a fresh new test user
+        """
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            pass
+        else:
+            user.delete()
+        
+        user = User.objects.create_user(username, email, password)
+        user.is_staff = True
+        user.is_active = True
+        user.is_superuser = True
+        user.save()
 
     def _create_test_user(self):
-        user = User.objects.create_user(
+        self._create_or_update_user(
             TEST_USERNAME, TEST_USER_EMAIL, TEST_PASSWORD
         )
-        user.is_staff = True
-        user.is_active = True
-        user.is_superuser = True
-        user.save()
 
     def _create_test_unusable_user(self):
-        user = User.objects.create_user(TEST_UNUSABLE_USER, "", "")
-        user.is_staff = True
-        user.is_active = True
-        user.is_superuser = True
-        user.set_unusable_password()
-        user.save()
+        self._create_or_update_user(TEST_UNUSABLE_USER, "", "")
 
     def setUp(self):
         url_base = "/%s/1/auth/%%s/" % settings.COMMAND_URL_PREFIX
@@ -310,7 +318,7 @@ class TestUserModels(TestBase):
             self.fail("JS_LoginData entry still exists!")
 
 
-    def test_create_new_superuser2(self):
+    def testcreate_or_update_superuser2(self):
         """
         Test the create_new_superuser routine from the _install section.
         Check the User Password and JS_LoginData.
@@ -321,7 +329,7 @@ class TestUserModels(TestBase):
             "email": TEST_USER_EMAIL,
             "first_name": "", "last_name": ""
         }
-        _create_new_superuser(user_data)
+        create_or_update_superuser(user_data)
 
         self._check_userpassword(username = TEST_USERNAME)
 

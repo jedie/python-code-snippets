@@ -122,9 +122,9 @@ install_modules_template = """
 class InstallPlugins(BaseInstall):
     def view(self):
         output = []
-        from PyLucid.system import plugin_manager
+        from PyLucid.system.plugin_manager import auto_install_plugins
 
-        self._redirect_execute(plugin_manager.install_internal_plugins)
+        self._redirect_execute(auto_install_plugins)
 
         return self._render(install_modules_template)
 
@@ -166,22 +166,35 @@ create_user_template = """{% load i18n %}
 
 {% endblock %}
 """
-#def _create_new_superuser(user_data):
-#    """
-#    create a new user in the database.
-#    This function used in CreateUser() and in the SHA1-JS-Unittest!
-#    """
-#    print "Create a new django superuser:"
-#
-#    user, created = User.objects.get_or_create(
-#        user_data,
-#        is_staff = True, is_active = True, is_superuser = True
-#    )
-#    user.save()
-#    if created:
-#        print _("creaded a new User, OK")
-#    else:
-#        print _("update a existing User, OK")
+def create_or_update_superuser(user_data):
+    """
+    create a new user in the database.
+    This function used in CreateUser() and in the SHA1-JS-Unittest!
+    """
+    print "Create/update a django superuser:"
+    created = False
+    try:
+        user = User.objects.get(username=user_data["username"])
+    except User.DoesNotExist:
+        user = User.objects.create_user(
+            user_data["username"], user_data["email"], user_data["password"]
+        )
+        created = True
+    else:
+        # Set a new password for a existing user
+        user.set_password(user_data["password"])
+
+    user.is_staff = True
+    user.is_active = True
+    user.is_superuser = True
+    user.first_name = user_data.get("first_name", "")
+    user.last_name = user_data.get("last_name", "")
+    user.email = user_data.get("email", "")
+    user.save()
+    if created:
+        print _("creaded a new User, OK")
+    else:
+        print _("update a existing User, OK")
 
 
 class CreateUser(BaseInstall):
@@ -203,15 +216,8 @@ class CreateUser(BaseInstall):
         if self.request.method == 'POST':
             user_form = UserForm(self.request.POST)
             if user_form.is_valid():
-                user_form.is_staff = True
-                user_form.is_active = True
-                user_form.is_superuser = True
-                try:
-                    user_form.save()
-                except Exception, e:
-                    print "Error:", e
-                else:
-                    print "User data saved."
+                user_data = user_form.cleaned_data
+                create_or_update_superuser(user_data)
         else:
             user_form = UserForm()
 
