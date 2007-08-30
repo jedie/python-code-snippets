@@ -6,6 +6,7 @@ A local test with a full init PyLucid environment
 """
 
 import sys, os
+from StringIO import StringIO
 
 def setup_path(chdir, path_info):
     if path_info:
@@ -47,7 +48,16 @@ def make_insert_dump(extra_verbose):
 
     fake_options = DB_DumpFakeOptions()
     fake_options.verbose = extra_verbose
-    loaddb(app_labels = [], format = "py", options = fake_options)
+
+    if not extra_verbose:
+        old_stderr = sys.stderr
+        sys.stderr = StringIO()
+    try:
+        loaddb(app_labels = [], format = "py", options = fake_options)
+    finally:
+        if not extra_verbose:
+            sys.stderr = old_stderr
+
     print "OK"
 
 def install_internal_plugins(extra_verbose):
