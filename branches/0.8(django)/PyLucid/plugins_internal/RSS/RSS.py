@@ -35,7 +35,7 @@ socket.setdefaulttimeout(5)
 
 from PyLucid.system.BasePlugin import PyLucidBasePlugin
 from PyLucid.tools.OutBuffer import OutBuffer
-from PyLucid.components.db_cache import DB_Cache, CacheObjectNotFound
+#from PyLucid.components.db_cache import DB_Cache, CacheObjectNotFound
 
 
 

@@ -30,7 +30,7 @@ import os, sys, cgi, md5
 
 
 # eigene Module
-from PyLucid.system import crypt
+#from PyLucid.system import crypt
 
 from PyLucid.system.exceptions import *
 from PyLucid.system.BasePlugin import PyLucidBasePlugin

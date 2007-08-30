@@ -46,8 +46,20 @@ User.set_password = set_password
 #_____________________________________________________________________________
 # Path to the Plugins
 
-INTERNAL_PLUGIN_PATH = "PyLucid/plugins_internal"
-EXTERNAL_PLUGIN_PATH = "PyLucid/plugins_external"
+PLUGIN_PATH = (
+    {
+        "type": "internal",
+        "path": ("PyLucid", "plugins_internal"),
+        "auto_install": True,
+    },
+    {
+        "type": "external",
+        "path": ("PyLucid", "plugins_external"),
+        "auto_install": False,
+    },
+)
+#INTERNAL_PLUGIN_PATH = "PyLucid/plugins_internal"
+#EXTERNAL_PLUGIN_PATH = "PyLucid/plugins_external"
 
 
 #_____________________________________________________________________________

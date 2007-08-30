@@ -43,7 +43,7 @@ def _import(from_name, object_name):
     """
     try:
         return __import__(from_name, {}, {}, [object_name])
-    except ImportError, e:
+    except (ImportError, SyntaxError), e:
         raise ImportError, "Can't import %s from %s: %s" % (
             object_name, from_name, e
         )
@@ -106,8 +106,8 @@ def _run(context, local_response, plugin_name, method_name, url_args,
 #    context["page_msg"](plugin_name, method_name)
     try:
         plugin = Plugin.objects.get(plugin_name=plugin_name)
-    except Plugin.DoesNotExist:
-        error("Plugin not exists in database.")
+    except Plugin.DoesNotExist, e:
+        error("Plugin not exists in database: %s" % e)
         return
 
     plugin_config = get_plugin_config(
@@ -200,7 +200,7 @@ def file_check(plugin_path, dir_item):
 
 def get_plugin_list(plugin_path):
     """
-    Return a dict-list with plugin_info for the given path.
+    Return a list with the plugin names for the given path.
     """
     plugin_list = []
     for dir_item in os.listdir(plugin_path):
@@ -210,33 +210,6 @@ def get_plugin_list(plugin_path):
         plugin_list.append(dir_item)
     return plugin_list
 
-def get_internal_plugin_list():
-    return get_plugin_list(settings.INTERNAL_PLUGIN_PATH)
-def get_external_plugin_list():
-    return get_plugin_list(settings.EXTERNAL_PLUGIN_PATH)
-
-
-def install_plugin(package_name, plugin_name, plugin_config, active,
-                                                                extra_verbose):
-    """
-    insert a plugin/plugin in the 'plugin' table
-    """
-    if extra_verbose:
-        print "Install %s.%s..." % (package_name, plugin_name),
-    plugin = Plugin.objects.create(
-        package_name = package_name,
-        plugin_name = plugin_name,
-        version = plugin_config.__version__,
-        author = plugin_config.__author__,
-        url = plugin_config.__url__,
-        description = plugin_config.__description__,
-        long_description = plugin_config.__long_description__,
-        can_deinstall = getattr(plugin_config, "__can_deinstall__", True),
-        active = active,
-    )
-    if extra_verbose:
-        print "OK, ID:", plugin.id
-    return plugin
 
 def get_internalpage_files(package_name, plugin_name, internal_page_name):
     """
@@ -345,48 +318,95 @@ def install_internalpage(plugin, package_name, plugin_name, plugin_config,
         if extra_verbose:
             print "OK"
 
-def install_internal_plugins(extra_verbose=True):
+def _install_plugin(package_name, plugin_name, plugin_config, active,
+                                                                extra_verbose):
     """
-    Install all internal plugin how are markt as important or essential.
+    insert a plugin/plugin in the 'plugin' table
     """
-    Plugin.objects.all().delete()    # delete all installed Plugins
+    if extra_verbose:
+        print "Install %s.%s..." % (package_name, plugin_name),
+    plugin = Plugin.objects.create(
+        package_name = package_name,
+        plugin_name = plugin_name,
+        version = plugin_config.__version__,
+        author = plugin_config.__author__,
+        url = plugin_config.__url__,
+        description = plugin_config.__description__,
+        long_description = plugin_config.__long_description__,
+        can_deinstall = getattr(plugin_config, "__can_deinstall__", True),
+        active = active,
+    )
+    if extra_verbose:
+        print "OK, ID:", plugin.id
+    return plugin
 
-    plugin_path = settings.INTERNAL_PLUGIN_PATH
-    package_name = plugin_path.replace("/", ".")
-
-    plugin_list = get_plugin_list(plugin_path)
-
-    for plugin_name in plugin_list:
-        if extra_verbose:
-            print "\n\ninstall plugin: *** %s ***\n" % plugin_name
-        try:
-            plugin_config = get_plugin_config(
-                package_name, plugin_name,
-                dissolve_version_string=True, extra_verbose=extra_verbose
-            )
-        except ImportError, e:
-            print "ImportError:", e
-            continue
-
+def install_plugin(package_name, plugin_name, active, extra_verbose=False):
+    """
+    Get the config object from disk and insert the plugin into the database
+    """
+    plugin_config = get_plugin_config(
+        package_name, plugin_name,
+        dissolve_version_string=True, extra_verbose=extra_verbose
+    )
+    if extra_verbose:
         obsolete_test = (
             hasattr(plugin_config, "__important_buildin__") or
             hasattr(plugin_config, "__essential_buildin__")
         )
         if obsolete_test:
             print "*** DeprecationWarning: ***"
-            print " - '__important_buildin__' or '__essential_buildin__' are obsolete."
+            print (
+                " - '__important_buildin__'"
+                " or '__essential_buildin__'"
+                " are obsolete."
+            )
 
-        plugin = install_plugin(
-            package_name, plugin_name, plugin_config, active=True,
-            extra_verbose=extra_verbose
-        )
-        install_internalpage(
-            plugin, package_name, plugin_name, plugin_config, extra_verbose
-        )
+    plugin = _install_plugin(
+        package_name, plugin_name, plugin_config, active, extra_verbose
+    )
+    install_internalpage(
+        plugin, package_name, plugin_name, plugin_config, extra_verbose
+    )
+
+
+def auto_install_plugins(extra_verbose=True):
+    """
+    Install all internal plugin how are markt as important or essential.
+    """
+    Plugin.objects.all().delete()    # delete all installed Plugins
+
+    for path_cfg in settings.PLUGIN_PATH:
+        if path_cfg["auto_install"] == True:
+            _auto_install_plugins(path_cfg, extra_verbose)
+
+
+def _auto_install_plugins(path_cfg, extra_verbose):
+    package_name = ".".join(path_cfg["path"])
+
+    plugin_path = os.path.join(*path_cfg["path"])
+    plugin_list = get_plugin_list(plugin_path)
+
+    for plugin_name in plugin_list:
+        if extra_verbose:
+            print "\n\ninstall '%s' plugin: *** %s ***\n" % (
+                path_cfg["type"], plugin_name
+            )
+
+        try:
+            install_plugin(
+                package_name, plugin_name,
+                active=True, extra_verbose=extra_verbose
+            )
+        except Exception, e:
+            print "Error:", e
+            continue
+
         if extra_verbose:
             print "OK, plugins installed."
 
-if __name__ == "__main__":
-    os.chdir("../..") # go into root dir
-    install_internal_plugins()
+
+
+
+
+
 

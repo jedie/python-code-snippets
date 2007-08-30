@@ -31,8 +31,6 @@ from PyLucid.tools import crypt
 class Page(models.Model):
     """
     A CMS Page Object
-
-    TODO: We need a cache system for the parent relation.
     """
     # Explicite id field, so we can insert a help_text ;)
     id = models.AutoField(primary_key=True, help_text="The internal page ID.")
@@ -275,7 +273,7 @@ class Page(models.Model):
 
 class JS_LoginData(models.Model):
     """
-    This model class stores the needed SHA Information for the PyLucid
+    This model class stores the needed SHA information for the PyLucid
     JS-SHA-Login.
     Note: We make a Monkey-Patch (?) and change the method set_password() from
     the model class django.contrib.auth.models.User
@@ -379,6 +377,16 @@ class Plugin(models.Model):
     active = models.BooleanField(default=False,
         help_text="Is this plugin is enabled and useable?"
     )
+
+    def save(self):
+        """
+        Save a new plugin or update changed data.
+        before save: check some data consistency to prevents inconsistent data.
+        """
+        if not self.can_deinstall and self.active==False:
+            raise AssertionError("This plugin can't be deactivaded!")
+
+        super(Plugin, self).save() # Call the "real" save() method
 
     class Meta:
         permissions = (
@@ -493,7 +501,8 @@ class Preference(models.Model):
 
     class Admin:
         list_display = (
-            "plugin", "name", "value", "default_value", "description"
+            "plugin", "name", "value", "default_value", "field_type",
+            "description"
         )
         list_display_links = ("name",)
         list_filter = ("plugin",)
