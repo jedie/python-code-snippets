@@ -24,16 +24,15 @@ h2. {% trans 'Administration sub menu' %}
 
 </fieldset>
 
-{% comment %}
-TODO: The follow Plugins doesn't run:
-
 <fieldset><legend>{% trans 'Plugins management' %}</legend>
 
-* "{% trans 'Plugin administration' %}":{{ commandURLprefix }}/module_admin/menu
-* "{% trans 'Plugin setup' %}":{{ commandURLprefix }}/module_admin/module_setup
+* "{% trans 'Plugin administration' %}":{{ commandURLprefix }}/plugin_admin/menu
+* "{% trans 'Plugin setup' %}":{{ commandURLprefix }}/plugin_admin/plugin_setup
 
 </fieldset>
 
+
+{% comment %}
 <fieldset><legend>{% trans 'backup' %}</legend>
 
 * "{% trans 'DB dump' %}":{{ commandURLprefix }}/MySQLdump/menu
@@ -45,5 +44,4 @@ TODO: The follow Plugins doesn't run:
 * <lucidTag:show_internals/>
 
 </fieldset>
-
 {% endcomment %}
