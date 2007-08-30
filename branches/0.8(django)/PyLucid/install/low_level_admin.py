@@ -216,7 +216,6 @@ class RecreateDjangoTables(Sync_DB):
         print "Delete django tables:"
         print "-"*80
 
-        from PyLucid.db.meta import get_all_tables
         from django.db import connection
 
         cursor = connection.cursor()
