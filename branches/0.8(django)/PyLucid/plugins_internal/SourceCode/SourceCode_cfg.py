@@ -15,7 +15,7 @@ Includes a local sourcecode file into your cms page and hightlight it.
 # plugin administration data
 
 plugin_manager_data = {
-    "lucidFunction" : {
+    "lucidTag" : {
         "must_login"    : False,
         "must_admin"    : False,
     },
