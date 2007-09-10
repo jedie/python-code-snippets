@@ -67,7 +67,7 @@ class TinyTextileParser:
                 r'"([^"]+?)":([^\s\<]+)',
                 r'<a href="\2">\1</a>'
             ],
-            [ # interne PyLucid Links - Bsp.: 
+            [ # interne PyLucid Links - Bsp.:
               # Das ist ein [[InternerLink]] zur Seite InternerLink ;)
                 r'\[\[(.+?)\]\]',
                 self.shortcutLink
@@ -354,57 +354,9 @@ class TinyTextileParser:
         code = "".join(code_lines)
         code = code.strip()
 
-        def no_hightlight(code):
-            code = '\n<code>%s</code>\n' % cgi.escape(code)
-            return code
-
-        try:
-            from pygments import lexers
-            from pygments.formatters import HtmlFormatter
-            from pygments import highlight
-        except ImportError:
-            lexer_name = cgi.escape(source_type)
-            sourcecode = no_hightlight(code)
-        else:
-            ext = source_type.lower().lstrip(".")
-
-            try:
-                lexer = lexers.get_lexer_by_name(ext)
-            except lexers.ClassNotFound, err:
-                lexer_name = "[Hightlight Error: %s]<br />\n" % err
-                sourcecode = no_hightlight(code)
-            else:
-                lexer_name = lexer.name
-
-                formatter = HtmlFormatter(
-                    linenos=True, encoding="utf-8", style='colorful'
-                )
-
-                stylesheet = formatter.get_style_defs('.pygments_code')
-
-                self.context["css_data"].append({
-                    "from_info": "tinyTextile",
-                    "data": stylesheet,
-                })
-
-                out_object = SimpleStringIO()
-                highlight(code, lexer, formatter, out_object)
-                sourcecode = out_object.getvalue()
-
-        code = (
-            '<fieldset class="pygments_code">'
-            '<legend class="pygments_code">%(lexer_name)s</legend>'
-            '%(sourcecode)s'
-            '</fieldset>'
-        ) % {
-            "lexer_name": lexer_name,
-            "sourcecode": sourcecode,
-        }
-
-        self.out.write(code)
-
-
-
+        from PyLucid.system.hightlighter import make_html
+        html = make_html(code, source_type)
+        self.out.write(html)
 
     #_________________________________________________________________________
 

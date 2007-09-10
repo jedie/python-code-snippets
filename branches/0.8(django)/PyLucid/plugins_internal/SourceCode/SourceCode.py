@@ -32,14 +32,14 @@ __version__= "$Rev$"
 
 import sys, os, cgi, sys
 
-
+from PyLucid.system import hightlighter
 
 from PyLucid.system.BasePlugin import PyLucidBasePlugin
 
 class SourceCode(PyLucidBasePlugin):
 
-    def lucidFunction( self, function_info ):
-        filepath = function_info # Daten aus dem <lucidFunction>-Tag
+    def lucidTag(self, url):
+        filepath = url
         try:
             filename = os.path.split(filepath)[1]
         except Exception, e:
@@ -80,7 +80,14 @@ class SourceCode(PyLucidBasePlugin):
 
         ext = os.path.splitext(filename)[1] # blabla.py -> .py
 
-        self.render.highlight(ext, source.strip())
+        try:
+            html = hightlighter.make_html(source.strip(), ext)
+            self.response.write(html)
+            return
+        except Exception, e:
+            self.page_msg("Error: %s" % e)
+
+        self.format_code(source)
 
     def format_code( self, source ):
         """
