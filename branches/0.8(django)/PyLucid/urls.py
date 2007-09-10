@@ -16,7 +16,7 @@
 
 from django.conf.urls.defaults import include, patterns
 
-from PyLucid import settings
+from django.conf import settings
 
 
 # We insert the _install URLs only, if the _install section is activated.
