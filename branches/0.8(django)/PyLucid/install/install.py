@@ -166,7 +166,7 @@ create_user_template = """{% load i18n %}
 
 {% endblock %}
 """
-def create_or_update_superuser(user_data):
+def _create_or_update_superuser(user_data):
     """
     create a new user in the database.
     This function used in CreateUser() and in the SHA1-JS-Unittest!
@@ -217,7 +217,7 @@ class CreateUser(BaseInstall):
             user_form = UserForm(self.request.POST)
             if user_form.is_valid():
                 user_data = user_form.cleaned_data
-                create_or_update_superuser(user_data)
+                _create_or_update_superuser(user_data)
         else:
             user_form = UserForm()
 
