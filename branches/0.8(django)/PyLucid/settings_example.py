@@ -6,13 +6,16 @@
 
     Django settings for the PyLucid project.
 
-    You must copy this file:
-        settings_example.py -> settings.py
+    1. You must copy this file:
+            settings_example.py -> settings.py
+    2. Change the basic settings.
+        At least this: Database, _install section and middleware classes.
+
+    Note, you must edit MIDDLEWARE_CLASSES, after installation!!!
 
     Here are not all settings predifined you can use. Please look at the
     django documentation for a full list of all items:
         http://www.djangoproject.com/documentation/settings/
-
 
     Last commit info:
     ~~~~~~~~~~~~~~~~~
@@ -26,33 +29,14 @@
 
 import os
 
-#_____________________________________________________________________________
-# DEBUGGING
 
-# deactivate the DEBUG mode in a productive environment
-DEBUG = True
-TEMPLATE_DEBUG = DEBUG
+"""
+_______________________________________________________________________________
+ The Base settings, you should change:
+"""
 
-
-# People who get code error notifications.
-# In the format (('Full Name', 'email@domain.com'), ('Full Name', 'anotheremail@domain.com'))
-ADMINS = (
-    # ('Your Name', 'your_email@domain.com'),
-)
-
-# Not-necessarily-technical managers of the site. They get broken link
-# notifications and other various e-mails.
-MANAGERS = ADMINS
-
-
-# Tuple of IP addresses, as strings, that:
-#   * See debug comments, when DEBUG is true
-#   * Receive x-headers
-INTERNAL_IPS = ()
-
-
-#_____________________________________________________________________________
-# DATABASE
+#______________________________________________________________________________
+# DATABASE SETUP
 
 # Database connection info.
 DATABASE_ENGINE = 'sqlite3'    # 'postgresql', 'mysql', 'sqlite3' or 'ado_mssql'.
@@ -72,93 +56,56 @@ DATABASE_PORT = ''             # Set to empty string for default. Not used with 
 
 
 #_____________________________________________________________________________
-# EMAIL
-# http://www.djangoproject.com/documentation/email/
+# DEBUGGING
 
-# Default e-mail address to use for various automated correspondence
-# Replace with a normal String like:
-# DEFAULT_FROM_EMAIL = "webmaster@example.org"
-DEFAULT_FROM_EMAIL = "webmaster@" + os.environ.get("HTTP_HOST", "localhost")
-
-# Host for sending e-mail.
-EMAIL_HOST = 'localhost'
-
-# Port for sending e-mail.
-EMAIL_PORT = 25
-
-# Subject-line prefix for email messages send with django.core.mail.mail_admins
-# or ...mail_managers.  Make sure to include the trailing space.
-EMAIL_SUBJECT_PREFIX = '[PyLucid] '
-
+# deactivate the DEBUG mode in a productive environment!
+DEBUG = True
+TEMPLATE_DEBUG = DEBUG
 
 #_____________________________________________________________________________
-# I80N
-# http://www.djangoproject.com/documentation/i18n/
+# _INSTALL SECTION
 
-# Local time zone for this installation. All choices can be found here:
-# http://www.postgresql.org/docs/current/static/datetime-keywords.html#DATETIME-TIMEZONE-SET-TABLE
-TIME_ZONE = 'America/Chicago'
-
-
-# Language code for this installation. All choices can be found here:
-# http://www.w3.org/TR/REC-html40/struct/dirlang.html#langcodes
-# http://blogs.law.harvard.edu/tech/stories/storyReader$15
-LANGUAGE_CODE = 'en-us'
-
+# Install Password to login into the _install section.
+ENABLE_INSTALL_SECTION = True
+INSTALL_PASS_HASH = ""
 
 #_____________________________________________________________________________
-# STATIC FILES
-# http://www.djangoproject.com/documentation/static_files/
+# MIDDLEWARE CLASSES
+
+# List of middleware classes to use.  Order is important; in the request phase,
+# this middleware classes will be applied in the order given, and in the
+# response phase the middleware will be applied in reverse order.
 #
-# Note: Every URL/path...
-# ...must be a absolute path.
-# ...must have a trailing slash.
+# !!! IMPORTANT !!!
+#  * In the first install phase (befor the database tables exists) the
+#    'SessionMiddleware' and 'AuthenticationMiddleware' must be deactivated!
+#  * After "syncdb" you must activate 'SessionMiddleware' and
+#    'AuthenticationMiddleware'!
+#  * The DebugPageCache should be *never* activated. Only for dev debugging.
+# !!! IMPORTANT !!!
+#
+MIDDLEWARE_CLASSES = (
+    # DebugPageCache normaly not used.
+#    'PyLucid.middlewares.page_cache_debug.DebugPageCache',
 
-# Absolute _local_filesystem_path_ to the directory that holds media.
-#     Example-1: "./media/" (default)
-#     Example-2: "/home/foo/htdocs/media/"
-MEDIA_ROOT = "./media/"
+    # Activate Session- and Authentication-Middleware after 'syncdb' :
+    # -------------------------------------------------------------------------
+#    'django.contrib.sessions.middleware.SessionMiddleware',
+#    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    # -------------------------------------------------------------------------
 
+    'django.middleware.locale.LocaleMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.doc.XViewMiddleware',
 
-# URL that handles the media served from MEDIA_ROOT.
-#     Example-1: "/media/" (default)
-#     Examlpe-2: "http://other_domain.net/media/"
-#     Example-3: "http://media.your_domain.net/"
-MEDIA_URL = "/media/"
+    'PyLucid.middlewares.pagestats.PageStatsMiddleware',
+)
 
-
-# URL for the PyLucid media files.
-#     Example-1: "/media/PyLucid/" (default)
-#     Examlpe-2: "http://other_domain.net/media/PyLucid/"
-#     Example-3: "http://pylucid.media.your_domain.net/"
-PYLUCID_MEDIA_URL = "/media/PyLucid/"
-
-
-# URL prefix for admin media -- CSS, JavaScript and images.
-#     Examples-1: "/django/contrib/admin/media/" (default)
-#     Examples-2: "http://other_domain.net/media/django/"
-#     Examples-3: "http://django.media.your_domain.net/"
-ADMIN_MEDIA_PREFIX = "/django/contrib/admin/media/"
-
-
-#_____________________________________________________________________________
-# 404 BEHAVIOR
-
-# tuple of strings that specify URLs that should be ignored by the 404 e-mailer.
-# http://www.djangoproject.com/documentation/settings/#ignorable-404-ends
-IGNORABLE_404_STARTS = ('/cgi-bin/',)
-IGNORABLE_404_ENDS = ('favicon.ico', '.php')
-
-#_____________________________________________________________________________
-# SESSIONS
-
-SESSION_COOKIE_NAME = 'sessionid'         # Cookie name. This can be whatever you want.
-SESSION_COOKIE_AGE = 60 * 60 * 24 * 7 * 2 # Age of cookie, in seconds (default: 2 weeks).
-SESSION_COOKIE_DOMAIN = None              # A string like ".lawrence.com", or None for standard domain cookie.
-SESSION_COOKIE_SECURE = False             # Whether the session cookie should be secure (https:// only).
-SESSION_SAVE_EVERY_REQUEST = False        # Whether to save the session data on every request.
-SESSION_EXPIRE_AT_BROWSER_CLOSE = False   # Whether sessions expire when a user closes his browser.
-
+# A secret key for this particular Django installation. Used in secret-key
+# hashing algorithms. Set this in your settings, or Django will complain
+# loudly.
+# Make this unique, and don't share it with anybody.
+SECRET_KEY = ''
 
 #_____________________________________________________________________________
 # CACHE
@@ -196,6 +143,113 @@ CACHE_BACKEND = "dummy:///"
 # The number of seconds each cms page should be cached.
 CACHE_MIDDLEWARE_SECONDS = 600
 
+#_____________________________________________________________________________
+# STATIC FILES
+# http://www.djangoproject.com/documentation/static_files/
+#
+# Note: Every URL/path...
+# ...must be a absolute path.
+# ...must have a trailing slash.
+
+# Absolute _local_filesystem_path_ to the directory that holds media.
+#     Example-1: "./media/" (default)
+#     Example-2: "/home/foo/htdocs/media/"
+MEDIA_ROOT = "./media/"
+
+
+# URL that handles the media served from MEDIA_ROOT.
+#     Example-1: "/media/" (default)
+#     Examlpe-2: "http://other_domain.net/media/"
+#     Example-3: "http://media.your_domain.net/"
+MEDIA_URL = "/media/"
+
+
+# URL for the PyLucid media files.
+#     Example-1: "/media/PyLucid/" (default)
+#     Examlpe-2: "http://other_domain.net/media/PyLucid/"
+#     Example-3: "http://pylucid.media.your_domain.net/"
+PYLUCID_MEDIA_URL = "/media/PyLucid/"
+
+
+# URL prefix for admin media -- CSS, JavaScript and images.
+#     Examples-1: "/django/contrib/admin/media/" (default)
+#     Examples-2: "http://other_domain.net/media/django/"
+#     Examples-3: "http://django.media.your_domain.net/"
+ADMIN_MEDIA_PREFIX = "/django/contrib/admin/media/"
+
+"""
+_______________________________________________________________________________
+ Advanced settings:
+"""
+
+# People who get code error notifications.
+# In the format (('Full Name', 'email@domain.com'), ('Full Name', 'anotheremail@domain.com'))
+ADMINS = (
+    # ('Your Name', 'your_email@domain.com'),
+)
+
+# Not-necessarily-technical managers of the site. They get broken link
+# notifications and other various e-mails.
+MANAGERS = ADMINS
+
+
+# Tuple of IP addresses, as strings, that:
+#   * See debug comments, when DEBUG is true
+#   * Receive x-headers
+INTERNAL_IPS = ()
+
+#_____________________________________________________________________________
+# 404 BEHAVIOR
+
+# tuple of strings that specify URLs that should be ignored by the 404 e-mailer.
+# http://www.djangoproject.com/documentation/settings/#ignorable-404-ends
+IGNORABLE_404_STARTS = ('/cgi-bin/',)
+IGNORABLE_404_ENDS = ('favicon.ico', '.php')
+
+#_____________________________________________________________________________
+# I80N
+# http://www.djangoproject.com/documentation/i18n/
+
+# Local time zone for this installation. All choices can be found here:
+# http://www.postgresql.org/docs/current/static/datetime-keywords.html#DATETIME-TIMEZONE-SET-TABLE
+TIME_ZONE = 'America/Chicago'
+
+
+# Language code for this installation. All choices can be found here:
+# http://www.w3.org/TR/REC-html40/struct/dirlang.html#langcodes
+# http://blogs.law.harvard.edu/tech/stories/storyReader$15
+LANGUAGE_CODE = 'en-us'
+
+#_____________________________________________________________________________
+# EMAIL
+# http://www.djangoproject.com/documentation/email/
+
+# Default e-mail address to use for various automated correspondence
+# Replace with a normal String like:
+# DEFAULT_FROM_EMAIL = "webmaster@example.org"
+DEFAULT_FROM_EMAIL = "webmaster@" + os.environ.get("HTTP_HOST", "localhost")
+
+# Host for sending e-mail.
+EMAIL_HOST = 'localhost'
+
+# Port for sending e-mail.
+EMAIL_PORT = 25
+
+# Subject-line prefix for email messages send with django.core.mail.mail_admins
+# or ...mail_managers.  Make sure to include the trailing space.
+EMAIL_SUBJECT_PREFIX = '[PyLucid] '
+
+
+#_____________________________________________________________________________
+# SESSIONS
+
+SESSION_COOKIE_NAME = 'sessionid'         # Cookie name. This can be whatever you want.
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 7 * 2 # Age of cookie, in seconds (default: 2 weeks).
+SESSION_COOKIE_DOMAIN = None              # A string like ".lawrence.com", or None for standard domain cookie.
+SESSION_COOKIE_SECURE = False             # Whether the session cookie should be secure (https:// only).
+SESSION_SAVE_EVERY_REQUEST = False        # Whether to save the session data on every request.
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False   # Whether sessions expire when a user closes his browser.
+
 
 #_____________________________________________________________________________
 # TEMPLATE SYSTEM
@@ -228,32 +282,6 @@ TEMPLATE_DIRS = (
 #_____________________________________________________________________________
 # APP CONFIG
 
-# List of middleware classes to use.  Order is important; in the request phase,
-# this middleware classes will be applied in the order given, and in the
-# response phase the middleware will be applied in reverse order.
-#
-# !!! IMPORTANT !!!
-#  * In the first install phase (befor the database tables exists) the
-#    'SessionMiddleware' and 'AuthenticationMiddleware' must be deactivated!
-#  * After "syncdb" you must activate 'SessionMiddleware' and
-#    'AuthenticationMiddleware'!
-#  * The DebugPageCache should be *never* activated. Only for dev debugging.
-# !!! IMPORTANT !!!
-#
-MIDDLEWARE_CLASSES = (
-#    'PyLucid.middlewares.page_cache_debug.DebugPageCache',
-
-    # Activate this after 'syncdb':
-#    'django.contrib.sessions.middleware.SessionMiddleware',
-#    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    # -----------------------------
-
-    'django.middleware.locale.LocaleMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.doc.XViewMiddleware',
-
-    'PyLucid.middlewares.pagestats.PageStatsMiddleware',
-)
 
 # A string representing the full Python import path to the PyLucid root URLconf.
 ROOT_URLCONF = 'PyLucid.urls'
@@ -269,14 +297,6 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     "PyLucid",
 )
-
-# A secret key for this particular Django installation. Used in secret-key
-# hashing algorithms. Set this in your settings, or Django will complain
-# loudly.
-# Make this unique, and don't share it with anybody.
-SECRET_KEY = ''
-
-
 
 
 #_____________________________________________________________________________
@@ -335,23 +355,12 @@ AUTHENTICATION_BACKENDS = (
     "PyLucid.plugins_internal.auth.auth_backend.JS_SHA_Backend",
 )
 
-
-
-
 #_____________________________________________________________________________
 # CHANGEABLE PYLUCID SETTINGS
 
-"""
-Note, you must edit MIDDLEWARE_CLASSES above, after installation!!!
-"""
-
 # Enable the _install Python Web Shell Feature?
-# Should be only enabled for tests. It can be a big security hole!
+# Should be only enabled for tests. It is a big security hole!
 INSTALL_EVILEVAL = False
-
-# Install Password to login into the _install section.
-ENABLE_INSTALL_SECTION = True
-INSTALL_PASS_HASH = ""
 
 # The table prefix from a old PyLucid installation, if exist.
 # Only used for updating!
