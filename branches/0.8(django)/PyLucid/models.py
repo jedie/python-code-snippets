@@ -308,6 +308,30 @@ class JS_LoginData(models.Model):
         verbose_name = verbose_name_plural = 'JS-LoginData'
 
 
+
+# Save the original method
+old_set_password = User.set_password
+
+def set_password(user, raw_password):
+#    print "set_password() debug:", user, raw_password
+    if user.id == None:
+        # It is a new user. We must save the django user accound first to get a
+        # existing user object with a ID and then the JS_LoginData can assign to it.
+        user.save()
+
+    # Save the password for the JS-SHA-Login:
+    login_data, status = JS_LoginData.objects.get_or_create(user = user)
+    login_data.set_password(raw_password)
+    login_data.save()
+
+    # Use the original method to set the django User password:
+    old_set_password(user, raw_password)
+
+
+# Make a hook into Django's default way to set a new User Password.
+# Get the new raw_password and set the PyLucid password, too.
+User.set_password = set_password
+
 #______________________________________________________________________________
 
 
