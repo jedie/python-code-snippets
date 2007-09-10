@@ -25,7 +25,6 @@ import cgi
 from PyLucid.system.plugin_manager import run
 from PyLucid.system.response import SimpleStringIO
 from PyLucid.tools.shortcuts import makeUnique
-from PyLucid.settings import CSS_DIV_CLASS_NAME
 
 from django.conf import settings
 from django import template
@@ -71,7 +70,7 @@ class lucidTagNode(template.Node):
             '<div class="%s" id="%s">\n'
             '%s\n'
             '</div>\n'
-        ) % (CSS_DIV_CLASS_NAME, id, content)
+        ) % (settings.CSS_DIV_CLASS_NAME, id, content)
 
         return content
 

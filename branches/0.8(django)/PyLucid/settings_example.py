@@ -62,6 +62,14 @@ DATABASE_PASSWORD = ''         # Not used with sqlite3.
 DATABASE_HOST = ''             # Set to empty string for localhost. Not used with sqlite3.
 DATABASE_PORT = ''             # Set to empty string for default. Not used with sqlite3.
 
+# Example for MySQL:
+#DATABASE_ENGINE = 'mysql'
+#DATABASE_NAME = 'DatabaseName'
+#DATABASE_USER = 'UserName'
+#DATABASE_PASSWORD = 'Password'
+#DATABASE_HOST = 'localhost'
+#DATABASE_PORT = '' # empty string for default port.
+
 
 #_____________________________________________________________________________
 # EMAIL
@@ -269,11 +277,65 @@ INSTALLED_APPS = (
 SECRET_KEY = ''
 
 
+
+
 #_____________________________________________________________________________
 # PYLUCID BASE SETTINGS
+# basic adjustments, witch don't have to be changed.
 
-# import basic adjustments, witch don't have to be changed.
-from system.base_settings import *
+# Path to the Plugins
+PLUGIN_PATH = (
+    {
+        "type": "internal",
+        "path": ("PyLucid", "plugins_internal"),
+        "auto_install": True,
+    },
+    {
+        "type": "external",
+        "path": ("PyLucid", "plugins_external"),
+        "auto_install": False,
+    },
+)
+
+# special URL prefixes:
+
+# Prefix for the install section
+INSTALL_URL_PREFIX = "_install"
+# Prefix for every command request
+COMMAND_URL_PREFIX = "_command"
+# Prefix to the django admin panel
+ADMIN_URL_PREFIX = "_admin"
+
+
+# static URLs (used in Traceback messages)
+
+# The PyLucid install instrucion page:
+INSTALL_HELP_URL = "http://www.pylucid.org/index.py/InstallPyLucid/"
+
+
+# How are the DB initial database data stored?
+INSTALL_DATA_DIR = 'PyLucid/db_dump_datadir'
+
+
+# PyLucid cache prefix
+PAGE_CACHE_PREFIX = "PyLucid_page_cache_"
+
+# Additional Data Tag
+# A temporary inserted Tag for Stylesheet and JavaScript data from the internal
+# pages. Added by PyLucid.plugins_internal.page_style and replaces in
+# PyLucid.index._replace_add_data()
+ADD_DATA_TAG = "<!-- additional_data -->"
+
+# JS-SHA1-Login Cookie name
+INSTALL_COOKIE_NAME = "PyLucid_inst_auth"
+
+# http://www.djangoproject.com/documentation/authentication/#other-authentication-sources
+AUTHENTICATION_BACKENDS = (
+    "django.contrib.auth.backends.ModelBackend",
+    "PyLucid.plugins_internal.auth.auth_backend.JS_SHA_Backend",
+)
+
+
 
 
 #_____________________________________________________________________________
