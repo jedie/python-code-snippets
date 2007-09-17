@@ -9,9 +9,9 @@ Einrichten/Konfigurieren von Modulen und Plugins
 
 Last commit info:
 ----------------------------------
-$LastChangedDate: 2007-07-06 14:45:06 +0200 (Fr, 06 Jul 2007) $
-$Rev: 1154 $
-$Author: JensDiemer $
+$LastChangedDate$
+$Rev$
+$Author$
 
 Created by Jens Diemer
 
@@ -20,7 +20,7 @@ license:
     http://www.opensource.org/licenses/gpl-license.php
 """
 
-__version__= "$Rev: 1154 $"
+__version__= "$Rev$"
 
 import os
 
