@@ -6,7 +6,7 @@ sollte ich mir mal ansehen:
 http://code.djangoproject.com/wiki/CookBookScriptsMiniFlush
 """
 
-from PyLucid import settings
+from django.conf import settings
 from PyLucid.install.BaseInstall import BaseInstall
 
 from django import newforms as forms

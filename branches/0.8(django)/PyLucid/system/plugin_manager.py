@@ -26,7 +26,7 @@ import os, sys, cgi, traceback
 #~ debug = False
 debug = True
 
-from PyLucid import settings
+from django.conf import settings
 
 #if __name__ == "__main__": # init django for local test
 #    from django.core.management import setup_environ

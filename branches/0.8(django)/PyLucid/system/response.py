@@ -21,7 +21,7 @@ license:
 #if __name__ == "__main__": # A local test. THIS SHOULD BE COMMENTED!!!
 #    import os
 #    os.environ["DJANGO_SETTINGS_MODULE"] = "PyLucid.settings"
-#    from PyLucid import settings
+#    from django.conf import settings
 #    from django.core import management
 #    management.setup_environ(settings) # init django
 

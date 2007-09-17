@@ -105,7 +105,7 @@ def clean_permissions(debug=True):
         print "\nTable 'auth_permission' up to date. Nothing to do."
 
 if __name__ == "__main__":
-    from PyLucid import settings
+    from django.conf import settings
 
     from django.core.management import setup_environ
     setup_environ(settings)

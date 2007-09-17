@@ -262,7 +262,7 @@ info_template = """
 """
 class Info(BaseInstall):
     def view(self):
-        from PyLucid import settings
+        from django.conf import settings
 #        from PyLucid.db import DB_Wrapper
 #        import sys
 #        db = DB_Wrapper(sys.stderr)#request.page_msg)
