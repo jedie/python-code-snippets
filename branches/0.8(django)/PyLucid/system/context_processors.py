@@ -6,7 +6,7 @@ setup some "static" variables
 from django.utils.translation import ugettext as _
 
 from PyLucid import PYLUCID_VERSION_STRING
-from PyLucid import settings
+from django.conf import settings
 
 def static(request):
     """

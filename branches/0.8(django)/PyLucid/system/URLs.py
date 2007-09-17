@@ -21,7 +21,7 @@
 
 import os, posixpath
 
-from PyLucid import settings
+from django.conf import settings
 
 
 def add_trailing_slash(path):

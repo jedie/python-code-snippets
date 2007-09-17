@@ -9,22 +9,22 @@
 
     Last commit info:
     ~~~~~~~~~
-    $LastChangedDate:$
-    $Rev:$
+    $LastChangedDate$
+    $Rev$
     $Author:JensDiemer $
 
     :copyright: 2007 by Jens Diemer
     :license: GNU GPL v2 or above, see LICENSE for more details
 """
 
-__version__= "$Rev:$"
+__version__= "$Rev$"
 
 from django import newforms as forms
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
 
 from PyLucid.system.BasePlugin import PyLucidBasePlugin
-from PyLucid import settings
+from django.conf import settings
 
 TEMPLATE = """
 <form method="post" action=".">

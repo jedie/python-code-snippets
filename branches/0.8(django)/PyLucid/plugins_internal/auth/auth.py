@@ -43,7 +43,7 @@ if DEBUG:
     warnings.warn("Debugmode is on", UserWarning)
 
 
-from PyLucid import settings
+from django.conf import settings
 from PyLucid.tools import crypt
 from PyLucid.system.BasePlugin import PyLucidBasePlugin
 from PyLucid.system.context_processors import add_dynamic_context

@@ -26,7 +26,7 @@ import os
 
 from django import newforms as forms
 
-from PyLucid import settings
+from django.conf import settings
 
 from PyLucid.models import Plugin, PagesInternal
 from PyLucid.system.plugin_manager import get_plugin_list, get_plugin_config, \

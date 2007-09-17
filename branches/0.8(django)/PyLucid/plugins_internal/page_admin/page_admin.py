@@ -29,7 +29,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.core.cache import cache
 from django.utils.translation import ugettext
 
-from PyLucid import settings
+from django.conf import settings
 from PyLucid.models import Page, Plugin
 from PyLucid.db.page import flat_tree_list, get_sitemap_tree
 from PyLucid.system.BasePlugin import PyLucidBasePlugin

@@ -8,7 +8,7 @@ http://code.djangoproject.com/wiki/CookBookScriptsMiniFlush
 
 import pickle
 
-from PyLucid import settings
+from django.conf import settings
 from PyLucid.models import Preference, Page, Markup, Template
 from PyLucid.install.BaseInstall import BaseInstall
 
