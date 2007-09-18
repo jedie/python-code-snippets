@@ -24,6 +24,9 @@ def traceback_end():
     """
     print
     print "-"*80
+    import sys
+    print "Python v%s" % sys.version
+    print "-"*80
     try:
         import sys, traceback
         print traceback.format_exc()
