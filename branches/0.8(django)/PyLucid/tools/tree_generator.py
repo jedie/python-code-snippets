@@ -73,8 +73,8 @@ class MenuNode(object):
         genrate a flat list for all visible pages and insert a level info
         """
         flat_list=[]
-        
-        current_entry = self._get_current_entry(level)       
+
+        current_entry = self._get_current_entry(level)
         flat_list.append(current_entry)
 
         for subnode in self.subnodes:
@@ -100,7 +100,14 @@ class TreeGenerator(object):
         for node_data in flat_data:
             id = node_data['id']
             parent = node_data['parent']
-            self.nodes[parent].add(self.nodes[id])
+            try:
+                self.nodes[parent].add(self.nodes[id])
+            except KeyError:
+                # If the user is not logged in and there exist a secret area,
+                # we have some page how assign to a hidden page. All hidden
+                # pages are filtered with the django orm. So we can' assign
+                # a page how are a parent of a hidden page
+                continue
 
     def to_dict(self):
         """
@@ -163,7 +170,7 @@ def test_generator(tree, display_result):
         print '-' * 40
         print "*** No. %s ***" % no
         pprint(result)
-        
+
     result = tree.get_sitemap_tree()
     must_be = [{'id': 1,
           'level': 1,
