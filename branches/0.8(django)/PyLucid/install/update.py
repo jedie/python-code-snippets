@@ -44,9 +44,8 @@ class Update(Sync_DB):
                 headline=headline
             )
 
-        # self._get_management and self._syncdb are inherited from Sync_DB
-        management = self._get_management()
-        self._redirect_execute(self._syncdb, management)
+        # self._syncdb are inherited from the Sync_DB class.
+        self._redirect_execute(self._syncdb)
 
         self._redirect_execute(self.move_data)
 

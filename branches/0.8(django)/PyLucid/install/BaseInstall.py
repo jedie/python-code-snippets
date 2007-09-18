@@ -194,12 +194,19 @@ class BaseInstall(object):
         old_stderr = sys.stderr
         sys.stderr = redirect
         try:
-            method(*args, **kwargs)
-        finally:
-            sys.stdout = old_stdout
-            sys.stderr = old_stderr
+            try:
+                method(*args, **kwargs)
+            finally:
+                sys.stdout = old_stdout
+                sys.stderr = old_stderr
+                output = redirect.getvalue()
+        except Exception, e:
+            # Display the written output
+            # FixMe: There should be exist a better way for this.
+            print output
+            raise
 
-        self.context["output"] += redirect.getvalue()
+        self.context["output"] += output
 
     def _render(self, template):
         """
