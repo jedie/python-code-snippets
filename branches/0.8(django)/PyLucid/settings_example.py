@@ -364,7 +364,18 @@ INSTALL_EVILEVAL = False
 
 # The table prefix from a old PyLucid installation, if exist.
 # Only used for updating!
+# Note: The OLD_TABLE_PREFIX can't be "PyLucid"!!!
 OLD_TABLE_PREFIX = ""
+# How to update a old v0.7.2 installation:
+# 1. Backup you old installation (Save a SQL dump)!
+# 2. init a fresh PyLucid installation. Follow the normal install steps:
+# 2.1. install Db tables
+# 2.2. init DB data
+# 2.3. install internal plugins
+# 3. convert the old content to the new installation:
+# 3.1. update DB tables from v0.7.2 to django PyLucid v0.8
+# 3.2. update to the new django template engine
+# Use "low level admin/User administration" to set a new password for the user.
 
 # Permit sending mails with the EMailSystem Plugin:
 ALLOW_SEND_MAILS = True
