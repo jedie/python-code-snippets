@@ -22,7 +22,7 @@ from django.utils.version import get_svn_revision
 svn_revision = get_svn_revision("PyLucid")
 
 # PyLucid Version String
-PYLUCID_VERSION = (0, 8, 0,"alpha3 " + svn_revision)
-PYLUCID_VERSION_STRING = "0.8.0 alpha3 " + svn_revision
+PYLUCID_VERSION = (0, 8, 0,"beta1 " + svn_revision)
+PYLUCID_VERSION_STRING = "0.8.0 beta1 " + svn_revision
 
 
