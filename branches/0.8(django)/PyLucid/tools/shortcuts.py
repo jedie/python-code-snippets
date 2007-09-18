@@ -34,19 +34,21 @@ def makeUnique(item_name, name_list):
         else:
             parts[-1] += char
 
-    # Upcase the first character of every part
-    parts = [i[0].upper() + i[1:] for i in parts if i!=""]
-    item_name = "".join(parts)
+    item_name = "-".join(parts)
+    item_name = item_name.strip("-")
 
     if item_name == "":
         # No shortcut? That won't work.
         item_name = "1"
 
+    name_list2 = [i.lower() for i in name_list]
+
     # make double shortcut unique (add a new free sequential number)
-    if item_name in name_list:
+    if item_name.lower() in name_list2:
         for i in xrange(1, 1000):
             testname = "%s%i" % (item_name, i)
-            if testname not in name_list:
+            textname = testname.lower()
+            if testname not in name_list2:
                 item_name = testname
                 break
 
@@ -54,6 +56,8 @@ def makeUnique(item_name, name_list):
 
 def getUniqueShortcut(shortcut, exclude_shortcut=None):
     from PyLucid.models import Page
+
+#    print "source shortcut:", shortcut
     shortcuts = Page.objects.values("shortcut")
 #    print "exclude shortcut: '%s'" % exclude_shortcut
     if exclude_shortcut != None:
@@ -62,10 +66,12 @@ def getUniqueShortcut(shortcut, exclude_shortcut=None):
 #    print "existing_shortcuts:", existing_shortcuts
     return makeUnique(shortcut, existing_shortcuts)
 
+
 if __name__ == "__main__":
     name_list = ["GibtsSchon", "UndAuchDas", "UndAuchDas1", "UndAuchDas2"]
     print name_list
     print "-"*80
     print makeUnique("Ich bin neu!", name_list)
     print makeUnique("gibts schon", name_list)
+    print makeUnique("Gibtsschon", name_list)
     print makeUnique("#und!auch(das)", name_list)
