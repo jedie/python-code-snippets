@@ -7,7 +7,7 @@
 
 # Enable execution of CGI scripts using mod_cgi
 # http://httpd.apache.org/docs/2.0/mod/core.html#options
-Options +ExecCGI
+#Options +ExecCGI
 
 # Old (?) fastCGI Apache module:
 #AddHandler fastcgi-script .fcgi
@@ -16,12 +16,12 @@ Options +ExecCGI
 #AddHandler fcgid-script .fcgi
 
 # http://httpd.apache.org/docs/2.0/mod/mod_mime.html#addhandler
-AddHandler cgi-script .cgi
+#AddHandler cgi-script .cgi
 
 RewriteEngine On
 
 # leave out media files and cgi-bin
-RewriteRule ^_static_files - [L]
+RewriteRule ^media - [L]
 RewriteRule ^cgi-bin - [L]
 
 RewriteCond %{REQUEST_FILENAME} !-f
