@@ -58,9 +58,16 @@ DATABASE_PORT = ''             # Set to empty string for default. Not used with 
 #_____________________________________________________________________________
 # DEBUGGING
 
-# deactivate the DEBUG mode in a productive environment!
+# deactivate the DEBUG mode in a productive environment because there a many
+# information in a debug traceback ;)
+# You should use INTERNAL_IPS to limit the access.
 DEBUG = False
 TEMPLATE_DEBUG = DEBUG
+
+# Tuple of IP addresses, as strings, that:
+#   * See debug comments, when DEBUG is true
+#   * Receive x-headers
+INTERNAL_IPS = ()
 
 #_____________________________________________________________________________
 # _INSTALL SECTION
@@ -191,12 +198,6 @@ ADMINS = (
 # Not-necessarily-technical managers of the site. They get broken link
 # notifications and other various e-mails.
 MANAGERS = ADMINS
-
-
-# Tuple of IP addresses, as strings, that:
-#   * See debug comments, when DEBUG is true
-#   * Receive x-headers
-INTERNAL_IPS = ()
 
 #_____________________________________________________________________________
 # 404 BEHAVIOR
@@ -330,7 +331,7 @@ ADMIN_URL_PREFIX = "_admin"
 # static URLs (used in Traceback messages)
 
 # The PyLucid install instrucion page:
-INSTALL_HELP_URL = "http://www.pylucid.org/index.py/InstallPyLucid/"
+INSTALL_HELP_URL = "http://www.pylucid.org/Documentation/install-PyLucid/"
 
 
 # How are the DB initial database data stored?
