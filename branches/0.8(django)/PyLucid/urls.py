@@ -75,8 +75,8 @@ urls += (
     #_____________________________________
     # CMS PAGE VIEW
     # A normal CMS page url simply consists of the page shortcuts.
-    # The shortcuts contains only these chars: [a-zA-Z0-9_/]
-    (r'^([\w/]*?)/?$', 'PyLucid.index.index'),
+    # The shortcuts contains only these chars: [a-zA-Z0-9_/-]
+    (r'^([\w/-]*?)/?$', 'PyLucid.index.index'),
 
     #_____________________________________
     # STATIC FILES
