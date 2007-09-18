@@ -319,7 +319,9 @@ class auth(PyLucidBasePlugin):
                     )
                 except Exception, e:
                     if DEBUG:
-                        msg += " (%s)" % e
+                        msg += " (%s) - " % e
+                        import sys, traceback
+                        msg += traceback.format_exc()
                 else:
                     if user:
                         self._login_user(user)
@@ -541,21 +543,31 @@ class auth(PyLucidBasePlugin):
                 username = new_pass_form.cleaned_data["username"]
 
                 try:
-                    JS_LoginData.objects.set_new_password(
-                        username,
-                        django_salt  = self.request.session["salt_1"],
-                        django_sha   = sha_1,
-                        pylucid_salt = self.request.session["salt_2"],
-                        pylucid_sha  = sha_2
-                    )
-                except JS_LoginData.DoesNotExist, e:
+                    user = User.objects.get(username = username)
+                except User.DoesNotExist, e:
                     self.page_msg.red(_("Wrong Username!"))
                     if DEBUG:
                         self.page_msg("Username:", username)
                         self.page_msg(e)
-                else:
-                    self.page_msg.green(_("New password saved."))
-                    del(self.request.session['pass_reset_ID'])
+                    return
+
+                # Set the django user account password:
+                django_password = "sha1$%s$%s" % (
+                    self.request.session["salt_1"], sha_1
+                )
+                user.password = (django_password)
+                user.save()
+
+                # Set the PyLucid password:
+                login_data, status = JS_LoginData.objects.get_or_create(
+                    user = user
+                )
+                login_data.sha_checksum = crypt.make_sha_checksum(sha_2)
+                login_data.salt = self.request.session["salt_2"]
+                login_data.save()
+
+                self.page_msg.green(_("New password saved."))
+                del(self.request.session['pass_reset_ID'])
 
                 return
         else:
