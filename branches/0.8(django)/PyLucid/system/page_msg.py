@@ -32,61 +32,14 @@ license:
 
 from django.conf import settings
 
-import os, sys, cgi, pprint
-import inspect
-
-
-#class PrintLocator(object):
-#    """
-#    redirect all writes into the page_msg object.
-#    """
-#    def __init__(self, page_msg):
-#        self.page_msg = page_msg
-#        self.oldFileinfo = ""
-#
-#    def write(self, *txt):
-#        """
-#        write into the page-messages
-#        """
-#        #~ sys.__stdout__.write(">>>%s<<<\n" % txt)
-#
-#        # Angaben zur Datei, Zeilennummer, aus dem die Nachricht stammt
-#        for stack_frame in inspect.stack():
-#            # Im stack vorwärts gehen, bis außerhalb dieser Datei
-#            filename = stack_frame[1]
-#            lineno = stack_frame[2]
-#            if filename != __file__:
-#                break
-#
-#        filename = "...%s" % filename[-25:]
-#        fileinfo = "%-25s line %3s: " % (filename, lineno)
-#
-#        self.page_msg.data.append(
-#            "%s - %s" % (filename, __file__)
-#        )
-#
-#        if fileinfo != self.oldFileinfo:
-#            self.oldFileinfo = fileinfo
-#            self.page_msg.data.append(
-#                "<br />[stdout/stderr from ...%s, line %s:] " % fileinfo
-#            )
-#
-#        txt = " ".join([str(i) for i in txt])
-#        txt = cgi.escape(txt)
-#        txt = txt.replace("\n", "<br />")
-#
-#        self.page_msg.data.append(txt)
+import os, sys, cgi, pprint, inspect
 
 #_____________________________________________________________________________
 
 class PageMessages(object):
     """
     http://www.djangoproject.com/documentation/authentication/#messages
-    TODO: Should be inherit from dict.
     """
-    raw = False # Append <br /> ?
-    debug_mode = settings.DEBUG
-
     def __init__(self, context):
         try:
             self.messages = context["messages"]
@@ -95,6 +48,7 @@ class PageMessages(object):
             # In the _install section we use no RequestContext ;)
             self.messages = []
 
+        self.debug_mode = settings.DEBUG
         self._charset = settings.DEFAULT_CHARSET
 
     #_________________________________________________________________________
@@ -121,14 +75,9 @@ class PageMessages(object):
     #_________________________________________________________________________
 
     def append_color_data(self, color, *msg):
-        if self.raw:
-            msg = self.encode_and_prepare(
-                "%s" % " ".join([str(i) for i in msg])
-            )
-        else:
-            msg = '<span style="color:%s;">%s</span>' % (
-                color, self.prepare(*msg)
-            )
+        msg = '<span style="color:%s;">%s</span>' % (
+            color, self.prepare(*msg)
+        )
 
         #~ self.request.user.message_set.create(message=msg)
         self.messages.append(msg)
@@ -138,7 +87,7 @@ class PageMessages(object):
         Append the fileinfo: Where from the announcement comes?
         Only, if debug_mode is on.
         """
-        if not self.debug_mode:
+        if self.debug_mode != True:
             return ""
 
         try:
