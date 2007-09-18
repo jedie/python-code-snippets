@@ -59,7 +59,7 @@ DATABASE_PORT = ''             # Set to empty string for default. Not used with 
 # DEBUGGING
 
 # deactivate the DEBUG mode in a productive environment!
-DEBUG = True
+DEBUG = False
 TEMPLATE_DEBUG = DEBUG
 
 #_____________________________________________________________________________
