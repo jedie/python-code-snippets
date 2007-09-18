@@ -355,7 +355,7 @@ class UserAdmin(BaseInstall):
         self.context["user_list"] = user_list
 
     def _build_context(self):
-        from PyLucid.models import User, JS_LoginData
+        from PyLucid.models import User
 
         if not self.request.POST:
             self._put_userlist()
@@ -369,10 +369,8 @@ class UserAdmin(BaseInstall):
                 raw_password = pass_form.cleaned_data["password"]
                 user_id = pass_form.cleaned_data["user_id"]
                 user = User.objects.get(id = user_id)
-                username = user.username
-                user, js_login_data = JS_LoginData.objects.get_user(username)
-                js_login_data.set_password_from_raw(raw_password)
-                js_login_data.save()
+                user.set_password(raw_password)
+                user.save()
                 self.page_msg.green("New password saved.")
                 self._put_userlist()
                 return
@@ -393,3 +391,50 @@ def user_admin(request, *url_args):
     User administration
     """
     return UserAdmin(request).start_view(*url_args)
+
+
+
+class CheckPageTree(BaseInstall):
+    """
+    If a page has a parent-page-id witch not exists, we have corrupt data in
+    the page tree. We can correct it here.
+    """
+    def view(self):
+        self._redirect_execute(self.check_page_tree)
+        return self._simple_render(headline="Check and correct the page tree")
+
+    def check_page_tree(self):
+        page_data = Page.objects.values(
+            "id", "parent", "name", "title", "shortcut"
+        ).order_by("position")
+        page_dict = {}
+        for page in page_data:
+            page_dict[page["id"]] = page
+
+        for page in page_data:
+            parent_id = page["parent"]
+            if parent_id == None:
+                # A root page
+                print "Skip root page '%s' - '%s'" % (
+                    page["name"], page["title"]
+                )
+                continue
+            print page
+            if not parent_id in page_dict:
+                print "Error:"
+                print "Parent page for the page '%s' - '%s' not exists!" % (
+                    page["name"], page["title"]
+                )
+                print "Assign the page to the root (set parent=None)...",
+                page_obj = Page.objects.get(id__exact=page["id"])
+                page_obj.parent = None
+                page_obj.save()
+                print "OK"
+                print
+
+
+def check_page_tree(request, *url_args):
+    """
+    Check and correct the page tree
+    """
+    return CheckPageTree(request).start_view(*url_args)
