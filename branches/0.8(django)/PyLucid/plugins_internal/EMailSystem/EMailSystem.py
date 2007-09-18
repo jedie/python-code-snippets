@@ -48,7 +48,7 @@ class MailForm(forms.Form):
         ), min_length=5
     )
     mail_text = forms.CharField(widget=forms.Textarea,
-        max_length=1024, min_length=20
+        max_length=2048, min_length=20
     )
 
 
@@ -58,7 +58,9 @@ class EMailSystem(PyLucidBasePlugin):
         """
         send the mail. raise SendMailError() on errors.
         """
-        subject = "%s%s" % (settings.EMAIL_SUBJECT_PREFIX, cleaned_data["subject"])
+        subject = "%s%s" % (
+            settings.EMAIL_SUBJECT_PREFIX, cleaned_data["subject"]
+        )
 
         recipient_list = []
         for user in cleaned_data["users"]:
@@ -108,7 +110,7 @@ class EMailSystem(PyLucidBasePlugin):
             host = host.split(":")[0]
 
             form_data = {
-                "sender": "%s@%s" % (self.request.user,host),
+                "sender": "%s@%s" % (self.request.user, host),
             }
             mail_form = MailForm(form_data)
 
