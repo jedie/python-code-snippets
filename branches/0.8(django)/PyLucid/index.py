@@ -19,7 +19,7 @@
 
 import datetime, md5
 
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponsePermanentRedirect
 from django.template import RequestContext
 from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured
@@ -276,3 +276,15 @@ def handle_command(request, page_id, module_name, method_name, url_args):
     return _render_cms_page(context, page_content)
 
 
+def redirect(request, url):
+    """
+    simple redirect old PyLucid URLs to the new location.
+    old url:
+        ".../index.py/PageShortcut/"
+    new url:
+        ".../PageShortcut/"
+    """
+    if url == "":
+        url = "/"
+
+    return HttpResponsePermanentRedirect(url)

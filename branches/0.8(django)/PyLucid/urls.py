@@ -79,6 +79,12 @@ urls += (
     (r'^([\w/-]*?)/?$', 'PyLucid.index.index'),
 
     #_____________________________________
+    # REDIRECT
+    # Redirect old PyLucid (with "index.py") to the new URLs.
+    # Only usefull, if you have a old PyLucid page used.
+    #(r'^index.py(.*?)$', 'PyLucid.index.redirect'),
+
+    #_____________________________________
     # STATIC FILES
     # Using this method is inefficient and insecure.
     # Do not use this in a production setting. Use this only for development.
