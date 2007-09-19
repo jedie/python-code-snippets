@@ -34,6 +34,7 @@ RewriteEngine On
 # You can add more directories if needed.
 RewriteRule ^media - [L]
 RewriteRule ^cgi-bin - [L]
+#RewriteRule ^dev_scripts/server_tests - [L]
 
 RewriteCond %{REQUEST_FILENAME} !-f
 

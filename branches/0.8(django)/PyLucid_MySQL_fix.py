@@ -23,10 +23,12 @@ license:
 print "Content-type: text/plain; charset=utf-8\r\n\r\n"
 import cgitb;cgitb.enable()
 
-import datetime
+import datetime, os
 import MySQLdb
 
-from PyLucid import settings
+os.environ["DJANGO_SETTINGS_MODULE"] = "PyLucid.settings"
+
+from django.conf import settings
 
 
 connection = MySQLdb.Connect(
@@ -61,7 +63,7 @@ def get_all_tables():
     table_names = []
     for line in fetchall("SHOW TABLES"):
         table_name = line[0]
-        if table_name.startswith(settings.TABLE_PREFIX):
+        if table_name.startswith(settings.OLD_TABLE_PREFIX):
             table_names.append(table_name)
 
     return table_names
