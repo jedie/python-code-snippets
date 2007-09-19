@@ -2,7 +2,15 @@
 # PyLucid .htaccess file
 # per default: using the CGI Version (index.cgi)
 #
-# You can easy change this to use fastCGI, see below.
+# You can easy change the rewrite tule to use fastCGI, see below.
+#
+# Note:
+#    You should be carefull uncomment settings.
+#    It can be that not all rules are permitted!
+#    If you activate a "not allowed" rule, the server can send a
+#    "500 internal server error" for every request!
+#    The best way: uncomment one after another and check a request/response
+#     after every step.
 #
 
 # Enable execution of CGI scripts using mod_cgi
@@ -20,7 +28,10 @@
 
 RewriteEngine On
 
-# leave out media files and cgi-bin
+# All requests would be "redirected" to PyLucid.
+# Here we can exclude some directories.
+# Default: Leave out the media files and all cgi-bin request.
+# You can add more directories if needed.
 RewriteRule ^media - [L]
 RewriteRule ^cgi-bin - [L]
 

@@ -18,6 +18,8 @@ from django.conf.urls.defaults import include, patterns
 
 from django.conf import settings
 
+handler404 = 'django.views.defaults.page_not_found'
+handler500 = 'django.views.defaults.server_error'
 
 # We insert the _install URLs only, if the _install section is activated.
 if settings.ENABLE_INSTALL_SECTION == True:
