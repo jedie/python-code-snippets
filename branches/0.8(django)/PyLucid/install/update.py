@@ -252,6 +252,10 @@ class Update(Sync_DB):
             old_markup_id = int(page_dict["markup"])
             page_dict["markup"] = markup_map[old_markup_id]
 
+            for key in ("title", "keywords", "description"):
+                if page_dict[key] == None:
+                    page_dict[key] = ""
+
             new_page = Page(**page_dict)
             new_page.save()
             page_map[id] = new_page
