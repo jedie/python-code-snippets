@@ -47,8 +47,7 @@ def makeUnique(item_name, name_list):
     if item_name.lower() in name_list2:
         for i in xrange(1, 1000):
             testname = "%s%i" % (item_name, i)
-            textname = testname.lower()
-            if testname not in name_list2:
+            if testname.lower() not in name_list2:
                 item_name = testname
                 break
 
@@ -73,5 +72,20 @@ if __name__ == "__main__":
     print "-"*80
     print makeUnique("Ich bin neu!", name_list)
     print makeUnique("gibts schon", name_list)
-    print makeUnique("Gibtsschon", name_list)
     print makeUnique("#und!auch(das)", name_list)
+    
+    new_entry = makeUnique("Gibtsschon", name_list)
+    name_list.append(new_entry)
+    print new_entry
+    
+    new_entry = makeUnique("Gibtsschon", name_list)
+    name_list.append(new_entry)
+    print new_entry
+    
+    new_entry = makeUnique("GibtsSchon", name_list)
+    name_list.append(new_entry)
+    print new_entry
+    
+    new_entry = makeUnique("GibtsSchon", name_list)
+    name_list.append(new_entry)
+    print new_entry
