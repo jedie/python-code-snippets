@@ -1,56 +1,11 @@
-/**
- *
- * adds support for tabulators to the textarea
- *
- * :copyright: 2006-2007 by Armin Ronacher.
- * :license: GNU GPL, see LICENSE for more details.
- */
-
-tabs = "    ";
-lastkey = -1;
-
-function tabs(e) {
-    var e = (e) ? e : window.event;
-    alert(e.keyCode);
-    if (e.keyCode != 9) {
-    //~ if (((e.keyCode) ? e.keyCode : e.which) != 9) {
-        return
-        lastkey = e.keyCode
-    }
-    //~ if (e.keyCode == lastkey) { return true; }
-    //~ lastkey = e.keyCode
-
-    // For Internet Explorer
-    if (document.selection && !textarea.selectionStart &&
-        textarea.selectionStart != 0) {
-        var range = document.selection.createRange();
-        range.text = tabs;
-        range.select();
-    }
-    // Mozilla Browsers
-    else if (textarea.selectionStart || textarea.selectionStart == 0) {
-        var startVal = textarea.value.substring(0, textarea.selectionStart);
-        var endVal = textarea.value.substring(textarea.selectionStart);
-        textarea.value = startVal + tabs + endVal;
-        textarea.selectionStart = startVal.length + 1;
-        textarea.selectionEnd = startVal.length + 1;
-        textarea.focus();
-    }
-    // others won't work, continue with default behaviour
-    else {
-        return true;
-    }
-    return false;
+function init_tinyMCE() {
+    tinyMCE.init({
+        apply_source_formatting : true,
+        mode : "textareas",
+        height : "480",
+        auto_focus : "mce_editor_0",
+    });
 }
-
-function tabs_support(textarea_id) {
-    var textarea = document.getElementById(textarea_id);
-    textarea.onkeydown = tabs;
-    //textarea.onkeypress = onKeyDown;
-}
-
-
-
 
 page_content_changed = 0;
 
