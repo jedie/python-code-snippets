@@ -241,13 +241,9 @@ class page_admin(PyLucidBasePlugin):
             # If there is no markup engine used -> insert TinyMCE JS Editor
             js_data = (
                 '<script language="javascript" type="text/javascript"'
-                ' src="%stiny_mce/tiny_mce.js"></script>'
-                '\n'
+                ' src="%stiny_mce/tiny_mce.js"></script>\n'
                 '<script language="javascript" type="text/javascript">\n'
-                '    tinyMCE.init({\n'
-                '        mode : "textareas",'
-                '        height : "480",'
-                '    });\n'
+                '    init_tinyMCE();\n'
                 '</script>\n'
             ) % settings.PYLUCID_MEDIA_URL
             context["tinymce"] = js_data
