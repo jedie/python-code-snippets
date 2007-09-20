@@ -1,11 +1,26 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 """
-CGI wrapper for Django using the WSGI protocol
+    PyLucid CGI wrapper
+    ~~~~~~~~~~~~~~~~~~~
 
-taken from http://code.djangoproject.com/ticket/2407
-original name: "cgi.py"
+    CGI wrapper for Django using the WSGI protocol.
 
-Code copy/pasted from PEP-0333 and then tweaked to serve django.
-http://www.python.org/dev/peps/pep-0333/#the-server-gateway-side
+    taken from http://code.djangoproject.com/ticket/2407
+    original name: "cgi.py"
+
+    Code copy/pasted from PEP-0333 and then tweaked to serve django.
+    http://www.python.org/dev/peps/pep-0333/#the-server-gateway-side
+
+    Last commit info:
+    ~~~~~~~~~~~~~~~~~
+    $LastChangedDate: $
+    $Rev: $
+    $Author: $
+
+    :copyright: 2007 by Jens Diemer
+    :license: GNU GPL v3, see LICENSE.txt for more details.
 """
 
 import os, sys

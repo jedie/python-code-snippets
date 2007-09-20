@@ -2,11 +2,25 @@
 # -*- coding: utf-8 -*-
 
 """
-index CGI file.
+    PyLucid CGI dispatcher
+    ~~~~~~~~~~~~~~~~~~~~~~
 
-If settings.DEBUG is ON:
-  - all write to stdout+stderr are checked. It's slow!
-  - Its guaranteed that a HTML Header would be send first.
+    You should check if the shebang is ok for your environment!
+
+    If settings.DEBUG is ON:
+      - all write to stdout+stderr are checked. It's slow!
+      - Its guaranteed that a HTML Header would be send first.
+
+    It used the cgi_server.py shipped with PyLucid.
+
+    Last commit info:
+    ~~~~~~~~~~~~~~~~~
+    $LastChangedDate: $
+    $Rev: $
+    $Author: $
+
+    :copyright: 2007 by Jens Diemer
+    :license: GNU GPL v3, see LICENSE.txt for more details.
 """
 
 #print "Content-type: text/html; charset=utf-8\r\n\r\nHARDCORE DEBUG:\n"
