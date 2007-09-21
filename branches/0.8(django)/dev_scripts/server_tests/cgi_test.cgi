@@ -97,20 +97,6 @@ def print_module_info():
 
 
 #______________________________________________________________________________
-def django_test():
-    print "Try to use Django..."
-    os.environ["DJANGO_SETTINGS_MODULE"] = "PyLucid.settings"
-    from PyLucid import settings
-
-    print "- setup the django environ...",
-    from django.core import management
-    management.setup_environ(settings) # init django
-    from django.test.utils import setup_test_environment
-    setup_test_environment() # django global pre-test setup
-    print "OK"
-
-
-#______________________________________________________________________________
 def environ_info():
     print "<h3>OS-Enviroment:</h3>"
     print '<dl id="environment">'
@@ -121,6 +107,24 @@ def environ_info():
         print "<dt>%s</dt>" % key
         print "<dd>%s</dd>" % value
     print "</dl>"
+
+
+#______________________________________________________________________________
+def django_test():
+    print "Try to use Django..."
+    os.environ["DJANGO_SETTINGS_MODULE"] = "PyLucid.settings"
+    #print "os.getcwd() 1:", os.getcwd()
+    os.chdir("../../") # go into PyLucid App root folder
+    #print "os.getcwd() 2:", os.getcwd()
+    sys.path.insert(0, os.getcwd())
+    from PyLucid import settings
+
+    print "- setup the django environ...",
+    from django.core import management
+    management.setup_environ(settings) # init django
+    from django.test.utils import setup_test_environment
+    setup_test_environment() # django global pre-test setup
+    print "OK"
 
 
 print "<hr />"
