@@ -13,7 +13,7 @@
         Used the external programm 'exiftool'!
 """
 
-import datetime, time, shutil, os, stat, subprocess, pprint
+import os, sys, datetime, time, shutil, stat, subprocess, pprint
 
 
 # Possible Keys
@@ -67,6 +67,12 @@ def get_exif_data(fn, verbose = True):
     except KeyboardInterrupt:
         print "\n(KeyboardInterrupt)"
         sys.exit()
+    except OSError, e:
+        msg = (
+            "%s - (cmd: '%s')\n"
+            " - Have you install the external programm 'exiftool'?"
+        ) % (e, cmd)
+        raise OSError(msg)
 
     print "OK (returncode: %s)" % process.returncode
 

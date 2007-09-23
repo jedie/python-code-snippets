@@ -21,13 +21,12 @@ class Out(object):
 
     def write(self, txt):
         self.text_ctrl.AppendText("%s\n" % txt)
+        self.text_ctrl.Update()
 
     def __call__(self, *args):
-        for txt in args:
-            self.text_ctrl.AppendText(str(txt))
-        self.text_ctrl.AppendText("\n")
-
-
+        txt = "".join([str(i) for i in args])
+        self.write(txt)
+        
 
 class FileHandler(FileHandler):
 
