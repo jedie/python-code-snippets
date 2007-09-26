@@ -12,14 +12,14 @@ DecodeUnicode - a small PyLucid Plugin
 
 Last commit info:
 ----------------------------------
-LastChangedDate: $LastChangedDate:$
-Revision.......: $Rev:$
+LastChangedDate: $LastChangedDate$
+Revision.......: $Rev$
 Author.........: $Author$
 """
 
 
 
-__version__="$Rev:$"
+__version__="$Rev$"
 
 
 __ToDo__ = """
@@ -29,12 +29,10 @@ __ToDo__ = """
 import unicodedata
 
 
-from PyLucid.system.BaseModule import PyLucidBaseModule
+from PyLucid.system.BasePlugin import PyLucidBasePlugin
 
 
-
-
-class DecodeUnicode(PyLucidBaseModule):
+class DecodeUnicode(PyLucidBasePlugin):
 
     blocks = [
         {"range": (0x0000, 0x007F), "name": "Basic Latin"},
@@ -185,8 +183,6 @@ class DecodeUnicode(PyLucidBaseModule):
     ]
 
     def lucidTag(self):
-        #~ self.response.debug()
-
         self.block_select()
 
     def block_select(self, selected_id = 0):
@@ -200,12 +196,11 @@ class DecodeUnicode(PyLucidBaseModule):
             })
 
         context = {
-            "url": self.URLs.actionLink("display"),
+            "url": self.URLs.methodLink("display"),
             "selected_id": selected_id,
             "blocks": block_data,
         }
-        #~ self.page_msg(context)
-        self.templates.write("select", context)
+        self._render_template("select", context)
 
     def display(self, function_info=None):
 
@@ -217,7 +212,7 @@ class DecodeUnicode(PyLucidBaseModule):
                 return
         else:
             try:
-                block_id = self.request.form["block"]
+                block_id = self.request.POST["block"]
                 block_id = int(block_id)
             except (KeyError, ValueError):
                 self.page_msg.red("Form Error!")
@@ -244,12 +239,12 @@ class DecodeUnicode(PyLucidBaseModule):
             next_id = block_id
 
         context = {
-            "back_url"  : self.URLs.actionLink("display", back_id),
+            "back_url"  : self.URLs.methodLink("display", back_id),
             "back_name"  : self.blocks[back_id]["name"],
-            "next_url"  : self.URLs.actionLink("display", next_id),
+            "next_url"  : self.URLs.methodLink("display", next_id),
             "next_name"  : self.blocks[next_id]["name"],
 
-            "url"       : self.URLs.actionLink("display", block_id),
+            "url"       : self.URLs.methodLink("display", block_id),
             "block_name": block["name"],
             "ucHex": "%X" % block_range[0], # Für decodeunicode.org Link
             "range_hex1": "0x%04X" % block_range[0],
@@ -258,8 +253,7 @@ class DecodeUnicode(PyLucidBaseModule):
 
             "unidata_version": unicodedata.unidata_version,
         }
-        #~ self.templates.write("display", context, debug=True)
-        self.templates.write("display", context, debug=False)
+        self._render_template("display", context)
 
     def get_block_data(self, block):
 

@@ -13,14 +13,13 @@ __description__ = __long_description__ = (
 #___________________________________________________________________________________________________
 # Module-Manager Daten
 
-module_manager_data = {
+plugin_manager_data = {
     "lucidTag"  : {
         "must_login"    : False,
         "must_admin"    : False,
         "internal_page_info" : {
             "name"              : "select",
             "description"       : "select a unicode block range",
-            "template_engine"   : "jinja",
             "markup"            : None
         },
     },
@@ -30,7 +29,6 @@ module_manager_data = {
         "internal_page_info" : {
             "name"              : "display",
             "description"       : "display a unicode block range",
-            "template_engine"   : "jinja",
             "markup"            : None
         },
     },
