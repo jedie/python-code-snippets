@@ -1,8 +1,18 @@
+<fieldset><legend>Select a unicode block:</legend>
+    <label for="block">select a unicode block:</label>
+    <form name="block_select" method="post" action="{{ block_select_url }}">
+        <select name="block">
+            {% for block in block_select_data %}
+            <option value="{{ block.id }}" {% ifequal block.id selected_id %}selected="selected"{% endifequal %}>
+                {{ block.id }} - {{ block.name }}
+            </option>
+            {% endfor %}
+        </select>
+        <input value="display" type="submit">
+    </form>
+</fieldset>
+
 <fieldset><legend>{{ range_hex1 }}-{{ range_hex2 }} - {{ block_name }}:</legend>
-<p>
-    Link to <a href="http://www.decodeunicode.org/w3.php?ucHex={{ ucHex }}">
-    {{ block_name }} at decodeunicode.org</a>.
-</p>
 <p>
     <a href="{{ back_url }}">&lt;&lt; {{ back_name }}</a>
     - {{ block_name }} -
@@ -12,6 +22,7 @@
     <tr>
         <th>no</th>
         <th>char</th>
+        <th>pic</th>
         <th>unicode</th>
         <th>hex</th>
         <th>html</th>
@@ -19,15 +30,20 @@
     </tr>
     {% for row in block_data %}
     <tr class="{% cycle 'odd' 'even' %}">
-        <td>{{ row.id }}</td>
-        <td><strong>{{ row.char }}</strong></td>
-        <td title="Use in Python like this: &gt;print u'{{ row.unicode }}'&lt;">{{ row.unicode }}</td>
-        <td title="Use in Python like this: &gt;print '{{ row.hex }}'&lt;">{{ row.hex }}</td>
-        <td>{{ row.html|escape }}</td>
+        <td><small>{{ row.id }}</small></td>
+        <td style="text-align:center;"><strong>{{ row.char }}</strong></td>
         <td>
-            <a name="{{ row.id }}"><a href="{{ url }}#{{ row.id }}" title="anchor to this char">
-                {{ row.name }}
-            </a></a>
+            <a href="http://www.decodeunicode.org/data/glyph/196x196/{{ row.unicode_number }}.gif" title="Bigger pic from decodeunicode.org">
+            <img src="http://www.decodeunicode.org/data/glyph/26x26/{{ row.unicode_number }}.gif" border="0">
+            </a>
+        </td>
+        <td title="Use in Python like this: &gt;print u'{{ row.unicode }}'&lt;"><small>{{ row.unicode }}</small></td>
+        <td title="Use in Python like this: &gt;print '{{ row.hex }}'&lt;"><small>{{ row.hex }}</small></td>
+        <td title="copy&paste into your html code ;)"><small>{{ row.html|escape }}</small></td>
+        <td>
+            <a name="{{ row.id }}"></a>
+            <a href="#{{ row.id }}" title="anchor to this char">#</a>
+            <a href="http://www.decodeunicode.org/u+{{ row.unicode_number }}" title="Link to this char at decodeunicode.org">{{ row.name }}</a>
         </td>
     </tr>
     {% endfor %}

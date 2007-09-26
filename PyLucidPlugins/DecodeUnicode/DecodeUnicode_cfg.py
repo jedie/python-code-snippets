@@ -17,11 +17,6 @@ plugin_manager_data = {
     "lucidTag"  : {
         "must_login"    : False,
         "must_admin"    : False,
-        "internal_page_info" : {
-            "name"              : "select",
-            "description"       : "select a unicode block range",
-            "markup"            : None
-        },
     },
     "display"   : {
         "must_login"    : False,
