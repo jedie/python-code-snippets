@@ -48,6 +48,13 @@
     </tr>
     {% endfor %}
 </table>
+
+<p>
+    <a href="{{ back_url }}">&lt;&lt; {{ back_name }}</a>
+    - {{ block_name }} -
+    <a href="{{ next_url }}">{{ next_name }} &gt;&gt;</a>
+</p>
+
 <ul>&#x22D8; Column usage info: &#x22D9;
   <li><strong>unicode</strong>: Python example &#x2192; <strong>print u'\u0041'</strong></li>
   <li><strong>hex</strong>: Python example &#x2192; <strong>print '\x41'</strong></li>
