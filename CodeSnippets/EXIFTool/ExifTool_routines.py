@@ -2,15 +2,13 @@
 # -*- coding: UTF-8 -*-
 
 """
-    set_date.py - GPL - copyright (c) 2007 Jens Diemer
-
-    version 0.1.0
+    GPL - copyright (c) 2007 Jens Diemer
 
     Set the file date to the creation date found in the EXIF data.
     Usefull for if you convert RAW images into an DNG or JPEG Format.
 
     Note:
-        Used the external programm 'exiftool'!
+        Used the external programm 'exiftool'! (More info in 'ExifTool.py')
 """
 
 import os, sys, datetime, time, shutil, stat, subprocess, pprint
@@ -115,6 +113,12 @@ def get_create_date(exif_data, debug=False):
     if date == None:
         return
 
+    # FIXME: Find a better way to handle a timezone offset:
+    if "+" in date:
+        date = date.rsplit("+",1)[0]
+    if "-" in date:
+        date = date.rsplit("-",1)[0]
+
     if debug: print date
     t = time.strptime(date, "%Y:%m:%d %H:%M:%S")
     if debug:
@@ -127,14 +131,19 @@ def set_file_date(fn, create_date, simulate_only):
     """
     Set the file date to >create_date<.
     """
-    print "set file date to %s" % time2datetime(create_date)
+    print "set file date to %s..." % time2datetime(create_date),
     create_date = time.mktime(create_date)
     atime = create_date
     mtime = create_date
     if simulate_only:
         print "(simulate only. File date not modified)\n"
     else:
-        os.utime(fn, (atime, mtime))
+        try:
+            os.utime(fn, (atime, mtime))
+        except OSError, e:
+            print "Error:", e
+        else:
+            print "OK"
 
 
 def get_pics_fn(path):
@@ -179,11 +188,51 @@ def get_file_info(path):
 
         yield dirpath, filepath, filename, create_date
 
+def get_first_existing_path(path):
+    """
+    returns the first existing part of the given path.
+    """
+    path = os.path.normpath(path)
+    if os.path.isdir(path) or path == "/":
+        return path
+    else:
+        next_path = os.path.dirname(path)
+        assert next_path != path
+        return get_first_existing_path(next_path)
+
+
+def delete_empty(filepath, out):
+    """
+    Delete recusivly the given path. Stops if files/subdirectory exists.
+    """
+    out.write("Delete source path '%s'..." % path)
+    if len(os.listdir(path)) != 0:
+        out.write("not empty")
+        return
+
+    try:
+        os.rmdir(path)
+    except IOError, e:
+        out.write("Error: %s" % e)
+    else:
+        out.write("OK")
+        # the first half of the pair returned by os.path.split(path)
+        next_path = os.path.dirname(filepath)
+        delete_empty(next_path, out)
 
 
 
-def process(source_path, destination, out, simulate_only, move_files, copy_files):
+def process(source_path, destination, out, simulate_only, move_files,
+                                                                    copy_files):
     counter = 0
+
+    def simulate():
+        if simulate_only:
+            msg = "(simulate only.)"
+            print msg
+            out.write(msg)
+            return True
+        return False
 
     for dirpath, filepath, filename, create_date in get_file_info(source_path):
         out.write("")
@@ -195,37 +244,61 @@ def process(source_path, destination, out, simulate_only, move_files, copy_files
         year, month, day = ["%02i" % i for i in create_date[:3]]
         dest_path = os.path.join(destination, year, month, day)
         dest_path = os.path.abspath(dest_path)
+        dest_path = dest_path.rstrip("/") + "/"
 
         out.write("file destination: %s" % dest_path)
 
-        if simulate_only:
-            out.write("(simulate only.)")
-            continue
-
-        if source_path == dest_path:
+        out.write("%s - %s" % (dirpath, dest_path))
+        if dirpath.strip("/") == dest_path.strip("/"):
             msg = "No moving needed."
             print msg
             out.write(msg)
-        else:
-            if not os.path.isdir(dest_path):
-                msg = "Create destination path..."
-                print msg,
-                out.write(msg)
+            continue
+
+        if not os.path.isdir(dest_path):
+            msg = "Create destination path..."
+            print msg,
+            out.write(msg)
+            if not simulate():
                 os.makedirs(dest_path, mode=0764)
                 print "OK"
 
-            if move_files:
-                print "move %s to %s..." % (filepath, dest_path),
-                shutil.move(filepath, dest_path)
-                print "OK"
-            elif copy_files:
-                print "copy %s to %s..." % (filepath, dest_path),
-                shutil.copy(filepath, dest_path)
-                print "OK"
-            else:
-                # Should never be appear
-                out.write("ERROR: copy or move only!")
-                return
+        if move_files:
+            print "move %s to %s..." % (filepath, dest_path),
+            if simulate():
+                continue
+
+#                try:
+#                    shutil.move(filepath, dest_path)
+#                except OSError, e:
+#                    print "Error:", e
+#                else:
+#                    print "OK"
+
+            process = subprocess.Popen(
+                ['mv', filepath, dest_path],
+                stdout=subprocess.PIPE
+            )
+            process.wait()
+            print process.stdout.read()
+
+
+        elif copy_files:
+            print "copy %s to %s..." % (filepath, dest_path),
+            if simulate():
+                continue
+            shutil.copy(filepath, dest_path)
+            print "OK"
+        else:
+            # Should never be appear
+            out.write("ERROR: copy or move only!")
+            return
+
+        if simulate():
+            continue
+
+        # Delete the source path, if it's empty
+        delete_empty(dirpath, out)
 
         fn_dest = os.path.join(dest_path, filename)
         if not os.path.isfile(fn_dest):
