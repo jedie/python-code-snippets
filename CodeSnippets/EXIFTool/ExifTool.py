@@ -2,11 +2,31 @@
 # -*- coding: UTF-8 -*-
 
 """
-GPL - copyright (c) 2007 Jens Diemer
+    ExifTool - GPL - copyleft (c) 2007 Jens Diemer
 
-It used the external Perl Script "exiftool".
-You must install the package "libimage-exiftool-perl" and "perl-doc" (for the
-commandline help pages of the exiftool).
+With this small tool, you can organize you digital photo files.
+It used the external Perl Script "exiftool" to get the original date time
+of the pictures. It moves the files into a date time path hierarchy structure:
+
+    ./YEAR/MONTH/DAY/
+
+after moving the files, it set the file atime and mtime to the exif date time.
+If the source directory is empty, it would be deleted.
+
+    Set the file date to the creation date found in the EXIF data.
+    Usefull for if you convert RAW images into an DNG or JPEG Format.
+
+default used exif date keys:
+    "Create Date", "File Modification Date/Time"
+
+default used file extension whitelist:
+    ".pef", ".dng", ".jpg"
+
+(both settings defined in ExifTool_routines.py)
+
+Note:
+    -You must install the package "libimage-exiftool-perl"
+    -Install "perl-doc", too. (Its for the exiftool commandline help page)
 """
 
 import wx

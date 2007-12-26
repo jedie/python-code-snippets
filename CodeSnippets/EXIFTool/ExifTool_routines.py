@@ -2,10 +2,7 @@
 # -*- coding: UTF-8 -*-
 
 """
-    GPL - copyright (c) 2007 Jens Diemer
-
-    Set the file date to the creation date found in the EXIF data.
-    Usefull for if you convert RAW images into an DNG or JPEG Format.
+    routines for the ExifTool - GPL - copyleft (c) 2007 Jens Diemer
 
     Note:
         Used the external programm 'exiftool'! (More info in 'ExifTool.py')
@@ -56,6 +53,7 @@ def get_exif_data(fn, verbose = True):
     """
     run the exiftool for the given filename (>fn<) and returned the raw output
     """
+    print
     cmd = ["exiftool", fn]
     print "> %s..." % cmd,
 
@@ -113,13 +111,14 @@ def get_create_date(exif_data, debug=False):
     if date == None:
         return
 
+    print date
+
     # FIXME: Find a better way to handle a timezone offset:
     if "+" in date:
         date = date.rsplit("+",1)[0]
     if "-" in date:
         date = date.rsplit("-",1)[0]
 
-    if debug: print date
     t = time.strptime(date, "%Y:%m:%d %H:%M:%S")
     if debug:
         print t
@@ -183,7 +182,7 @@ def get_file_info(path):
         create_date = get_create_date(data)#, debug=True)
         if create_date == None:
             print "No date information found in exif data!"
-            print "current file: %s skip." % fn
+            print "current file: %s skip." % filepath
             continue
 
         yield dirpath, filepath, filename, create_date
@@ -205,13 +204,13 @@ def delete_empty(filepath, out):
     """
     Delete recusivly the given path. Stops if files/subdirectory exists.
     """
-    out.write("Delete source path '%s'..." % path)
-    if len(os.listdir(path)) != 0:
+    out.write("Delete source path '%s'..." % filepath)
+    if len(os.listdir(filepath)) != 0:
         out.write("not empty")
         return
 
     try:
-        os.rmdir(path)
+        os.rmdir(filepath)
     except IOError, e:
         out.write("Error: %s" % e)
     else:
