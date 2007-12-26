@@ -1,13 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
+"""
+GPL - copyright (c) 2007 Jens Diemer
+
+It used the external Perl Script "exiftool".
+You must install the package "libimage-exiftool-perl" and "perl-doc" (for the
+commandline help pages of the exiftool).
+"""
+
 import wx
 
 import os
 from ConfigParser import ConfigParser
 
 from ExifTool_GUI import FileHandler, ExifTool
-from ExifTool_routines import process, WrongPathError
+from ExifTool_routines import process, WrongPathError, get_first_existing_path
 
 CONFIG_FILENAME = "ExifTool.ini"
 DEFAULT_CONFIG = {
@@ -26,7 +34,7 @@ class Out(object):
     def __call__(self, *args):
         txt = "".join([str(i) for i in args])
         self.write(txt)
-        
+
 
 class FileHandler(FileHandler):
 
@@ -70,17 +78,15 @@ class FileHandler(FileHandler):
     #___________________________________________________________________
 
     def set_path(self, ctrl, path):
-        path = os.path.normpath(path)
-        if not os.path.isdir(path):
-            self.msg("Path '%s' doesn't exist." % path)
-            return
-
+        path = get_first_existing_path(path)
+        self.msg("set path to '%s'." % path)
         ctrl.SetValue(path)
 
     #___________________________________________________________________
 
     def _set_path(self, ctrl, txt):
         defaultPath = ctrl.GetValue()
+        defaultPath = get_first_existing_path(defaultPath)
         if not os.path.isdir(defaultPath):
             defaultPath = os.getcwd()
 
