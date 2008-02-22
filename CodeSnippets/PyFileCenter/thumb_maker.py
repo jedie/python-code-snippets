@@ -51,6 +51,7 @@ class thumb_maker_cfg:
     smaller_size    = (640, 480)
     suffix          = "_WEB"
     image_text      = ""
+    text_color      = "#000000"
 
     jpegQuality     = 85
 
@@ -71,14 +72,14 @@ class thumb_maker_cfg:
 
 
 class thumb_maker:
-    def __init__( self, cfg ):
+    def __init__(self, cfg):
         self.cfg = cfg
         self.skip_file_pattern = [
             "*%s.*" % self.cfg.thumb_suffix,
             "*%s.*" % self.cfg.suffix
         ]
 
-    def go( self ):
+    def go(self):
         """ Aktion starten """
         time_begin = time.time()
 
@@ -95,22 +96,22 @@ class thumb_maker:
 
         print "work path:", self.cfg.path_to_convert
 
-        for root,dirs,files in os.walk( self.cfg.path_to_convert ):
+        for root,dirs,files in os.walk(self.cfg.path_to_convert):
             print root
             print "_"*80
             for file_name in files:
-                abs_file = os.path.join( self.cfg.path_to_convert, root, file_name )
+                abs_file = os.path.join(self.cfg.path_to_convert, root, file_name)
 
-                self.process_file( abs_file )
+                self.process_file(abs_file)
 
         print "-"*80
         print "all files converted in %0.2fsec." % (time.time() - time_begin)
 
-    def process_file( self, abs_file ):
-        path, im_name   = os.path.split( abs_file )
+    def process_file(self, abs_file):
+        path, im_name   = os.path.split(abs_file)
         print abs_file
         try:
-            im_obj = Image.open( abs_file )
+            im_obj = Image.open(abs_file)
         except IOError:
             # Ist wohl kein Bild, oder unbekanntes Format
             #~ print "Not a image, skip.\n"
@@ -138,6 +139,7 @@ class thumb_maker:
                 suffix      = self.cfg.suffix,
                 size        = self.cfg.smaller_size,
                 text        = self.cfg.image_text,
+                color       = self.cfg.text_color,
             )
 
         # Thumbnails erstellen
@@ -151,32 +153,33 @@ class thumb_maker:
             )
         print "-"*3
 
-    def convert( self,
+    def convert(self,
         im_obj, # Das PIL-Image-Objekt
         im_path,# Der Pfad in dem das neue Bild gespeichert werden soll
         im_name,# Der vollständige Name der Source-Datei
         suffix, # Der Anhang für den Namen
         size,   # Die max. größe des Bildes als Tuple
-        text="" # Text der unten rechts ins Bild eingeblendet wird
-        ):
+        text="",# Text der unten rechts ins Bild eingeblendet wird
+        color="#00000", # Textfarbe
+       ):
         """ Rechnet das Bild kleiner und fügt dazu den Text """
 
-        name, ext       = os.path.splitext( im_name )
+        name, ext       = os.path.splitext(im_name)
         out_name        = name + suffix + ".jpg"
-        out_abs_name    = os.path.join( im_path, out_name )
+        out_abs_name    = os.path.join(im_path, out_name)
 
         for skip_pattern in self.skip_file_pattern:
-            if fnmatch.fnmatch( im_name, skip_pattern ):
+            if fnmatch.fnmatch(im_name, skip_pattern):
                 #~ print "Skip file."
                 return
 
-        if os.path.isfile( out_abs_name ):
+        if os.path.isfile(out_abs_name):
             print "File '%s' exists! Skip." % out_name
             return
 
         print "resize (max %ix%i)..." % size,
         try:
-            im_obj.thumbnail( size, Image.ANTIALIAS )
+            im_obj.thumbnail(size, Image.ANTIALIAS)
         except Exception, e:
             print ">>>Error: %s" % e
             return
@@ -189,8 +192,11 @@ class thumb_maker:
             print "OK"
 
         if text != "":
-            font_obj = ImageFont.truetype('arial.ttf', 12) # unter Linux ganzen Pfad angeben!
-            ImageDraw.Draw( im_obj ).text( (10, 10), text, font=font_obj, fill=1 )
+            # unter Linux ganzen Pfad angeben:
+            font_obj = ImageFont.truetype('arial.ttf', 12)
+            ImageDraw.Draw(im_obj).text(
+                (10, 10), text, font=font_obj, fill=color
+            )
 
         print "save '%s'..." % out_name,
         try:
@@ -216,7 +222,7 @@ class thumb_maker:
             fn = fn.replace(rule[0], rule[1])
 
         allowed_chars = string.ascii_letters + string.digits
-        allowed_chars += "-_#"
+        allowed_chars += ".-_#"
 
         # Nur ASCII Zeichen erlauben und gleichzeitig trennen
         parts = [""]
@@ -241,7 +247,7 @@ if __name__ == "__main__":
     thumb_maker_cfg.smaller_size    = (960, 600)
     thumb_maker_cfg.image_text      = "Your image Text :)"
 
-    thumb_maker( thumb_maker_cfg ).go()
+    thumb_maker(thumb_maker_cfg).go()
 
 
 
