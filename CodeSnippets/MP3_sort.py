@@ -27,23 +27,42 @@ __license__ = "GNU General Public License (GPL)"
 import os, subprocess, time, urllib, urllib2, re
 from pprint import pprint
 
+
 class Config(object):
+    """
+    Contains the configurations.
+
+    base_dir
+        Directory witch contains the MP3 files. (The artist direcories)
+
+    sort_dir
+        Direcotry in witch the gerne-direcotries and the symlinks created.
+
+    use_tags
+        How many tags should be used? (Creates a symlinc for each tags)
+    """
     base_dir = None
     sort_dir = None
 
-    # How many tags should be used???
     use_tags = 2
 
-    # Feed url from http://www.audioscrobbler.net/data/webservices/
+    #__________________________________________________________________________
+    # Variables how should not changed:
+
+    # Tge tag Feed url from http://www.audioscrobbler.net/data/webservices/
     tag_url = "http://ws.audioscrobbler.com/1.0/artist/%s/toptags.xml"
     tag_re = re.compile(r"<name>(.*?)</name>")
 
-    debug = True
+    debug = False # Make more verbose output?
+
 
 CFG = Config()
 
 
 class Artist(object):
+    """
+    Holds information around a artist.
+    """
     def __init__(self, cfg, artist):
         self.cfg = cfg
         self.name = artist
@@ -79,6 +98,9 @@ class Artist(object):
 
 
 def check():
+    """
+    Some base checks before we start...
+    """
     assert os.name == "posix", "only for linux!!!"
     assert CFG.base_dir != None, "Please set Config.base_dir!"
     assert CFG.sort_dir != None, "Please set Config.sort_dir!"
@@ -140,16 +162,24 @@ def get_toptags_file(artist):
 
 def get_tags(toptags_xml):
     """
-    returns the <name>XXX</name> contents
+    returns the first tag content (<name>XXX</name>).
+    Use only the first x tags specified with CFG.use_tags.
     """
     tags = CFG.tag_re.findall(toptags_xml)
     if CFG.debug:
         print "all tags:", tags
+
     tags = tags[:CFG.use_tags]
     return tags
 
 
 def link_artist(artist, tags):
+    """
+    Create the gerne sorted symlinks.
+
+    -Create the gerne direcotry in CFG.sort_dir.
+    -Create a symlincs from the source artist directory into the gerne dir
+    """
     for tag in tags:
         print ">>>", tag
         source_path = artist.get_fs_path()
@@ -181,6 +211,9 @@ def link_artist(artist, tags):
 
 
 def auto_sort():
+    """
+    The main routine
+    """
     for no, artist in enumerate(os.listdir(CFG.base_dir)):
         artist = Artist(CFG, artist)
         if not os.path.isdir(artist.get_fs_path()):
