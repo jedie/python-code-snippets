@@ -30,9 +30,9 @@ Info:
                                  ^^^^^^^
 
 
-$LastChangedDate:$
-$Rev:$
-$Author: jensdiemer $
+$LastChangedDate$
+$Rev$
+$Author$
 
 license: GNU General Public License v2 or above
 """

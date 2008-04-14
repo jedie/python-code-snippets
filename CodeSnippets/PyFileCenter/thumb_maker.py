@@ -7,9 +7,9 @@
 
 Last commit info:
 ----------------------------------
-$LastChangedDate:$
-$Rev:$
-$Author: jensdiemer $
+$LastChangedDate$
+$Rev$
+$Author$
 
 Created by Jens Diemer
 
@@ -18,7 +18,7 @@ license:
     http://www.opensource.org/licenses/gpl-license.php
 """
 
-__version__= "$Rev:$"
+__version__= "$Rev$"
 
 
 import sys, os, time, fnmatch, urllib, string
