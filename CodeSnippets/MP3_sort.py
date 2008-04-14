@@ -2,27 +2,74 @@
 # -*- coding: UTF-8 -*-
 
 """
-Sortiert MP3s nach tags durch symbolische links.
+    MP3 sort
+    ~~~~~~~~
+    Create a sorted directory structure of you MP3s via symbolic links.
 
-Die MP3s müßen so sortiert sein:
-    ... / BASE_DIR / artist / ...
-sortiert wird dann so:
-    ... / SORT_DIR / TAG-1 / artist-1, artist-2, ... , artist-x
-    ... / SORT_DIR / TAG-2 / artist-1, artist-2, ... , artist-x
-    ... / SORT_DIR / TAG-x / artist-1, artist-2, ... , artist-x
+    Structure of you MP3s:
+        ... / BASE_DIR / artist-1 / ...
+        ... / BASE_DIR / artist-2 / ...
+        ... / BASE_DIR / artist-n / ...
 
-1. Liest das BASE_DIR aus.
-2. ermittels bei last.fm den meist benutzten tag für den Artist.
-3. erstellt symbolischen link von BASE_DIR + artist nach SORT_DIR + tag
+    sorted dir looks like this:
+        ... / SORT_DIR / TAG-1 / artist-1, artist-2, ... , artist-x
+        ... / SORT_DIR / TAG-2 / artist-1, artist-2, ... , artist-x
+        ... / SORT_DIR / TAG-x / artist-1, artist-2, ... , artist-x
 
-ToDO:
-Wenn ein Artist nicht gefunden werden kann, ist evtl. die Schreibweise nicht
-ganz korrekt. Helfen würde es, die Suche zu nutzten, z.B.:
-    http://www.lastfm.de/music/?q=Coverdale+%26+Page
+    1. Reads alle direcotries from BASE_DIR
+    2. Request the artist tag information from last.fm
+    3. write toptags.xml into the artist dir (caching)
+    4. create symbolic links from /BASE_DIR/artist/ to /SORT_DIR/tag/
+
+
+    using
+    ~~~~~
+    You can edit the Config here in this file or create a small dispatcher file
+    like this:
+    ---------------------------------------------------------------------------
+    #!/usr/bin/env python
+    # -*- coding: utf-8 -*-
+
+    import sys
+    sys.path.insert(0, "/path/to/MP3_sort/directory/")
+
+    from MP3_sort import Config, check, auto_sort
+
+    # Set the config
+    Config.base_dir = "~/MP3s/"
+    Config.sort_dir = "~/MP3s/sorted/"
+    Config.use_tags = 2
+    Config.debug = False
+
+    check()
+    auto_sort()
+
+    raw_input("ENTER") # If you start it with the mouse ;)
+    ---------------------------------------------------------------------------
+
+    known bugs
+    ~~~~~~~~~~
+    There are problems with special characters in the arist name.
+
+    TODO:
+    ~~~~~
+    Wenn ein Artist nicht gefunden werden kann, ist evtl. die Schreibweise
+    nicht ganz korrekt. Helfen würde es, die Suche zu nutzten, z.B.:
+        http://www.lastfm.de/music/?q=Coverdale+%26+Page
+
+    Last commit info:
+    ~~~~~~~~~~~~~~~~~
+    $LastChangedDate: $
+    $Rev: $
+    $Author: $
+
+    :copyright: 2007 by Jens Diemer
+    :license: GNU GPL v3, see LICENSE.txt for more details.
 """
 
 __author__  = "Jens Diemer (www.jensdiemer.de)"
 __license__ = "GNU General Public License (GPL)"
+__version__ = "SVN $Rev: $"
 
 import os, subprocess, time, urllib, urllib2, re
 from pprint import pprint
@@ -124,17 +171,20 @@ def get_toptags_file(artist):
     """
     # Try to use toptags.xml from the filesystem
     feed_fs_path = artist.get_feed_fs_path()
-    print feed_fs_path
+    if CFG.debug:
+        print feed_fs_path
     if os.path.isfile(feed_fs_path):
         f = file(feed_fs_path, "r")
         content = f.read()
         f.close()
-        print "Use toptags.xml from the filesystem"
+        if CFG.debug:
+            print "Use toptags.xml from the filesystem"
         return content
 
     # get toptags.xml from audioscrobbler
     feed_url = artist.get_feed_url()
-    print feed_url
+    if CFG.debug:
+        print feed_url
     start_time = time.time()
     try:
         f = urllib2.urlopen(feed_url)
@@ -181,7 +231,7 @@ def link_artist(artist, tags):
     -Create a symlincs from the source artist directory into the gerne dir
     """
     for tag in tags:
-        print ">>>", tag
+        print ">>> %s -" % tag,
         source_path = artist.get_fs_path()
         tag_dir = os.path.join(CFG.sort_dir, tag)
         if CFG.debug:
@@ -190,7 +240,7 @@ def link_artist(artist, tags):
         exist_dir = os.path.join(tag_dir, artist.name)
         if os.path.isdir(exist_dir):
             print "symbolic link exist, skip."
-            return
+            continue
 
         if not os.path.isdir(tag_dir):
             os.makedirs(tag_dir)
@@ -214,7 +264,8 @@ def auto_sort():
     """
     The main routine
     """
-    for no, artist in enumerate(os.listdir(CFG.base_dir)):
+    count = 0
+    for artist in os.listdir(CFG.base_dir):
         artist = Artist(CFG, artist)
         if not os.path.isdir(artist.get_fs_path()):
             # not a directory (e.g. a file)
@@ -223,9 +274,10 @@ def auto_sort():
             continue
 
 #        if no > 10: break
+        count += 1
 
         print "_"*80
-        print "%s - %s" % (no, artist.name)
+        print "%s - %s" % (count, artist.name)
 
         toptags_xml = get_toptags_file(artist)
         if not toptags_xml:
@@ -241,7 +293,6 @@ def auto_sort():
             print "tags:", tags
 
         link_artist(artist, tags)
-
 
 if __name__ == "__main__":
     check()
