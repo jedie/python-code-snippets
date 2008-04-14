@@ -114,11 +114,7 @@ class Artist(object):
         self.cfg = cfg
         self.name = artist
 
-    def get_fs_path(self):
-        """
-        returns the filesystem path to the arist directory
-        """
-        return os.path.join(self.cfg.base_dir, self.name)
+        self.path = os.path.join(self.cfg.base_dir, self.name)
 
     def get_quoted_name(self):
         """
@@ -138,7 +134,7 @@ class Artist(object):
         """
         returns the toptags.xml cache filesystem path
         """
-        return os.path.join(self.get_fs_path(), "toptags.xml")
+        return os.path.join(self.path, "toptags.xml")
 
     def __str__(self):
         return "<Artist '%s'>" % self.name
@@ -232,32 +228,25 @@ def link_artist(artist, tags):
     """
     for tag in tags:
         print ">>> %s -" % tag,
-        source_path = artist.get_fs_path()
-        tag_dir = os.path.join(CFG.sort_dir, tag)
-        if CFG.debug:
-            print source_path, tag_dir
+        source_path = artist.path
 
-        exist_dir = os.path.join(tag_dir, artist.name)
-        if os.path.isdir(exist_dir):
+        tag_dir = os.path.join(CFG.sort_dir, tag)
+        if not os.path.isdir(tag_dir):
+            if CFG.debug:
+                print "makedirs: '%s'" % tag_dir
+            os.makedirs(tag_dir)
+
+        dst_dir = os.path.join(CFG.sort_dir, tag, artist.name)
+        if CFG.debug:
+            print source_path, dst_dir
+
+        if os.path.isdir(dst_dir):
             print "symbolic link exist, skip."
             continue
 
-        if not os.path.isdir(tag_dir):
-            os.makedirs(tag_dir)
+        os.symlink(source_path, dst_dir)
+        print "symbolic link created."
 
-        cmd = ['ln', '-s', source_path, tag_dir]
-        if CFG.debug:
-            print " ".join(cmd)
-
-        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=False)
-        process.wait()
-        if process.returncode != 0:
-            print "subprocess Error, Return code:", process.returncode
-
-        output = process.stdout.read()
-        if output != "":
-            print "subprocess output:"
-            print output
 
 
 def auto_sort():
@@ -267,7 +256,7 @@ def auto_sort():
     count = 0
     for artist in os.listdir(CFG.base_dir):
         artist = Artist(CFG, artist)
-        if not os.path.isdir(artist.get_fs_path()):
+        if not os.path.isdir(artist.path):
             # not a directory (e.g. a file)
             if CFG.debug:
                 print "skip '%s' (it's not a direcotry)" % artist.name
