@@ -1,10 +1,28 @@
-# must run with sudo!
+#!/bin/bash
+
 # from http://ubuntuforums.org/showthread.php?t=442974
 
-# Mark all installed (~i) packages as "Automatically installed"
-aptitude markauto ~i --schedule-only
+function info {
+    echo ""
+    echo "**** $1 ****"
+    echo ""
+}
+function verbose_eval {
+    echo "--------------------------------------------------------------------"
+    echo $*
+    echo "--------------------------------------------------------------------"
+    eval $*
+}
 
-#~ keep label the packages that are essential to the system as 'manually installed':
+if [ $(whoami) != 'root' ]; then
+    info "Error: You must start this script with sudo!"
+    exit
+fi
+
+info "Mark all installed (~i) packages as 'Automatically installed'"
+verbose_eval aptitude markauto ~i --schedule-only
+
+info "Mark essential packages as 'manually installed'"
 #1. ~i~prequired: This is an aptitude regex formula meaning any installed packages whose priority level is 'required'
 #2. ~i~pimportant: This is an aptitude regex formula meaning any installed packages whose priority level is 'important'
 #3. ~i~pstandard: This is an aptitude regex formula meaning any installed packages whose priority level is 'standard'.
@@ -13,12 +31,13 @@ aptitude markauto ~i --schedule-only
 #5. ubuntu-standard: This metapackage depends on all of the packages in the Ubuntu standard system. This set of packages provides a comfortable command-line Unix-like environment.
 #6. linux-generic: This metapackage always depends on the latest generic Linux kernel available.
 #7. linux-headers-generic: This metapackage always depends on the latest generic kernel headers available.
-aptitude install -R ~i~prequired ~i~pimportant ~i~pstandard ubuntu-minimal ubuntu-standard linux-generic linux-headers-generic --schedule-only
+verbose_eval aptitude install -R ~i~prequired ~i~pimportant ubuntu-minimal ubuntu-standard linux-generic linux-headers-generic --schedule-only
 
-aptitude install -R `cat ~/packagelist.txt | grep -v '^#' | tr '\n' ' '` --schedule-only
+info "set all packages from 'packagelist.txt' to 'manually installed'"
+verbose_eval aptitude install -R `cat packagelist.txt | grep -v '^#' | tr '\n' ' '` --schedule-only
 
-# remove unncessary packages, but simulate only!
-aptitude install -Rs
+info "remove unncessary packages"
+verbose_eval aptitude install -R
 
-echo "revert with: sudo aptitude keep-all"
-echo "do all changes with: sudo aptitude install -R"
+info "revert with: 'sudo aptitude keep-all'"
+info "do all changes with: sudo aptitude install -R"
