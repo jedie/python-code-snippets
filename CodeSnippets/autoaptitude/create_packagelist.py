@@ -140,10 +140,10 @@ def write_package_list(automark_data, filename):
 
 if __name__ == "__main__":
     #~ os.remove(TEMP_FILENAME)
-    if os.path.isfile(TEMP_FILENAME):
-        print "Skip aptitude show, use file %s" % TEMP_FILENAME
-    else:
-        create_temp_file()
+#    if os.path.isfile(TEMP_FILENAME):
+#        print "Skip aptitude show, use file %s" % TEMP_FILENAME
+#    else:
+    create_temp_file()
 
     #~ sys.exit()
     print "-"*79

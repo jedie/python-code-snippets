@@ -19,6 +19,8 @@ if [ $(whoami) != 'root' ]; then
     exit
 fi
 
+info "You should run 'aptitude update' first!"
+
 info "keep all packages"
 verbose_eval aptitude keep-all
 
@@ -45,4 +47,3 @@ info "remove unncessary packages"
 verbose_eval aptitude install -R
 
 info "revert with: 'sudo aptitude keep-all'"
-info "do all changes with: sudo aptitude install -R"
