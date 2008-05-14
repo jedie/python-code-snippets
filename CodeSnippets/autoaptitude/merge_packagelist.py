@@ -1,5 +1,10 @@
 
+"""
+/usr/share/doc/python-apt/examples
+"""
+
 import apt
+
 
 
 PACKAGE_FILE = "packagelist.txt"
