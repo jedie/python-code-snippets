@@ -19,6 +19,9 @@ if [ $(whoami) != 'root' ]; then
     exit
 fi
 
+info "keep all packages"
+verbose_eval aptitude keep-all
+
 info "Mark all installed (~i) packages as 'Automatically installed'"
 verbose_eval aptitude markauto ~i --schedule-only
 
@@ -31,7 +34,9 @@ info "Mark essential packages as 'manually installed'"
 #5. ubuntu-standard: This metapackage depends on all of the packages in the Ubuntu standard system. This set of packages provides a comfortable command-line Unix-like environment.
 #6. linux-generic: This metapackage always depends on the latest generic Linux kernel available.
 #7. linux-headers-generic: This metapackage always depends on the latest generic kernel headers available.
-verbose_eval aptitude install -R ~i~prequired ~i~pimportant ubuntu-minimal ubuntu-standard linux-generic linux-headers-generic --schedule-only
+verbose_eval aptitude install -R ~i~prequired ~i~pimportant --schedule-only
+#ubuntu-minimal ubuntu-standard
+#linux-generic linux-headers-generic
 
 info "set all packages from 'packagelist.txt' to 'manually installed'"
 verbose_eval aptitude install -R `cat packagelist.txt | grep -v '^#' | tr '\n' ' '` --schedule-only
