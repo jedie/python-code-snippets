@@ -82,6 +82,10 @@ class PackageMerger(object):
         self.data = {}
         for package in self.package_list:
             self.data[package] = apt_info.get_package(package)
+            
+    def _print_info(self, txt):
+        print "_"*79
+        print txt
 
     def get_section_packages(self, section_name):
         result = set()
@@ -103,24 +107,38 @@ class PackageMerger(object):
         delete all package from self.package_list if there exist as
         dependencies in a metapackage
         """
+        self._print_info("Filter metapackages dependencies:")
+        
         metapackages = self.get_section_packages(section_name="metapackages")
         print " * Found metapackages:"
         print ">>>", ", ".join(metapackages)
 
-#        print len(self.package_list), self.package_list
-#        packages = self.package_list -  metapackages
-#        print len(packages), packages
-
         dependencies = self.get_merged_dependencies(metapackages)
-        print dependencies
 
         print " * Unused packages, because there are in the meatepackages:"
         print ">>>", ", ".join(self.package_list.intersection(dependencies))
 
         # Update package list
         self.package_list -= dependencies
-
-    def write_package_list(self, filename):
+        
+    def filter_dependencies(self):
+        """
+        TODO: Displays only the dependencies intersections!
+        """
+        self._print_info("Filter all dependencies:")
+        packages_set = set(self.package_list)
+        dep_data = []
+        for package_name in sorted(self.package_list):
+            package = self.data[package_name]
+            dep_packages = set(package.dependencies)
+            shared_packages = packages_set.intersection(dep_packages)
+#            if shared_packages:
+            print package_name, shared_packages 
+    
+    def get_write_data(self):
+        """
+        returns the dict with section information and self.package_list
+        """
         write_data = {}
         for package_name in self.package_list:
             section = self.data[package_name].get_section()
@@ -128,8 +146,19 @@ class PackageMerger(object):
                  write_data[section] = set()
 
             write_data[section].add(package_name)
+            
+        for section, packages in write_data.iteritems():
+            write_data[section] = sorted(packages)
+            
+        return write_data
 
-        pprint(write_data)
+    def write_package_list(self, filename):
+        """
+        Write all packages from self.package_list into a new packagelist file
+        """
+        self._print_info("Write '%s'" % filename)
+        
+        write_data = self.get_write_data()
 
         f = file(filename, "w")
         f.writelines([
@@ -144,12 +173,21 @@ class PackageMerger(object):
                 "# %s" % section, "\n",
                 "#" * 20, "\n",
             ])
-            f.write("\n".join(sorted(packages)))
+            f.write("\n".join(packages))
             f.write("\n\n")
 
         f.close()
 
-
+    def print_debug(self):
+        """
+        pprint debug information
+        """
+        self._print_info("DEBUG:")
+        
+        print "-"*79
+        write_data = self.get_write_data()
+        pprint(write_data)
+        print "-"*79
 
 
 
@@ -184,7 +222,10 @@ if __name__ == "__main__":
     apt_info = AptInfo()
     packages = PackageMerger(package_list, apt_info)
     packages.filter_metapackages()
+    packages.filter_dependencies()
     packages.write_package_list(NEW_PACKAGE_FILE)
+    
+    packages.print_debug()
 
 
 #
