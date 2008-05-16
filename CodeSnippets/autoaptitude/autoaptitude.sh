@@ -19,7 +19,7 @@ if [ $(whoami) != 'root' ]; then
     exit
 fi
 
-info "You should run 'aptitude update' first!"
+info "You should run 'aptitude update' before!"
 
 info "keep all packages"
 verbose_eval aptitude keep-all
@@ -43,7 +43,7 @@ verbose_eval aptitude install -R ~i~prequired ~i~pimportant --schedule-only
 info "set all packages from 'packagelist.txt' to 'manually installed'"
 verbose_eval aptitude install -R `cat packagelist.txt | grep -v '^#' | tr '\n' ' '` --schedule-only
 
+info "revert with: 'sudo aptitude keep-all' - aboard with Strg-C"
+
 info "remove unncessary packages"
 verbose_eval aptitude install -R
-
-info "revert with: 'sudo aptitude keep-all'"
