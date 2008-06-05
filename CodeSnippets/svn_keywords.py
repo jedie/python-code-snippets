@@ -1,23 +1,23 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 
-""" PyLucid SVN tool
+"""
+    Small Python SVN tool
+    ~~~~~~~~~~~~~~~~~~~~~
 
-    - sync svn:keywords
+    sync svn:keywords with the keywords found in the sourcecode.
 
+    Last commit info:
+    ----------------------------------
+    $LastChangedDate$
+    $Rev$
+    $Author$
+    $HeadURL$
 
-Last commit info:
-----------------------------------
-$LastChangedDate$
-$Rev$
-$Author$
-$HeadURL$
+    Created by Jens Diemer
 
-Created by Jens Diemer
-
-license:
-    GNU General Public License v2 or above
-    http://www.opensource.org/licenses/gpl-license.php
+    :copyleft: 2007-2008 by Jens Diemer.
+    :license: GNU GPL v3 or above.
 """
 
 import os, sys, re, fnmatch
@@ -28,6 +28,7 @@ except ImportError, e:
     print "Import Error: ", e
     print "You must install pysvn from:"
     print "http://pysvn.tigris.org"
+    print "or use: 'sudo aptitude install python-svn' ;)"
     sys.exit()
 
 
@@ -38,7 +39,7 @@ class Config(object):
     # Path to the SVN repo:
     repository = "."
 
-    #~ simulation = False
+#    simulation = False
     simulation = True
 
     # Dateien die keine svn:keywords haben dürfen, ist in den svn:keywords dennoch
