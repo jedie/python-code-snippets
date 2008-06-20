@@ -1,0 +1,26 @@
+{% extends "install_base.html" %}
+
+{% block head %}
+<script type="text/javascript" src="{{ PyLucid_media_url }}sha.js"></script>
+<script type="text/javascript" src="{{ PyLucid_media_url }}install_views.js"></script>
+<script type="text/javascript">
+    salt = "{{ salt }}";
+</script>
+{% endblock %}
+
+{% block body_tag %}onload="try{login_init()} catch (e) {}"{% endblock %}
+
+{% block content %}
+<h1>{% trans 'Login into the _install section' %}</h1>
+
+<fieldset>
+    <legend>{% trans 'Log in' %}</legend>
+    <form name="login" method="post" action="" id="password_form" onsubmit="return make_hash();">
+      <label for="plaintext_pass">Input your Password here :</label>
+      <input id="plaintext_pass" type="password" name="{% trans 'Password' %}" size="20" /><br />
+      <label for="hash">generated SHA-1 hash :</label>
+      <input id="hash" name="hash" type="text" value="(input password first)" size="60" readonly="readonly" /><br />
+      <input type="submit" value="{% trans 'Log in' %}" />
+    </form>
+</fieldset>
+{% endblock %}

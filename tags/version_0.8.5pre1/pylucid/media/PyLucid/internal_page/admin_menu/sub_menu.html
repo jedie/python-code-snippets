@@ -1,0 +1,9 @@
+{% for section in dynamic_menu %}
+    <fieldset><legend>{{ section.name }}</legend>
+        <ul>
+        {% for entry in section %}
+            <li><a href="{{ entry.link }}" {% if entry.open_in_window %}onclick="OpenInWindow(this); return false"{% endif %}>{{ entry.title }}</a> - <small>{{ entry.help_text }}</small></li>
+        {% endfor %}
+        </ul>
+    </fieldset>
+{% endfor %}

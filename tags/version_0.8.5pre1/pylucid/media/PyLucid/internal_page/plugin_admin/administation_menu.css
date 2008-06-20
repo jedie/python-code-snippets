@@ -1,0 +1,32 @@
+table.plugin_admin {
+  border-spacing: 0px;
+  width: 100%;
+  max-width: 850px;
+}
+table.plugin_admin td {
+  padding:0.5em;
+  border-top:1px solid #999;
+}
+.row1 {
+  background-color: #FFF;
+}
+.row2 {
+  background-color: #EEE;
+}
+.caption {
+  line-height:0px;
+  text-align: center;
+  background-color: #EEE;
+}
+.plugin_admin small {
+  color: #999;
+}
+.action {
+  font-weight:bold;
+}
+.author {
+  color: #000;
+}
+.description, .author, .version {
+  font-size: 0.75em;
+}
