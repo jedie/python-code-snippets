@@ -1,0 +1,47 @@
+{% extends "install_base.html" %}
+
+{% block head %}
+<script language="javascript" type="text/javascript" src="{{ PyLucid_media_url }}sha.js"></script>
+<script type="text/javascript" src="{{ PyLucid_media_url }}install_views.js"></script>
+{% endblock %}
+
+{% block body_tag %}onload="try{generate_hash_init()} catch (e) {}"{% endblock %}
+
+{% block content %}
+<h1>{% trans 'Generate _install section password hash.' %}</h1>
+
+<div id="password_form">
+<p>
+    {% trans 'Before you can login into the _install section, you must insert a login password hash into your settings.py.' %}<br />
+    {% trans 'Here you can generate this password hash.' %}<br />
+    <br />
+    {% trans 'Please ...' %}
+    <ol>
+    <li>{% trans '... input a Password.' %}</li>
+    <li>{% trans '... copy and paste the SHA hash into your settings.py. (Variable "INSTALL_PASSWORD_HASH")' %}</li>
+    <li>{% trans '... reload this page.' %}</li>
+    </ol>
+</p>
+<fieldset>
+    <legend>{% trans 'Generate SHA-1 hash.' %}</legend>
+    <form name="login" method="post" action="" onsubmit="return make_hash();">
+        <label for="plaintext_pass">Input your Password here :</label>
+        <input id="plaintext_pass" type="password" name="{% trans 'Password' %}" size="20"/><br />
+        <span class="help_text">{% trans '(at least 8 chars long and only ASCII letters are allowed!)' %}</span>
+        <p>
+        <label for="hash">generated SHA-1 hash :</label>
+        <input id="hash" type="text" value="(input the password first)" size="60" readonly="readonly" /><br />
+        <span class="help_text">{% trans 'You must copy and paste the hash into your settings.py file.' %}</span>
+        </p>
+        <input type="submit" value="{% trans 'make hash' %}" />
+    </form>
+</fieldset>
+
+<ul>
+<strong>{% trans 'Info:' %}</strong><br />
+<li>
+    {% trans 'The password would be hashed with JavaScript in your Browser. It will not send to the server back!' %}
+</li>
+</ul>
+</div>
+{% endblock %}

@@ -1,0 +1,71 @@
+.filemanager {
+    font-size:0.9em;
+}
+.filemanager input, .filemanager .action_link {
+    font-size: 0.9em;
+    border: 1px solid black;
+    padding: 0px 1px 0 1px;
+    margin: 1px;
+}
+.filemanager legend {
+    border: 1px solid black;
+    padding: 0.1em 1em 0.1em 1em;
+    margin: 0px;
+    background: white;
+}
+.filemanager a {
+    text-decoration: none;
+}
+.filemanager .n a, .filemanager .n a:active {
+    color: blue;
+}
+.filemanager .n a:visited {
+    color: #48468F;
+}
+.filemanager .n a:hover, .filemanager .n a:focus {
+    text-decoration: underline;
+}
+.filemanager table {
+    font-family: "Courier New", Courier, monospace;
+    border: 1px solid grey;
+    width: 100%;
+}
+.filemanager .row1 td {
+    background-color: #ddd;
+}
+.filemanager .row2 td {
+    background-color: #eee;
+}
+.filemanager th, .filemanager  td {
+    text-align: left;
+}
+.filemanager th {
+    text-align: center;
+    font-size:0.85em;
+    font-weight: bold;
+    padding: 5px;
+}
+.filemanager td {
+    padding-right: 20px;
+    border-top: 1px solid grey;
+}
+.filemanager td.s, .filemanager td.m {
+    text-align: right;
+}
+.filemanager td.t input {
+    float:left;
+}
+.filemanager .s, .filemanager .m, .filemanager .o, .filemanager .u, .filemanager .g {
+    /* size + mtime + mode + uid + gid */
+    font-size:0.8em;
+    font-weight:lighter;
+}
+.filemanager fieldset.actions, .filemanager fieldset.actions legend {
+    border: 1px solid grey;
+    padding: 0px 10px 4px 10px;
+    margin: 3px 0px 3px 0px;
+}
+.filemanager fieldset.actions legend {
+    font-size: 0.75em;
+    padding: 1px 10px 1px 10px;
+}
