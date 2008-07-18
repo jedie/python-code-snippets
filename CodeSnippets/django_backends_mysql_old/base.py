@@ -2,6 +2,10 @@
 MySQL database backend for Django.
 
 Requires MySQLdb: http://sourceforge.net/projects/mysql-python
+
+Patched svn revision 7852:
+http://code.djangoproject.com/changeset/7852
+http://code.djangoproject.com/browser/django/trunk/django/db/backends/mysql_old/base.py?rev=7852
 """
 
 from django.db.backends import BaseDatabaseWrapper, BaseDatabaseFeatures, BaseDatabaseOperations, util
@@ -37,19 +41,12 @@ django_conversions.update({
 # http://dev.mysql.com/doc/refman/5.0/en/news.html .
 server_version_re = re.compile(r'(\d{1,2})\.(\d{1,2})\.(\d{1,2})')
 
-class MysqlWrapper:
+# This is an extra debug layer over MySQL queries, to display warnings.
+# It's only used when DEBUG=True.
+class MysqlDebugWrapper:
     def __init__(self, cursor):
         self.cursor = cursor
 
-    def __getattr__(self, attr):
-        if attr in self.__dict__:
-            return self.__dict__[attr]
-        else:
-            return getattr(self.cursor, attr)
-
-# This is an extra debug layer over MySQL queries, to display warnings.
-# It's only used when DEBUG=True.
-class MysqlDebugWrapper(MysqlWrapper):
     def execute(self, sql, params=()):
         try:
             return self.cursor.execute(sql, params)
@@ -64,7 +61,16 @@ class MysqlDebugWrapper(MysqlWrapper):
             self.cursor.execute("SHOW WARNINGS")
             raise Database.Warning("%s: %s" % (w, self.cursor.fetchall()))
 
-class MysqlUnicodeWrapper(MysqlWrapper):
+    def __getattr__(self, attr):
+        if attr in self.__dict__:
+            return self.__dict__[attr]
+        else:
+            return getattr(self.cursor, attr)
+
+class MysqlUnicodeWrapper:
+    """
+    A Wrapper who decode all byte strings to unicode.
+    """
     def __init__(self, cursor):
         self.cursor = cursor
 
@@ -104,10 +110,17 @@ class MysqlUnicodeWrapper(MysqlWrapper):
         return self._decode_lines(result_raw)
         return result_raw
 
+    def __getattr__(self, attr):
+        if attr in self.__dict__:
+            return self.__dict__[attr]
+        else:
+            return getattr(self.cursor, attr)
 
 class DatabaseFeatures(BaseDatabaseFeatures):
-    autoindexes_primary_keys = False
     inline_fk_references = False
+    empty_fetchmany_value = ()
+    update_can_self_select = False
+    supports_usecs = False
 
 class DatabaseOperations(BaseDatabaseOperations):
     def date_extract_sql(self, lookup_type, field_name):
@@ -133,12 +146,9 @@ class DatabaseOperations(BaseDatabaseOperations):
     def fulltext_search_sql(self, field_name):
         return 'MATCH (%s) AGAINST (%%s IN BOOLEAN MODE)' % field_name
 
-    def limit_offset_sql(self, limit, offset=None):
-        # 'LIMIT 20,40'
-        sql = "LIMIT "
-        if offset and offset != 0:
-            sql += "%s," % offset
-        return sql + str(limit)
+    def no_limit_value(self):
+        # 2**64 - 1, as recommended by the MySQL documentation
+        return 18446744073709551615L
 
     def quote_name(self, name):
         if name.startswith("`") and name.endswith("`"):
@@ -175,7 +185,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
     features = DatabaseFeatures()
     ops = DatabaseOperations()
     operators = {
-        'exact': '= %s',
+        'exact': '= BINARY %s',
         'iexact': 'LIKE %s',
         'contains': 'LIKE BINARY %s',
         'icontains': 'LIKE %s',
@@ -237,12 +247,12 @@ class DatabaseWrapper(BaseDatabaseWrapper):
         else:
             cursor = self.connection.cursor()
 
-        return MysqlUnicodeWrapper(cursor)
+        cursor = MysqlUnicodeWrapper(cursor)
+
+        return cursor
 
     def make_debug_cursor(self, cursor):
-        cursor = MysqlDebugWrapper(cursor)
-        cursor = MysqlUnicodeWrapper(cursor)
-        return BaseDatabaseWrapper.make_debug_cursor(self, cursor)
+        return BaseDatabaseWrapper.make_debug_cursor(self, MysqlDebugWrapper(cursor))
 
     def _rollback(self):
         try:
