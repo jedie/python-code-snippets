@@ -5,16 +5,16 @@
 
 Used svn_keyword.py from:
 
-http://pylucid.net/trac/browser/CodeSnippets/svn_keyword.py
+http://trac.pylucid.net/browser/CodeSnippets/svn_keywords.py
 or
-http://svn.pylucid.net/pylucid/CodeSnippets/svn_keyword.py
+http://svn.pylucid.net/pylucid/CodeSnippets/svn_keywords.py
 
 Last commit info:
 ----------------------------------
-$LastChangedDate: 2007-02-05 11:08:38 +0100 (Mo, 05 Feb 2007) $
-$Rev: 828 $
-$Author: JensDiemer $
-$HeadURL: http://svn.pylucid.net/pylucid/trunk/tests/utils/svn_keywords_client.py $
+$LastChangedDate$
+$Rev$
+$Author$
+$HeadURL$
 
 Created by Jens Diemer
 
@@ -38,13 +38,13 @@ except ImportError, e:
     sys.exit()
 
 config = Config
-config.repository = "." # PyLucid trunk Verz.
+config.repository = "."
 config.simulation = False
 #~ config.simulation = True
 config.no_keyword_file_ext = (".zip",".mzp")
 
 
 if __name__ == "__main__":
-    #~ cleanup(config)
+    cleanup(config)
     sync_keywords(config)
     print_status(config)
