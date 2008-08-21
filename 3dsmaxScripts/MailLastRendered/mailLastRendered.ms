@@ -1,51 +1,43 @@
 --
--- TB Mailer
+-- Thunderbird Mailer
 --
--- copyright (c) 2007 by htFX, Jens Diemer - http://www.htFX.de
---
--- license:
---      GNU General Public License v2 or above
---      http://www.opensource.org/licenses/gpl-license.php
---
---
--- Save the last rendered picture as jpeg and compose a mail with thunderbird
---
---
--- Tested with MAX 9
---
--- Note:
---    You must insert the right path to thunderbird.exe !!!
---
--- Install:
---        1. goto "Customize/Cusomize User Interface/Toolbars"
---        2. goto Category: "htFX Scripts"
---        3. Drag&Drop the Action to you Toolbar
---
--- more Info: "MaxScript Reference/MacroScripts for New Users"
---
+-- Please read the readme.txt !
 --
 -- subversion information:
 --  $HeadURL$
---  $LastChangedDate: $
---  $Rev: $
+--  $LastChangedDate$
+--  $Rev$
 --  $Author$
 --
 -- license:
 --   GNU General Public License v2 or above
 --   http://www.opensource.org/licenses/gpl-license.php
 --
--- copyright (c) 2007 by htFX, Jens Diemer - http://www.htFX.de
+-- copyleft (c) 2007-2008 by htFX, Jens Diemer - http://www.htFX.de
 --
 
--- actionMan.executeAction 0 "40472"  -- MAX Script: MAXScript Listener
-clearListener()
+
+--actionMan.executeAction 0 "40472"  -- MAX Script: MAXScript Listener
+--clearListener()
+
 
 suffix = "preview"
 seperator = "_"
 ext = ".jpg"
 
 
------------------------------------
+------------------------------------------------------------------------------
+
+function get_ini_path = (
+    -- return the path to the .ini file
+
+    ini_path = pathConfig.appendPath "$userScripts" "mailLastRendered.ini"
+
+    print "ini_path:"
+    print ini_path
+
+    return ini_path
+)
 
 function setup_tb_path = (
     -- Dialog to setup the path to TB
@@ -56,12 +48,12 @@ function setup_tb_path = (
         caption:"Open A Test File:" \
         filename:"thunderbird.exe" \
         types:"thunderbird.exe|thunderbird.exe" \
-        initialDir:"$scripts"
+        initialDir:"$userScripts"
 
     if tb_path == undefined then return false
 
     if doesfileexist tb_path == false then (
-         Messagebox "thunderbird.exe not found!"
+        Messagebox "thunderbird.exe not found!"
         return false
     )
 
@@ -69,17 +61,6 @@ function setup_tb_path = (
     setINISetting ini_file "thunderbird" "path" tb_path
 
     return tb_path
-)
-
-function get_ini_path = (
-    -- return the path to the .ini file
-
-    path = pathConfig.appendPath "$scripts" "mailLastRendered.ini"
-
-    print "ini path:"
-    print path
-
-    return path
 )
 
 function get_mailer_path = (
@@ -97,14 +78,14 @@ function get_mailer_path = (
     if tb_path == false then return false
 
     if doesfileexist tb_path == false then (
-         Messagebox "thunderbird.exe not found!"
+        Messagebox "thunderbird.exe not found!"
         return false
     )
 
     return tb_path
 )
------------------------------------
 
+------------------------------------------------------------------------------
 
 function abs_filename filename = (
     -- make filename absolute, using maxFilePath
@@ -123,9 +104,10 @@ function get_clean_maxFileName = (
     len = tokens.count-1
     clean_filename = ""
     for i = 1 to len do (
-          clean_filename += "_" + tokens[i]
+            clean_filename += "_" + tokens[i]
     )
     clean_filename = trimLeft clean_filename "_"
+
     return clean_filename
 )
 
@@ -133,6 +115,7 @@ function get_clean_maxFileName = (
 function get_expand_filename source_filename = (
     -- Expand the filename with a number and suffix + ext
     i = 0
+
     while true do (
         i += 1
 
@@ -150,7 +133,7 @@ function get_expand_filename source_filename = (
     )
 )
 
------------------------------------
+------------------------------------------------------------------------------
 
 function main = (
     if maxFileName == "" then (
@@ -158,29 +141,24 @@ function main = (
         return false
     )
 
-    thunderbird_path = get_mailer_path()
+    thunderbird_exe = get_mailer_path()
     print "TB path:"
-    print thunderbird_path
+    print thunderbird_exe
 
-    if thunderbird_path == false then return false
+    if thunderbird_exe == false then return false
 
     clean_filename = get_clean_maxFileName()
     print clean_filename
 
---  cam = getActiveCamera()
---     if cam == undefined then (
---        cam_name = ""
---     ) else (
---        cam_name = cam.name + seperator
---     )
---     filename = clean_filename + seperator + cam_name + suffix + seperator
     filename = clean_filename + seperator + suffix + seperator
 
     filename = get_expand_filename(filename)
     abs_path = abs_filename(filename)
     print filename
 
-    abs_path = getSaveFileName caption:"save rendered pic" filename:abs_path
+    -- save file dialog
+    type_filter = "*" + ext + "|*" + ext
+    abs_path = getSaveFileName caption:"save rendered pic" filename:abs_path types:type_filter
     if abs_path == undefined then (
         return false
     )
@@ -190,7 +168,6 @@ function main = (
     tokens = filterString abs_path "\\"
     filename = tokens[tokens.count]
 
-    -- check filename (for a valid thunderbird command)
     tokens = filterString filename ","
     if tokens.count>1 then (
         messageBox "Error: Invalid filename. Filename may contain no commas!"
@@ -207,16 +184,17 @@ function main = (
     image_file.filename = abs_path
     save image_file
 
-    cmd_string = thunderbird_path + " -compose \""
+    cmd_string = " -compose \""
     cmd_string += "subject=" + filename
     cmd_string += ",body=" + filename
     cmd_string += ",attachment='file://" + abs_path + "'"
-    cmd_string += "\""
 
     print cmd_string
 
-    Doscommand cmd_string
+    shellLaunch thunderbird_exe cmd_string
 )
+
+------------------------------------------------------------------------------
 
 -- Start the Script
 main()

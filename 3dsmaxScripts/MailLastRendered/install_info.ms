@@ -1,6 +1,6 @@
 
 -- run the macro, to install it
-filein "$Scripts//mailLastRendered.mcr"
+filein "$userScripts//mailLastRendered.mcr"
 
 -- Display only a small Info
 str = "Script installed.\n
