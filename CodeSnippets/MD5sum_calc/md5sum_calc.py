@@ -19,9 +19,12 @@ __license__ = "GNU General Public License http://www.opensource.org/licenses/gpl
 __info__    = "md5sum_calc"
 __url__     = "http://www.jensdiemer.de"
 
-__version__ = "0.2.5"
+__version__ = "0.2.6"
 
 __history__ = """
+v0.2.6
+    - Speichert mtime in einem Hübscheren Format
+        (Updated alte .MD5 Dateien automatisch)
 v0.2.5
     - Bugfix(Dank an Egmont Fritz):
         -nur "w" statt "wU" filemode beim schreiben der md5 info Datei
@@ -43,10 +46,68 @@ v0.1
     - erste Version
 """
 
-import sys, os, md5, ConfigParser, time
+import sys, os, md5, ConfigParser, datetime, time
 
-bufsize = 65536
-time_format = "%d %b %Y %H:%M:%S +0000"
+BUFSIZE = 65536
+
+
+
+class FileDateTime(object):
+    """
+    Small helper class for generate the datetime string of a file date and
+    compare it.
+
+    >>> file_stat = os.stat(__file__)
+    >>> fdt = FileDateTime(file_stat)
+    >>> info = fdt.get_offset_info() # u'+02:00 (Mitteleuropäische Sommerzeit)'
+    >>> utc_mtime_string = fdt.utc_mtime_string # 'Fri, 05 Sep 2008 16:18:23'
+    >>> fdt.compare_string(utc_mtime_string)
+    True
+    """
+    DATETIME_FORMAT = "%a, %d %b %Y %H:%M:%S"
+
+    def __init__(self, file_stat):
+        self.mtime = file_stat.st_mtime
+        self.utc_mtime_string = self._strftime()
+
+    def _strftime(self):
+        """
+        Generate the datetime string from the current file stat mtime
+        """
+        utc_datetime = datetime.datetime.utcfromtimestamp(self.mtime)
+        return utc_datetime.strftime(self.DATETIME_FORMAT)
+
+    def get_offset_info(self):
+        """
+        Returns a string with the currente local time offset information
+        """
+        if time.daylight != 0:
+            # Sommerzeit
+            seconds=-time.altzone
+        else:
+            # keine Sommerzeit
+            seconds=-time.timezone
+
+        offset = "%+03d:%02d" % (seconds // 3600, (seconds // 60) % 60)
+
+        return "%s (%s)" % (offset, time.tzname[1])
+
+    def compare_string(self, utc_mtime_string):
+        """
+        compare the datetime string from the MD5 file with the current file
+        stat mtime.
+
+        We don't use datetime.strptime() here, because it's exist only since
+        Python 2.5
+        """
+        return self.utc_mtime_string == utc_mtime_string
+
+
+
+
+
+
+
 
 
 print "_" * 79
@@ -134,17 +195,23 @@ class md5sum:
 
     def compare_file(self):
         file_stat = os.stat(self.file_name_path)
+        
         try:
-            md5sum, size, mtime = self.read_md5file()
+            md5sum, size, utc_mtime_string = self.read_md5file()
         except Exception, e:
             self.set_color("red")
             sys.stderr.write("ERROR: Can't read md5-file: %s\n" % e)
+            import traceback
+            print traceback.format_exc()
             return
 
-        if file_stat.st_mtime != mtime:
-            print "Note: Time of last modification not equal (%r != %r)" % (
-                file_stat.st_mtime, mtime
-            )
+        if utc_mtime_string:
+            fdt = FileDateTime(file_stat)
+            if fdt.compare_string(utc_mtime_string) != True:
+                print "Note: Time of last modification not equal:"
+                print "      %r != %r" % (fdt.utc_mtime_string, utc_mtime_string)
+        else:
+            print "Info: Skip file modification time compare."
 
         if file_stat.st_size != size:
             self.set_color("red")
@@ -159,6 +226,9 @@ class md5sum:
             print "ERROR: md5 checksum wrong! (%.1fMB/sec)" % performance
         else:
             print "md5 check is tested OK (%.1fMB/sec)" % performance
+            if utc_mtime_string == None:
+                print "Info: Update old md5 file format."
+                self.write_md5file(md5sum)
 
 
     def create_md5sum(self):
@@ -170,8 +240,8 @@ class md5sum:
             bytesreaded = 0
             threshold = file_size / 10
             while 1:
-                data = f.read(bufsize)
-                bytesreaded += bufsize
+                data = f.read(BUFSIZE)
+                bytesreaded += BUFSIZE
                 if not data:
                     break
 
@@ -229,10 +299,15 @@ class md5sum:
         config.set("md5sum", "md5sum", md5sum)
         config.set("md5sum", "size", file_stat.st_size)
 
-        #~ config.set(
-            #~ "md5sum", "mtime", time.strftime(time_format, time.gmtime(file_stat.st_mtime))
-        #~ )
-        config.set("md5sum", "mtime", repr(file_stat.st_mtime))
+        fdt = FileDateTime(file_stat)
+ 
+        utc_mtime_string = fdt.utc_mtime_string # 'Fri, 05 Sep 2008 16:18:23'
+        config.set("md5sum", "utc_mtime_string", utc_mtime_string)
+        
+        tzinfo = fdt.get_offset_info() # u'+02:00 (Mitteleuropäische Sommerzeit)'
+        config.set("md5sum", "timezone_info", tzinfo)
+
+#        config.set("md5sum", "mtime", repr(file_stat.st_mtime))
 
         config.write(f)
         f.close()
@@ -245,17 +320,23 @@ class md5sum:
 
         md5sum = config.get("md5sum", "md5sum")
         size = int(config.get("md5sum", "size"))
-        mtime = float(config.get("md5sum", "mtime"))
-        #~ try:
-            #~ mtime = time.strptime(config.get("md5sum", "mtime"), time_format)
-            #~ mtime = int(time.mktime(time.gmtime(time.mktime(mtime))))
-        #~ except ValueError, e:
-            #~ sys.stderr.write("Can't get mtime from md5sum file: %s\n" % e)
-            #~ mtime = 0
+        
+        try:
+            utc_mtime_string = config.get("md5sum", "utc_mtime_string")
+        except ConfigParser.NoOptionError:
+            print "Info: .md5 sum file has the old mtime information."
+            utc_mtime_string = None
 
-        return md5sum, size, mtime
+        return md5sum, size, utc_mtime_string
 
 
 if __name__ == '__main__':
     md5sum(sys.argv[1:])
+    
+#    print "SelfTest"
+#    md5sum([__file__])
 
+    # DocTest
+#    import doctest
+#    doctest.testmod(verbose=False)
+#    print "DocTest end."
