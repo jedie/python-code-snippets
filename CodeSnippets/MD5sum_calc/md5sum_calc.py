@@ -19,9 +19,14 @@ __license__ = "GNU General Public License http://www.opensource.org/licenses/gpl
 __info__    = "md5sum_calc"
 __url__     = "http://www.jensdiemer.de"
 
-__version__ = "0.2.4"
+__version__ = "0.2.5"
 
 __history__ = """
+v0.2.5
+    - Bugfix(Dank an Egmont Fritz):
+        -nur "w" statt "wU" filemode beim schreiben der md5 info Datei
+        -speichern der mtime mit repr() und umwandeln mit float() beim lesen
+    - raw_input() am Ende entfernt, macht ja die pause in der CMD Datei ;)
 v0.2.4
     - Bugfix: ZeroDivisionError bei sehr kleinen Dateien und der
         Preformance Berechnung
@@ -72,8 +77,6 @@ class md5sum:
         except ZeroDivisionError:
             # Evtl. war die Datei so klein, das es in Windeseile fertig war ;)
             pass
-
-        raw_input("(press enter to continue)")
 
     def calc_dir(self, dirname):
         print dirname
@@ -139,11 +142,15 @@ class md5sum:
             return
 
         if file_stat.st_mtime != mtime:
-            print "Note: Time of last modification not equal"
+            print "Note: Time of last modification not equal (%r != %r)" % (
+                file_stat.st_mtime, mtime
+            )
 
         if file_stat.st_size != size:
             self.set_color("red")
-            print "ERROR: Size is not equal (diff: %iBytes)" % (file_stat.st_size-size)
+            print "ERROR: Size is not equal (diff: %iBytes)" % (
+                file_stat.st_size-size
+            )
             return
 
         md5sum_file, performance = self.create_md5sum()
@@ -214,7 +221,7 @@ class md5sum:
     def write_md5file(self, md5sum):
         file_stat = os.stat(self.file_name_path)
 
-        f = file(self.md5_file, "wU")
+        f = file(self.md5_file, "w")
         config = ConfigParser.ConfigParser()
         config.add_section("md5sum")
 
@@ -225,7 +232,7 @@ class md5sum:
         #~ config.set(
             #~ "md5sum", "mtime", time.strftime(time_format, time.gmtime(file_stat.st_mtime))
         #~ )
-        config.set("md5sum", "mtime", file_stat.st_mtime)
+        config.set("md5sum", "mtime", repr(file_stat.st_mtime))
 
         config.write(f)
         f.close()
@@ -238,7 +245,7 @@ class md5sum:
 
         md5sum = config.get("md5sum", "md5sum")
         size = int(config.get("md5sum", "size"))
-        mtime = int(config.get("md5sum", "mtime"))
+        mtime = float(config.get("md5sum", "mtime"))
         #~ try:
             #~ mtime = time.strptime(config.get("md5sum", "mtime"), time_format)
             #~ mtime = int(time.mktime(time.gmtime(time.mktime(mtime))))
