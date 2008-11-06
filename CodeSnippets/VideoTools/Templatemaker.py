@@ -10,7 +10,6 @@ from shared.config import VideoToolsConfig
 from shared.tools import askopenfilename2
 
 
-
 def select_sourcefile(cfg):
     
     video_file_path = askopenfilename2(
@@ -40,7 +39,10 @@ class TemplateFile(object):
     
     def files(self):
         for filename in os.listdir(self.path):
-            yield (filename, os.path.join(self.path, filename))
+            abs_path = os.path.join(self.path, filename)
+            if filename.startswith(".") or not os.path.isfile(abs_path):
+                continue
+            yield (filename, abs_path)
         
         
 class Templates(list):
@@ -58,13 +60,19 @@ def select_template(cfg, video_file_path):
     templates = Templates()
     
     for item in os.listdir(template_dir):
+        if item.startswith("."):
+            continue
+        
         item_path = os.path.join(template_dir, item)
         if not os.path.isdir(item_path):
             continue
         
-        templates.append(
-            TemplateFile(cfg, item, item_path)
-        )
+        try:
+            template = TemplateFile(cfg, item, item_path)
+        except Exception, err:
+            print "Error in template path '%s': %s -> skip" % (item_path, err)
+        else: 
+            templates.append(template)
         
     templates.debug()
     
