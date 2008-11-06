@@ -25,6 +25,7 @@ DEFAULT_CONFIG = {
 
     "videofiletypes": [
         ('MKV File','*.mkv'),
+        ('M2TS File','*.m2ts'),
         ('AVI File','*.avi'),
     ],
     
