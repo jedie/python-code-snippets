@@ -5,13 +5,13 @@ import os, sys, pickle
 from pprint import pprint
 from ConfigParser import RawConfigParser
 
-from tools import askopenfilename2
+from tools import askopenfilename2, askdirectory2
 
 
 CONFIG_FILENAME = "config.dat"
 
 DEFAULT_CONFIG = {
-    "out_dir": os.getcwd(),
+    "out_dir": "",
 
     "skip_size": 100 * 1024 * 1024,
     "stream_dir": "BDMV\\STREAM",
@@ -51,9 +51,11 @@ class PickleConfig(dict):
                 self.update(pickle_data)
 
     def save_config(self):
+        print "Save config to '%s'..." % CONFIG_FILENAME,
         f = file(CONFIG_FILENAME, "w")
         pickle.dump(self, f)
         f.close()
+        print "OK"
 
     def debug(self):
         print "Debug config:"
@@ -76,14 +78,25 @@ class VideoToolsConfig(PickleConfig):
                     initialfile=fullname,
                     filetypes=[('EXE Files','*.exe')]
                 )
-                
-                if self[filename] == "":
-                    # No file selected.
-                    sys.exit()
-                    
                 self.save_config()
-
-
+        
+        self.out_dir_set = False
+        if not os.path.isdir(self["out_dir"]):
+            self.ask_out_dir()
+            
+    def ask_out_dir(self):
+        if os.path.isdir(self["out_dir"]):
+            initdir = self["out_dir"]
+        else:
+            initdir = "%s\\" % os.path.splitdrive(os.getcwd())[0]
+            
+        self["out_dir"] = askdirectory2(
+            title = "Please select the out base directory:",
+            initialdir = initdir,
+        )
+        self.out_dir_set = True
+        self.save_config()
+        
 
 if __name__ == "__main__":
     from pprint import pprint
