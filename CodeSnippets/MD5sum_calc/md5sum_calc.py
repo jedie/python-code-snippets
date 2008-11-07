@@ -19,9 +19,12 @@ __license__ = "GNU General Public License http://www.opensource.org/licenses/gpl
 __info__    = "md5sum_calc"
 __url__     = "http://www.jensdiemer.de"
 
-__version__ = "0.2.6"
+__version__ = "0.2.7"
 
 __history__ = """
+v0.2.7
+    - Work-a-round if under Windows only a Driveletter given, see:
+        http://www.python-forum.de/topic-16615.html (de)
 v0.2.6
     - Speichert mtime in einem Hübscheren Format
         (Updated alte .MD5 Dateien automatisch)
@@ -50,6 +53,7 @@ import sys, os, md5, ConfigParser, datetime, time
 
 BUFSIZE = 65536
 
+IS_WIN = (sys.platform == "win32")
 
 
 class FileDateTime(object):
@@ -187,7 +191,7 @@ class md5sum:
         """
         ändert die Komplette Hintergrundfarbe
         """
-        if sys.platform == "win32":
+        if IS_WIN:
             if color=="red":
                 os.system("color 4f")
             elif color=="blue":
@@ -331,7 +335,14 @@ class md5sum:
 
 
 if __name__ == '__main__':
-    md5sum(sys.argv[1:])
+    args = sys.argv[1:]
+    
+    if IS_WIN:
+        # Work-a-round if under Windows only a Driveletter given
+        # see: http://www.python-forum.de/topic-16615.html (de)
+        args = [arg.strip('"') for arg in args]
+        
+    md5sum(args)
     
 #    print "SelfTest"
 #    md5sum([__file__])
