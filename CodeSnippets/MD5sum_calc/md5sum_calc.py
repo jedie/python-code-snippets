@@ -19,9 +19,12 @@ __license__ = "GNU General Public License http://www.opensource.org/licenses/gpl
 __info__    = "md5sum_calc"
 __url__     = "http://www.jensdiemer.de"
 
-__version__ = "0.2.7"
+__version__ = "0.2.8"
 
 __history__ = """
+v0.2.8
+    - more status information
+    - status performance calculated for a short term only
 v0.2.7
     - Work-a-round if under Windows only a Driveletter given, see:
         http://www.python-forum.de/topic-16615.html (de)
@@ -49,7 +52,7 @@ v0.1
     - erste Version
 """
 
-import sys, os, md5, ConfigParser, datetime, time
+import sys, os, string, md5, ConfigParser, datetime, time
 
 BUFSIZE = 65536
 
@@ -116,6 +119,20 @@ class FileDateTime(object):
 
 print "_" * 79
 print "  %s v%s\n" % (__info__, __version__)
+
+
+def human_time(t):
+    if t>3600:
+        divisor = 3600.0
+        unit = "h"
+    elif t>60:
+        divisor = 60.0
+        unit = "min"
+    else:
+        divisor = 1
+        unit = "sec"
+        
+    return "%.1f%s" % (round(t/divisor, 2), unit)
 
 
 class md5sum:
@@ -234,14 +251,13 @@ class md5sum:
                 print "Info: Update old md5 file format."
                 self.write_md5file(md5sum)
 
-
-    def create_md5sum(self):
+    def create_md5sum(self):       
         file_size = os.stat(self.file_name_path).st_size
-        time_threshold = start_time = int(time.time())
+        time_threshold = start_time = time.time()
         try:
             f = file(self.file_name_path, "rb")
             m = md5.new()
-            bytesreaded = 0
+            bytesreaded = old_readed = 0
             threshold = file_size / 10
             while 1:
                 data = f.read(BUFSIZE)
@@ -249,27 +265,40 @@ class md5sum:
                 if not data:
                     break
 
-                current_time = int(time.time())
-                if current_time > time_threshold:
+                current_time = time.time()
+                if current_time > (time_threshold + 0.5):
 
                     elapsed = float(current_time-start_time)      # Vergangene Zeit
                     estimated = elapsed / bytesreaded * file_size # Geschätzte Zeit
-                    performance = bytesreaded / elapsed / 1024 / 1024
+                    remain = estimated - elapsed
+                    
+                    diff_bytes = bytesreaded-old_readed
+                    diff_time = current_time-time_threshold
+                    performance = diff_bytes / diff_time / 1024.0 / 1024.0
 
-                    if estimated>60:
-                        time_info = "%.1f/%.1fmin" % (elapsed/60, estimated/60)
-                    else:
-                        time_info = "%.0f/%.1fsec" % (elapsed, estimated)
+                    percent = round(float(bytesreaded)/file_size*100.0, 2)
 
+                    infoline = (
+                        "   "
+                        "%(percent).1f%%"
+                        " - current: %(elapsed)s"
+                        " - total: %(estimated)s"
+                        " - remain: %(remain)s"
+                        " - %(perf).1fMB/sec"
+                        "   "
+                    ) % {
+                        "percent"  : percent,
+                        "elapsed"  : human_time(elapsed),
+                        "estimated": human_time(estimated),
+                        "remain"   : human_time(remain),
+                        "perf"     : performance,
+                    }
                     sys.stdout.write("\r")
-                    sys.stdout.write(
-                        "%3.i%% %s %.1fMB/sec    " % (
-                            round(float(bytesreaded)/file_size*100),
-                            time_info,
-                            performance
-                        )
-                    )
+                    sys.stdout.write(string.center(infoline, 79))
+                    
                     time_threshold = current_time
+                    old_readed = bytesreaded
+                    
                 m.update(data)
             end_time = time.time()
             performance = file_size / (end_time-start_time) / 1024 / 1024
