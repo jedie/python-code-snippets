@@ -7,7 +7,7 @@ from string import Template
 import Tkinter as tk
 
 from shared.config import VideoToolsConfig
-from shared.tools import askopenfilename2
+from shared.tk_tools import askopenfilename2
 
 
 def select_sourcefile(cfg):

@@ -5,7 +5,7 @@ import os, sys, pickle
 from pprint import pprint
 from ConfigParser import RawConfigParser
 
-from tools import askopenfilename2, askdirectory2
+from tk_tools import askopenfilename2, askdirectory2
 
 
 CONFIG_FILENAME = "config.dat"
@@ -13,7 +13,8 @@ CONFIG_FILENAME = "config.dat"
 DEFAULT_CONFIG = {
     "out_dir": "",
 
-    "skip_size": 100 * 1024 * 1024,
+    "glob": "*.m2ts",
+    "skip_size": 200 * 1024 * 1024,
     "stream_dir": "BDMV\\STREAM",
     "out_video_ext": "mkv",
     
@@ -38,28 +39,34 @@ EXE_FILES = ("eac3to", "x264")
 
 class PickleConfig(dict):
 
-    def __init__(self):
-        self.update(DEFAULT_CONFIG)
+    def __init__(self, filename, defaults={}):
+        self.filename = filename
         
-        if os.path.isfile(CONFIG_FILENAME):
+        self.update(defaults)
+        
+        if not os.path.isfile(self.filename):
+            print "Info: Config file '%s' doesn't exist, yet." % self.filename
+        else:
+            print "Reading '%s'..." % self.filename
             try:
-                f = file(CONFIG_FILENAME, "r")
+                f = file(filename, "r")
             except IOError, err:
                 print "Error reading config:", err
             else:
                 pickle_data = pickle.load(f)
                 f.close()
                 self.update(pickle_data)
+        
 
     def save_config(self):
-        print "Save config to '%s'..." % CONFIG_FILENAME,
-        f = file(CONFIG_FILENAME, "w")
+        print "Save '%s'..." % self.filename,
+        f = file(self.filename, "w")
         pickle.dump(self, f)
         f.close()
         print "OK"
 
     def debug(self):
-        print "Debug config:"
+        print "PickleConfig debug:"
         pprint(self)
         print "-"*80
 
@@ -67,7 +74,7 @@ class PickleConfig(dict):
 
 class VideoToolsConfig(PickleConfig):
     def __init__(self):
-        super(VideoToolsConfig, self).__init__()
+        super(VideoToolsConfig, self).__init__(CONFIG_FILENAME, DEFAULT_CONFIG)
         
         # Check/set the path to all EXE files
         for filename in EXE_FILES:
@@ -96,18 +103,17 @@ class VideoToolsConfig(PickleConfig):
             initialdir = initdir,
         )
         self.out_dir_set = True
-        self.save_config()
         
 
 if __name__ == "__main__":
     from pprint import pprint
 
-    CONFIG_FILENAME = "config_test.ini"
-    if os.path.isfile(CONFIG_FILENAME):
-        os.remove(CONFIG_FILENAME)
+    test_config = "config_test.ini"
+    if os.path.isfile(test_config):
+        os.remove(test_config)
 
     # Simple Test
-    c = PickleConfig()
+    c = PickleConfig(test_config, DEFAULT_CONFIG)
     c.debug()
     print "-"*80
     # Change values:
@@ -117,5 +123,5 @@ if __name__ == "__main__":
     c.debug()
     print "-"*80
     # Reopen the written ini file:
-    c = PickleConfig()
+    c = PickleConfig(test_config)
     c.debug()
