@@ -1,24 +1,84 @@
 # -*- coding: utf-8 -*-
 
-import os, sys
+import os, sys, string
 
-import Tkinter as tk
-from tkFileDialog import askopenfilename, askdirectory
 
-def _ask(method, *args, **kwargs):
-    root = tk.Tk()
-    kwargs["parent"] = root
-    path = method(*args, **kwargs)
-    root.destroy()
+def human_filesize(bytes):
+    """
+    >>> human_filesize(1*1024)
+    '1.0KB'
+    >>> human_filesize(1*1024*1024)
+    '1.0MB'
+    >>> human_filesize(1.5*1024*1024)
+    '1.5MB'
+    """
+    bytes = float(bytes)
+    for unit in ['bytes','KB','MB','GB','TB']:
+        if bytes < 1000:
+            return "%s%s" % (round(bytes,1), unit)
+        bytes /= 1024.0
+
+
+
+
+ALLOW_CHARS = string.ascii_letters + string.digits + "+-,."
+
+def make_slug(txt, join_string=" ", allow_chars=ALLOW_CHARS):
+    """
+    delete all non-ALLOW_CHARS characters
     
-    if path == "": # Nothing selected.
-        sys.exit()
+    >>> make_slug("a test")
+    'a test'
+    >>> make_slug("")
+    ''
+    >>> make_slug("A other test 1*2/3\\4/*/*/5")
+    'A other test 1 2 3 5'
+    """
+    parts = [""]
+    for char in txt:
+        if char not in allow_chars:
+            if parts[-1] != "":
+                # No double "-" e.g.: "foo - bar" -> "foo-bar" not "foo---bar"   
+                parts.append("")
+        else:
+            parts[-1] += char
+
+    item_name = join_string.join(parts)
+    item_name = item_name.strip(join_string)
     
-    return os.path.normpath(path)
-
-def askdirectory2(*args, **kwargs):
-    return _ask(askdirectory, *args, **kwargs)
+    return item_name
 
 
-def askopenfilename2(*args, **kwargs):
-    return _ask(askopenfilename, *args, **kwargs)
+
+def makeUnique(item_name, name_list, max_no=1000):
+    """
+    returns a unique shortcut.
+    - delete all non-ALLOW_CHARS characters.
+    - if the shotcut already exists in name_list -> add a sequential number
+    
+    >>> makeUnique("two", ["one", "two", "three"])
+    'two1'
+    >>> makeUnique("two", ["one", "three"])
+    'two'
+    >>> makeUnique("two", ["one", "two", "two1", "three"])
+    'two2'
+    >>> makeUnique("", [])
+    ''
+    """
+    name_list2 = [i.lower() for i in name_list]
+
+    # make double shortcut unique (add a new free sequential number)
+    if item_name.lower() in name_list2:
+        for i in xrange(1, max_no):
+            testname = "%s%i" % (item_name, i)
+            if testname.lower() not in name_list2:
+                item_name = testname
+                break
+
+    return item_name
+
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod(verbose=False)
+    print "DocTest end."
