@@ -16,7 +16,10 @@ def _ask(method, *args, **kwargs):
     if path == "": # Nothing selected.
         sys.exit()
     
-    return os.path.normpath(path)
+    if isinstance(path, tuple):
+        return [os.path.normpath(i) for i in path]
+    else:
+        return os.path.normpath(path)
 
 def askdirectory2(*args, **kwargs):
     return _ask(askdirectory, *args, **kwargs)
