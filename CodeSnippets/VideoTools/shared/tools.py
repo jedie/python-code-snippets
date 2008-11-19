@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-import os, sys, string
+import os, sys, string, subprocess
+from pprint import pprint
 
 
 def human_filesize(bytes):
@@ -76,6 +77,52 @@ def makeUnique(item_name, name_list, max_no=1000):
                 break
 
     return item_name
+
+
+
+
+def subprocess2(cmd, debug=False):
+    """
+    start a subprocess and display all output
+    """
+    print "_"*80
+    print "subprocess2():"
+    pprint(cmd)
+    print " -"*40
+    if debug:
+        print "(Debug only, nothing would be started.)"
+        return
+    process = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        shell=True,
+    )
+    output = ""
+    char_count = 0
+    while True:
+        char = process.stdout.read(1)
+        if char=="":
+            break
+
+        if char in ("\r", "\x08"):
+            continue
+        
+        if char == "\n":
+            char_count = 0
+        else:
+            char_count += 1
+
+        output += char
+        sys.stdout.write(char)
+        if char_count>79:
+            sys.stdout.write("\n")
+            char_count = 0            
+        sys.stdout.flush()
+
+    return process, output
+
+
+
 
 
 if __name__ == "__main__":

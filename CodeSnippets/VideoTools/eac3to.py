@@ -4,7 +4,7 @@
 Demux with eac3to
 """
 
-import os, sys, glob, time, datetime, subprocess, logging
+import os, sys, glob, time, datetime, logging
 from pprint import pprint
 
 import Tkinter as tk
@@ -13,7 +13,7 @@ import win32api
 
 from shared.config import VideoToolsConfig
 from shared.tk_tools import askopenfilename2, askdirectory2, TkListbox
-from shared.tools import make_slug, human_filesize
+from shared.tools import make_slug, human_filesize, subprocess2
 
 DEBUG = False
 #DEBUG = True
@@ -59,7 +59,7 @@ class Drive(dict):
     def set_vol_info(self, vol_info):
         self["vol_info"] = vol_info
         self["lable"] = vol_info[0]
-
+        
     def debug(self):
         print "_"*79
         print "Drive debug:"
@@ -87,7 +87,7 @@ class VideoFile(dict):
         self["drive"] = drive # class "Drive"
         self["abs_path"] = abs_path # File path + filename
         self["stat"] = stat # os.stat
-
+        
         self.cfg = cfg
 
         self["out_path"] = os.path.join(cfg["out_dir"], drive["lable"])
@@ -129,15 +129,15 @@ class VideoFile(dict):
 
     def get_command(self, stream_selection):
         cmd = [self.cfg["eac3to"], self["abs_path"]]
-
+        
         value_dict = {}
         for k,v in self["streams"].iteritems():
 #            print k,v
             if v not in value_dict:
                 value_dict[v] = []
-
+        
             value_dict[v].append(k)
-
+        
 #        pprint(value_dict)
 
         def get_file_ext(stream_txt):
@@ -146,15 +146,15 @@ class VideoFile(dict):
                     if item in txt:
                         return True
                 return False
-
+            
             for stream_info in STREAMINFOS:
                 if in_list(stream_txt, stream_info["txt_filter"]):
                     return stream_info["ext"]
-
+                
             raise RuntimeError(
                 "No STREAMINFOS entry matched for '%s'" % stream_txt
             )
-
+        
         selected_streams = {}
         for stream_txt in stream_selection:
             try:
@@ -162,9 +162,9 @@ class VideoFile(dict):
             except KeyError:
                 print "Stream '%s' doesn't exist. Skip file." % stream_txt
                 return
-
+            
             file_ext = get_file_ext(stream_txt)
-
+            
             for id in ids:
                 filename = "%s - %i - %s%s" % (
                     self["name_prefix"],
@@ -173,10 +173,10 @@ class VideoFile(dict):
                     file_ext,
                 )
                 out_filepath = os.path.join(self["out_path"], filename)
-
+                
                 cmd.append("%i:" % id)
                 cmd.append(out_filepath)
-
+                        
         return cmd
 
 
@@ -188,16 +188,16 @@ class VideoFile(dict):
             if DEBUG:
                 print ">", line
             no, info = line.split(":",1)
-
+            
             try:
                 no = int(no)
             except ValueError:
                 continue
-
+            
             info = info.strip()
-
+            
             self["streams"][no] = info
-
+ 
 
     def get_stream_info(self):
         """
@@ -215,15 +215,15 @@ class VideoFile(dict):
             cmd = [self.cfg["eac3to"], self["abs_path"]]
             print "run '%s'..." % " ".join(cmd)
             process, output = subprocess2(cmd)
-
+            
             f = file(self["eac3to_txt_path"], "w")
             f.write(output)
             f.close()
-
+            
         return output
 
     #-------------------------------------------------------------------------
-
+    
     def debug(self):
         print "_"*79
         print "VideoFile debug:"
@@ -249,10 +249,11 @@ def get_existing_drives(cfg):
 def get_stream_dirs(drives):
     result = []
     for drive in drives:
+        drive_letter = drive["letter"]
         try:
-            vol_info = win32api.GetVolumeInformation(drive.letter)
+            vol_info = win32api.GetVolumeInformation(drive_letter)
         except Exception, err:
-            #~ print "Skip drive '%s': %s" % (drive.letter, err)
+            print "Skip drive '%s': %s" % (drive_letter, err)
             continue
 
         if os.path.isdir(drive["stream_dir"]):
@@ -272,24 +273,24 @@ def choose_drive(cfg):
         initialdir = cfg["last sourcedir"],
         filetypes = [('M2TS File','*.m2ts')],
     )
-
+    
     vol_info = path.replace("\\", "_").replace(":","_") # Fallback
     for part in reversed(path.split(os.sep)[:-1]):
         # Use the last part of the path as a vol_info
         if part.upper() not in ("BDMV", "STREAM"):
             vol_info = part
             break
-
+    
     drive = Drive(os.path.splitdrive(path)[0], cfg)
     drive["stream_dir"] = os.path.split(path)[0]
     drive.set_vol_info((vol_info,))
-
+    
     drive.debug()
-
+    
     drives = [drive,]
-
+    
     cfg["last sourcedir"] = path
-
+    
     return drives
 
 
@@ -305,14 +306,14 @@ def get_stream_files(drives, skip_size):
         if not os.path.isdir(path):
             print "Error: Path '%s' doesn't exist -> skip." % path
             continue
-
+        
         glob_path = os.path.join(path, cfg["glob"])
         print "Looking in", glob_path
         file_list = glob.glob(glob_path)
         print "Files found:", file_list
         for abs_path in sorted(file_list):
             filename = os.path.basename(abs_path)
-
+            
             stat = os.stat(abs_path)
 
 #            print (filename, drive, abs_path, stat, cfg)
@@ -343,18 +344,18 @@ def select_videofiles(videofiles):
     item_list = []
     for index, videofile in enumerate(videofiles):
         filesize = videofile["stat"].st_size
-
+        
         line = "%s - %s" % (videofile["abs_path"], human_filesize(filesize))
         item_list.append(line)
-
+        
         if filesize>cfg["skip_size"]:
             activated.append(index)
-
+    
 #    size = stat.st_size
 #    if size<cfg["skip_size"]:
 #        # Skip small files
-#        continue
-
+#        continue  
+    
     lb = TkListbox(
         title = "Please select",
         lable = "Please select files witch should be converted:",
@@ -363,10 +364,10 @@ def select_videofiles(videofiles):
     )
     print "selected items:"
     pprint(lb.selection) # list of selected items.
-
+    
     curselection = lb.curselection # tuple containing index of selected items
-    print "curselection:", curselection
-
+    print "curselection:", curselection      
+        
     new_list = [
         item
         for index, item in enumerate(videofiles)
@@ -379,41 +380,9 @@ def select_videofiles(videofiles):
 
 
 
-def subprocess2(cmd):
-    print "_"*80
-    print "subprocess2():"
-    pprint(cmd)
-    print " -"*40
-    process = subprocess.Popen(
-        cmd,
-        stdout=subprocess.PIPE,
-        shell=True,
-    )
-    output = ""
-    char_count = 0
-    while True:
-        char = process.stdout.read(1)
-        if char=="":
-            break
-
-        if char in ("\r", "\x08"):
-            continue
-
-        if char == "\n":
-            char_count = 0
-        else:
-            char_count += 1
-
-        output += char
-        sys.stdout.write(char)
-        if char_count>79:
-            sys.stdout.write("\n")
-            char_count = 0
-        sys.stdout.flush()
-
-    return process, output
 
 
+    
 def select_streams(videofiles):
     """
     select witch streams should be convert.
@@ -425,33 +394,33 @@ def select_streams(videofiles):
         for stream_txt in videofile["streams"].values():
             if not stream_txt in streams_txt:
                 streams_txt.append(stream_txt)
-#
+#    
 #    lb = TkListbox(
 #        title = "Please select",
 #        lable = "Please select streams:",
 #        items = streams_txt
 #    )
 #    print lb.selection
-
+    
     selection = TkListbox(
         title = "Please select",
         lable = "Please select streams:",
         items = streams_txt
     ).selection
-
+    
     return selection
 
 def convert_streams(videofile, stream_selection):
     print "convert_streams():", videofile, stream_selection
     videofile.debug()
+    
+    
 
 
-
-
-if __name__ == "__main__":
+if __name__ == "__main__":    
     cfg = VideoToolsConfig()
     cfg.debug()
-
+    
     if DEBUG:
         print "DEBUG!!!"
         drive = Drive("d:", cfg)
@@ -472,7 +441,7 @@ if __name__ == "__main__":
 
     # Select via Tk the files witch realy convert
     videofiles = select_videofiles(videofiles)
-
+    
     if not videofiles:
         print "No stream files found -> abort, ok."
         sys.exit()
@@ -496,7 +465,7 @@ if __name__ == "__main__":
         else:
             print "ERROR: No streams found!"
             continue
-
+        
 
 
     stream_selection = select_streams(videofiles)

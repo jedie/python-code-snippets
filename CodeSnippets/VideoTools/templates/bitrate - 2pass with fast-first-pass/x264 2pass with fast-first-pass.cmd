@@ -18,7 +18,6 @@ set pass2_source=${basename} DirectShowSource pass2.avs
 set rate_value=${rate_value}
 set stats_file=${basename} x264.stats
 
-set out_file1=${basename} x264 ${rate_value}KBits pass1.mkv
 set out_file2=${basename} x264 ${rate_value}KBits pass2.mkv
 
 REM x264 settings:        
@@ -37,7 +36,7 @@ if exist "%stats_file%" (
 
 :pass1
 echo on
-%x264% --pass 1 %firstpass% --bitrate %rate_value% --stats "%stats_file%" -o "%out_file1%" "%pass1_source%"
+%x264% --pass 1 %firstpass% --bitrate %rate_value% --stats "%stats_file%" -o NUL "%pass1_source%"
 @echo off
 
 :pass2

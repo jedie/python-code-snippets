@@ -307,6 +307,10 @@ if __name__ == "__main__":
     rate_value = select_rate(cfg, video_file_path, template)
     print "rate value:", rate_value
     
-    create_files(cfg, video_file_path, template, rate_value, x264_settings)
+    if len(sys.argv)>1:
+        for fn in sys.argv[1:]:
+            create_files(cfg, fn, template, rate_value, x264_settings)
+    else:
+        create_files(cfg, video_file_path, template, rate_value, x264_settings)
     
     print " -- END -- "
