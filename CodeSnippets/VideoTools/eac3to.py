@@ -39,6 +39,10 @@ STREAMINFOS = [
         "ext": ".dts",
     },
     {
+        "txt_filter": ("TrueHD/AC3",),
+        "ext": ".ac3",
+    },
+    {
         "txt_filter": ("Subtitle",),
         "ext": ".sup",
     },
@@ -105,8 +109,7 @@ class VideoFile(dict):
             self["out_path"],
             "%s.log" % self["name_prefix"]
         )
-        self.log_file = file(self["log_file_path"], "a")
-        self.log("Start logging")
+        self._log_open = False
 
         self["streams"] = None # set in self.parse_streaminfo()
 
@@ -117,6 +120,11 @@ class VideoFile(dict):
     #-------------------------------------------------------------------------
 
     def log(self, txt):
+        if self._log_open == False:
+            self.log_file = file(self["log_file_path"], "a")
+            self._log_open = True
+            self.log("Start logging")
+            
         dt = datetime.datetime.now()
         timestamp = dt.strftime("%d.%m.%Y %H:%M:%S")
         self.log_file.write("%s %s\n" % (timestamp, txt))
@@ -474,6 +482,9 @@ if __name__ == "__main__":
     for videofile in videofiles:
         print videofile
         cmd = videofile.get_command(stream_selection)
+        if cmd == None:
+            print "No cmd -> Skip file."
+            continue
 
         videofile.log("run: %s" % cmd)
         if DEBUG:
