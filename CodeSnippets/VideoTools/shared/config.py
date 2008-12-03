@@ -14,7 +14,8 @@ DEFAULT_CONFIG = {
     "out_dir": "",
 
     "glob": "*.m2ts",
-    "skip_size": 200 * 1024 * 1024,
+    "skip_size": 500 * 1024 * 1024,   # Smaller files are not selected
+    "ignore_size": 200 * 1024 * 1024, # Smaller files complete ignored
     "stream_dir": "BDMV\\STREAM",
     "out_video_ext": "mkv",
     

@@ -40,7 +40,7 @@ def get_out_filename(fn):
             if part:
                 if startendswith(part, "endswith", ("bits", "kbps", "khz")):
                     continue
-                if startendswith(part, "startswith", ("DTS",)): 
+                if startendswith(part, "startswith", ("DTS", "TrueHD")): 
                     continue
             parts.append(part)
         parts1.append(", ".join(parts))

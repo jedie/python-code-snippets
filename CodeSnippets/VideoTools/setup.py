@@ -7,15 +7,15 @@ Only for changing the "out path" if a config file exist.
 from shared.tk_tools import simple_input
 from shared.config import VideoToolsConfig, DEFAULT_CONFIG
 
-def set_skip_size(cfg):
-    
+def set_size(cfg, key):
+    txt = key.replace("_", " ")
     raw_skip_size = simple_input(      
-        title="Setup m2ts file skip size:",
-        pre_lable="m2ts file skip size:",
-        init_value=cfg["skip_size"],
+        title="Setup m2ts file %s:" % txt,
+        pre_lable="m2ts file %s:" % txt,
+        init_value=cfg[key],
         post_lable="(in Bytes)",
     )
-    cfg["skip_size"] = int(raw_skip_size)
+    cfg[key] = int(raw_skip_size)
 
 
 if __name__ == "__main__":
@@ -28,7 +28,8 @@ if __name__ == "__main__":
         # No new config file created, and out dir requested in the past
         cfg.ask_out_dir()
     
-    set_skip_size(cfg)
+    set_size(cfg, "skip_size")
+    set_size(cfg, "ignore_size")
         
     cfg.save_config()
     cfg.debug()

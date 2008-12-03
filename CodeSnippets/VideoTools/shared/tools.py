@@ -4,22 +4,59 @@ import os, sys, string, subprocess
 from pprint import pprint
 
 
-def human_filesize(bytes):
+class Humanize(object):
     """
-    >>> human_filesize(1*1024)
+    >>> Humanize().filesize(1023.9)
+    '1023.9bytes'
+    >>> Humanize().filesize(1*1024)
     '1.0KB'
-    >>> human_filesize(1*1024*1024)
-    '1.0MB'
-    >>> human_filesize(1.5*1024*1024)
-    '1.5MB'
+    >>> Humanize().filesize(1.9*1024*1024)
+    '1.9MB'
+    >>> Humanize().filesize(1*1024*1024*1024)
+    '1.0GB'
+    >>> Humanize().filesize(1*1024*1024*1024*1024*1024)
+    '1024.0TB'
+
+    >>> Humanize().time(10.1)
+    '10.1sec'
+    >>> Humanize().time(59.9)
+    '59.9sec'
+    >>> Humanize().time(60)
+    '1.0min'
+    >>> Humanize().time(60*60)
+    '1.0h'
+    >>> Humanize().time(60*60*60)
+    '60.0h'
     """
-    bytes = float(bytes)
-    for unit in ['bytes','KB','MB','GB','TB']:
-        if bytes < 1000:
-            return "%s%s" % (round(bytes,1), unit)
-        bytes /= 1024.0
+    def _humanize(self, source, units, divisor):
+        temp = float(source)
+
+        for unit in units:
+            if temp < divisor:
+                final_value = temp
+                break
+            final_value = temp
+            temp /= divisor
+
+        return "%s%s" % (round(final_value,1), unit)
 
 
+    def filesize(self, bytes):
+        return self._humanize(
+            source = bytes,
+            units = ("bytes", "KB", "MB", "GB", "TB"),
+            divisor = 1024
+        )
+
+    def time(self, sec):
+        return self._humanize(
+            source = sec,
+            units = ("sec", "min", "h"),
+            divisor = 60
+        )
+
+human_filesize = Humanize().filesize
+human_time = Humanize().time
 
 
 ALLOW_CHARS = string.ascii_letters + string.digits + "+-,."
@@ -27,7 +64,7 @@ ALLOW_CHARS = string.ascii_letters + string.digits + "+-,."
 def make_slug(txt, join_string=" ", allow_chars=ALLOW_CHARS):
     """
     delete all non-ALLOW_CHARS characters
-    
+
     >>> make_slug("a test")
     'a test'
     >>> make_slug("")
@@ -39,14 +76,14 @@ def make_slug(txt, join_string=" ", allow_chars=ALLOW_CHARS):
     for char in txt:
         if char not in allow_chars:
             if parts[-1] != "":
-                # No double "-" e.g.: "foo - bar" -> "foo-bar" not "foo---bar"   
+                # No double "-" e.g.: "foo - bar" -> "foo-bar" not "foo---bar"
                 parts.append("")
         else:
             parts[-1] += char
 
     item_name = join_string.join(parts)
     item_name = item_name.strip(join_string)
-    
+
     return item_name
 
 
@@ -56,7 +93,7 @@ def makeUnique(item_name, name_list, max_no=1000):
     returns a unique shortcut.
     - delete all non-ALLOW_CHARS characters.
     - if the shotcut already exists in name_list -> add a sequential number
-    
+
     >>> makeUnique("two", ["one", "two", "three"])
     'two1'
     >>> makeUnique("two", ["one", "three"])
@@ -106,7 +143,7 @@ def subprocess2(cmd, debug=False):
 
         if char in ("\r", "\x08"):
             continue
-        
+
         if char == "\n":
             char_count = 0
         else:
@@ -116,7 +153,7 @@ def subprocess2(cmd, debug=False):
         sys.stdout.write(char)
         if char_count>79:
             sys.stdout.write("\n")
-            char_count = 0            
+            char_count = 0
         sys.stdout.flush()
 
     return process, output
