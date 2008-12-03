@@ -305,7 +305,7 @@ def choose_drive(cfg):
 #------------------------------------------------------------------------------
 
 
-def get_stream_files(drives, skip_size):
+def get_stream_files(drives, cfg):
     files = []
     for drive in drives:
         print drive,
@@ -323,6 +323,10 @@ def get_stream_files(drives, skip_size):
             filename = os.path.basename(abs_path)
             
             stat = os.stat(abs_path)
+            
+            if stat.st_size < cfg["ignore_size"]:
+                print "File '%s' to small -> ignore file complete" % filename
+                continue
 
 #            print (filename, drive, abs_path, stat, cfg)
             f = VideoFile(filename, drive, abs_path, stat, cfg)
