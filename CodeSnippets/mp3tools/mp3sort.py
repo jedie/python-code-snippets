@@ -63,7 +63,7 @@
     $Rev: $
     $Author: $
 
-    :copyright: 2007 by Jens Diemer
+    :copyright: 2007-2008 by Jens Diemer
     :license: GNU GPL v3, see LICENSE.txt for more details.
 """
 
@@ -73,6 +73,9 @@ __version__ = "SVN $Rev: $"
 
 import os, subprocess, time, urllib, urllib2, re
 from pprint import pprint
+
+
+TAGS_XML = "toptags.xml"
 
 
 class Config(object):
@@ -134,7 +137,33 @@ class Artist(object):
         """
         returns the toptags.xml cache filesystem path
         """
-        return os.path.join(self.path, "toptags.xml")
+        return os.path.join(self.path, TAGS_XML)
+
+    def cleanup(self):
+        dir_items = os.listdir(self.path)
+        
+        if TAGS_XML not in dir_items:
+            has_toptags_file = False
+        else:
+            has_toptags_file = True
+            index = dir_items.index(TAGS_XML)
+            del(dir_items[index])
+       
+        if dir_items != []:
+            # No empty artist dir -> do nothing
+            return False
+        
+        # It's a empty artist dir -> delete it
+        
+        if has_toptags_file:
+            # delete toptags.xml file
+            os.remove(self.get_feed_fs_path())
+            
+        print "Info: Delete empty artist dir:", self.path
+        os.rmdir(self.path)
+        
+        return True
+            
 
     def __str__(self):
         return "<Artist '%s'>" % self.name
@@ -253,7 +282,8 @@ def auto_sort():
     """
     The main routine
     """
-    count = 0
+    count = 1
+    deleted = 0
     for artist in os.listdir(CFG.base_dir):
         artist = Artist(CFG, artist)
         if not os.path.isdir(artist.path):
@@ -262,11 +292,17 @@ def auto_sort():
                 print "skip '%s' (it's not a direcotry)" % artist.name
             continue
 
-#        if no > 10: break
-        count += 1
-
         print "_"*80
         print "%s - %s" % (count, artist.name)
+
+        was_deleted = artist.cleanup()
+        if was_deleted == True:
+            # The artist dir was empty and has been deleted
+            deleted += 1
+            continue
+
+#        if no > 10: break
+        count += 1
 
         toptags_xml = get_toptags_file(artist)
         if not toptags_xml:
@@ -282,6 +318,12 @@ def auto_sort():
             print "tags:", tags
 
         link_artist(artist, tags)
+        
+    print
+    print
+    
+    print "Deleted empty Artists dirs:", deleted
+    print "Existing Artists:", count
 
 if __name__ == "__main__":
     check()
