@@ -28,6 +28,23 @@ def askdirectory2(*args, **kwargs):
 def askopenfilename2(*args, **kwargs):
     return _ask(askopenfilename, *args, **kwargs)
 
+def askopenfilename3(title, initialfile, filetypes):
+    file_path = askopenfilename2(
+        title=title,
+        initialfile=initialfile,
+        filetypes=filetypes,
+    )
+    if file_path == "":
+        sys.exit()
+    else:
+        return file_path
+
+def askfilepath(filename):
+    return askopenfilename3(
+        title = "Please select '%s':" % filename,
+        initialfile=filename,
+        filetypes=[(filename,filename)]
+    )
 
 def simple_input(title, pre_lable, init_value, post_lable):
     """
@@ -112,3 +129,22 @@ class TkListbox(object):
 
         self.root.destroy()
 
+
+
+def simple_select(items, title="Select", text="Please select:"):
+    root = tk.Tk()
+    root.title(title)
+    tk.Label(root, text=text, font = "Tahoma 9 bold").pack()
+
+    var = tk.IntVar()
+    for no, item in enumerate(items):
+        r = tk.Radiobutton(root, text=item, variable=var, value=no)
+        r.pack()
+
+    tk.Button(root, text = "OK", command=root.destroy).pack(side=tk.RIGHT)
+    tk.Button(root, text = "Abort", command=sys.exit).pack(side=tk.RIGHT)
+    tk.mainloop()
+    
+    selection = var.get()
+    selected_item = items[selection]
+    return selected_item
