@@ -5,7 +5,7 @@ import os, sys, pickle
 from pprint import pprint
 from ConfigParser import RawConfigParser
 
-from tk_tools import askopenfilename2, askdirectory2
+from tk_tools import askopenfilename2, askdirectory2, askfilepath
 
 
 CONFIG_FILENAME = "config.dat"
@@ -73,21 +73,19 @@ class PickleConfig(dict):
 
 
 
+
+
+
+
+
+
 class VideoToolsConfig(PickleConfig):
     def __init__(self):
         super(VideoToolsConfig, self).__init__(CONFIG_FILENAME, DEFAULT_CONFIG)
         
         # Check/set the path to all EXE files
         for filename in EXE_FILES:
-            while not os.path.isfile(self.get(filename, "")):
-                fullname = "%s.exe" % filename
-                
-                self[filename] = askopenfilename2(
-                    title = "Please select '%s':" % fullname,
-                    initialfile=fullname,
-                    filetypes=[('EXE Files','*.exe')]
-                )
-                self.save_config()
+            self.get_filepath(filename)
         
         self.out_dir_set = False
         if not os.path.isdir(self["out_dir"]):
@@ -104,6 +102,19 @@ class VideoToolsConfig(PickleConfig):
             initialdir = initdir,
         )
         self.out_dir_set = True
+        
+
+    def get_filepath(self, filename):
+        if filename in self:
+            old_path = self[filename]
+            if os.path.isfile(old_path) == True:
+                return old_path
+        
+        filepath = askfilepath(filename)
+        if os.path.isfile(filepath):
+            self[filename] = filepath
+            self.save_config()
+            return filepath
         
 
 if __name__ == "__main__":
