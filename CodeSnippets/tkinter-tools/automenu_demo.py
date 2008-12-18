@@ -1,6 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
+    demo app for automenu.py
+    
+    :copyleft: 2008 by Jens Diemer, see AUTHORS for more details.
+    :license: GNU GPL v3 or above, see LICENSE for more details.
+"""
+
 import Tkinter as tk
 import tkMessageBox
 
