@@ -1,0 +1,10 @@
+#summary tkinter-tools
+#labels Tkinter
+
+= tkinter-tools =
+
+The tkinter-tools contains some useful Tkinter tools:
+
+=== automenu.py ===
+
+A menu generator for simple Tkinter apps. See automenu_demo.py
