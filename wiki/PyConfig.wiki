@@ -1,0 +1,51 @@
+= About PyConfig =
+
+PyConfig is a alternative for ConfigParser/shelve/pickle. It stores a dict as python source code into a file.
+
+Sourcecode here: [http://code.google.com/p/small-py-utils/source/browse/#svn/trunk/pyconfig /trunk/pyconfig]
+
+
+== About data_eval.py ==
+
+With data eval you can evaluate python data string without eval/exec. It based on [http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/364469 "Safe" Eval by Michael Spencer].
+
+Source code: [http://code.google.com/p/small-py-utils/source/browse/trunk/pyconfig/data_eval.py /trunk/pyconfig/data_eval.py]
+
+
+== How it works: ==
+
+  * Stores a dict data with pformat
+  * Load and Evaluate the dict string with data_eval.py
+    
+data_eval.py doesn't use exec/eval.
+
+    
+== example ==
+
+{{{    
+py = PyConfig(filename="FooBar.txt")
+py["foo"] = "bar"
+py[1] = "FooBar"
+py.save()
+
+# reload
+
+py = PyConfig(filename="FooBar.txt")
+print py
+# print would look like:
+# {"foo": "bar, 1: "FooBar"}
+}}}
+
+You can use a default dict:
+
+{{{
+py = PyConfig(filename="FooBar.txt", defaults={"one": "two"})
+py["new"] = 123
+py.save()
+
+# reload
+py = PyConfig(filename="FooBar.txt")
+print py
+}}}
+
+Note: PyConfig has the parameter verbose.
