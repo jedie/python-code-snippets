@@ -4,7 +4,13 @@
 = tkinter-tools =
 
 The tkinter-tools contains some useful Tkinter tools.
-You can find the source here: http://code.google.com/p/python-code-snippets/source/browse/#svn/tkinter-tools
+
+You can find the source here: [http://code.google.com/p/python-code-snippets/source/browse/#svn/tkinter-tools /tkinter-tools]
+
+Use this svn properties:
+{{{
+svn:external http://python-code-snippets.googlecode.com/svn/tkinter-tools/ tkinter-tools
+}}}
 
 === automenu.py ===
 
