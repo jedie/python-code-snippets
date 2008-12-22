@@ -3,8 +3,9 @@
 
 = tkinter-tools =
 
-The tkinter-tools contains some useful Tkinter tools:
+The tkinter-tools contains some useful Tkinter tools.
+You can find the source here: http://code.google.com/p/python-code-snippets/source/browse/#svn/tkinter-tools
 
 === automenu.py ===
 
-A menu generator for simple Tkinter apps. See automenu_demo.py
+A menu generator for simple Tkinter apps. See [http://code.google.com/p/python-code-snippets/source/browse/tkinter-tools/automenu_demo.py automenu_demo.py]
