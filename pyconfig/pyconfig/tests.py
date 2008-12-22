@@ -64,6 +64,10 @@ class TestDataEval(unittest.TestCase):
         self.assert_eval(datetime.now())
         self.assert_eval({"dt": datetime.now()})
         self.assert_eval(timedelta(seconds=2))
+        
+    def testSets(self):
+        self.assert_eval(set([1,2,3]))
+        self.assert_eval(frozenset([4,5,6]))
 
     def testLineendings(self):
         data_eval("\r\n{\r\n'foo'\r\n:\r\n1\r\n}\r\n")

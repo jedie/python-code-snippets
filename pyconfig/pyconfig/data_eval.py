@@ -33,7 +33,11 @@ import compiler
 
 
 # For visitName()
-NAME_MAP = {"None": None, "True": True, "False": False}
+NAME_MAP = {
+    "None": None,
+    "True": True, "False": False,
+    "set": set, "frozenset": frozenset
+}
 
 # For visitGetattr(): key is the callable name and value is the module name
 ALLOWED_CALLABLES = {
@@ -163,5 +167,3 @@ class UnsafeSourceError(DataEvalError):
         return "%s in line %d: '%s'" % (self.error, self.lineno, self.descr)
 
     __str__ = __repr__
-
-
