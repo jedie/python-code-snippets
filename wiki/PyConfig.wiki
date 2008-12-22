@@ -1,8 +1,10 @@
+#summary /pyconfig a alternative for ConfigParser/shelve/pickle
+
 = About PyConfig =
 
 PyConfig is a alternative for ConfigParser/shelve/pickle. It stores a dict as python source code into a file.
 
-Sourcecode here: [http://code.google.com/p/small-py-utils/source/browse/#svn/trunk/pyconfig /trunk/pyconfig]
+Sourcecode here: [http://code.google.com/p/small-py-utils/source/browse/#svn/pyconfig/pyconfig]
 
 
 == About data_eval.py ==
