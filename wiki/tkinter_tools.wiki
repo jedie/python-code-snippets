@@ -1,4 +1,4 @@
-#summary tkinter-tools
+#summary /tkinter-tools Some Tkinter tools
 #labels Tkinter
 
 = tkinter-tools =
