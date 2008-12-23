@@ -43,6 +43,7 @@ NAME_MAP = {
 ALLOWED_CALLABLES = {
     "datetime" : "datetime",
     "timedelta": "datetime",
+    "date"     : "datetime",
 }
 
 
