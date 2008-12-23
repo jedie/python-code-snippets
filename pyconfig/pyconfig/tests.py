@@ -59,6 +59,11 @@ class TestDataEval(unittest.TestCase):
         self.assert_eval({1:2, "a":"b", u"c":"c", "d":-1, "e":-2.02})
         self.assert_eval({"foo":"bar", u"1": None, 1:True, 0:False})
 
+    def testDate(self):
+        from datetime import date
+        self.assert_eval(date.today())
+        self.assert_eval({"dt": date.today()})
+        
     def testDatetime(self):
         from datetime import datetime, timedelta
         self.assert_eval(datetime.now())
