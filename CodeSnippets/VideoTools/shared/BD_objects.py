@@ -69,6 +69,8 @@ class MoviePlayList(FileBase):
         self.eac3to_cache = os.path.join(
             self.out_dir, "eac3to %s cache.txt" % self.filename
         )
+        if not os.path.isdir(self.out_dir):
+            os.makedirs(self.out_dir)
     
     def get_biggest_m2ts(self):
         return sorted(self.m2ts_files, key=lambda x: x.size, reverse=True)[0]
