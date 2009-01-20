@@ -74,12 +74,23 @@ def select_mpls(cfg, bluray):
     
     max_count = 15
     
-    items = sorted(mpls, key=lambda x: x.size, reverse=True)[:max_count]
+    playlists = sorted(mpls, key=lambda x: x.size, reverse=True)[:max_count]
 
-    return tk_tools.simple_select(
-        items, title="Select mpls files (the %s biggest)" % max_count,
-        text="Please select the mpls file witch will be converted:"
+    lb = tk_tools.TkListbox(
+        title     = "Please select",
+        lable     = "Please select mpls file(s) witch should be converted:",
+        items     = playlists,
+        activated = (0,), # Preselect the first entry
     )
+    print lb.curselection # tuple containing index of selected items
+    return lb.selection # list of selected items.
+    
+    sys.exit()
+
+#    return tk_tools.simple_select(
+#        items, title="Select mpls files (the %s biggest)" % max_count,
+#        text="Please select the mpls file witch will be converted:"
+#    )
 
 def select_streams(bluray, cfg, selected_mpls):
     stream_dict = selected_mpls.get_stream_dict()
@@ -134,82 +145,21 @@ if __name__ == "__main__":
     print bluray.m2ts
     
     # Read all movie mpls files ...\BDMV\mpls\*.mpls
-    # Attach all m2ts files to the mpls object and calc teh total filesize
+    # Attach all m2ts files to the mpls object and calc the total filesize
     bluray.read_mpls_files()
     
     selected_mpls = select_mpls(cfg, bluray)
     print "Selected mpls:", selected_mpls
     
-    stream_dict = select_streams(bluray, cfg, selected_mpls)
-    print "selected streams: %r" % stream_dict
+    for playlist in selected_mpls:
     
-    stream_cmd = eac3to.build_stream_out(
-        bluray.movie_name, bluray.out_dir, stream_dict
-    )
-    print "stream cmd: %r" % stream_cmd
-    
-    print "Create eac3to batch file."
-    run_eac3to(cfg, bluray.out_dir, selected_mpls, stream_cmd)
-
-    sys.exit()
-    
-    
-    
-    
-    filepath = select_sourcefile(cfg)
-#    print filepath
-    f = file(filepath, "rb")
-    m2ts_no = re.findall(r"00(\d+)M2TS", f.read())
-    f.close()
-    
-    print m2ts_no
-    
-    path = select_path(cfg)
-    print path
-    
-    out_name = os.path.split(path)[1]
-    
-    def get_file(no, ext):
-        pattern = os.path.join(path, "%s*.%s" % (no, ext))
-        filepath = glob(pattern)[0]
-        filename = os.path.split(filepath)[1]
-        return filename
-
-    video_files = []
-    audio_files = []
-    for no in m2ts_no:
-        fn = get_file(no, "mkv")
-        video_files.append(fn)
+        stream_dict = select_streams(bluray, cfg, playlist)
+        print "selected streams: %r" % stream_dict
         
-        fn = get_file(no, "ac3")
-        audio_files.append(fn)
-    
-    mkvmerge = cfg.get_filepath("mkvmerge.exe")
-    print mkvmerge
-    
-    batch = os.path.join(path, "merge.cmd")
-    print "create:", batch
-    f = file(batch, "w")
-    f.write('set mkvmerge="%s"\n' % mkvmerge)
-    
-    f.write('%%mkvmerge%% -o "%s"' % out_name)
-    
-    def write_fn(f, filelist):
-        print "write:", filelist
-        for no, fn in enumerate(filelist):
-            line = " "
-            if no != 0:
-                line += "+"
-            line += fn
-            f.write(line)
-    
-    write_fn(f, video_files)
-    write_fn(f, audio_files)
-    
-    f.write("\npause")
-    
-    f.close()
-
-
-
-
+        stream_cmd = eac3to.build_stream_out(
+            bluray.movie_name, bluray.out_dir, stream_dict
+        )
+        print "stream cmd: %r" % stream_cmd
+        
+        print "Create eac3to batch file."
+        run_eac3to(cfg, bluray.out_dir, playlist, stream_cmd)
