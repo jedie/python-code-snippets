@@ -61,21 +61,23 @@ if __name__ == "__main__":
             multiple = True
 #            filetypes = [('M2TS File','*.*')],
         )
+    assert isinstance(files, list)
 
     PARAM_KEY = "lastac3"
 
     if PARAM_KEY not in cfg:
         cfg[PARAM_KEY] = ["-384, -down6"]
         
-    last_values = cfg[PARAM_KEY]
+    last_values = list(set(cfg[PARAM_KEY]))
         
     new_values = simple_input(      
         title="eac3to parameters",
         pre_lable="Please input the used parameters (separated by comma!):",
         init_value=last_values[0],
-        post_lable="last values: %r" % last_values,
+        post_lable="last values: %r\nUse nothing for only demuxing!" % last_values,
     )
     parameters = [i.strip() for i in new_values.split(",")]
+    parameters = [i for i in parameters if i] # delete emty items
     new_values = ", ".join(parameters)
     if new_values not in last_values:
         cfg[PARAM_KEY].insert(0, new_values)
