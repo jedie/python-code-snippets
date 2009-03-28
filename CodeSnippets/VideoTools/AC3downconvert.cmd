@@ -1,2 +1,3 @@
-cd /d "%~dp0"
+@cd /d "%~dp0"
 python.exe AC3downconvert.py %*
+@pause
