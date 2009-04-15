@@ -14,6 +14,9 @@ from shared.tk_tools import askopenfilename2, simple_input
 from shared.tools import subprocess2
 
 
+PARAM_KEY = "lastac3"
+
+
 def get_out_filename(fn):
     """
     build the out filename by striping some parts of the filename out.
@@ -61,28 +64,20 @@ if __name__ == "__main__":
             multiple = True
 #            filetypes = [('M2TS File','*.*')],
         )
-    assert isinstance(files, list)
+    assert isinstance(files, list)   
 
-    PARAM_KEY = "lastac3"
 
     if PARAM_KEY not in cfg:
         cfg[PARAM_KEY] = ["-384, -down6"]
         
-    last_values = list(set(cfg[PARAM_KEY]))
-        
     new_values = simple_input(      
         title="eac3to parameters",
         pre_lable="Please input the used parameters (separated by comma!):",
-        init_value=last_values[0],
-        post_lable="last values: %r\nUse nothing for only demuxing!" % last_values,
+        init_value=cfg[PARAM_KEY][0],
+        post_lable="last values: %r\nUse nothing for only demuxing!" % cfg[PARAM_KEY],
     )
     parameters = [i.strip() for i in new_values.split(",")]
     parameters = [i for i in parameters if i] # delete emty items
-    new_values = ", ".join(parameters)
-    if new_values not in last_values:
-        cfg[PARAM_KEY].insert(0, new_values)
-        cfg[PARAM_KEY] = cfg[PARAM_KEY][:cfg["max save"]] # Cut to mutch values
-        cfg.save_config()
     
     for fn in files:
         print fn
@@ -96,3 +91,9 @@ if __name__ == "__main__":
 #            debug=True
         )
         
+    # Store new parameters into cfg
+    new_values = ", ".join(parameters)
+    if new_values not in cfg[PARAM_KEY]:
+        cfg[PARAM_KEY].insert(0, new_values)
+        cfg[PARAM_KEY] = cfg[PARAM_KEY][:cfg["max save"]] # Cut to mutch values
+        cfg.save_config()
