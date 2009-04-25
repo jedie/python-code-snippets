@@ -195,11 +195,11 @@ class VideoFile(dict):
         for line in lines:
             if DEBUG:
                 print ">", line
-            no, info = line.split(":",1)
-            
             try:
+                no, info = line.split(":",1)
                 no = int(no)
             except ValueError:
+                print ">>> Skip line: %r" % line
                 continue
             
             info = info.strip()
