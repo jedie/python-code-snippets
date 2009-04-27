@@ -95,6 +95,9 @@ class Config(object):
     sort_dir = None
 
     use_tags = 2
+    
+    # Delete MP3 file witch are too small (broken files) 
+    mp3_del_min_size = 1000 #Bytes
 
     #__________________________________________________________________________
     # Variables how should not changed:
@@ -140,8 +143,62 @@ class Artist(object):
         return os.path.join(self.path, TAGS_XML)
 
     def cleanup(self):
-        dir_items = os.listdir(self.path)
+        """
+        Delete empty directories and delete all mp3 files witch are smaller than self.cfg.mp3_del_min_size
+        """
+        deleted_mp3s = 0
+        deleted_dirs = 0
         
+        empty_dirs = []
+        for root, dirs, files in os.walk(self.path):
+            if not dirs and files in ([], [TAGS_XML]):
+                # empty directory or contains only the toptags xml file
+                empty_dirs.append(root)
+                continue
+            
+            for filename in files:
+                name, ext = os.path.splitext(filename)
+                if ext != ".mp3":
+                    continue
+                
+                mp3path = os.path.join(root, filename)
+                mp3size = os.path.getsize(mp3path)
+                if mp3size<=self.cfg.mp3_del_min_size:
+                    print ">>> File smaller than %sBytes:" % self.cfg.mp3_del_min_size
+                    print "path:", root
+                    print "file name:", filename
+                    print "file size: %iBytes" % mp3size
+                    print "delete mp3 file!"
+                    os.remove(mp3path)
+                    deleted_mp3s += 1
+        
+        empty_artist = False
+        for path in empty_dirs:
+            if TAGS_XML in os.listdir(path):
+                print "delete toptags.xml file."
+                os.remove(self.get_feed_fs_path())
+                
+            try:
+                os.removedirs(path)
+            except OSError, err:
+                if self.cfg.debug:
+                    print "debug: %s" % err
+            else:
+                if path == self.path:
+                    print ">>> Empty artist directory removed:"
+                    empty_artist = True
+                else:
+                    print ">>> empty directory removed:"
+                print path
+                deleted_dirs += 1
+                
+        
+        return empty_artist, deleted_mp3s, deleted_dirs
+                    
+    def OLDcleanup(self):
+        """ Delete empty directories. """
+        dir_items = os.listdir(self.path)
+                
         if TAGS_XML not in dir_items:
             has_toptags_file = False
         else:
@@ -197,14 +254,19 @@ def get_toptags_file(artist):
     # Try to use toptags.xml from the filesystem
     feed_fs_path = artist.get_feed_fs_path()
     if CFG.debug:
-        print feed_fs_path
+        print "toptags.xml path:", feed_fs_path
     if os.path.isfile(feed_fs_path):
+        if CFG.debug:
+            print "toptags.xml found in filesystem"
         f = file(feed_fs_path, "r")
         content = f.read()
         f.close()
         if CFG.debug:
             print "Use toptags.xml from the filesystem"
         return content
+    else:
+        if CFG.debug:
+            print "toptags.xml not found in filesystem."
 
     # get toptags.xml from audioscrobbler
     feed_url = artist.get_feed_url()
@@ -223,7 +285,8 @@ def get_toptags_file(artist):
     duration = time.time() - start_time
     print "Get toptags.xml from audioscrobbler in %.2fsec" % duration
 
-    # Cache toptags.xml for the next time
+    if CFG.debug:
+        print "save toptags.xml in", feed_fs_path
     try:
         f = file(feed_fs_path, "w")
         f.write(content)
@@ -255,6 +318,7 @@ def link_artist(artist, tags):
     -Create the gerne direcotry in CFG.sort_dir.
     -Create a symlincs from the source artist directory into the gerne dir
     """
+    created_links = 0
     for tag in tags:
         print ">>> %s -" % tag,
         source_path = artist.path
@@ -275,6 +339,9 @@ def link_artist(artist, tags):
 
         os.symlink(source_path, dst_dir)
         print "symbolic link created."
+        created_links += 1
+        
+    return created_links
 
 
 
@@ -282,8 +349,10 @@ def auto_sort():
     """
     The main routine
     """
-    count = 1
-    deleted = 0
+    count = 0
+    created_links = 0
+    deleted_mp3s = 0
+    deleted_dirs = 0
     for artist in os.listdir(CFG.base_dir):
         artist = Artist(CFG, artist)
         if not os.path.isdir(artist.path):
@@ -292,17 +361,18 @@ def auto_sort():
                 print "skip '%s' (it's not a direcotry)" % artist.name
             continue
 
+        count += 1
         print "_"*80
         print "%s - %s" % (count, artist.name)
 
-        was_deleted = artist.cleanup()
-        if was_deleted == True:
+        # Delete empty directories and small mp3 files
+        empty_artist, mp3s, dirs = artist.cleanup()
+        deleted_mp3s += mp3s
+        deleted_dirs += dirs
+        
+        if empty_artist == True:
             # The artist dir was empty and has been deleted
-            deleted += 1
             continue
-
-#        if no > 10: break
-        count += 1
 
         toptags_xml = get_toptags_file(artist)
         if not toptags_xml:
@@ -317,13 +387,15 @@ def auto_sort():
         if CFG.debug:
             print "tags:", tags
 
-        link_artist(artist, tags)
+        created_links += link_artist(artist, tags)
         
     print
     print
     
-    print "Deleted empty Artists dirs:", deleted
     print "Existing Artists:", count
+    print "Deleted small mp3 files:", deleted_mp3s
+    print "Deleted empty directories:", deleted_dirs
+    print "new symbolic links:", created_links
 
 if __name__ == "__main__":
     check()
