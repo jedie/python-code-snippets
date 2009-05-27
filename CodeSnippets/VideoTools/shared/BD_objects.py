@@ -75,12 +75,13 @@ class MoviePlayList(FileBase):
     def get_biggest_m2ts(self):
         return sorted(self.m2ts_files, key=lambda x: x.size, reverse=True)[0]
     
-    def get_source_cmd(self):
-        filelist = [m2ts.abs_path for m2ts in self.m2ts_files]
-        return "+".join(filelist)
+#    def get_source_cmd(self):
+#        filelist = [m2ts.abs_path for m2ts in self.m2ts_files]
+#        return "+".join(filelist)
     
     def get_stream_dict(self):
-        source_cmd = self.get_source_cmd()
+#        source_cmd = self.get_source_cmd()
+        source_cmd = self.abs_path
         stream_dict = m2ts.get_stream_info(
             self.cfg, source_cmd, self.eac3to_cache
         )
@@ -299,10 +300,6 @@ class VideoFile(dict):
             value_dict[v].append(k)
         
 #        pprint(value_dict)
-
-
-        
-
 
     def get_stream_info(self):
         """
