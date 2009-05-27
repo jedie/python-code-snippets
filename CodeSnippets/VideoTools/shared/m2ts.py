@@ -32,8 +32,8 @@ def select_streams(stream_dict):
     
     return result
 
-
-def parse_streaminfo(txt, debug=False):
+def parse_m2ts_streaminfo(txt, debug=False):
+    """ convert eac3to output into stream_dict for **m2ts file** """
     stream_dict = {}
     lines = txt.splitlines()
     lines = lines[1:]
@@ -52,9 +52,26 @@ def parse_streaminfo(txt, debug=False):
         stream_dict[no] = info
         
     return stream_dict
- 
 
-def get_stream_info(cfg, m2ts_path, cache_filepath):
+def parse_mpls_streaminfo(txt, debug=False):
+    """ convert eac3to output into stream_dict for **mpls file** """
+    stream_dict = {}
+    lines = txt.splitlines()
+    no = 0
+    for line in lines:
+        if debug:
+            print ">", line
+        line = line.strip()
+        if not line.startswith("-"):
+            continue
+        
+        no += 1       
+        stream_dict[no] = line.strip("- ")
+        
+    return stream_dict
+
+
+def get_stream_info(cfg, source_cmd, cache_filepath):
     """
     Run eac3to and cache the output data.
     """
@@ -67,7 +84,7 @@ def get_stream_info(cfg, m2ts_path, cache_filepath):
         f.close()
     else:
         # run eac3to and save the output data into txt_path
-        cmd = [cfg["eac3to"], m2ts_path]
+        cmd = [cfg["eac3to"], source_cmd]
         print "run '%s'..." % " ".join(cmd)
         process, output = tools.subprocess2(cmd)
         
@@ -75,4 +92,9 @@ def get_stream_info(cfg, m2ts_path, cache_filepath):
         f.write(output)
         f.close()
     
-    return parse_streaminfo(output)
+    if source_cmd.endswith(".mpls"):
+        return parse_mpls_streaminfo(output)
+    elif source_cmd.endswith(".m2ts"):
+        return parse_m2ts_streaminfo(output)
+    else:
+        raise

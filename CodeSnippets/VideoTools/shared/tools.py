@@ -132,6 +132,7 @@ def subprocess2(cmd, debug=False):
     process = subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
         shell=True,
     )
     output = ""
@@ -155,6 +156,12 @@ def subprocess2(cmd, debug=False):
             sys.stdout.write("\n")
             char_count = 0
         sys.stdout.flush()
+
+    stderr = process.stderr.read()
+    if stderr:
+        print "--- stderr ouput: ---"
+        print stderr
+        print "---------------------"
 
     return process, output
 

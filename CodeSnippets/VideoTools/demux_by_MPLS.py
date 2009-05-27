@@ -113,15 +113,7 @@ def run_eac3to(cfg, out_dir, selected_mpls, stream_cmd):
     print "write into %r" % log_abs_path
     log = file(log_abs_path, "a")
     
-    cmd = [cfg["eac3to"]]
-    
-    sourcefiles = []
-    for m2ts_file in selected_mpls.m2ts_files:
-        print m2ts_file
-        sourcefiles.append(m2ts_file.abs_path)
-    
-    cmd.append("+".join(sourcefiles))
-    
+    cmd = [cfg["eac3to"], selected_mpls.abs_path]   
     cmd += stream_cmd
     
     log.write("run %r...\n" % cmd)
@@ -156,9 +148,9 @@ if __name__ == "__main__":
         stream_dict = select_streams(bluray, cfg, playlist)
         print "selected streams: %r" % stream_dict
         
-        stream_cmd = eac3to.build_stream_out(
-            bluray.movie_name, bluray.out_dir, stream_dict
-        )
+        out_name_prefix = "%s %s" % (bluray.movie_name, playlist.filename)
+        
+        stream_cmd = eac3to.build_stream_out(out_name_prefix, bluray.out_dir, stream_dict)
         print "stream cmd: %r" % stream_cmd
         
         print "Create eac3to batch file."
