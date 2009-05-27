@@ -56,6 +56,7 @@ class Templates(list):
 
 def select_template(cfg, video_file_path):
     template_dir = cfg["template dir"]
+    print "Use templates from:", os.path.abspath(template_dir)
     
     templates = Templates()
     
