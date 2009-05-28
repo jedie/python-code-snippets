@@ -168,6 +168,24 @@ def subprocess2(cmd, debug=False):
 
 
 
+class SimpleLog(object):
+    def __init__(self, log_filepath):
+        print "Logging into: %r" % log_filepath
+        self.log_file = file(log_filepath, "a")
+        self.log_file.write("\n")
+        self.log_file.write("+"*79)
+        self.log_file.write("\n")
+    
+    def __call__(self, txt):
+        print txt
+        self.log_file.write(txt + "\n")
+        self.log_file.flush()
+        
+    def close(self):
+        self.log_file.close()
+
+
+
 
 if __name__ == "__main__":
     import doctest
