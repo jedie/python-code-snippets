@@ -35,7 +35,8 @@ DEFAULT_CONFIG = {
     "template dir": "templates",
 }
 
-EXE_FILES = ("eac3to", "x264")
+# Use external programs. google to find the download links ;)
+EXE_FILES = ("eac3to", "x264", "BeSweet", "aften")
 
 
 class PickleConfig(dict):
@@ -110,7 +111,7 @@ class VideoToolsConfig(PickleConfig):
             if os.path.isfile(old_path) == True:
                 return old_path
         
-        filepath = askfilepath(filename)
+        filepath = askfilepath(filename + ".exe")
         if os.path.isfile(filepath):
             self[filename] = filepath
             self.save_config()
