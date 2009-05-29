@@ -20,9 +20,9 @@ set stats_file=${basename} x264.stats
 
 set out_file2=${basename} x264 ${rate_value}KBits pass2.mkv
 
-REM x264 settings:        
+REM x264 settings:
 set firstpass=${firstpass}
-set finalpass=${finalpass} 
+set finalpass=${finalpass}
 
 REM --------------------------------------------------------------------------
 
@@ -44,21 +44,21 @@ echo on
 %x264% --pass 2 %finalpass% --bitrate %rate_value% --stats "%stats_file%" -o "%out_file2%" "%pass2_source%"
 @echo off
 
-title Fertig: ${video_file_path} 
+title Fertig: ${video_file_path}
 echo.
 pause
 goto:eof
 
 :check_exist
     if not exist "%~1" (
-        call:error "File [%1] doesn't exist!"
+        call:error File [%~1] doesn't exist!
         exit
     )
 goto:eof
 
 :error
     echo Error:
-    echo %1
+    echo %*
     echo.
     pause
 goto:eof
