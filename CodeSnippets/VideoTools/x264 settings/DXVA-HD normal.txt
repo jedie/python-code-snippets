@@ -1,7 +1,8 @@
 # x264 DXVA-HD settings
 #
 # Based on MeGUI x264 presets settings from:
-# http://x264.tobinaka.com/index.php?Usage/Presets
+# http://forum.doom9.org/showthread.php?t=139765
+# http://x264.tobinaka.com/index.php?Presets
 #
 
 --level 4.1
@@ -18,12 +19,12 @@
 # --filter -1:-1
 
 # Noise reduction:
---nr 1000 
+--nr 1000
 
  ==== Settings only for real encoding:
- 
+
 # The follow settings would be not used in the first pass of a two pass encoding
- 
+
 # *** DXVA-HD-HQ
 --subme 7 --me umh
 
