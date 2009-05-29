@@ -1,0 +1,23 @@
+#
+# Audio remix channel map config file
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+# Use front streams from source audio file.
+# Use surround + LFE streams from second audio file.
+#
+#
+# 1: source audio stream
+# 2: second audio stream
+#
+# IMPORTAND:
+#  * The first code are for the Aften parameter -ch_*
+#    Aften paremeters are lowcase and "Front Center" is "fc"
+#  * The seconde code are the BeSweet output filename code suffix.
+#    BeSweet suffixes are upcase and "Front Center" is only "C"
+#
+fl  <- 1: FL
+fc  <- 1: C
+fr  <- 1: FR
+sl  <- 2: SL
+sr  <- 2: SR
+lfe <- 2: LFE
