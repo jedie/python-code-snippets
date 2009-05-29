@@ -15,31 +15,35 @@ set source_file=${basename} DirectShowSource.avs
 set rate_value=${rate_value}
 set out_file=${basename} x264 crf${rate_value}.mkv
 
-REM x264 settings:        
+REM x264 settings:
 set finalpass=${finalpass}
 
 REM --------------------------------------------------------------------------
 
-if not exist "%source_file%" (
-    call:error "File [%source_file%] doesn't exist!"
-    goto:eof
-)
+call:check_exist "%source_file%"
 if exist "%out_file%" (
-    call:error "File [%out_file%] exist!"
-    goto:eof
+    call:error File [%out_file%] exist!
+    exit
 )
 
 echo on
 %x264% %finalpass% --crf %rate_value% -o "%out_file%" "%source_file%"
 @echo off
 
-title Fertig: ${video_file_path} 
+title Fertig: ${video_file_path}
 pause
+goto:eof
+
+:check_exist
+    if not exist "%~1" (
+        call:error File [%~1] doesn't exist!
+        exit
+    )
 goto:eof
 
 :error
     echo Error:
-    echo %1
+    echo %*
     echo.
     pause
 goto:eof
