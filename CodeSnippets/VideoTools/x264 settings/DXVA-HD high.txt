@@ -5,12 +5,12 @@
 # http://x264.tobinaka.com/index.php?Presets
 #
 
---level 3.1
---ref 8 --mixed-refs
+--level 4.1
+--ref 4 --mixed-refs
 --bframes 3 --b-adapt 2 --weightb
 --direct auto --trellis 2
 --partitions p8x8,b8x8,i4x4,i8x8 --8x8dct
---vbv-bufsize 14000 --vbv-maxrate 17500
+--vbv-bufsize 50000 --vbv-maxrate 50000
 --threads auto --thread-input
 --sar 1:1
 --progress --no-psnr --no-ssim
@@ -26,10 +26,10 @@
 # The follow settings would be not used in the first pass of a two pass encoding
 
 # *** DXVA-HD-HQ
---subme 7 --me umh
+# --subme 7 --me umh
 
 # *** DXVA-HD-Extra Quality
-# --subme 8 --me umh
+--subme 8 --me umh
 
 # *** DXVA-HD-Insane
 # --subme 9 --me tesa --merange 32 --no-dct-decimate --no-fast-pskip
