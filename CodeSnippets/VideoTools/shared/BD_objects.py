@@ -138,7 +138,15 @@ class BD(object):
         
         self.m2ts = self.read_files(self.stream_dir, M2TS_File)
         self.mpls = self.read_files(self.playlist_dir, MoviePlayList)
-        
+    
+    def edit_movie_name(self):
+        self.movie_name = tk_tools.simple_input(      
+            title="Edit movie name",
+            pre_lable="Please edit the movie name:",
+            init_value=self.movie_name,
+            post_lable="(used for directory/filenames!)",
+        )
+    
     def read_files(self, path, FileClass):
         result = {}
         for fn in os.listdir(path):
@@ -168,26 +176,40 @@ class BD(object):
 
 
 
-def choose_BD_root(cfg):
+def choose_BD_root(cfg, try_path=None):
     """
     Choose a stream dir manuely.
     """
-    path = tk_tools.askopenfilename2(
-        title = "Choose the BD root dir (.../BDMV/index.bdmv) :",
-        initialfile = "index.bdmv",
-        initialdir = os.path.join(cfg["last sourcedir"], "BDMV"),
-        filetypes = [('BDMV contents file','*.bdmv')],
-    )
-    bd_root = os.path.split(os.path.split(path)[0])[0]
+    bd_root = None
+    
+    if try_path:
+        test = os.path.join(try_path, "BDMV", "index.bdmv")
+        print "Test exist of: %r" % test
+        if os.path.isfile(test):
+            # seems path is ok -> use it
+            bd_root = try_path
+        else:
+            print "Ignore path: %r" % try_path
+    
+    if not bd_root:
+        path = tk_tools.askopenfilename2(
+            title = "Choose the BD root dir (.../BDMV/index.bdmv) :",
+            initialfile = "index.bdmv",
+            initialdir = os.path.join(cfg["last sourcedir"], "BDMV"),
+            filetypes = [('BDMV contents file','*.bdmv')],
+        )
+        bd_root = os.path.split(os.path.split(path)[0])[0]
+    
+    print "Use path:", bd_root
     
     if cfg["last sourcedir"] != bd_root:
         cfg["last sourcedir"] = bd_root
         cfg.save_config()
-        
-    print path
-    
-    lable = os.path.split(bd_root)[1]
-    print "use movie lable:", lable
+       
+    lable = bd_root.strip(os.path.sep)
+    lable = lable.split(os.path.sep)[-1] 
+    print "use movie lable: %r" % lable
+    assert len(lable)>=3, "Lable seems to be wrong!"
     
     return BD(cfg, bd_root, lable)
     
@@ -214,14 +236,17 @@ def autodetect_drive(cfg):
             return BD(cfg, drive_letter, drive_lable)
 
 
-def get_disc(cfg):
-    # Scan all drive letters for stream dirs
-    drive = autodetect_drive(cfg)
+def get_disc(cfg, try_path=None):
+    drive = None
+    if not try_path:
+        # Scan all drive letters for stream dirs
+        drive = autodetect_drive(cfg)
+        if drive:
+            return drive
+        else:
+            print "No drives with stream files found -> choose manually"
 
-    if not drive:
-        print "No drives with stream files found -> choose manually"
-        drive = choose_BD_root(cfg)
-       
+    drive = choose_BD_root(cfg, try_path)   
     return drive
 
 

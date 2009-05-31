@@ -12,9 +12,10 @@ movie playlist (\BDMV\mpls\*.mpls)
 """
 
 import os
-import sys
 import re
-from glob import glob
+import sys
+import subprocess
+
 
 import Tkinter as tk
 
@@ -119,9 +120,9 @@ def run_eac3to(cfg, out_dir, selected_mpls, stream_cmd):
     log.write("run %r...\n" % cmd)
     print cmd
     
-    process, output = tools.subprocess2(cmd)
-    log.write("eac3to ready, outout:\n")
-    log.write(output)
+    process = subprocess.Popen(cmd, shell=True)
+    process.wait()
+    
     log.close()
     
     
@@ -130,11 +131,24 @@ def run_eac3to(cfg, out_dir, selected_mpls, stream_cmd):
 if __name__ == "__main__":
     cfg = VideoToolsConfig()
     cfg.debug()
+    cfg.ask_out_dir()
     
-    bluray = BD_objects.get_disc(cfg)
+    try_path = None
+    if len(sys.argv)>=1:
+        filepath = sys.argv[1]
+        if not "BDMV" in filepath:
+            print "Ignore DROP path: %r" % filepath
+            print "Info: DROP e.g.: '.../BDMV/index.bdmv' file..."
+        else:
+            try_path = filepath.split("BDMV")[0] #FIXME ;)
     
-    print bluray.mpls
-    print bluray.m2ts
+    # Get a instance from the class BD_objects.BD()
+    bluray = BD_objects.get_disc(cfg, try_path)
+    bluray.edit_movie_name()
+    print "Used movie name: %r" % bluray.movie_name
+    
+#    print bluray.mpls
+#    print bluray.m2ts
     
     # Read all movie mpls files ...\BDMV\mpls\*.mpls
     # Attach all m2ts files to the mpls object and calc the total filesize
@@ -148,10 +162,17 @@ if __name__ == "__main__":
         stream_dict = select_streams(bluray, cfg, playlist)
         print "selected streams: %r" % stream_dict
         
-        out_name_prefix = "%s %s" % (bluray.movie_name, playlist.filename)
+        out_name_prefix = tk_tools.simple_input(      
+            title="Edit playlist file name",
+            pre_lable="Change the prefix for output filenames, if you will:",
+            init_value="%s %s" % (bluray.movie_name, playlist.filename),
+            post_lable="(You can only use 'filename'-safe characters!)",
+        )
+        print "Use filename prefix: %r" % out_name_prefix
         
         stream_cmd = eac3to.build_stream_out(out_name_prefix, bluray.out_dir, stream_dict)
         print "stream cmd: %r" % stream_cmd
+        print
         
-        print "Create eac3to batch file."
+        print "Run eac3to:"
         run_eac3to(cfg, bluray.out_dir, playlist, stream_cmd)
