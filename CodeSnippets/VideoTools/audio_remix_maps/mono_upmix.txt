@@ -15,9 +15,9 @@
 #  * The seconde code are the BeSweet output filename code suffix.
 #    BeSweet suffixes are upcase and "Front Center" is only "C"
 #
-fl  <- 2: FL
+fl  <- 2: FL - sox: vol 0.5
 fc  <- 1: FL
-fr  <- 2: FR
+fr  <- 2: FR - sox: vol 0.5
 sl  <- 2: SL
 sr  <- 2: SR
 lfe <- 2: LFE

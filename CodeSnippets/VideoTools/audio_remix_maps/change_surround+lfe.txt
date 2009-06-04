@@ -21,3 +21,13 @@ fr  <- 1: FR
 sl  <- 2: SL
 sr  <- 2: SR
 lfe <- 2: LFE
+
+# You can also apply sox filter to wav files!
+# e.g. Adjust 50% volume to the surround channels:
+#
+# fl  <- 1: FL
+# fc  <- 1: C
+# fr  <- 1: FR
+# sl  <- 2: SL - sox: vol 0.5
+# sr  <- 2: SR - sox: vol 0.5
+# lfe <- 2: LFE
