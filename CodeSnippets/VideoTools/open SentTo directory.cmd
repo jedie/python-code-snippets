@@ -8,7 +8,8 @@ if exist %windir%\SysWOW64\ (
 
 ) ELSE (
     REM There is no WOW64 -> a 32 bit system
-    call:open "%ALLUSERSPROFILE%\SendTo\"
+
+    call:open "%USERPROFILE%\SendTo\"
 )
 echo pause...
 ping localhost>NUL
