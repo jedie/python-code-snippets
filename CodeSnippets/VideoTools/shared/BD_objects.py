@@ -207,14 +207,26 @@ def choose_BD_root(cfg, try_path=None):
         cfg.save_config()
        
     lable = bd_root.strip(os.path.sep)
-    lable = lable.split(os.path.sep)[-1] 
+    lable = lable.split(os.path.sep)[-1]
+    if len(lable)<=3:
+        lable = tk_tools.simple_input(      
+            title="Please edit:",
+            pre_lable="Please input the used lable:",
+            init_value=lable,
+            #post_lable="(in Bytes)",
+        )
+        
     print "use movie lable: %r" % lable
     assert len(lable)>=3, "Lable seems to be wrong!"
     
     return BD(cfg, bd_root, lable)
     
 
-
+def get_drive_lable(drive_letter):
+    vol_info = win32api.GetVolumeInformation(drive_letter)
+    print vol_info
+    drive_lable = vol_info[0]
+    return drive_lable
 
 
 def autodetect_drive(cfg):
@@ -224,13 +236,10 @@ def autodetect_drive(cfg):
         print drive_letter
 
         try:
-            vol_info = win32api.GetVolumeInformation(drive_letter)
+            drive_lable = get_drive_lable(drive_letter)
         except Exception, err:
             print "Skip drive '%s': %s" % (drive_letter, err)
             continue
-        
-        print vol_info
-        drive_lable = vol_info[0]
         
         if os.path.isdir(os.path.join(drive_letter, STREAM_DIR)):
             return BD(cfg, drive_letter, drive_lable)

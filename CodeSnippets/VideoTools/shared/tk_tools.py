@@ -46,7 +46,7 @@ def askfilepath(filename):
         filetypes=[(filename,filename)]
     )
 
-def simple_input(title, pre_lable, init_value, post_lable):
+def simple_input(title, pre_lable, init_value, post_lable=""):
     """
     bsp.:
     new_value = simple_input(      
