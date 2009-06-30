@@ -7,6 +7,7 @@ DRAG&DROP audio file(s)
 """
 
 import os, sys
+import subprocess
 
 from shared.config import VideoToolsConfig
 
@@ -17,7 +18,7 @@ from shared.tools import subprocess2
 PARAM_KEY = "lastac3"
 
 
-def get_out_filename(fn):
+def get_out_filename(fn, parameters):
     """
     build the out filename by striping some parts of the filename out.
     IMPORTANT:
@@ -48,6 +49,7 @@ def get_out_filename(fn):
             parts.append(part)
         parts1.append(", ".join(parts))
     
+    parts1 += [p.strip(" -") for p in parameters]
     basename = " - ".join(parts1) 
     return basename + ".ac3"    
 
@@ -81,15 +83,14 @@ if __name__ == "__main__":
     
     for fn in files:
         print fn
-        out_fn = get_out_filename(fn)
+        out_fn = get_out_filename(fn, parameters)
         print out_fn
         
         cmd = [cfg["eac3to"], fn, out_fn] + parameters
-        subprocess2(
-            cmd,
-            debug=False
-#            debug=True
-        )
+        print "run '%s'..." % " ".join(cmd)
+        process = subprocess.Popen(cmd, shell=True)
+        process.wait()
+        print
         
     # Store new parameters into cfg
     new_values = ", ".join(parameters)
