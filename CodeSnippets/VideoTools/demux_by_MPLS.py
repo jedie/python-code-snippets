@@ -134,7 +134,7 @@ if __name__ == "__main__":
     cfg.ask_out_dir()
     
     try_path = None
-    if len(sys.argv)>=1:
+    if len(sys.argv)>=2:
         filepath = sys.argv[1]
         if not "BDMV" in filepath:
             print "Ignore DROP path: %r" % filepath

@@ -36,7 +36,7 @@ DEFAULT_CONFIG = {
 }
 
 # Use external programs. google to find the download links ;)
-EXE_FILES = ("eac3to", "x264", "BeSweet", "aften")
+EXE_FILES = ("eac3to", "x264", "BeSweet", "aften", "sox")
 
 
 class PickleConfig(dict):
