@@ -8,7 +8,7 @@ from ConfigParser import RawConfigParser
 from tk_tools import askopenfilename2, askdirectory2, askfilepath
 
 
-CONFIG_FILENAME = "config.dat"
+CONFIG_FILENAME = "PyVideoToolsConfig.dat"
 
 DEFAULT_CONFIG = {
     "out_dir": "",
@@ -42,7 +42,7 @@ EXE_FILES = ("eac3to", "x264", "BeSweet", "aften", "sox")
 class PickleConfig(dict):
 
     def __init__(self, filename, defaults={}):
-        self.filename = filename
+        self.filename = os.path.expandvars(os.path.join("%APPDATA%", filename))
         
         self.update(defaults)
         
@@ -51,7 +51,7 @@ class PickleConfig(dict):
         else:
             print "Reading '%s'..." % self.filename
             try:
-                f = file(filename, "r")
+                f = file(self.filename, "r")
             except IOError, err:
                 print "Error reading config:", err
             else:
@@ -122,8 +122,6 @@ if __name__ == "__main__":
     from pprint import pprint
 
     test_config = "config_test.ini"
-    if os.path.isfile(test_config):
-        os.remove(test_config)
 
     # Simple Test
     c = PickleConfig(test_config, DEFAULT_CONFIG)
