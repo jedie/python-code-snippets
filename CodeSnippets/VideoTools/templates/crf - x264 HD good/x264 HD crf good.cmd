@@ -3,7 +3,7 @@ title %~0 [${video_file_path}]
 
 if "%1"=="" (
     REM Start process with low priority
-    start /WAIT /LOW /B cmd.exe /V /C %~s0 continue
+    start /WAIT /LOW /B cmd.exe /V /C "%~s0" continue
     goto:eof
 )
 
