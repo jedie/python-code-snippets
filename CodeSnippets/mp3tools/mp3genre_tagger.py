@@ -71,6 +71,96 @@ except ImportError, err:
     sys.exit()
 
 
+
+
+class Lastfm(object):
+    def __init__(self, cfg, cache_file, url, renew_cache):
+        self.cfg = cfg
+        self.cache_file = cache_file
+        self.url = url
+        self.renew_cache = renew_cache
+
+    def get_toptags(self):
+        raw_content = self.request()
+        if raw_content == None:
+            if self.cfg.debug:
+                print "no content!"
+            return []
+
+        toptags_area = self.cfg.toptags_area_re.findall(raw_content)
+        if not toptags_area:
+            if self.cfg.debug:
+                print "no toptag area found!"
+            return []
+        else:
+            toptags_area = toptags_area[0]
+
+        raw_tags = self.cfg.tag_re.findall(toptags_area)
+
+        tags = []
+        for tag in raw_tags:
+            tag = tag.lower()
+            if tag not in tags:
+                tags.append(tag)
+
+        return tags
+
+    def request(self):
+        """ returns the raw content back from a lastfm request """
+        if self.renew_cache == False and os.path.isfile(self.cache_file):
+            file_ctime = os.stat(self.cache_file).st_ctime
+            cache_age_time = time.time() - file_ctime
+            if self.cfg.debug:
+                print "Cache file age: %ssec. (%r)" % (cache_age_time, self.cache_file)
+
+            if cache_age_time < self.cfg.max_cache_age:
+                if self.cfg.debug:
+                    print "Use existing cache file."
+                f = file(self.cache_file, "r")
+                content = f.read()
+                f.close()
+                return content
+            elif self.cfg.debug:
+                print "Skip cache file, it's older than max_cache_age (%ssec.)." % self.cfg.max_cache_age
+
+        if self.cfg.debug:
+            print "request %r..." % self.url
+
+        start_time = time.time()
+        try:
+            f = urllib2.urlopen(self.url)
+            #~ pprint(dict(f.info()))
+            content = f.read()
+            f.close()
+        except (urllib2.HTTPError, httplib.HTTPException), err:
+            print self.url
+            print "lastfm response error: %s" % err
+            content = "" # Create a chache file -> Don't request at next startup 
+
+        duration = time.time() - start_time
+        print "lastfm response in %.2fsec, url: %s" % (duration, self.url)
+
+        if self.cache_file == None:
+            # Dont' cache
+            return content
+
+        if self.cfg.debug:
+            print "save cache file %r." % self.cache_file
+
+        try:
+            f = file(self.cache_file, "w")
+            f.write(content)
+            f.close()
+        except IOError, err:
+            print "Error writing cache file %r: %s" % (self.cache_file, err)
+
+        return content
+
+
+
+
+
+
 class Config(object):
     """
     Contains the configurations.
@@ -92,6 +182,17 @@ class Config(object):
 
     #__________________________________________________________________________
     # Variables how should not changed:
+
+    # Skip old cache files and start a new lastfm request
+    max_cache_age = 48 * 60 * 60
+
+    # top global tags on Last.fm
+    # http://www.lastfm.de/api/show?service=276
+    global_toptags_url = (
+        "http://ws.audioscrobbler.com/2.0/"
+        "?method=tag.getTopTags"
+        "&api_key=%(api_key)s"
+    )
 
     # Track top tags
     # http://www.lastfm.de/api/show?service=289 
@@ -122,9 +223,27 @@ class Config(object):
         "&api_key=%(api_key)s"
     )
 
+    # Additional tags to last.fm global top tags
+    addition_tags = (
+        "8-bit",
+        "hamburger schule",
+        "ninja tune",
+        "german hip-hop",
+        "futurepop",
+    )
+
     # Node: all tags would be automaticly lowercase!
     tag_rename = {
-        "hip-hop": ("hip hop", "hiphop"),
+        "hip hop": ("hip-hop", "hiphop", "hip hop and rap", "hip hop/rap"),
+        "8-bit": ("8 bit", "8bit"),
+        "chillout": ("cillout", "chill", "cill out", "cilln"),
+        "female vocalists": ("female vocalist", "female vocals", "female fronted",),
+        "futurepop": ("future pop",),
+        "german hip-hop": ("german hiphop", "german hip hop"),
+        "gothic": ("goth", "gothik",),
+        "gothic rock": ("goth rock",),
+        "hamburger schule": ("hamburg",),
+        "ninja tune": ("ninjatune",),
     }
 
     clean_abum_re = re.compile(r"(\[\d{4}\] ).*?")
@@ -133,10 +252,57 @@ class Config(object):
     toptags_area_re = re.compile(r"<toptags(.*?)</toptags>", re.DOTALL)
     tag_re = re.compile(r"<name>(.*?)</name>")
 
-    skip_tags = ("albums i own",)
+    skip_tags = (
+        "seen live",
+        "favorites", "favorite", "favourite", "favourite songs", "loved",
+        "albums i own",
+        "good",
+        "60s", "70s", "80s", "90s", "00s",
+    )
 
     debug = False # Make more verbose output?
 
+    def __init__(self):
+        self.global_toptags = self.get_global_toptags()
+        self.rename_dict = self.get_tag_rename_dict()
+
+    def get_global_toptags(self):
+        print "cfg setup request global toptags from lastfm..."
+        global_toptags = []
+        url = self.get_global_toptags_url()
+        l = Lastfm(self, cache_file=None, url=url, renew_cache=True)
+        for tag_name in l.get_toptags():
+            global_toptags.append(tag_name)
+
+        global_toptags += list(self.addition_tags)
+
+        print "cfg setup global toptags, done."
+        return global_toptags
+
+    def get_tag_rename_dict(self):
+        tag_rename_dict = {}
+        for dst, src_list in self.tag_rename.iteritems():
+            assert isinstance(src_list, (list, tuple)) == True, \
+                "tag_rename key %r error: values must be list or tuple" % dst
+            if dst not in self.global_toptags:
+                print "error:"
+                print "    tag_rename key %r is not in global_toptags!" % dst
+                print
+                print "If you want to use this tag, you must add them to cfg.addition_tags !"
+                print "_" * 79
+                print "existing global top tags:"
+                for tag_name in sorted(self.global_toptags):
+                    print tag_name
+                sys.exit()
+
+            for src in src_list:
+                tag_rename_dict[src] = dst
+        return tag_rename_dict
+
+    def get_global_toptags_url(self):
+        return self.global_toptags_url % {
+            "api_key": self.api_key,
+        }
 
     def get_artist_toptags_url(self, artist):
         return self.artist_toptags_url % {
@@ -174,76 +340,20 @@ def check():
     assert os.path.isdir(CFG.base_dir), "CFG.base_dir path '%s' not exist!" % CFG.base_dir
 
 
-class Lastfm(object):
-    def __init__(self, cfg, cache_file, url, renew_cache):
-        self.cfg = cfg
-        self.cache_file = cache_file
-        self.url = url
-        self.renew_cache = renew_cache
-
-    def get_toptags(self):
-        raw_content = self.request()
-        if raw_content == None:
-            if self.cfg.debug:
-                print "no content!"
-            return []
-
-        toptags_area = self.cfg.toptags_area_re.findall(raw_content)[0]
-        if not toptags_area:
-            if self.cfg.debug:
-                print "no toptag area found!"
-            return []
-
-        raw_tags = self.cfg.tag_re.findall(toptags_area)
-
-        tags = []
-        for tag in raw_tags:
-            tag = tag.lower()
-            if tag not in tags:
-                tags.append(tag)
-
-        return tags
-
-    def request(self):
-        """ returns the raw content back from a lastfm request """
-        if self.renew_cache == False and os.path.isfile(self.cache_file):
-            if self.cfg.debug:
-                print "Use existing cache file."
-            f = file(self.cache_file, "r")
-            content = f.read()
-            f.close()
-            return content
-
-        if self.cfg.debug:
-            print "request %r..." % self.url
-
-        start_time = time.time()
-        try:
-            f = urllib2.urlopen(self.url)
-            #~ pprint(dict(f.info()))
-            content = f.read()
-            f.close()
-        except (urllib2.HTTPError, httplib.HTTPException), err:
-            print self.url
-            print "lastfm response error: %s" % err
-            return None
-
-        duration = time.time() - start_time
-        print "lastfm response in %.2fsec, url: %s" % (duration, self.url)
-
-        if self.cfg.debug:
-            print "save cache file %r." % self.cache_file
-        try:
-            f = file(self.cache_file, "w")
-            f.write(content)
-            f.close()
-        except IOError, err:
-            print "Error writing cache file %r: %s" % (self.cache_file, err)
-
-        return content
-
 
 class ArtistAlbumTrackBase(object):
+    def __init__(self, cfg):
+        self.cfg = cfg
+
+        self.skip_tags = []
+
+
+    def add_skip_tags(self, *tag_names):
+        for tag_name in tag_names:
+            tag_name = tag_name.lower()
+            if tag_name not in self.skip_tags:
+                self.skip_tags.append(tag_name)
+
     def get_genre(self):
         if self.top_tags == None:
             self.set_top_tags()
@@ -265,14 +375,33 @@ class ArtistAlbumTrackBase(object):
 
     def set_top_tags(self):
         l = Lastfm(self.cfg, self.toptag_cache_path, self.toptags_url, self.renew_cache)
-        self.top_tags = l.get_toptags()
 
-        # remove artist name
+        tag_rename_dict = self.cfg.get_tag_rename_dict()
+
+        self.top_tags = []
         artist = self.get_artist_clean_name().lower()
-        self.top_tags = [i for i in self.top_tags if i != artist]
+        for tag_name in l.get_toptags():
+            if tag_name == artist:
+                continue
+            if tag_name in self.cfg.skip_tags:
+                continue
+            if tag_name in self.skip_tags:
+                #print "Skip %r (it's in self.skip_tags)" % tag_name
+                continue
 
-        # remove skip tags
-        self.top_tags = [i for i in self.top_tags if i not in self.cfg.skip_tags]
+            if tag_name in tag_rename_dict:
+                if self.cfg.debug:
+                    print "rename tag %r to %r (from cfg.tag_rename data)" % (
+                        tag_name, tag_rename_dict[tag_name]
+                    )
+                tag_name = tag_rename_dict[tag_name]
+
+            if tag_name not in self.cfg.global_toptags:
+                if self.cfg.debug:
+                    print "Skip %r, it's not in global toptags" % tag_name
+                continue
+
+            self.top_tags.append(tag_name)
 
         if self.cfg.debug:
             print "set top tags:", self.top_tags
@@ -282,7 +411,8 @@ class ArtistAlbumTrackBase(object):
 
 class Track(ArtistAlbumTrackBase):
     def __init__(self, cfg, artist, album, name, ext, path, renew_cache):
-        self.cfg = cfg
+        super(Track, self).__init__(cfg)
+
         self.artist = artist
         self.album = album
         self.name = name
@@ -299,6 +429,8 @@ class Track(ArtistAlbumTrackBase):
             self.artist.clean_name, self.album.clean_name, self.clean_name
         )
 
+        self.add_skip_tags(self.name, self.clean_name)
+
         self.top_tags = None # would be set in get_genre()
         self.tag = None # would be set in self.auto_set_tags()
 
@@ -309,7 +441,12 @@ class Track(ArtistAlbumTrackBase):
         - set mp3 genre
         """
         self.tag = eyeD3.Tag()
-        has_tags = self.tag.link(self.path)
+        try:
+            has_tags = self.tag.link(self.path)
+        except Exception, err:
+            print "Can't eyeD3 link to MP3 file:", err
+            return
+
         if has_tags == False: # no tag in this file, link returned False
             print "Track has no tags, create it: ", self
             self.tag.header.setVersion(eyeD3.ID3_V2_3)
@@ -355,7 +492,10 @@ class Track(ArtistAlbumTrackBase):
         g = eyeD3.Genre(id=None, name=self.genre)
         print "set genre: %15r for: %s" % (g.name, self.path)
         self.tag.setGenre(g)
-        self.tag.update()
+        try:
+            self.tag.update()
+        except eyeD3.tag.TagException, err:
+            print "Error saving ID3 tags: %s to file %s" % (err, self.path)
 
     def __str__(self):
         return "<Track %r from artist %r album %r path: %r>" % (
@@ -366,7 +506,8 @@ class Track(ArtistAlbumTrackBase):
 
 class Album(ArtistAlbumTrackBase):
     def __init__(self, cfg, artist, name, path, renew_cache):
-        self.cfg = cfg
+        super(Album, self).__init__(cfg)
+
         self.artist = artist
         self.name = name
         self.path = path
@@ -376,6 +517,8 @@ class Album(ArtistAlbumTrackBase):
 
         self.clean_name = self.cfg.clean_abum_re.sub("", self.name)
         self.toptag_cache_path = os.path.join(self.path, "album_toptags.xml")
+
+        self.add_skip_tags(self.name, self.clean_name)
 
         self.top_tags = None # would be set in get_genre()
         self.toptags_url = self.cfg.get_album_info_url(self.artist.clean_name, self.clean_name)
@@ -403,7 +546,8 @@ class Artist(ArtistAlbumTrackBase):
     Holds information around a artist.
     """
     def __init__(self, cfg, artist, path, renew_cache=False):
-        self.cfg = cfg
+        super(Artist, self).__init__(cfg)
+
         self.name = artist
         self.path = path
         self.renew_cache = renew_cache
@@ -413,6 +557,8 @@ class Artist(ArtistAlbumTrackBase):
         self.clean_name = self.name.replace("_", " ")
 
         self.toptag_cache_path = os.path.join(self.path, "artist_toptags.xml")
+
+        self.add_skip_tags(self.name, self.clean_name)
 
         self.top_tags = None # would be set in get_genre()
         self.toptags_url = self.cfg.get_artist_toptags_url(self.name)
@@ -462,7 +608,6 @@ def setup_genre():
 
 
 if __name__ == "__main__":
-#    CFG.debug = False
     CFG.debug = True
     CFG.base_dir = "~/test/"
     check()
