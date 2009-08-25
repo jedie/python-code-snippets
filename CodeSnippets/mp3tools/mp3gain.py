@@ -146,7 +146,11 @@ class MP3dir(object):
         """ returns the newest modification timestamp """
         last_mtime = 0
         for filename in self.filenames:
-            current_mtime = os.path.getmtime(os.path.join(self.dirpath, filename))
+            try:
+                current_mtime = os.path.getmtime(os.path.join(self.dirpath, filename))
+            except OSError, err:
+                print "OSError: %s" % err
+                continue
             if current_mtime > last_mtime:
                 last_mtime = current_mtime
         return last_mtime
@@ -250,5 +254,5 @@ def main(cfg):
 if __name__ == "__main__":
     cfg = Config
     cfg.debug = True
-    cfg.base_dir = os.path.expanduser("~/servershare/MP3z/")
+    cfg.base_dir = os.path.expanduser("~/path/to/MP3s/")
     main(cfg)
