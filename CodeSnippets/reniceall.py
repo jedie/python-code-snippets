@@ -46,10 +46,15 @@ def get_all_pid():
     result = {}
     for line in output_lines:
         line = line.strip()
-        pid, process_name = line.split()
-        if process_name not in result:
-            result[process_name] = []
-        result[process_name].append(pid)
+        try:
+            pid, process_name = line.split(" ", 1)
+        except ValueError, err:
+            print "Split output line error: %s" % err
+            print "line: %r" % line
+        else:
+            if process_name not in result:
+                result[process_name] = []
+            result[process_name].append(pid)
     return result
 
 def renice_pids(process_pids, nice_level):
