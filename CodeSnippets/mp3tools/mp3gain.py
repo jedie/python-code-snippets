@@ -157,7 +157,11 @@ class MP3dir(object):
 
     def run_mp3gain(self):
         args = [mp3gain_filename(self.cfg)] + self.cfg.mp3gain_args + self.filenames
-        process = subprocess.Popen(args, shell=False, cwd=self.dirpath)
+        try:
+            process = subprocess.Popen(args, shell=False, cwd=self.dirpath)
+        except OSError, err: # e.g. [Errno 13] Permission denied
+            print "subprocess OSError: %s" % err
+            return
         process.wait()
 
     def __repr__(self):
