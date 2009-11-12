@@ -49,7 +49,7 @@ def debug_file_stat(fn):
     print "\tc time:", timestamp2datetime(st[stat.ST_CTIME])
 
 
-def get_exif_data(fn, verbose = True):
+def get_exif_data(fn, verbose=True):
     """
     run the exiftool for the given filename (>fn<) and returned the raw output
     """
@@ -98,6 +98,18 @@ def parse_exif_out(output):
     return result
 
 
+def rdelete(txt, s):
+    """
+    >>> rdelete("12345+01", "+")
+    '12345'
+    >>> rdelete("12.345.678.90", ".")
+    '12.345.678'
+    """
+    if s in txt:
+        return txt.rsplit(s, 1)[0]
+    return txt
+
+
 def get_create_date(exif_data, debug=False):
     """
     return the create date as a time object. Used the EXIF_DATE_KEYS to find the
@@ -114,10 +126,11 @@ def get_create_date(exif_data, debug=False):
     print date
 
     # FIXME: Find a better way to handle a timezone offset:
-    if "+" in date:
-        date = date.rsplit("+",1)[0]
-    if "-" in date:
-        date = date.rsplit("-",1)[0]
+    date = rdelete(date, "+")
+    date = rdelete(date, "-")
+
+    # Strip millisecond
+    date = rdelete(date, ".")
 
     t = time.strptime(date, "%Y:%m:%d %H:%M:%S")
     if debug:
@@ -235,7 +248,7 @@ def process(source_path, destination, out, simulate_only, move_files,
 
     for dirpath, filepath, filename, create_date in get_file_info(source_path):
         out.write("")
-        out.write("_"*30)
+        out.write("_" * 30)
         out.write("source file: %s" % filepath)
 #        debug_file_stat(fn)
         out.write("create date from EXIF: %r" % create_date)
@@ -318,6 +331,15 @@ class WrongPathError(Exception):
 
 
 if __name__ == '__main__':
+    import doctest
+    doctest.testmod(
+#        verbose=True
+        verbose=False
+    )
+    print "DocTest end."
+    sys.exit()
+
+
     class Out(object):
         def write(self, txt):
             print txt
