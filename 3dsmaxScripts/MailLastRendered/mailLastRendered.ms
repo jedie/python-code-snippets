@@ -10,10 +10,10 @@
 --  $Author$
 --
 -- license:
---   GNU General Public License v2 or above
+--   GNU General Public License v3 or above
 --   http://www.opensource.org/licenses/gpl-license.php
 --
--- copyleft (c) 2007-2008 by htFX, Jens Diemer - http://www.htFX.de
+-- copyleft (c) 2007-2009 by htFX, Jens Diemer - http://www.htFX.de
 --
 
 
@@ -187,7 +187,7 @@ function main = (
     cmd_string = " -compose \""
     cmd_string += "subject=" + filename
     cmd_string += ",body=" + filename
-    cmd_string += ",attachment='file://" + abs_path + "'"
+    cmd_string += ",attachment='file:///" + abs_path + "'"
 
     print cmd_string
 
