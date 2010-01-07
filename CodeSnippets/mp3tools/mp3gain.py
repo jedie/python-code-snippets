@@ -254,6 +254,12 @@ def mp3gain(dirinfo):
 
 def main(cfg):
     check(cfg)
+
+    try:
+        os.nice(20) # decrease the process’s “niceness”
+    except AttributeError:
+        pass # Non-Unix?
+
     dirinfo = read_dirs(cfg)
     if cfg.debug:
         pprint.pprint(dirinfo)
