@@ -108,10 +108,17 @@ def check(cfg):
     """ check if mp3gain.exe exist. """
     filename = mp3gain_filename(cfg)
 
-    process = subprocess.Popen(
-        args=[filename, "-v"],
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False
-    )
+    try:
+        process = subprocess.Popen(
+            args=[filename, "-v"],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False
+        )
+    except OSError, err:
+        print "Error executing %r: %s" % (filename, err)
+        print "Have you mp3gain installed?"
+        print "e.g.: sudo aptitude install mp3gain"
+        sys.exit(1)
+
     process.wait()
     if process.returncode != 0:
         print "Error:"
