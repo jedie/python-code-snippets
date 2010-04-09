@@ -1,15 +1,16 @@
 #!/usr/bin/python
-# -*- coding: ISO-8859-1
+# coding: ISO-8859-15
+
 
 """
-Ermittelt anhand der timestamp von Verz. und Dateien die Arbeitszeit
-an einem Projekt.
+    Ermittelt anhand der timestamp von Verz. und Dateien die Arbeitszeit
+    an einem Projekt.
 
-http://www.jensdiemer.de
+    http://www.jensdiemer.de
 
-license = GNU General Public License v2 or above
-  en -> http://www.opensource.org/licenses/gpl-license.php
-  de -> http://jensdiemer.de/Programmieren/GPL-License
+    license = GNU General Public License v3 or above
+      en -> http://www.opensource.org/licenses/gpl-license.php
+      de -> http://jensdiemer.de/Programmieren/GPL-License
 """
 
 __version__ = "v0.1"
@@ -40,21 +41,25 @@ class TimeStore(dict):
 
 class Chronologer:
     def __init__(self,
-        projectPath,            # Pfad in dem die Projectdateinen liegen
-        hourlyRate,             # Stundenlohn
-        maxTimeDiff = 60*60,    # max Zeit, die ein Arbeitsblock trennt
-        minBlockTime = 30*60,   # kleinste Zeiteinheit, für einen Block
+        projectPath, # Pfad in dem die Projectdateinen liegen
+        hourlyRate, # Stundenlohn
+        maxTimeDiff=60 * 60, # max Zeit, die ein Arbeitsblock trennt
+        minBlockTime=30 * 60, # kleinste Zeiteinheit, für einen Block
         # Erster und letzter Tag, andere Zeiten werden ignoriert
-        projectStart = datetime.datetime(year = 1977, month = 1, day = 1),
-        projectEnd = datetime.datetime(year = 2200, month = 12, day = 31)
+        projectStart=datetime.datetime(year=1977, month=1, day=1),
+        projectEnd=datetime.datetime(year=2200, month=12, day=31),
+        exclude_dirs=None,
+        debug=False,
             ):
 
-        self.projectPath    = projectPath
-        self.maxTimeDiff    = maxTimeDiff
-        self.minBlockTime   = minBlockTime
-        self.hourlyRate     = hourlyRate
-        self.projectStart   = projectStart
-        self.projectEnd     = projectEnd
+        self.projectPath = projectPath
+        self.maxTimeDiff = maxTimeDiff
+        self.minBlockTime = minBlockTime
+        self.hourlyRate = hourlyRate
+        self.projectStart = projectStart
+        self.projectEnd = projectEnd
+        self.exclude_dirs = exclude_dirs or []
+        self.debug = debug
 
         self.statistics = {}
         self.dayData = {}
@@ -74,11 +79,22 @@ class Chronologer:
 
     def readDir(self, path):
         """ Einlesen der Verzeichnis Informationen """
+
+        def exclude_dir(dir):
+            for exclude_dir in self.exclude_dirs:
+                if dir.startswith(exclude_dir):
+                    return True
+            return False
+
         count = 0
         if not os.path.isdir(path):
             raise SystemError("Path '%s' not found!" % path)
 
         for root, dirs, files in os.walk(path):
+            if exclude_dir(root):
+                if self.debug:
+                    print "Skip dir %r..." % root
+                continue
             for dir in dirs:
                 count += 1
                 self.statFile(os.path.join(root, dir))
@@ -90,9 +106,15 @@ class Chronologer:
     def statFile(self, path):
         """ Zeiten für Verz.Eintrag festhalten """
         pathStat = os.stat(path)
-        creationTime        = pathStat.st_ctime
-        lastAccess          = pathStat.st_atime
-        lastModification    = pathStat.st_mtime
+        creationTime = pathStat.st_ctime
+        lastAccess = pathStat.st_atime
+        lastModification = pathStat.st_mtime
+
+        if self.debug:
+            print "File %r:" % path
+            print "creation time...: %r" % datetime.datetime.fromtimestamp(creationTime)
+            print "last access time: %r" % datetime.datetime.fromtimestamp(lastAccess)
+            print "last modify time: %r" % datetime.datetime.fromtimestamp(lastModification)
 
         self.timeStore.add(creationTime, path)
         self.timeStore.add(lastAccess, path)
@@ -110,11 +132,11 @@ class Chronologer:
         lastTime = 0
         for t in timeList:
             d = datetime.datetime.fromtimestamp(t)
-            if d<self.projectStart: continue
-            if d>projectEnd: continue
+            if d < self.projectStart: continue
+            if d > projectEnd: continue
 
-            if (t-lastTime)>self.maxTimeDiff:
-                # Ein neuer Block, weil die Differenz zu groß ist
+            if (t - lastTime) > self.maxTimeDiff:
+                # Ein neuer Block, weil die Differenz zu groï¿½ ist
                 timeBlocks.append([])
 
             timeBlocks[-1].append(t)
@@ -123,12 +145,12 @@ class Chronologer:
         return timeBlocks
 
     def blockTime(self, block):
-        """ Liefert die Zeit eines Blocks zurück """
+        """ Liefert die Zeit eines Blocks zurï¿½ck """
         if len(block) == 1:
             return self.minBlockTime
 
         workTime = block[-1] - block[0]
-        if workTime<self.minBlockTime:
+        if workTime < self.minBlockTime:
             return self.minBlockTime
 
         return workTime
@@ -202,37 +224,37 @@ class Chronologer:
         print ">display Results"
         print
         print "totalTime: %sSec -> %.2fStd -> %.2f 8-Std-Tage" % (
-            totalTime, totalTime/60.0/60.0,
-            totalTime/60.0/60.0/8.0
+            totalTime, totalTime / 60.0 / 60.0,
+            totalTime / 60.0 / 60.0 / 8.0
         )
         keys = self.dayData.keys()
         keys.sort()
 
-        print "-"*40
+        print "-" * 40
 
         lastWeek = 0
         totalStd = 0
         for i, key in enumerate(keys):
-            dayName     = self.dayData[key]["dayName"]
-            week        = self.dayData[key]["week"]
-            dateStr     = self.dayData[key]["dateStr"]
-            blockTime   = self.dayData[key]["blockTime"]
-            block       = self.dayData[key]["block"]
+            dayName = self.dayData[key]["dayName"]
+            week = self.dayData[key]["week"]
+            dateStr = self.dayData[key]["dateStr"]
+            blockTime = self.dayData[key]["blockTime"]
+            block = self.dayData[key]["block"]
 
-            if week>lastWeek: # Leerzeile zwischen den Wochen
+            if week > lastWeek: # Leerzeile zwischen den Wochen
                 print
                 print "Woche: %s" % week
             lastWeek = week
 
-            blockTime = int(math.ceil(blockTime/60.0/60.0)) # Aufrunden
+            blockTime = int(math.ceil(blockTime / 60.0 / 60.0)) # Aufrunden
             print "%4s - %s, %s:%3i Std ->%4s€" % (
-                i+1, dayName, dateStr, blockTime, blockTime*self.hourlyRate
+                i + 1, dayName, dateStr, blockTime, blockTime * self.hourlyRate
             )
             totalStd += blockTime
             if verbose:
                 self.displayBlock(block, verbose)
 
-        print "_"*40
+        print "_" * 40
         totalCosts = totalStd * self.hourlyRate
         print " %s Std * %s€ = %s€" % (totalStd, self.hourlyRate, totalCosts)
 
@@ -246,7 +268,7 @@ class Chronologer:
             den nächten Tag "verschoben"
         """
         print
-        print "-"*40
+        print "-" * 40
         print ">PushedResults (exchangeRatio: %s, maxDayTime: %s)" % (
             exchangeRatio, maxDayTime
         )
@@ -258,38 +280,38 @@ class Chronologer:
         totalStd = 0
         overhang = 0
         for i, key in enumerate(keys):
-            dayName     = self.dayData[key]["dayName"]
-            week        = self.dayData[key]["week"]
-            dateStr     = self.dayData[key]["dateStr"]
-            blockTime   = self.dayData[key]["blockTime"]
-            block       = self.dayData[key]["block"]
+            dayName = self.dayData[key]["dayName"]
+            week = self.dayData[key]["week"]
+            dateStr = self.dayData[key]["dateStr"]
+            blockTime = self.dayData[key]["blockTime"]
+            block = self.dayData[key]["block"]
 
-            if week>lastWeek: # Leerzeile zwischen den Wochen
+            if week > lastWeek: # Leerzeile zwischen den Wochen
                 print
                 print "Woche: %s" % week
                 lastWeek = week
 
             blockTime = blockTime * self.hourlyRate / exchangeRatio
-            pushedTime = int(math.ceil(blockTime/60.0/60.0))
+            pushedTime = int(math.ceil(blockTime / 60.0 / 60.0))
 
-            # Tägliche Abeitszeit begrenzen
+            # Tï¿½gliche Abeitszeit begrenzen
             pushedTime += overhang
-            if pushedTime>maxDayTime:
-                overhang = pushedTime-maxDayTime
+            if pushedTime > maxDayTime:
+                overhang = pushedTime - maxDayTime
                 pushedTime = maxDayTime
             else:
                 overhang = 0
 
             if displayMoneyOnly:
-                print "%3s - %s, %s:%4i€" % (i+1, dayName, dateStr, pushedTime*exchangeRatio)
+                print "%3s - %s, %s:%4i€" % (i + 1, dayName, dateStr, pushedTime * exchangeRatio)
             else:
-                print "%3s - %s, %s:%3i Std" % (i+1, dayName, dateStr, pushedTime)
+                print "%3s - %s, %s:%3i Std" % (i + 1, dayName, dateStr, pushedTime)
             totalStd += pushedTime
 
-        if overhang>0:
+        if overhang > 0:
             print "-> rest overhang: %sStd !!!" % overhang
 
-        print "_"*40
+        print "_" * 40
         totalCosts = totalStd * exchangeRatio
         if displayMoneyOnly:
             print "%5s€" % totalCosts
@@ -304,33 +326,33 @@ if __name__ == "__main__":
     #~ ).displayResults()
 
     c = Chronologer(
-        projectPath     = r".",
-        hourlyRate      = 80,
-        maxTimeDiff     = 60 * 60,
-        minBlockTime    = 55 * 60,
-        projectStart    = datetime.datetime(year = 2005, month = 3, day = 1),
-        projectEnd      = datetime.datetime(year = 2007, month = 3, day = 31),
+        projectPath=r".",
+        hourlyRate=80,
+        maxTimeDiff=60 * 60,
+        minBlockTime=55 * 60,
+        projectStart=datetime.datetime(year=2005, month=3, day=1),
+        projectEnd=datetime.datetime(year=2007, month=3, day=31),
     )
 
-    print "\n"*3, "="*79
+    print "\n" * 3, "="*79
     print "(verbose: 0)"
     c.displayResults()
 
-    print "\n"*3, "="*79
+    print "\n" * 3, "="*79
     print "(verbose: 1)"
     c.displayResults(verbose=1)
 
-    print "\n"*3, "="*79
+    print "\n" * 3, "="*79
     print "(verbose: 2)"
     c.displayResults(verbose=2)
 
-    print "\n"*3, "="*79
+    print "\n" * 3, "="*79
 
     # Umrechnung auf anderen Stundenlohn
     c.displayPushedResults(exchangeRatio=35)
-    print "\n"*3, "="*79
+    print "\n" * 3, "="*79
     c.displayPushedResults(exchangeRatio=30)
-    print "\n"*3, "="*79
+    print "\n" * 3, "="*79
     c.displayPushedResults(exchangeRatio=35, displayMoneyOnly=True)
 
 
