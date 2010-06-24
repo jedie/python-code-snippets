@@ -33,7 +33,6 @@
     May 30, 2007
     little rewrite by Jens Diemer:
      -  change socket asterisk import to a normal import
-     -  replace time.time() with time.clock()
      -  delete "return None" (or change to "return" only)
      -  in checksum() rename "str" to "source_string"
 
@@ -51,13 +50,6 @@
     December 4, 2000
     Changed the struct.pack() calls to pack the checksum and ID as
     unsigned. My thanks to Jerome Poincheval for the fix.
-
-
-    Last commit info:
-    ~~~~~~~~~~~~~~~~~
-    $LastChangedDate: $
-    $Rev: $
-    $Author: $
 """
 
 
@@ -102,13 +94,13 @@ def receive_one_ping(my_socket, ID, timeout):
     """
     timeLeft = timeout
     while True:
-        startedSelect = time.clock()
+        startedSelect = time.time()
         whatReady = select.select([my_socket], [], [], timeLeft)
-        howLongInSelect = (time.clock() - startedSelect)
+        howLongInSelect = (time.time() - startedSelect)
         if whatReady[0] == []: # Timeout
             return
 
-        timeReceived = time.clock()
+        timeReceived = time.time()
         recPacket, addr = my_socket.recvfrom(1024)
         icmpHeader = recPacket[20:28]
         type, code, checksum, packetID, sequence = struct.unpack(
@@ -137,7 +129,7 @@ def send_one_ping(my_socket, dest_addr, ID):
     header = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, my_checksum, ID, 1)
     bytesInDouble = struct.calcsize("d")
     data = (192 - bytesInDouble) * "Q"
-    data = struct.pack("d", time.clock()) + data
+    data = struct.pack("d", time.time()) + data
 
     # Calculate the checksum on the data and the dummy header.
     my_checksum = checksum(header + data)
@@ -199,7 +191,7 @@ def verbose_ping(dest_addr, timeout = 2, count = 4):
 
 
 if __name__ == '__main__':
+    verbose_ping("localhost")
     verbose_ping("heise.de")
     verbose_ping("google.com")
     verbose_ping("a-test-url-taht-is-not-available.com")
-    verbose_ping("192.168.1.1")
