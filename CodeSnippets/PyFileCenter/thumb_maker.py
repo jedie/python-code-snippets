@@ -4,21 +4,14 @@
 """
     makes thumbs with the PIL
 
-
-Last commit info:
-----------------------------------
-$LastChangedDate$
-$Rev$
-$Author$
-
-Created by Jens Diemer
+    Created by Jens Diemer
 
 license:
-    GNU General Public License v2 or above
+    GNU General Public License v3 or above
     http://www.opensource.org/licenses/gpl-license.php
 """
 
-__version__= "$Rev$"
+__version__ = "$Rev$"
 
 
 import sys, os, time, fnmatch, urllib, string
@@ -39,21 +32,23 @@ except ImportError:
 
 
 
-class thumb_maker_cfg:
+class ThumbMakerCfg(object):
     # Standardwerte
     path_to_convert = os.getcwd()
-    path_output     = path_to_convert
-    make_thumbs     = True
-    thumb_size      = (160, 120)
-    thumb_suffix    = "_thumb"
+    extentions = (".jpg", ".jpeg", ".png")
+    do_path_walk = True # look into sub-directories ?
+    path_output = path_to_convert
+    make_thumbs = True
+    thumb_size = (160, 120)
+    thumb_suffix = "_thumb"
 
-    make_smaller    = False
-    smaller_size    = (640, 480)
-    suffix          = "_WEB"
-    image_text      = ""
-    text_color      = "#000000"
+    make_smaller = False
+    smaller_size = (640, 480)
+    suffix = "_WEB"
+    image_text = ""
+    text_color = "#000000"
 
-    jpegQuality     = 85
+    jpegQuality = 85
 
     clean_filenames = True
 
@@ -71,7 +66,7 @@ class thumb_maker_cfg:
 
 
 
-class thumb_maker:
+class ThumbMaker(object):
     def __init__(self, cfg):
         self.cfg = cfg
         self.skip_file_pattern = [
@@ -96,19 +91,26 @@ class thumb_maker:
 
         print "work path:", self.cfg.path_to_convert
 
-        for root,dirs,files in os.walk(self.cfg.path_to_convert):
+        for root, dirs, files in os.walk(self.cfg.path_to_convert):
             print root
-            print "_"*80
+            print "_" * 80
             for file_name in files:
+                filename, extension = os.path.splitext(file_name)
+                if extension not in self.cfg.extentions:
+                    print "Skip %r (wrong file extension), ok." % filename
+                    continue
                 abs_file = os.path.join(self.cfg.path_to_convert, root, file_name)
 
                 self.process_file(abs_file)
 
-        print "-"*80
+            if not self.cfg.do_path_walk:
+                break
+
+        print "-" * 80
         print "all files converted in %0.2fsec." % (time.time() - time_begin)
 
     def process_file(self, abs_file):
-        path, im_name   = os.path.split(abs_file)
+        path, im_name = os.path.split(abs_file)
         print abs_file
         try:
             im_obj = Image.open(abs_file)
@@ -133,40 +135,40 @@ class thumb_maker:
         # Kleinere Bilder für's Web erstellen
         if self.cfg.make_smaller == True:
             self.convert(
-                im_obj      = im_obj,
-                im_path     = self.cfg.path_output,
-                im_name     = im_name,
-                suffix      = self.cfg.suffix,
-                size        = self.cfg.smaller_size,
-                text        = self.cfg.image_text,
-                color       = self.cfg.text_color,
+                im_obj=im_obj,
+                im_path=self.cfg.path_output,
+                im_name=im_name,
+                suffix=self.cfg.suffix,
+                size=self.cfg.smaller_size,
+                text=self.cfg.image_text,
+                color=self.cfg.text_color,
             )
 
         # Thumbnails erstellen
         if self.cfg.make_thumbs == True:
             self.convert(
-                im_obj      = im_obj,
-                im_path     = self.cfg.path_output,
-                im_name     = im_name,
-                suffix      = self.cfg.thumb_suffix,
-                size        = self.cfg.thumb_size,
+                im_obj=im_obj,
+                im_path=self.cfg.path_output,
+                im_name=im_name,
+                suffix=self.cfg.thumb_suffix,
+                size=self.cfg.thumb_size,
             )
-        print "-"*3
+        print "-" * 3
 
     def convert(self,
         im_obj, # Das PIL-Image-Objekt
-        im_path,# Der Pfad in dem das neue Bild gespeichert werden soll
-        im_name,# Der vollständige Name der Source-Datei
+        im_path, # Der Pfad in dem das neue Bild gespeichert werden soll
+        im_name, # Der vollständige Name der Source-Datei
         suffix, # Der Anhang für den Namen
-        size,   # Die max. größe des Bildes als Tuple
-        text="",# Text der unten rechts ins Bild eingeblendet wird
+        size, # Die max. größe des Bildes als Tuple
+        text="", # Text der unten rechts ins Bild eingeblendet wird
         color="#00000", # Textfarbe
        ):
         """ Rechnet das Bild kleiner und fügt dazu den Text """
 
-        name, ext       = os.path.splitext(im_name)
-        out_name        = name + suffix + ".jpg"
-        out_abs_name    = os.path.join(im_path, out_name)
+        name, ext = os.path.splitext(im_name)
+        out_name = name + suffix + ".jpg"
+        out_abs_name = os.path.join(im_path, out_name)
 
         for skip_pattern in self.skip_file_pattern:
             if fnmatch.fnmatch(im_name, skip_pattern):
@@ -186,7 +188,7 @@ class thumb_maker:
         else:
             print "OK, real size %ix%i" % im_obj.size
 
-        if im_obj.mode!="RGB":
+        if im_obj.mode != "RGB":
             print "convert to RGB...",
             im_obj = im_obj.convert("RGB")
             print "OK"
@@ -233,7 +235,7 @@ class thumb_maker:
                 parts[-1] += char
 
         # Erster Buchstabe immer groß geschrieben
-        parts = [i[0].upper() + i[1:] for i in parts if i!=""]
+        parts = [i[0].upper() + i[1:] for i in parts if i != ""]
         fn = "".join(parts)
 
         return fn + ext
@@ -241,13 +243,13 @@ class thumb_maker:
 
 
 if __name__ == "__main__":
-    thumb_maker_cfg.path_to_convert = r"D:\MyPics"
-    thumb_maker_cfg.make_smaller    = True
-    #~ thumb_maker_cfg.make_smaller    = False
-    thumb_maker_cfg.smaller_size    = (960, 600)
-    thumb_maker_cfg.image_text      = "Your image Text :)"
+    ThumbMakerCfg.path_to_convert = r"D:\MyPics"
+    ThumbMakerCfg.make_smaller = True
+    #~ ThumbMakerCfg.make_smaller    = False
+    ThumbMakerCfg.smaller_size = (960, 600)
+    ThumbMakerCfg.image_text = "Your image Text :)"
 
-    thumb_maker(thumb_maker_cfg).go()
+    ThumbMaker(ThumbMakerCfg).go()
 
 
 
