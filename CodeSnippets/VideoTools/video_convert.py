@@ -1,8 +1,24 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
+# coding: utf-8
 
 """
-http://wiki.ubuntuusers.de/MEncoder
+    video converter
+    ~~~~~~~~~~~~~~~
+
+    convert video files to h264 + MP3 in a .mkv container
+    
+    using:
+        x264
+        mencoder
+        mplayer
+        mkvmerge
+        
+    * works only under linux.
+    * convert all files (with SOURCE_EXT extension) in the current directory
+    * add date string to output filename
+
+    :copyleft: 2011 by Jens Diemer
+    :license: GNU GPL v3 or above
 """
 
 import os, sys, time, subprocess
@@ -248,135 +264,5 @@ class VideoConverter(object):
         return process
 
 
-v = VideoConverter()
-
-#~ subprocess.Popen("export PS1='\[\e]0;my Window Title\a\]\u@\h:\w\$'", shell=True)
-#~ os.environ["PS1"] = '\[\e]0;my Window Title\a\]\u@\h:\w\$'
-
-'''
-
-for filename in os.listdir("."):
-    name, ext = os.path.splitext(filename)
-    if ext.lower() not in (".avi", ".mov"):
-        continue
-
-    if "xvid" in name.lower():
-        print "Skip Xvid file '%s'" % filename
-        continue
-
-    if "x264" in name.lower():
-        print "Skip x264 file '%s'" % filename
-        continue
-
-    #~ if name.startswith("2008"):
-        #~ continue
-
-    print "_"*79
-    print filename
-    #~ print name, ext
-
-    file_time = os.stat(filename)[ST_CTIME]
-    #~ print file_time
-    t = time.localtime(file_time)
-    #~ print t
-    date_str = time.strftime("%Y%m%d", t)
-    #~ print date_str
-
-#~ Die Parameter bewirken folgendes:
-#~ *datei.wmv - Hier wird der Name der Quelldatei eingesetzt
-#~ *-ovc steht für ,,Output Video" Codec. Deutet an, dass im folgenden der zu verwendende Videocodec angegeben wird
-#~ *lavc steht für ,,libavcodec". Es soll ein Codec aus der Codecfamilie libavcodec verwendet werden
-#~ *-lavopts deutet an, dass nun genauere Infos zu dem zu verwendenden Codec erfolgen
-#~ *vcodec=mpeg4 - Als Videocodec wird ein DIVX-kompatibler mpeg4-Codec verwendet
-#~ *vbitrate - Die Videobitrate soll 2000 betragen. Je höher die Bitrate, desto höher ist im Allgemeinen die Qualität
-#~ *-oac steht für ,,Output Audio Codec". Deutet an, dass im folgenden der zu verwendende Audiocodec angegeben wird
-#~ *mp3lame zeigt an, dass der Audiocodec lame zur MP3-Codierung verwendet werden soll
-#~ *-lameopts deutet an, dass nun genauere Infos zu dem zu verwendenden Codec erfolgen
-#~ *cbr bedeutet ,,Contanst Bitrate", also konstante Bitrate
-#~ *br=128 legt fest, dass eine Bitrate von 128 kbit/s verwendet werden soll
-#~ *-of heißt ,,Output Format" und legt das Containerformat der Zieldatei, also die Dateierweiterung fest
-#~ *avi - Das zu verwendende Containerformat
-#~ *-o steht für ,,Output" und zeigt an, dass nun der Name der Zieldatei folgt
-#~ *out.avi ist der Name der Zieldatei inklusive der Dateierweiterung
-
-    #--vbr-new -V 2 -b 32 -B 224 -q 0 -m j
-
-    # xvid:
-    out_name = "%s_%s_XviDMP3.avi" % (date_str, name)
-    cmd = "nice mencoder %s -ovc lavc -lavcopts vcodec=xvid xvidencopts=fixed_quant=2 -oac mp3lame -lameopts vbr=3 -of avi -o %s" % (filename, out_name)
-
-    # x264:
-    # http://mewiki.project357.com/wiki/X264_Settings
-    # http://www.mplayerhq.hu/DOCS/HTML/de/menc-feat-x264.html
-    #~ out_name = "%s_%s_x264crf20_MP3.avi" % (date_str, name)
-    # :preset=slower:profile=high:tune=film
-    #~ cmd = "nice mencoder %s -ovc x264 -x264encopts crf=20:threads=auto -oac mp3lame -lameopts vbr=3 -of avi -o %s" % (filename, out_name)
-
-"""
-mkfifo stream.y4m
-
-nice mplayer -vo yuv4mpeg:file=stream.y4m -nosound P1000164.MOV &
-
-#~ nice x264 --crf 23 --nr 255 --profile main --preset slow --tune film --verbose -o P1000164_x264_video.mkv stream.y4m
-nice x264 --crf 23 --nr 255 --profile baseline --preset faster --tune film --verbose -o P1000164_x264_video.mkv stream.y4m
-
-rm stream.y4m
-
-       #~ q=<0-9>
-              #~ QualitÃ¤t (0 - hÃ¶chste, 9 - niedrigste) (nur bei VBR)
-
-       #~ aq=<0-9>
-              #~ QualitÃ¤t des Algorithmus (0 -  am  besten/langsamsten,  9  -  am  schlechtesten/
-              #~ schnellsten)
-       #~ mode=<0-3>
-              #~ (Standard: automatisch)
-                 #~ 0    Stereo
-                 #~ 1    Joint-Stereo
-                 #~ 2    Dual-Channel
-                 #~ 3    Mono
-
-
-nice mencoder P1000164.MOV -of rawaudio -oac mp3lame -lameopts aq=0:q=0:mode=1 -ovc copy -o P1000164.mp3
-
-nice mkvmerge -o P1000164_x264.mkv P1000164_x264_video.mkv P1000164.mp3
-
-rm P1000164.mp3
-rm P1000164_x264_video.mkv
-"""
-
-
-    cmd = cmd.split(" ")
-
-    print out_name
-
-    if os.path.isfile(out_name):
-        print "Skip existing file '%s'" % out_name
-        continue
-
-    print cmd
-    print "-"*79
-    print " ".join(cmd)
-    print "-"*79
-    try:
-        process = subprocess.Popen(cmd)#, stdout=subprocess.PIPE)
-        process.wait()
-    except KeyboardInterrupt:
-        print
-        print
-        print "Keyboard interrupt!"
-        print "kill process...",
-        try:
-            process.kill()
-        except Exception, err:
-            print "Error:", err
-        else:
-            print "OK"
-
-        print
-        print "Remove %r" % out_name
-        os.remove(out_name)
-        sys.exit(1)
-    #print process.stdout.read()
-    print
-
-'''
+if __name__ == '__main__':
+    v = VideoConverter()
