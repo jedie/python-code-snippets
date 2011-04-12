@@ -1,5 +1,5 @@
 #!/usr/bin/python -O
-# -*- coding: UTF-8 -*-
+# coding: UTF-8
 
 """
 -replace string in files (recursive)
@@ -10,6 +10,37 @@ v0.2
  
 v0.1
  - initial version
+ 
+
+    Useable by a small "client" script, e.g.:
+
+-------------------------------------------------------------------------------
+#!/usr/bin/python -O
+# coding: UTF-8
+
+import sys, re
+
+#sys.path.insert(0,"/path/to/git/repro/") # Please change path
+
+from replace_in_files import SearchAndReplace
+
+SearchAndReplace(
+    search_path = "/to/the/files/",
+
+    # e.g.: simple string replace:
+    search_string  = 'the old string',
+    replace_string = 'the new string',
+
+    # e.g.: Regular expression replacing (used re.sub)
+    #search_string  = re.compile('{% url (.*?) %}'),
+    #replace_string = "{% url '\g<1>' %}",
+
+    search_only = True, # Display only the difference
+    #search_only = False, # write the new content
+
+    file_filter=("*.py",), # fnmatch-Filter
+)
+-------------------------------------------------------------------------------
 
 :copyleft: 2009-2011 by Jens Diemer
 """
@@ -24,8 +55,11 @@ __version__ = "0.2"
 
 import os, re, time, fnmatch, difflib
 
+# FIXME: see http://stackoverflow.com/questions/4730121/cant-get-an-objects-class-name-in-python
+RE_TYPE = type(re.compile(""))
 
-class search:
+
+class SearchAndReplace(object):
     def __init__(self, search_path, search_string, replace_string,
                                         search_only=True, file_filter=("*.*",)):
         self.search_path = search_path
@@ -36,8 +70,8 @@ class search:
 
         assert isinstance(self.file_filter, (list, tuple))
 
-        # FIXME:
-        self.is_re = str(type(self.search_string)) == "<type '_sre.SRE_Pattern'>"
+        # FIXME: see http://stackoverflow.com/questions/4730121/cant-get-an-objects-class-name-in-python
+        self.is_re = isinstance(self.search_string, RE_TYPE)
 
         print "Search '%s' in [%s]..." % (
             self.search_string, self.search_path
@@ -150,8 +184,8 @@ class search:
 
 
 if __name__ == "__main__":
-    search(
-        search_path=r"./example/path",
+    SearchAndReplace(
+        search_path=".",
 
         # e.g.: simple string replace:
         search_string='the old string',
@@ -163,5 +197,6 @@ if __name__ == "__main__":
 
         search_only=True, # Display only the difference
 #        search_only     = False, # write the new content
+
         file_filter=("*.py",), # fnmatch-Filter
     )
