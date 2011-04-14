@@ -115,6 +115,8 @@ class SearchAndReplace(object):
     def replace_content(self, old_content, filepath):
         if self.is_re:
             new_content = self.search_string.sub(self.replace_string, old_content)
+            if new_content == old_content:
+                return old_content
         else:
             new_content = old_content.replace(
                 self.search_string, self.replace_string
