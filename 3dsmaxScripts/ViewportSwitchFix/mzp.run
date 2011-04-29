@@ -2,7 +2,8 @@ name "ViewportSwitchFix"
 
 version 0.1
 
-copy ViewportSwitchFix.mcr to $userScripts
+copy ViewportSwitchFix.ms to $temp
+copy ViewportSwitchFix.mcr to $userMacros
 
 run "install_ViewportSwitchFix.ms"
 
