@@ -90,7 +90,7 @@ rollout InstanceIdenticalObjectsRollout "instance identical objects" width:730 h
 		label instance_found_lable "instance found:" align:#left
 		progressbar instance_found_progress color:black
 		
-		hyperlink theHyperlink "copyleft (c) 2010 by htFX, Jens Diemer - http://www.htFX.de" url:"http://www.htFX.de" color:blue across:2 align:#right offset:[130,10]
+		hyperlink theHyperlink "copyleft (c) 2010 by htFX, Jens Diemer - www.htFX.de" address:"www.htFX.de" color:blue across:2 align:#right offset:[130,10]
 	)
 
 	on btn_instanceIt pressed do
@@ -110,6 +110,7 @@ rollout InstanceIdenticalObjectsRollout "instance identical objects" width:730 h
 			)
 		)
 		
+		disableSceneRedraw()
 		max create mode -- faster than modify tab (if objects selected)
 
 		all_count = all.count
@@ -188,6 +189,8 @@ rollout InstanceIdenticalObjectsRollout "instance identical objects" width:730 h
 		result.text+=(instances_made_count as string)+ " instanced made.\r\n"
 		result.text+=(instances_found_count as string)+ " instanced found.\r\n"
 		result.text+="------------------------------------------------------------------\r\n"
+		
+		enableSceneRedraw()
 	)
 )
 

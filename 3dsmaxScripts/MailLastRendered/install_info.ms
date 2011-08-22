@@ -5,7 +5,7 @@ filein "$userScripts//mailLastRendered.mcr"
 -- Display only a small Info
 str = "Script installed.\n
 1. goto 'Customize/Cusomize User Interface/Toolbars'
-2. goto Category: '_htFX Scripts'
+2. goto Category: '_htFX.de maxscripts'
 3. Drag and Drop the Action to you Toolbar
 "
 messageBox str title:"Script installed."

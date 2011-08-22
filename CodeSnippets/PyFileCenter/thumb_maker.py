@@ -5,6 +5,29 @@
     makes thumbs with the PIL
 
     Created by Jens Diemer
+    
+    Useable by a small "client" script, e.g.:
+
+-------------------------------------------------------------------------------   
+#!/usr/bin/python
+# -*- coding: ISO-8859-1 -*-
+
+import sys, datetime, os
+
+#sys.path.insert(0,"/path/to/thumb_maker/") # Please change path, if needed.
+
+from thumb_maker import ThumbMaker, ThumbMakerCfg
+
+ThumbMakerCfg.path_to_convert = os.getcwd()
+ThumbMakerCfg.do_path_walk = False
+ThumbMakerCfg.path_output = os.path.join(os.getcwd(), "Web")
+ThumbMakerCfg.make_smaller    = True
+ThumbMakerCfg.smaller_size    = (800, 600)
+ThumbMakerCfg.image_text      = "(resized by thumb maker (c) Jens Diemer)" # LOL
+
+ThumbMaker( ThumbMakerCfg ).go()
+
+-------------------------------------------------------------------------------
 
 license:
     GNU General Public License v3 or above

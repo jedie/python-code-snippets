@@ -17,7 +17,7 @@
 --
 
 macroScript mailRenderedImage
-    Category: "_htFX scripts"
+    Category: "_htFX.de maxscripts"
     Tooltip: "Mail the last rendered picure"
     Buttontext: "mail"
     Icon:#("Maintoolbar",69)
