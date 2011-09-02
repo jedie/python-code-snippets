@@ -1,0 +1,35 @@
+# Enable execution of scripts (not needed in every cases)
+# http://httpd.apache.org/docs/2.0/mod/core.html#options
+#Options +ExecCGI
+
+#-----------------------------------------------------------------------
+#
+# Activate script Handler (not needed in every cases)
+# http://httpd.apache.org/docs/2.0/mod/mod_mime.html#addhandler
+#
+
+# libapache2-mod-wsgi
+#AddHandler wsgi-script .py
+
+# Old libapache2-mod-fastcgi Apache module:
+#AddHandler fastcgi-script .py
+
+# New libapache2-mod-fcgid Apache module:
+#AddHandler fcgid-script .py
+
+# libapache2-mod-python
+#AddHandler mod_python .py
+#PythonHandler python_test
+#PythonDebug on
+
+# normal CGI
+AddHandler cgi-script .py
+
+#-----------------------------------------------------------------------
+
+# http://httpd.apache.org/docs/2.0/mod/mod_rewrite.html
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^(.*)$ python_test.py/$1 [QSA,L]
+
+#-----------------------------------------------------------------------

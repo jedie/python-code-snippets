@@ -1,0 +1,17 @@
+
+= Python web test =
+
+Detect web handler: mod_wsgi, fast_CGI, mod_python or CGI and display many informations.
+
+**python_test.py** displays many informations.
+**python_test_mini.py** is smaller and displays less informations.
+
+== HowTo ==
+
+Put the files **.htaccess**, **python_test.py** and/or **python_test_mini.py** into
+your htdocs directory. Change .htaccess for your needs.
+
+----
+
+copyleft 2011 by Jens Diemer
+license: GNU GPL v3 or above
