@@ -31,6 +31,7 @@ import datetime
 import logging
 import os
 import sys
+import tempfile
 import traceback
 
 
@@ -40,24 +41,42 @@ BASE_PATH = os.path.dirname(SCRIPT_FILENAME)
 LOGFILE = os.path.join(BASE_PATH, BASE_NAME + ".log")
 
 
+#______________________________________________________________________________
 # Setup logging
 log = logging.getLogger(BASE_NAME)
-handler = logging.FileHandler(filename=LOGFILE)
+
+# Depending on the user that runs the process, we have different file write rights
+# Try to find a filepath in which we can write out log output
+possible_paths = (BASE_PATH, tempfile.gettempdir(), os.path.expanduser("~/tmp"), "tmp")
+for path in possible_paths:
+    LOGFILE = os.path.join(path, BASE_NAME + ".log")
+    try:
+        handler = logging.FileHandler(filename=LOGFILE)
+    except IOError, err:
+        continue
+    else:
+        log.addHandler(handler)
+        break
+
 formatter = logging.Formatter('%(asctime)s PID:%(process)d %(levelname)s: %(message)s')
 handler.setFormatter(formatter)
-log.addHandler(handler)
 log.setLevel(logging.DEBUG)
+
+#------------------------------------------------------------------------------
 
 
 log.info("start up %r" % __file__)
 atexit.register(log.info, "-- END --")
 
 
+#------------------------------------------------------------------------------
+
+
 MOD_WSGI = "mod_WSGI"
-FASTCGI = "fast_CGI"
+FASTCGI = "fast_CGI with old libapache2-mod-fastcgi Apache module"
+FCGID = "fast_CGI with new libapache2-mod-fcgid Apache module"
 MOD_PYTHON = "mod_Python"
 CGI = "CGI"
-
 
 class RunningType(object):
     RUNNING_TYPE = None
@@ -72,6 +91,10 @@ class RunningType(object):
         self._set(MOD_WSGI)
 
     @classmethod
+    def set_fcgid(self):
+        self._set(FCGID)
+
+    @classmethod
     def set_fastcgi(self):
         self._set(FASTCGI)
 
@@ -82,6 +105,9 @@ class RunningType(object):
     @classmethod
     def set_cgi(self):
         self._set(CGI)
+
+
+#------------------------------------------------------------------------------
 
 
 def info_app(environ, start_response):
@@ -110,6 +136,7 @@ def info_app(environ, start_response):
     yield '<tr><th>__name__</th><td>%s</td></tr>' % __name__
     yield '<tr><th>os.uname</th><td>%s</td></tr>' % " ".join(os.uname())
     yield '<tr><th>script file</th><td>%s</td></tr>' % SCRIPT_FILENAME
+    yield '<tr><th>sys.argv</th><td>%s</td></tr>' % sys.argv
     yield '<tr><th>PID</th><td>%s</td></tr>' % os.getpid()
     yield '<tr><th>UID</th><td>%s</td></tr>' % os.getuid()
     yield '<tr><th>GID</th><td>%s</td></tr>' % os.getgid()
@@ -167,15 +194,20 @@ try:
             return apache.OK
 
     elif __name__ == "__main__":
+        # FIXME: How can we differentiate CGI, fast_CGI and fcgid better?
         if "CGI" in os.environ.get("GATEWAY_INTERFACE", ""): # normal CGI
             RunningType.set_cgi()
             from wsgiref.handlers import CGIHandler
             CGIHandler().run(info_app)
+        elif "PATH" in os.environ:
+            # New libapache2-mod-fcgid Apache module
+            RunningType.set_fcgid()
         else:
-            # fast_CGI ?
+            # Old libapache2-mod-fastcgi Apache module
             RunningType.set_fastcgi()
-            from flup.server.fcgi import WSGIServer
-            WSGIServer(info_app).run()
+
+        from flup.server.fcgi import WSGIServer
+        WSGIServer(info_app).run()
     else:
         log.error("Unknown __name__ value!")
 except:
