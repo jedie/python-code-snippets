@@ -76,6 +76,7 @@ MOD_WSGI = "mod_WSGI"
 FASTCGI = "fast_CGI with old libapache2-mod-fastcgi Apache module"
 FCGID = "fast_CGI with new libapache2-mod-fcgid Apache module"
 MOD_PYTHON = "mod_Python"
+SCGI_WSGI = "SCGI"
 CGI = "CGI"
 
 class RunningType(object):
@@ -101,6 +102,10 @@ class RunningType(object):
     @classmethod
     def set_mod_python(self):
         self._set(MOD_PYTHON)
+
+    @classmethod
+    def set_scgi_wsgi(self):
+        self._set(SCGI_WSGI)
 
     @classmethod
     def set_cgi(self):
@@ -194,6 +199,29 @@ try:
             return apache.OK
 
     elif __name__ == "__main__":
+
+        if sys.argv[0] == "scgi-wsgi":
+            RunningType.set_scgi_wsgi()
+            raise NotImplemented
+
+        elif "scgi" in sys.argv:
+            # Startup a SCGI server (needs flup packages)
+            if len(sys.argv) == 4:
+                address = sys.argv[2], int(sys.argv[3])
+            else:
+                address = ('localhost', 4000)
+
+            # Display own logs on console
+            console = logging.StreamHandler()
+            log.addHandler(console)
+
+            RunningType.set_scgi_wsgi()
+
+            log.info("Start SCGI server on %s:%s" % address)
+            from flup.server.scgi import WSGIServer
+            ret = WSGIServer(info_app, bindAddress=address, debug=True).run()
+            sys.exit(ret and 42 or 0)
+
         # FIXME: How can we differentiate CGI, fast_CGI and fcgid better?
         if "CGI" in os.environ.get("GATEWAY_INTERFACE", ""): # normal CGI
             RunningType.set_cgi()

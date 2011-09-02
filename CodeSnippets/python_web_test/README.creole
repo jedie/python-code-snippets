@@ -1,15 +1,39 @@
 
 = Python web test =
 
-Detect web handler: mod_wsgi, fast_CGI, mod_python or CGI and display many informations.
+Detect web handler: mod_wsgi, fast_CGI, fcgid, mod_python or CGI and display many informations.
 
 * **python_test.py** displays many informations.
 * **python_test_mini.py** is smaller and displays less informations.
+
 
 == HowTo ==
 
 Put the files **.htaccess**, **python_test.py** and/or **python_test_mini.py** into
 your htdocs directory. Change .htaccess for your needs.
+
+
+=== SCGI ===
+
+The test script can run a SCGI Server, too. It's use the [[http://trac.saddi.com/flup|flup]] packages for this.
+To start a SCGI Server on {{{ localhost:4000 }}} run this:
+{{{
+./python_test.py scgi
+}}}
+or specify bidn address and port:
+{{{
+./python_test.py scgi 127.0.0.1 8888
+}}}
+
+Add SCGIMount to your VirtualHost config, e.g.:
+{{{
+<VirtualHost>
+    ... 
+    SCGIMount / 127.0.0.1:4000
+    ...
+</VirtualHost>
+}}}
+
 
 == logging ==
 
@@ -23,11 +47,14 @@ We try to create a log file in these directories:
 * ~/tmp
 * /tmp
 
+
 == Which handler? ==
 
 How to find out what the handler is running script?
 
+
 === mod_wsgi ===
+
 {{{
 if __name__.startswith('_mod_wsgi_'):
     # we running with mod_wsgi
@@ -39,7 +66,9 @@ if sys.argv[0] == "mod_wsgi":
 }}}
 see also: https://code.google.com/p/modwsgi/wiki/TipsAndTricks#Determining_If_Running_Under_mod_wsgi
 
+
 === mod_python ===
+
 {{{
 if __name__.startswith('_mp_'):
     # we running with mod_python
@@ -49,6 +78,16 @@ or:
 if sys.argv[0] == "mod_python":
     # we running with mod_python
 }}}
+
+
+=== SCGI ===
+
+This have i seen on the internet, but not tested:
+{{{
+if sys.argv[0] == "scgi-wsgi":
+    # we running with SCGI
+}}}
+(See SCGI section above.)
 
 
 === fastCGI, fcgid or CGI ? ===
@@ -69,4 +108,5 @@ Does anyone have a better idea?
 ----
 
 copyleft 2011 by Jens Diemer
+
 license: GNU GPL v3 or above
