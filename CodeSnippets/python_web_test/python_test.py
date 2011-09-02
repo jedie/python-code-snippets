@@ -65,8 +65,8 @@
 """
 
 from cgi import escape
-import StringIO
 import atexit
+import datetime
 import glob
 import imp
 import logging
@@ -75,6 +75,7 @@ import sys
 import time
 import traceback
 
+START_TIME = time.time()
 
 try:
     import pwd
@@ -268,11 +269,35 @@ def get_userinfo():
     return uid, username
 
 
-def info_app(environ, start_response):
+def human_duration(t):
+    """ Converts a time duration into a friendly text representation. """
+    chunks = (
+      (60 * 60 * 24 * 365, 'years'),
+      (60 * 60 * 24 * 30, 'months'),
+      (60 * 60 * 24 * 7, 'weeks'),
+      (60 * 60 * 24, 'days'),
+      (60 * 60, 'hours'),
+    )
+
+    if t < 1: return "%.1f ms" % round(t * 1000, 1)
+    if t < 60: return "%.1f sec" % round(t, 1)
+    if t < 60 * 60: return "%.1f min" % round(t / 60, 1)
+
+    for seconds, name in chunks:
+        count = t / seconds
+        if count >= 1:
+            count = round(count, 1)
+            break
+    return "%.1f %s" % (count, name)
+
+
+def _info_app(environ, start_response):
     """
     Fallback application, used to display the user some information, why the
     main app doesn't start.
     """
+    request_start = time.time()
+
     log.info("info_app() - START")
     start_response('200 OK', [('Content-Type', 'text/html')])
     yield "<!DOCTYPE HTML><html><body>"
@@ -322,6 +347,7 @@ def info_app(environ, start_response):
     ips, domain = get_ip_info()
     yield '<tr><th>IPs</th><td>%s</td></tr>' % ips
     yield '<tr><th>domain</th><td>%s</td></tr>' % domain
+    yield '<tr><th>Server time (UTC)</th><td>%s</td></tr>' % datetime.datetime.utcnow().isoformat(' ')
     yield "</table>"
 
     #_________________________________________________________________________
@@ -370,26 +396,33 @@ def info_app(environ, start_response):
     yield "<pre>%s</pre>" % tail_log()
 
     yield "<hr />"
+
+    yield "<p>Render time: request: %s total: %s</p>" % (
+        human_duration(time.time() - request_start),
+        human_duration(time.time() - START_TIME),
+    )
+
     yield "<p>-- END --</p>"
     yield "</body></html>"
     log.info("info_app() - END")
 
 
-
-log.debug("__name__ == %s" % repr(__name__))
-if __name__.startswith('_mod_wsgi_'):
-    log.info("We are under mod_wsgi!")
-    # https://code.google.com/p/modwsgi/wiki/TipsAndTricks#Determining_If_Running_Under_mod_wsgi
+def info_app(environ, start_response):
     try:
-        RunningType.set_mod_wsgi()
-        application = info_app
+        for snippet in _info_app(environ, start_response):
+            yield snippet
     except:
         log.error(traceback.format_exc())
         raise
 
-elif __name__.startswith('_mp_'):
-    log.info("We are under mod_python!")
-    try:
+
+try:
+    log.debug("__name__ == %s" % repr(__name__))
+    if __name__.startswith('_mod_wsgi_'): # mod_wsgi
+        RunningType.set_mod_wsgi()
+        application = info_app
+
+    elif __name__.startswith('_mp_'): # mod_python
         RunningType.set_mod_python()
         from mod_python import apache
         def fake_start_reponse(*args, **kwargs):
@@ -400,33 +433,22 @@ elif __name__.startswith('_mp_'):
             for line in info_app(req.subprocess_env, fake_start_reponse):
                 req.write(line)
             return apache.OK
-    except:
-        log.error(traceback.format_exc())
-        raise
 
-elif __name__ == "__main__": # fast_CGI or normal CGI
-    if "CGI" in os.environ.get("GATEWAY_INTERFACE", ""):
-        try:
+    elif __name__ == "__main__":
+        if "CGI" in os.environ.get("GATEWAY_INTERFACE", ""): # normal CGI
             RunningType.set_cgi()
-            import cgitb; cgitb.enable()
             from wsgiref.handlers import CGIHandler
             CGIHandler().run(info_app)
-        except:
-            tb = traceback.format_exc()
-            log.error(tb)
-            print "Content-Type: text/html;charset=utf-8\n"
-            print "<pre>%s</pre>" % tb
-    else:
-        # fast_CGI ?
-        try:
+        else:
+            # fast_CGI ?
             RunningType.set_fastcgi()
             from flup.server.fcgi import WSGIServer
             WSGIServer(info_app).run()
-        except:
-            log.error(traceback.format_exc())
-            raise
-else:
-    log.error("Unknown __name__ value!")
+    else:
+        log.error("Unknown __name__ value!")
+except:
+    log.error(traceback.format_exc())
+    raise
 
 
 

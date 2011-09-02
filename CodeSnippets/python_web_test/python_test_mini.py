@@ -27,6 +27,7 @@
 
 from cgi import escape
 import atexit
+import datetime
 import logging
 import os
 import sys
@@ -112,6 +113,7 @@ def info_app(environ, start_response):
     yield '<tr><th>PID</th><td>%s</td></tr>' % os.getpid()
     yield '<tr><th>UID</th><td>%s</td></tr>' % os.getuid()
     yield '<tr><th>GID</th><td>%s</td></tr>' % os.getgid()
+    yield '<tr><th>Server time (UTC)</th><td>%s</td></tr>' % datetime.datetime.utcnow().isoformat(' ')
     yield "</table>"
 
     #_________________________________________________________________________
