@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# coding: utf-8
+
 """
     A pure python ping implementation using raw sockets.
 
@@ -89,12 +91,6 @@
     this is run under Solaris 2.X for SPARC but it works right under
     Linux x86. Since I don't know just what's wrong, I'll swap the
     bytes always and then do an htons().
-
-    Last commit info:
-    ~~~~~~~~~~~~~~~~~
-    $LastChangedDate: $
-    $Rev: $
-    $Author: $
 
     ===========================================================================
     IP header info from RFC791
