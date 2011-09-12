@@ -35,6 +35,11 @@
     Revision history
     ~~~~~~~~~~~~~~~~
 
+    September 12, 2011
+    --------------
+    Bugfixes + cleanup by Jens Diemer
+    Tested with Ubuntu + Windows 7
+    
     September 6, 2011
     --------------
     Cleanup by Martin Falatic. Restored lost comments and docs. Improved
@@ -147,10 +152,10 @@
     ===========================================================================
 """
 
-#=============================================================================#
+
 import os, sys, socket, struct, select, time, signal
 
-#=============================================================================#
+
 # ICMP parameters
 
 ICMP_ECHOREPLY = 0 # Echo reply (per RFC792)
@@ -170,7 +175,7 @@ class MyStats:
 
 myStats = MyStats # Used globally
 
-#=============================================================================#
+
 def checksum(source_string):
     """
     A port of the functionality of in_cksum() from ping.c
@@ -192,14 +197,14 @@ def checksum(source_string):
         else:
             loByte = source_string[count + 1]
             hiByte = source_string[count]
-        sum = sum + (hiByte * 256 + loByte)
+        sum = sum + (ord(hiByte) * 256 + ord(loByte))
         count += 2
 
     # Handle last byte if applicable (odd-number of bytes)
     # Endianness should be irrelevant in this case
     if countTo < len(source_string): # Check for odd length
         loByte = source_string[len(source_string) - 1]
-        sum += loByte
+        sum += ord(loByte)
 
     sum &= 0xffffffff # Truncate sum to 32 bits (a variance from ping.c, which
                       # uses signed ints, but overflow is unlikely in ping)
@@ -211,7 +216,7 @@ def checksum(source_string):
 
     return answer
 
-#=============================================================================#
+
 def do_one(destIP, timeout, mySeqNumber, numDataBytes):
     """
     Returns either the delay (in ms) or None on timeout.
@@ -222,8 +227,16 @@ def do_one(destIP, timeout, mySeqNumber, numDataBytes):
 
     try: # One could use UDP here, but it's obscure
         mySocket = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.getprotobyname("icmp"))
-    except socket.error as e:
-        print("failed. (socket error: '%s')" % e.args[1])
+    except socket.error, (errno, msg):
+        if errno == 1:
+            # Operation not permitted - Add more information to traceback
+            etype, evalue, etb = sys.exc_info()
+            evalue = etype(
+                "%s - Note that ICMP messages can only be sent from processes running as root." % evalue
+            )
+            raise etype, evalue, etb
+
+        print("failed. (socket error: '%s')" % msg)
         raise # raise the original error
 
     my_ID = os.getpid() & 0xFFFF
@@ -256,7 +269,7 @@ def do_one(destIP, timeout, mySeqNumber, numDataBytes):
 
     return delay
 
-#=============================================================================#
+
 def send_one_ping(mySocket, destIP, myID, mySeqNumber, numDataBytes):
     """
     Send one ping to the given >destIP<.
@@ -298,7 +311,7 @@ def send_one_ping(mySocket, destIP, myID, mySeqNumber, numDataBytes):
 
     return sendTime
 
-#=============================================================================#
+
 def receive_one_ping(mySocket, myID, timeout):
     """
     Receive the ping from the socket. Timeout = in ms
@@ -337,14 +350,14 @@ def receive_one_ping(mySocket, myID, timeout):
         if timeLeft <= 0:
             return None, 0, 0, 0, 0
 
-#=============================================================================#
+
 def dump_stats():
     """
     Show stats when pings are done
     """
     global myStats
 
-    print("\n----%s MYPING Statistics----" % (myStats.thisIP))
+    print("\n----%s PYTHON PING Statistics----" % (myStats.thisIP))
 
     if myStats.pktsSent > 0:
         myStats.fracLoss = (myStats.pktsSent - myStats.pktsRcvd) / myStats.pktsSent
@@ -361,7 +374,7 @@ def dump_stats():
     print()
     return
 
-#=============================================================================#
+
 def signal_handler(signum, frame):
     """
     Handle exit via signals
@@ -370,7 +383,7 @@ def signal_handler(signum, frame):
     print("\n(Terminated with signal %d)\n" % (signum))
     sys.exit(0)
 
-#=============================================================================#
+
 def verbose_ping(hostname, timeout=1000, count=3, numDataBytes=55):
     """
     Send >count< ping to >destIP< with the given >timeout< and display
@@ -379,7 +392,9 @@ def verbose_ping(hostname, timeout=1000, count=3, numDataBytes=55):
     global myStats
 
     signal.signal(signal.SIGINT, signal_handler)   # Handle Ctrl-C
-    signal.signal(signal.SIGBREAK, signal_handler) # Handle Windows Ctrl-Break
+    if hasattr(signal, "SIGBREAK"):
+        # Handle Ctrl-Break e.g. under Windows 
+        signal.signal(signal.SIGBREAK, signal_handler)
 
     myStats = MyStats() # Reset the stats
 
@@ -387,9 +402,9 @@ def verbose_ping(hostname, timeout=1000, count=3, numDataBytes=55):
 
     try:
         destIP = socket.gethostbyname(hostname)
-        print("\nMYPING %s (%s): %d data bytes" % (hostname, destIP, numDataBytes))
+        print("\nPYTHON-PING %s (%s): %d data bytes" % (hostname, destIP, numDataBytes))
     except socket.gaierror as e:
-        print("\nMYPING: Unknown host: %s (%s)" % (hostname, e.args[1]))
+        print("\nPYTHON-PING: Unknown host: %s (%s)" % (hostname, e.args[1]))
         print()
         return
 
@@ -409,9 +424,8 @@ def verbose_ping(hostname, timeout=1000, count=3, numDataBytes=55):
 
     dump_stats()
 
-#=============================================================================#
-if __name__ == '__main__':
 
+if __name__ == '__main__':
     # These should work:
     verbose_ping("heise.de")
     verbose_ping("google.com")
@@ -429,4 +443,4 @@ if __name__ == '__main__':
     # Should fails with 'The requested address is not valid in its context':
     verbose_ping("0.0.0.0")
 
-#=============================================================================#
+
