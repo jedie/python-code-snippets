@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# -*- coding: ISO-8859-1 -*-
+# coding: ISO-8859-1
 
 """
     makes thumbs with the PIL
@@ -10,7 +10,7 @@
 
 -------------------------------------------------------------------------------   
 #!/usr/bin/python
-# -*- coding: ISO-8859-1 -*-
+# coding: ISO-8859-1
 
 import sys, datetime, os
 
@@ -34,10 +34,9 @@ license:
     http://www.opensource.org/licenses/gpl-license.php
 """
 
-__version__ = "$Rev$"
-
 
 import sys, os, time, fnmatch, urllib, string
+import optparse
 
 
 try:
@@ -47,8 +46,8 @@ try:
     # s. http://mail.python.org/pipermail/image-sig/1999-August/000816.html
     import ImageFile
     ImageFile.MAXBLOCK = 1000000 # default is 64k
-except ImportError:
-    print "Import Error:"
+except ImportError, err:
+    print "Import Error: %s" % err
     print "You must install PIL, The Python Image Library"
     print "http://www.pythonware.com/products/pil/index.htm"
     sys.exit()
@@ -86,6 +85,45 @@ class ThumbMakerCfg(object):
         ("ß", "ss"),
     ]
 
+    def setup_from_cli(self):
+        parser = optparse.OptionParser("usage: %prog [options] picture1 picture2")
+
+        parser.add_option("--make-smaller", dest="make_smaller", default=False, action="store_true",
+            help="Make a smaller image with 'suffix' ?")
+        parser.add_option(
+            "--size", type="string",
+            dest="smaller_size", default="%ix%i" % self.smaller_size,
+            help="smaller size (if --make-smaller used) default: %ix%i" % self.smaller_size)
+        parser.add_option("--suffix", dest="suffix", default=self.suffix,
+            help="Make a smaller image with 'suffix' ?")
+
+        parser.add_option("--image_text", dest="image_text", default=self.image_text, type="string",
+            help="Add text to the image")
+        parser.add_option("--text_color", dest="text_color", default=self.text_color, type="string",
+            help="Color of the given --image_text")
+
+        parser.add_option("--jpegQuality", dest="jpegQuality", default=self.jpegQuality, type="int",
+            help="JPEG quality")
+
+        (options, args) = parser.parse_args()
+        if len(args) == 1:
+            parser.error("incorrect number of arguments")
+        self.pictures = args
+
+        self.make_smaller = options.make_smaller
+        self.smaller_size = tuple([int(px) for px in options.smaller_size.split("x")])
+        self.image_text = options.image_text
+        self.text_color = options.text_color
+        self.jpegQuality = options.jpegQuality
+
+    def iter_pictures(self):
+        for pic_path in self.pictures:
+            name, ext = os.path.splitext(pic_path)
+            if ext not in self.extentions:
+                print "Skip (no valid file extension): %s" % pic_path
+            else:
+                yield pic_path
+
 
 
 
@@ -96,6 +134,20 @@ class ThumbMaker(object):
             "*%s.*" % self.cfg.thumb_suffix,
             "*%s.*" % self.cfg.suffix
         ]
+
+    def cli(self):
+        """
+        CLI Interface...
+        """
+        print "Pictures to process: %r" % self.cfg.pictures
+        for pic_path in self.cfg.iter_pictures():
+            path, filename = os.path.split(pic_path)
+            print "Convert %s..." % filename
+
+            self.cfg.path_output = path
+            print "path:", path
+            self.process_file(pic_path)
+        print " -- END -- "
 
     def go(self):
         """ Aktion starten """
@@ -266,13 +318,10 @@ class ThumbMaker(object):
 
 
 if __name__ == "__main__":
-    ThumbMakerCfg.path_to_convert = r"D:\MyPics"
-    ThumbMakerCfg.make_smaller = True
-    #~ ThumbMakerCfg.make_smaller    = False
-    ThumbMakerCfg.smaller_size = (960, 600)
-    ThumbMakerCfg.image_text = "Your image Text :)"
+    cfg = ThumbMakerCfg()
+    cfg.setup_from_cli()
 
-    ThumbMaker(ThumbMakerCfg).go()
+    ThumbMaker(cfg).cli()
 
 
 
