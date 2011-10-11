@@ -69,7 +69,7 @@ fn is_sameGeometry a b = (
 		)
 		if DEBUG then format "has same PolygonCount.\n"
 		
-		format "instanceable object found!"
+		format "instanceable object found!\n"
 		return 3
 	)
 
@@ -77,6 +77,7 @@ rollout InstanceIdenticalObjectsRollout "instance identical objects" width:730 h
 (
 	button btn_instanceIt "Instance:" align:#left width: 120
 	radioButtons object_filter labels:#("selected objects", "all objects") align:#left offset:[130,-23]
+	checkbox InstanceReplaceCheckBox "use alternative InstanceReplace (usefull if max crashed)"
 	group "result"
 	(
 		edittext result height:330 readOnly:true
@@ -112,6 +113,9 @@ rollout InstanceIdenticalObjectsRollout "instance identical objects" width:730 h
 		
 		disableSceneRedraw()
 		max create mode -- faster than modify tab (if objects selected)
+		result.text+="do max hold..."
+		max hold
+		result.text+="ok\r\n"
 
 		all_count = all.count
 
@@ -126,6 +130,7 @@ rollout InstanceIdenticalObjectsRollout "instance identical objects" width:730 h
 		
 		-- start
 		y_all = deepcopy all -- use deepcopy to make y_all independent
+		to_delete = #()
 
 		instances_made_count=0
 		instances_found_count=0
@@ -149,6 +154,16 @@ rollout InstanceIdenticalObjectsRollout "instance identical objects" width:730 h
 				-- 2: not the same (can't replace with instance)
 				-- 3: instanceable objects			
 				statuscode = is_samegeometry obj_x obj_y
+				
+				if (statuscode == 1 or statuscode == 3) do (
+					try(
+						obj_x.wirecolor = obj_y.wirecolor
+					) catch (
+						format "Error with %\n" obj
+						continue
+					)
+				)
+				
 				case statuscode of
 				(
 					1: (
@@ -165,7 +180,16 @@ rollout InstanceIdenticalObjectsRollout "instance identical objects" width:730 h
 						if DEBUG then format msg
 						result.text+=msg
 						
-						instanceReplace obj_x obj_y
+						if InstanceReplaceCheckBox.checked then (
+							select obj_x
+							maxOps.cloneNodes $ cloneType:#instance newNodes:&new_objs
+							new_obj = new_objs[1]
+							new_obj.transform = obj_y.transform
+							new_obj.name = obj_y.name
+							append to_delete obj_y
+						) else (
+							instanceReplace obj_x obj_y
+						)
 						
 						instances_made_count+=1
 						instance_made_lable.text = "instance made: " + instances_made_count as string
@@ -176,7 +200,7 @@ rollout InstanceIdenticalObjectsRollout "instance identical objects" width:730 h
 				total_progress.value = 100.*compare_count/to_compare_count
 				if (statuscode == 1 or statuscode == 3) do (
 					-- we must not test the object again:
-					deleteItem y_all y 
+ 					deleteItem y_all y 
 					y_all_count -= 1
 					to_compare_count = (compare_count + int((y_all_count) * floor(y_all_count / 2))/2) -- FIXME
 					y = 0 -- exit from while loop ('exit' statement is very slow!)
@@ -190,7 +214,19 @@ rollout InstanceIdenticalObjectsRollout "instance identical objects" width:730 h
 		result.text+=(instances_found_count as string)+ " instanced found.\r\n"
 		result.text+="------------------------------------------------------------------\r\n"
 		
+		if InstanceReplaceCheckBox.checked do (
+			result.text+="delete obsolete objects..."
+			select to_delete
+			max delete
+			result.text+="ok\r\n"
+		)
+		
+		format "force garbage collection:"
+		gc()
+		--light:true
 		enableSceneRedraw()
+		max views redraw
+		format " - END -\n"
 	)
 )
 
