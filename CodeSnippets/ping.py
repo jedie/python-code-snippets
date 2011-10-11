@@ -246,7 +246,7 @@ def do_one(destIP, timeout, mySeqNumber, numDataBytes):
         mySocket.close()
         return delay
 
-    myStats.pktsSent += 1;
+    myStats.pktsSent += 1
 
     recvTime, dataSize, iphSrcIP, icmpSeqNumber, iphTTL = receive_one_ping(mySocket, my_ID, timeout)
 
@@ -257,7 +257,7 @@ def do_one(destIP, timeout, mySeqNumber, numDataBytes):
         print("%d bytes from %s: icmp_seq=%d ttl=%d time=%d ms" % (
             dataSize, socket.inet_ntoa(struct.pack("!I", iphSrcIP)), icmpSeqNumber, iphTTL, delay)
         )
-        myStats.pktsRcvd += 1;
+        myStats.pktsRcvd += 1
         myStats.totTime += delay
         if myStats.minTime > delay:
             myStats.minTime = delay
