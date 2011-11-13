@@ -105,7 +105,11 @@ class Chronologer:
 
     def statFile(self, path):
         """ Zeiten für Verz.Eintrag festhalten """
-        pathStat = os.stat(path)
+        try:
+            pathStat = os.stat(path)
+        except Exception, err:
+            print "Error getting stat for %r: %s" % (path, err)
+            return
         creationTime = pathStat.st_ctime
         lastAccess = pathStat.st_atime
         lastModification = pathStat.st_mtime
