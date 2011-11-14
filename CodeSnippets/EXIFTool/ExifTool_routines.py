@@ -315,7 +315,7 @@ def process(source_path, destination, out, simulate_only, move_files,
         fn_dest = os.path.join(dest_path, filename)
         if not os.path.isfile(fn_dest):
             out.write(
-                "ERROR: File not found, after copy or moveing! (%s)" % fn_dest
+                "ERROR: File not found, after copy or moving! (%s)" % fn_dest
             )
             return
 
