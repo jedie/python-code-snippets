@@ -96,6 +96,9 @@ rollout InstanceIdenticalObjectsRollout "instance identical objects" width:730 h
 
 	on btn_instanceIt pressed do
 	(
+		disableSceneRedraw()
+		max create mode -- faster than modify tab (if objects selected)
+		
 		result.text+="hold the scene, so you can revert with fetch..."
 		max hold
 		result.text += "OK\r\n"
@@ -110,12 +113,6 @@ rollout InstanceIdenticalObjectsRollout "instance identical objects" width:730 h
 				all=$*/geometry as array
 			)
 		)
-		
-		disableSceneRedraw()
-		max create mode -- faster than modify tab (if objects selected)
-		result.text+="do max hold..."
-		max hold
-		result.text+="ok\r\n"
 
 		all_count = all.count
 
