@@ -17,6 +17,7 @@
 """
 
 from __future__ import with_statement
+import time
 
 try:
     import psyco
@@ -33,7 +34,8 @@ import Tkinter as tkinter
 
 EPSILON = 0.00001
 
-class Vector:
+
+class PointVectorBase(object):
     def __init__(self, initx, inity, initz):
         self.x = initx
         self.y = inity
@@ -43,8 +45,14 @@ class Vector:
         return '(%s,%s,%s)' % (self.x, self.y, self.z)
 
     def __repr__(self):
-        return 'Vector(%s,%s,%s)' % (self.x, self.y, self.z)
+        if self.isPoint():
+            kind = "Point"
+        else:
+            kind = "Vector"
+        return '%s(%s,%s,%s)' % (kind, self.x, self.y, self.z)
 
+
+class Vector(PointVectorBase):
     def magnitude(self):
         return math.sqrt(self.dot(self))
 
@@ -96,6 +104,7 @@ class Vector:
         d = normal.scale(self.dot(normal))
         return self -d.scale(2)
 
+
 Vector.ZERO = Vector(0, 0, 0)
 Vector.RIGHT = Vector(1, 0, 0)
 Vector.UP = Vector(0, 1, 0)
@@ -104,18 +113,8 @@ Vector.OUT = Vector(0, 0, 1)
 assert Vector.RIGHT.reflectThrough(Vector.UP) == Vector.RIGHT
 assert Vector(-1, -1, 0).reflectThrough(Vector.UP) == Vector(-1, 1, 0)
 
-class Point:
-    def __init__(self, initx, inity, initz):
-        self.x = initx
-        self.y = inity
-        self.z = initz
 
-    def __str__(self):
-        return '(%s,%s,%s)' % (self.x, self.y, self.z)
-
-    def __repr__(self):
-        return 'Point(%s,%s,%s)' % (self.x, self.y, self.z)
-
+class Point(PointVectorBase):
     def __add__(self, other):
         other.mustBeVector()
         return Point(self.x + other.x, self.y + other.y, self.z + other.z)
@@ -138,7 +137,8 @@ class Point:
     def mustBePoint(self):
         return self
 
-class Sphere:
+
+class Sphere(object):
     def __init__(self, centre, radius):
         centre.mustBePoint()
         self.centre = centre
@@ -159,7 +159,8 @@ class Sphere:
     def normalAt(self, p):
         return (p - self.centre).normalized()
 
-class Halfspace:
+
+class Halfspace(object):
     def __init__(self, point, normal):
         self.point = point
         self.normal = normal.normalized()
@@ -177,10 +178,12 @@ class Halfspace:
     def normalAt(self, p):
         return self.normal
 
-class Ray:
+
+class Ray(object):
     def __init__(self, point, vector):
         self.point = point
         self.vector = vector.normalized()
+#        self.vector.jitter()
 
     def __repr__(self):
         return 'Ray(%s,%s)' % (repr(self.point), repr(self.vector))
@@ -188,12 +191,14 @@ class Ray:
     def pointAtTime(self, t):
         return self.point + self.vector.scale(t)
 
+
 Point.ZERO = Point(0, 0, 0)
 
 a = Vector(3, 4, 12)
 b = Vector(1, 1, 1)
 
-class PpmCanvas:
+
+class PpmCanvas(object):
     def __init__(self, width, height, filenameBase):
         import array
         self.bytes = array.array('B', [0] * (width * height * 3))
@@ -213,6 +218,7 @@ class PpmCanvas:
         with open(self.filenameBase + '.ppm', 'wb') as f:
             f.write('P6 %d %d 255\n' % (self.width, self.height))
             f.write(self.bytes.tostring())
+
 
 class TkCanvas(object):
     def __init__(self, width, height):
@@ -248,12 +254,14 @@ def firstIntersection(intersections):
                 result = i
     return result
 
+
 def addColours(a, scale, b):
     return (a[0] + scale * b[0],
             a[1] + scale * b[1],
             a[2] + scale * b[2])
 
-class SimpleSurface:
+
+class SimpleSurface(object):
     def __init__(self, **kwargs):
         self.baseColour = kwargs.get('baseColour', (1, 1, 1))
         self.specularCoefficient = kwargs.get('specularCoefficient', 0.2)
@@ -287,6 +295,7 @@ class SimpleSurface:
 
         return c
 
+
 class CheckerboardSurface(SimpleSurface):
     def __init__(self, **kwargs):
         SimpleSurface.__init__(self, **kwargs)
@@ -305,8 +314,9 @@ class CheckerboardSurface(SimpleSurface):
             return self.baseColour
 
 
-class Scene:
-    def __init__(self):
+class Scene(object):
+    def __init__(self, max_recursion_depth=3):
+        self.max_recursion_depth = max_recursion_depth
         self.objects = []
         self.lightPoints = []
         self.position = Point(0, 1.8, 10)
@@ -320,8 +330,8 @@ class Scene:
     def lookAt(self, p):
         self.lookingAt = p
 
-    def addObject(self, object, surface):
-        self.objects.append((object, surface))
+    def addObject(self, obj, surface):
+        self.objects.append((obj, surface))
 
     def addLight(self, p):
         self.lightPoints.append(p)
@@ -358,7 +368,7 @@ class Scene:
         print 'Complete.'
 
     def rayColour(self, ray):
-        if self.recursionDepth > 3:
+        if self.recursionDepth > self.max_recursion_depth:
             return (0, 0, 0)
         try:
             self.recursionDepth = self.recursionDepth + 1
@@ -395,7 +405,7 @@ if __name__ == '__main__':
     c = Canvas(320, 240)
     #c = Canvas(640, 480, 'test_raytrace_big')
 
-    s = Scene()
+    s = Scene(max_recursion_depth=2)
     s.addLight(Point(30, 30, 10))
     s.addLight(Point(-10, 100, 30))
     s.lookAt(Point(0, 3, 0))
@@ -404,7 +414,11 @@ if __name__ == '__main__':
         s.addObject(Sphere(Point(-3 - y * 0.4, 2.3, -5), 0.4),
                     SimpleSurface(baseColour=(y / 6.0, 1 - y / 6.0, 0.5)))
     s.addObject(Halfspace(Point(0, 0, 0), Vector.UP), CheckerboardSurface())
+
+    start_time = time.time()
     s.render(c)
+    print "Rendered in %.1fsec" % (time.time() - start_time)
+
     c.save()
 
     c.root.mainloop()
