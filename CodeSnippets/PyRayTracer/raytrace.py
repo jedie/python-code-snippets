@@ -2,11 +2,15 @@
 
 """
     This file contains definitions for a simple raytracer.
-
-    Copyright Callum and Tony Garnock-Jones, 2008.
-    
+   
     modified 2011 by Jens Diemer:
         Display the picture live in a Tkinter window
+
+    Origin sourcecode from:
+        http://www.lshift.net/~tonyg/raytrace.py
+    see also:
+        http://www.lshift.net/blog/2008/10/29/toy-raytracer-in-python
+    Copyright Callum and Tony Garnock-Jones, 2008.
 
     This file may be freely redistributed under the MIT license,
     http://www.opensource.org/licenses/mit-license.php
