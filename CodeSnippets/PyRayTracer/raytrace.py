@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # encoding: utf-8
 
 """
@@ -33,6 +34,31 @@ import math
 import Tkinter as tkinter
 
 EPSILON = 0.00001
+
+
+class HumanDuration(object):
+    CHUNKS = (
+      (60 * 60 * 24 * 365, 'years'),
+      (60 * 60 * 24 * 30, 'months'),
+      (60 * 60 * 24 * 7, 'weeks'),
+      (60 * 60 * 24, 'days'),
+      (60 * 60, 'hours'),
+    )
+    def __call__(self, t):
+        if t < 1:
+            return "%.1f ms" % round(t * 1000, 1)
+        if t < 60:
+            return "%.1f sec" % round(t, 1)
+        if t < 60 * 60:
+            return "%.1f min" % round(t / 60, 1)
+
+        for seconds, name in self.CHUNKS:
+            count = t / seconds
+            if count >= 1:
+                count = round(count, 1)
+                break
+        return "%.1f %s" % (count, name)
+human_duration = HumanDuration()
 
 
 class PointVectorBase(object):
@@ -321,7 +347,9 @@ class CheckerboardSurface(SimpleSurface):
 
 
 class Scene(object):
-    def __init__(self, max_recursion_depth=3):
+    def __init__(self, canvas, update_time=0.5, max_recursion_depth=3):
+        self.canvas = canvas
+        self.update_time = update_time
         self.max_recursion_depth = max_recursion_depth
         self.objects = []
         self.lightPoints = []
@@ -342,37 +370,68 @@ class Scene(object):
     def addLight(self, p):
         self.lightPoints.append(p)
 
-    def render(self, canvas):
+    def render(self):
         print 'Computing field of view'
         fovRadians = math.pi * (self.fieldOfView / 2.0) / 180.0
         halfWidth = math.tan(fovRadians)
         halfHeight = 0.75 * halfWidth
         width = halfWidth * 2
         height = halfHeight * 2
-        pixelWidth = width / (canvas.width - 1)
-        pixelHeight = height / (canvas.height - 1)
+        pixelWidth = width / (self.canvas.width - 1)
+        pixelHeight = height / (self.canvas.height - 1)
 
         eye = Ray(self.position, self.lookingAt - self.position)
         vpRight = eye.vector.cross(Vector.UP).normalized()
         vpUp = vpRight.cross(eye.vector).normalized()
 
+        start_time = time.time()
+        next_update = start_time + self.update_time
+
         print 'Looping over pixels'
-        previousfraction = 0
-        for y in xrange(canvas.height):
-            currentfraction = float(y) / canvas.height
-            if currentfraction - previousfraction > 0.05:
-                canvas.update()
-                print '%d%% complete' % (currentfraction * 100)
-                previousfraction = currentfraction
-            for x in xrange(canvas.width):
+        for y in xrange(self.canvas.height):
+
+            if time.time() > next_update:
+                self.canvas.update()
+                current_time = time.time()
+                next_update = current_time + self.update_time
+                self.print_status(start_time, current_time, y)
+
+            for x in xrange(self.canvas.width):
                 xcomp = vpRight.scale(x * pixelWidth - halfWidth)
                 ycomp = vpUp.scale(y * pixelHeight - halfHeight)
                 ray = Ray(eye.point, eye.vector + xcomp + ycomp)
                 colour = self.rayColour(ray)
-                canvas.plot(x, y, *colour)
+                self.canvas.plot(x, y, *colour)
 
-        canvas.save()
+        self.print_status(start_time, time.time(), self.canvas.height)
+        self.canvas.save()
         print 'Complete.'
+
+    def print_status(self, start_time, current_time, y):
+        percent = round(float(y) / self.canvas.height * 100, 2)
+
+        elapsed = current_time - start_time      # Vergangene Zeit
+        estimated = elapsed / y * self.canvas.height # Geschätzte Zeit
+
+        remain = estimated - elapsed
+
+        performance = y * self.canvas.width / elapsed
+
+        print (
+            "   "
+            "%(percent).1f%%"
+            " - elapsed: %(elapsed)s"
+            " - estimated: %(estimated)s"
+            " - remain: %(remain)s"
+            " - %(perf).1f pixel/sec"
+            "   "
+        ) % {
+            "percent"  : percent,
+            "elapsed"  : human_duration(elapsed),
+            "estimated": human_duration(estimated),
+            "remain"   : human_duration(remain),
+            "perf"     : performance,
+        }
 
     def rayColour(self, ray):
         if self.recursionDepth > self.max_recursion_depth:
@@ -409,10 +468,11 @@ if __name__ == '__main__':
     #Canvas = PpmCanvas
     Canvas = TkCanvas
 
-    c = Canvas(320, 240)
-    #c = Canvas(640, 480, 'test_raytrace_big')
+    canvas = Canvas(320, 240)
+    #canvas = Canvas(640, 480, 'test_raytrace_big')
 
-    s = Scene(max_recursion_depth=2)
+    s = Scene(canvas, update_time=1, max_recursion_depth=2)
+
     s.addLight(Point(30, 30, 10))
     s.addLight(Point(-10, 100, 30))
     s.lookAt(Point(0, 3, 0))
@@ -423,9 +483,7 @@ if __name__ == '__main__':
     s.addObject(Halfspace(Point(0, 0, 0), Vector.UP), CheckerboardSurface())
 
     start_time = time.time()
-    s.render(c)
+    s.render()
     print "Rendered in %.1fsec" % (time.time() - start_time)
 
-    c.save()
-
-    c.root.mainloop()
+    canvas.root.mainloop()
