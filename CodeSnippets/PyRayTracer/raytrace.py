@@ -214,6 +214,9 @@ class PpmCanvas(object):
         self.bytes[i + 1] = max(0, min(255, int(g * 255)))
         self.bytes[i + 2] = max(0, min(255, int(b * 255)))
 
+    def update(self):
+        pass
+
     def save(self):
         with open(self.filenameBase + '.ppm', 'wb') as f:
             f.write('P6 %d %d 255\n' % (self.width, self.height))
@@ -241,8 +244,11 @@ class TkCanvas(object):
 
         self.image.put("#%02x%02x%02x" % (r, g, b), (x, y))
 
-    def save(self):
+    def update(self):
         self.root.update()
+
+    def save(self):
+        pass
 
 
 def firstIntersection(intersections):
@@ -355,7 +361,7 @@ class Scene(object):
         for y in xrange(canvas.height):
             currentfraction = float(y) / canvas.height
             if currentfraction - previousfraction > 0.05:
-                canvas.save()
+                canvas.update()
                 print '%d%% complete' % (currentfraction * 100)
                 previousfraction = currentfraction
             for x in xrange(canvas.width):
@@ -365,6 +371,7 @@ class Scene(object):
                 colour = self.rayColour(ray)
                 canvas.plot(x, y, *colour)
 
+        canvas.save()
         print 'Complete.'
 
     def rayColour(self, ray):
