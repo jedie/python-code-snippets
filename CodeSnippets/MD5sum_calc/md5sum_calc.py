@@ -1,27 +1,31 @@
 #!/usr/bin/python
-# -*- coding: ISO-8859-1 -*-
+# coding: ISO-8859-1
 
 """
-Create and check MD5sum of file(s)
-
-Ich erstelle mir eine Verknüpfung auf dem Desktop.
-Dann kann man eine einzelne Datei, mehrere Dateien oder ein Verzeichnis
-per Drag&Drop auf die Verknüpfung ziehen.
-
-Ist keine *.md5 Datei vorhanden, wird diese erstellt.
-
-Ist eine *.md5 Datei vorhanden, wird die eine aktuelle MD5sum von der
-Datei erstellt und mit der aus der md5-Datei verglichen.
+    Create and compare MD5, SHA1 hashes from file(s)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        
+    Ich erstelle mir eine Verknüpfung auf dem Desktop.
+    Dann kann man eine einzelne Datei, mehrere Dateien oder ein Verzeichnis
+    per Drag&Drop auf die Verknüpfung ziehen.
+    
+    Ist keine *.md5 Datei vorhanden, wird diese erstellt.
+    
+    Ist eine *.md5 Datei vorhanden, wird die eine aktuelle MD5sum von der
+    Datei erstellt und mit der aus der md5-Datei verglichen.
 """
 
-__author__  = "Jens Diemer"
+__author__ = "Jens Diemer"
 __license__ = "GNU General Public License http://www.opensource.org/licenses/gpl-license.php"
-__info__    = "md5sum_calc"
-__url__     = "http://www.jensdiemer.de"
+__info__ = "md5sum_calc"
+__url__ = "http://www.jensdiemer.de"
 
-__version__ = "0.2.8"
+__version__ = "0.3"
 
 __history__ = """
+v0.3
+    - NEW: Display and compare SHA1 hash, too.
+    - Old .md5 files would be updated (New files are named *.hash)
 v0.2.8
     - more status information
     - status performance calculated for a short term only
@@ -52,11 +56,37 @@ v0.1
     - erste Version
 """
 
-import sys, os, string, md5, ConfigParser, datetime, time
 
-BUFSIZE = 65536
+import sys
+import os
+import string
+import ConfigParser
+import datetime
+import time
 
-IS_WIN = (sys.platform == "win32")
+
+if sys.version_info >= (2, 5):
+    import hashlib
+    md5_constructor = hashlib.md5
+    sha1_constructor = hashlib.sha1
+else:
+    import md5
+    md5_constructor = md5.new
+    import sha
+    sha1_constructor = sha.new
+
+
+BUFSIZE = 64 * 1024
+
+
+if sys.platform.startswith("win32"):
+    IS_WIN = True
+    # On Windows, the best timer is time.clock()
+    default_timer = time.clock
+else:
+    IS_WIN = False
+    # On most other platforms the best timer is default_timer()
+    default_timer = default_timer
 
 
 class FileDateTime(object):
@@ -90,10 +120,10 @@ class FileDateTime(object):
         """
         if time.daylight != 0:
             # Sommerzeit
-            seconds=-time.altzone
+            seconds = -time.altzone
         else:
             # keine Sommerzeit
-            seconds=-time.timezone
+            seconds = -time.timezone
 
         offset = "%+03d:%02d" % (seconds // 3600, (seconds // 60) % 60)
 
@@ -122,20 +152,47 @@ print "  %s v%s\n" % (__info__, __version__)
 
 
 def human_time(t):
-    if t>3600:
+    if t > 3600:
         divisor = 3600.0
         unit = "h"
-    elif t>60:
+    elif t > 60:
         divisor = 60.0
         unit = "min"
     else:
         divisor = 1
         unit = "sec"
-        
-    return "%.1f%s" % (round(t/divisor, 2), unit)
+
+    return "%.1f%s" % (round(t / divisor, 2), unit)
 
 
-class md5sum:
+class BaseClass(object):
+    def set_color(self, color):
+        """
+        ändert die Komplette Hintergrundfarbe
+        """
+        if IS_WIN:
+            if color == "red":
+                os.system("color 4f")
+            elif color == "blue":
+                os.system("color 1f")
+
+
+HASHES = ("md5", "sha1")
+
+class Hasher(dict):
+    def __init__(self):
+        super(Hasher, self).__init__()
+#        dict.__setitem__(self, "md5", md5_constructor())
+#        dict.__setitem__(self, "sha1", sha1_constructor())
+        self["md5"] = md5_constructor()
+        self["sha1"] = sha1_constructor()
+
+    def update(self, data):
+        self["md5"].update(data)
+        self["sha1"].update(data)
+
+
+class HashChecker(BaseClass):
     def __init__(self, argv):
         self.overall_performance = []
         if type(argv) != list:
@@ -170,11 +227,14 @@ class md5sum:
 
     def process_file(self, file_name_path):
         self.file_name_path = file_name_path
-        self.file_path, self.file_name_ext  = os.path.split(self.file_name_path)
-        self.file_name, self.file_ext       = os.path.splitext(self.file_name_ext)
-        if self.file_ext == ".md5":
+        self.file_path, self.file_name_ext = os.path.split(self.file_name_path)
+        self.file_name, self.file_ext = os.path.splitext(self.file_name_ext)
+        if self.file_ext.lower() in (".hash", ".md5"):
             return
-        self.md5_file = self.file_name_path + ".md5"
+
+        self.hash_data_filename = self.file_name_path + ".hash"
+        self.old_md5_filename = self.file_name_path + ".md5"
+
         #~ print "file_name_path:", self.file_name_path
         #~ print "file_path.....:", self.file_path
         #~ print "file_name_ext.:", self.file_name_ext
@@ -182,49 +242,52 @@ class md5sum:
         #~ print "file_ext......:", self.file_ext
         #~ print "md5_file......:", self.md5_file
 
-        if os.path.isfile(self.md5_file):
-            # .md5-Datei existiert schon
-            print "Compare md5sum for '%s'..." % self.file_name_ext
-            self.compare_file() # vergleiche md5-Summe mit Datei
-            print
+        new_hash_file = False
+        old_md5_file = False
+        if os.path.isfile(self.hash_data_filename):
+            # New hash data file found
+            new_hash_file = True
+            read_func = self.read_hash_file
+        elif os.path.isfile(self.old_md5_filename):
+            # Old .md5 file found
+            old_md5_file = True
+            read_func = self.read_md5file
+
+        if new_hash_file or old_md5_file:
+            print "Compare hashes for '%s'..." % self.file_name_ext
+            try:
+                hash_file_data, size, utc_mtime_string = read_func()
+            except Exception, e:
+                self.set_color("red")
+                sys.stderr.write("ERROR: Can't read md5-file: %s\n" % e)
+                import traceback
+                print traceback.format_exc()
+            else:
+                hashes = self.compare_file(hash_file_data, size, utc_mtime_string)
+                print
+                if old_md5_file and hashes:
+                    # old md5 hash is ok -> delete the old MD5 file and create the new one
+                    self.write_hash_file(hashes)
+                    try:
+                        os.remove(self.old_md5_filename)
+                    except Exception, err:
+                        print "Error: Can't delete old file: %s - %s" % (self.old_md5_filename, err)
+                return
+
+        print "Create hashes for '%s'..." % self.file_name_ext
+
+        hashes = self.create_hashes()
+        if not hashes:
+            # Something went wrong
             return
 
-        print "Create md5sum for '%s'..." % self.file_name_ext
+        for hash_type, hash in hashes.items():
+            print "%s: %s" % (hash_type, hash.hexdigest())
 
-        md5sum, performance = self.create_md5sum()
-        if md5sum == False:
-            # Irgendein Fehler ist aufgetreten
-            return
-        print 'write md5sum %s...' % md5sum,
-        try:
-            self.write_md5file(md5sum)
-        except Exception, e:
-            print "Error:", e
-        else:
-            print "OK (%.1fMB/sec)" % performance
-        print
+        self.write_hash_file(hashes)
 
-    def set_color(self, color):
-        """
-        ändert die Komplette Hintergrundfarbe
-        """
-        if IS_WIN:
-            if color=="red":
-                os.system("color 4f")
-            elif color=="blue":
-                os.system("color 1f")
-
-    def compare_file(self):
+    def compare_file(self, hash_file_data, size, utc_mtime_string):
         file_stat = os.stat(self.file_name_path)
-        
-        try:
-            md5sum, size, utc_mtime_string = self.read_md5file()
-        except Exception, e:
-            self.set_color("red")
-            sys.stderr.write("ERROR: Can't read md5-file: %s\n" % e)
-            import traceback
-            print traceback.format_exc()
-            return
 
         if utc_mtime_string:
             fdt = FileDateTime(file_stat)
@@ -237,26 +300,37 @@ class md5sum:
         if file_stat.st_size != size:
             self.set_color("red")
             print "ERROR: Size is not equal (diff: %iBytes)" % (
-                file_stat.st_size-size
+                file_stat.st_size - size
             )
             return
 
-        md5sum_file, performance = self.create_md5sum()
-        if md5sum != md5sum_file:
-            self.set_color("red")
-            print "ERROR: md5 checksum wrong! (%.1fMB/sec)" % performance
-        else:
-            print "md5 check is tested OK (%.1fMB/sec)" % performance
-            if utc_mtime_string == None:
-                print "Info: Update old md5 file format."
-                self.write_md5file(md5sum)
+        hashes = self.create_hashes()
+        if not hashes:
+            # Something went wrong
+            return
 
-    def create_md5sum(self):       
+        tests_ok = True
+        for hash_type, hash in hash_file_data.items():
+            current_hash = hashes[hash_type].hexdigest()
+            if current_hash == hash:
+                print "%s %s is OK." % (hash_type, current_hash)
+            else:
+                self.set_color("red")
+                print "ERROR: %s checksum wrong:" % hash_type
+                print "%s (currrent) is not %s (saved)" % (current_hash, hash)
+                tests_ok = False
+
+        if tests_ok:
+            return hashes
+
+
+    def create_hashes(self):
         file_size = os.stat(self.file_name_path).st_size
-        time_threshold = start_time = time.time()
+        time_threshold = start_time = default_timer()
+        hashes = Hasher()
         try:
             f = file(self.file_name_path, "rb")
-            m = md5.new()
+
             bytesreaded = old_readed = 0
             threshold = file_size / 10
             while 1:
@@ -265,18 +339,18 @@ class md5sum:
                 if not data:
                     break
 
-                current_time = time.time()
+                current_time = default_timer()
                 if current_time > (time_threshold + 0.5):
 
-                    elapsed = float(current_time-start_time)      # Vergangene Zeit
+                    elapsed = float(current_time - start_time)      # Vergangene Zeit
                     estimated = elapsed / bytesreaded * file_size # Geschätzte Zeit
                     remain = estimated - elapsed
-                    
-                    diff_bytes = bytesreaded-old_readed
-                    diff_time = current_time-time_threshold
+
+                    diff_bytes = bytesreaded - old_readed
+                    diff_time = current_time - time_threshold
                     performance = diff_bytes / diff_time / 1024.0 / 1024.0
 
-                    percent = round(float(bytesreaded)/file_size*100.0, 2)
+                    percent = round(float(bytesreaded) / file_size * 100.0, 2)
 
                     infoline = (
                         "   "
@@ -295,13 +369,18 @@ class md5sum:
                     }
                     sys.stdout.write("\r")
                     sys.stdout.write(string.center(infoline, 79))
-                    
+
                     time_threshold = current_time
                     old_readed = bytesreaded
-                    
-                m.update(data)
-            end_time = time.time()
-            performance = file_size / (end_time-start_time) / 1024 / 1024
+
+                hashes.update(data)
+
+            end_time = default_timer()
+            try:
+                performance = float(file_size) / (end_time - start_time) / 1024 / 1024
+            except ZeroDivisionError, err:
+                print "Warning: %s" % err
+                print end_time, start_time, (end_time - start_time)
 
             self.overall_performance.append(performance)
 
@@ -309,72 +388,97 @@ class md5sum:
             sys.stdout.write(" "*79) # Zeile "löschen"
             sys.stdout.write("\r")
             f.close()
-            return m.hexdigest(), performance
+
+            print "Performance: %.1fMB/sec" % performance
+
+            return hashes
         except IOError, e:
-            sys.stderr.write("%s: IOError, Can't create md5sum: %s\n" % (self.file_name_ext, e))
-            return False
+            sys.stderr.write("%s: IOError, Can't create HashChecker: %s\n" % (self.file_name_ext, e))
         except KeyboardInterrupt:
             try:
                 f.close()
             except:
                 pass
-            return False
 
-
-    def write_md5file(self, md5sum):
+    def write_hash_file(self, hashes):
         file_stat = os.stat(self.file_name_path)
 
-        f = file(self.md5_file, "w")
+        f = file(self.hash_data_filename, "w")
         config = ConfigParser.ConfigParser()
-        config.add_section("md5sum")
+        config.add_section("HashChecker")
 
-        config.set("md5sum", "filename", self.file_name_ext)
-        config.set("md5sum", "md5sum", md5sum)
-        config.set("md5sum", "size", file_stat.st_size)
+        config.set("HashChecker", "filename", self.file_name_ext)
+        for hash_type, hash in hashes.items():
+            config.set("HashChecker", hash_type, hash.hexdigest())
+        config.set("HashChecker", "size", file_stat.st_size)
 
         fdt = FileDateTime(file_stat)
- 
-        utc_mtime_string = fdt.utc_mtime_string # 'Fri, 05 Sep 2008 16:18:23'
-        config.set("md5sum", "utc_mtime_string", utc_mtime_string)
-        
-        tzinfo = fdt.get_offset_info() # u'+02:00 (Mitteleuropäische Sommerzeit)'
-        config.set("md5sum", "timezone_info", tzinfo)
 
-#        config.set("md5sum", "mtime", repr(file_stat.st_mtime))
+        utc_mtime_string = fdt.utc_mtime_string # 'Fri, 05 Sep 2008 16:18:23'
+        config.set("HashChecker", "utc_mtime_string", utc_mtime_string)
+
+        tzinfo = fdt.get_offset_info() # u'+02:00 (Mitteleuropäische Sommerzeit)'
+        config.set("HashChecker", "timezone_info", tzinfo)
+
+#        config.set("HashChecker", "mtime", repr(file_stat.st_mtime))
 
         config.write(f)
         f.close()
 
-    def read_md5file(self):
-        f = file(self.md5_file, "rU")
+    def read_hash_file(self):
+        f = file(self.hash_data_filename, "rU")
         config = ConfigParser.ConfigParser()
         config.readfp(f)
         f.close()
 
-        md5sum = config.get("md5sum", "md5sum")
+        hash_file_data = {}
+        for hash_type in HASHES:
+            hash_file_data[hash_type] = config.get("HashChecker", hash_type)
+
+        size = int(config.get("HashChecker", "size"))
+
+        try:
+            utc_mtime_string = config.get("HashChecker", "utc_mtime_string")
+        except ConfigParser.NoOptionError:
+            print "Info: .md5 sum file has the old mtime information."
+            utc_mtime_string = None
+
+        return hash_file_data, size, utc_mtime_string
+
+    def read_md5file(self):
+        """
+        read old .md5 file
+        """
+        f = file(self.old_md5_filename, "rU")
+        config = ConfigParser.ConfigParser()
+        config.readfp(f)
+        f.close()
+
+        hash_file_data = {"md5sum": config.get("md5sum", "md5sum")}
         size = int(config.get("md5sum", "size"))
-        
+
         try:
             utc_mtime_string = config.get("md5sum", "utc_mtime_string")
         except ConfigParser.NoOptionError:
             print "Info: .md5 sum file has the old mtime information."
             utc_mtime_string = None
 
-        return md5sum, size, utc_mtime_string
+        return hash_file_data, size, utc_mtime_string
+
 
 
 if __name__ == '__main__':
     args = sys.argv[1:]
-    
+
     if IS_WIN:
         # Work-a-round if under Windows only a Driveletter given
         # see: http://www.python-forum.de/topic-16615.html (de)
         args = [arg.strip('"') for arg in args]
-        
-    md5sum(args)
-    
+
+    HashChecker(args)
+
 #    print "SelfTest"
-#    md5sum([__file__])
+#    HashChecker([__file__])
 
     # DocTest
 #    import doctest
