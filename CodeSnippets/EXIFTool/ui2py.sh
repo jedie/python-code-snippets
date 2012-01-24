@@ -1,0 +1,1 @@
+pyuic4 -o ExifToolQtDialog.py -x ExifTool.ui
