@@ -119,7 +119,7 @@ class FileHandler(FileHandler):
 
         dlg = wx.DirDialog(
             self, "Choose the %s path" % txt,
-            defaultPath = defaultPath,
+            defaultPath=defaultPath,
             style=wx.DD_DEFAULT_STYLE | wx.DD_NEW_DIR_BUTTON
         )
         if dlg.ShowModal() == wx.ID_OK:
