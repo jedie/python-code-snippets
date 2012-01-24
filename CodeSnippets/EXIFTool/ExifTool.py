@@ -1,8 +1,8 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
+# coding: UTF-8
 
 """
-    ExifTool - GPL - copyleft (c) 2007 Jens Diemer
+    ExifTool - GPL - copyleft (c) 2007-2011 Jens Diemer
 
 With this small tool, you can organize you digital photo files.
 It used the external Perl Script "exiftool" to get the original date time
@@ -29,10 +29,17 @@ Note:
     -Install "perl-doc", too. (Its for the exiftool commandline help page)
 """
 
-import wx
-
+import sys
 import os
 from ConfigParser import ConfigParser
+
+try:
+    import wx
+except ImportError, err:
+    print "Import error: %s" % err
+    print "Please install the python wx package!"
+    print "(e.g.: 'sudo aptitude install python-wxversion')"
+    sys.exit(-1)
 
 from ExifTool_GUI import FileHandler, ExifTool
 from ExifTool_routines import process, WrongPathError, get_first_existing_path
