@@ -277,23 +277,52 @@ def process(source_path, destination, out, simulate_only, move_files,
 
         if move_files:
             print "move %s to %s..." % (filepath, dest_path),
+
             if simulate():
                 continue
 
-#                try:
-#                    shutil.move(filepath, dest_path)
-#                except OSError, e:
-#                    print "Error:", e
-#                else:
-#                    print "OK"
+            real_dest = os.path.join(dest_path, filename)
+            if os.path.isfile(real_dest):
+                print "WARN: destination %r exists already!" % real_dest
+                source_stat = os.stat(filepath)
+                dest_stat = os.stat(real_dest)
 
-            process = subprocess.Popen(
-                ['mv', filepath, dest_path],
-                stdout=subprocess.PIPE
-            )
-            process.wait()
-            print process.stdout.read()
+                mtime_diff = dest_stat.st_mtime - source_stat.st_mtime
+                size_diff = dest_stat.st_size - source_stat.st_size
 
+                if mtime_diff == 0 and size_diff == 0:
+                    msg = "Remove source file: size/mtime are the same."
+                    out.write(msg)
+                    print msg
+                    os.remove(filepath)
+                    continue
+
+                if mtime_diff > 0:
+                    msg = "Skip: Destination file is %s sec. newer!" % mtime_diff
+                    out.write(msg)
+                    print msg
+                    continue
+
+                if size_diff > 0:
+                    msg = "Skip: Destination file is %s Bytes bigger!" % size_diff
+                    out.write(msg)
+                    print msg
+                    continue
+
+                msg = "Overwrite older/smaller picture."
+                out.write(msg)
+                print msg
+                os.rename(filepath, real_dest)
+                counter += 1
+                continue
+
+
+            try:
+                shutil.move(filepath, dest_path)
+            except OSError, e:
+                print "Error:", e
+            else:
+                print "OK"
 
         elif copy_files:
             print "copy %s to %s..." % (filepath, dest_path),
