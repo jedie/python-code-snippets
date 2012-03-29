@@ -3,24 +3,24 @@
 from string import Template
 
 VIEWS_DATA = (
-    ("_T", "top", "false"),
-    ("_B", "bottom", "false"),
-    ("", "right", "false"),
-    ("_L", "left", "false"),
-    ("_F", "front", "false"),
-    ("", "back", "false"),
-    ("_P", "persp_user", "false"),
-    ("_U", "iso_user", "false"),
-    ("_C", "camera", "true"),
-    ("", "spot", "false"),
-    ("", "shape", "false"),
-    ("", "grid", "false"),
+    ("_T", "top", "false", "false"),
+    ("_B", "bottom", "false", "false"),
+    ("", "right", "false", "false"),
+    ("_L", "left", "false", "false"),
+    ("_F", "front", "false", "false"),
+    ("", "back", "false", "false"),
+    ("_P", "persp_user", "false", "true"),
+    ("_U", "iso_user", "false", "false"),
+    ("_C", "camera", "true", "true"),
+    ("", "spot", "false", "false"),
+    ("", "shape", "false", "false"),
+    ("", "grid", "false", "false"),
 )
 
 SCRIPT = """
 macroScript to_%(view_name)sView%(key)s category:"_htFX.de maxscripts"
 (
-    htfx_switch_viewport #view_%(view_name)s %(additional)s
+    htfx_switch_viewport #view_%(view_name)s %(safeframe)s %(shaded)s
 )
 """
 #~ FILENAME = "_htFX_de maxscripts-switch2%sView%s.mcr"
@@ -45,13 +45,14 @@ f = file("ViewportSwitchFix.mcr", "w")
 f.write("-- automatic generated with %s\n" % __file__)
 
 
-for key, view_name, additional in VIEWS_DATA:
-    print key, view_name, additional
+for key, view_name, safeframe, shaded in VIEWS_DATA:
+    print key, view_name, safeframe, shaded
 
     script_compiled = SCRIPT % {
         "key": key,
         "view_name":view_name,
-        "additional":additional
+        "safeframe":safeframe,
+        "shaded":shaded,
     }
     print "-"*79
     print script_compiled
