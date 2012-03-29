@@ -81,8 +81,13 @@ class Chronologer:
         """ Einlesen der Verzeichnis Informationen """
 
         def exclude_dir(dir):
+            dir = "\\%s\\" % dir.strip("\\")
             for exclude_dir in self.exclude_dirs:
-                if dir.startswith(exclude_dir):
+                exclude_dir = "\\%s\\" % exclude_dir.strip("\\")
+
+                #~ print dir, exclude_dir
+                #~ if dir.startswith(exclude_dir):
+                if exclude_dir in dir:
                     return True
             return False
 
