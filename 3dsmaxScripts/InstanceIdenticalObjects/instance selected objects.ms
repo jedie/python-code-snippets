@@ -13,15 +13,29 @@ all = selection as array
 all_count = all.count - 1
 
 source_obj = all[1]
+-- all = selection as array
+-- source = all[1]
+-- dest = all[2]
+-- instanceReplace dest source
+-- dest.baseobject = source.baseobject
+
 
 format "source obj: %\n" source_obj.name
 
 for x = 1 to all_count do
 (
 	obj = all[x+1]
-	format "instanceReplace: % <-> %\n" source_obj obj
 	
-	instanceReplace source_obj obj
+	try (
+		format "instanceReplace: % <-> %\n" obj source_obj
+		instanceReplace obj source_obj
+	) catch (
+		format "Error with %\n" obj
+		-- http://forums.cgsociety.org/showpost.php?p=6000653&postcount=2
+		format "Replace with a Refecence: % <-> %\n" obj source_obj
+		obj.baseobject = source_obj.baseobject
+	)
+
 	obj.wirecolor = source_obj.wirecolor
 	
 -- 	select source_obj

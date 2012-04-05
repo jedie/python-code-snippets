@@ -23,9 +23,30 @@ DEBUG = false
 -- DEBUG = true
 
 
-if DEBUG then (
+-- if DEBUG then (
 	actionMan.executeAction 0 "40472"  -- MAX Script: MAXScript Listener
 	clearListener()
+-- )
+
+
+fn dreieckszahl n = 
+(	-- https://oeis.org/A000217
+	return n * (n-1) / 2
+)
+
+	
+fn random_wirecolor obj =
+(
+	red = random 0 255
+	green = random 0 255
+	blue = random 0 255
+	obj.wirecolor = color red green blue
+)
+
+fn compare n1 n2 reverse:off = 
+(	-- for reversed qsort
+	a = if n1 < n2 then -1 else if n1 > n2 then 1 else 0
+	if reverse then -a else a
 )
 
 
@@ -37,14 +58,20 @@ fn is_sameGeometry a b = (
 
 		-- is already Instanced ?
 		if (areNodesInstances a b) then (
-			if DEBUG then format "Already Instanced.\n"
+			if DEBUG then format "Already a instance.\n"
+			return 1
+		)
+		
+		-- http://forums.cgsociety.org/showpost.php?p=6000653&postcount=2
+		if (a.baseobject == b.baseobject) then (
+			if DEBUG then format "Already a referece.\n"
 			return 1
 		)
 		
 		-- are the same class?
 		class_a=classof a
 		class_b=classof b
-		if (class_a!=class_b) then (
+		if (class_a != class_b) then (
 			if DEBUG then format "has not the same class.\n"
 			return 2
 		)
@@ -67,12 +94,13 @@ fn is_sameGeometry a b = (
 			if DEBUG then format "is not the same.\n"
 			return 2
 		)
-		if DEBUG then format "has same PolygonCount.\n"
+		if DEBUG then format "has same PolygonCount -> instanceable object found!\n"
 		
-		format "instanceable object found!\n"
 		return 3
 	)
 
+
+ 
 rollout InstanceIdenticalObjectsRollout "instance identical objects" width:730 height:550
 (
 	button btn_instanceIt "Instance:" align:#left width: 120
@@ -114,36 +142,37 @@ rollout InstanceIdenticalObjectsRollout "instance identical objects" width:730 h
 			)
 		)
 
-		all_count = all.count
+		total_obj_count = current_count = all.count
 
+		instances_made_count=0
+		instances_found_count=0
 		compare_count = 0
-		to_compare_count = int((all_count-1) * floor(all_count / 2))
+		total_compare_count = dreieckszahl current_count
+		result.text+="total compare count:" + total_compare_count as String + "\r\n"
 		
 		-- 'reset' old instance progress bar (run in the past)
 		instance_made_progress.value = 0
 		instance_made_lable.text = "instance made: 0"
 		instance_found_progress.value = 0
 		instance_found_lable.text = "instance found: 0"
-		
-		-- start
-		y_all = deepcopy all -- use deepcopy to make y_all independent
-		to_delete = #()
-
-		instances_made_count=0
-		instances_found_count=0
-		
-		for x = 1 to all_count do
+		 
+		while (current_count>1) do
 		(
-			obj_x = all[x]
+			obj_x = all[current_count]
+			deleteItem all current_count
+			current_count -= 1
 			
-			y_all_count = y_all.count
-			y = y_all_count
-
-			while (y>0) do
+			to_comp = dreieckszahl current_count 
+			format "total compare: %\n" to_comp
+			
+			skip_in_next_round = #()
+			for x =1 to current_count do
 			(
-				if DEBUG then format "\n------------------------------------------------------------------\n"
+				obj_y = all[x]
+				compare_count += 1
 
-				obj_y = y_all[y]
+				to_delete = #()
+
 				if DEBUG then format "compare % <-> %\n" obj_x.name obj_y.name
 
 				-- statuscode are:
@@ -154,11 +183,14 @@ rollout InstanceIdenticalObjectsRollout "instance identical objects" width:730 h
 				
 				if (statuscode == 1 or statuscode == 3) do (
 					try(
-						obj_x.wirecolor = obj_y.wirecolor
+						obj_y.wirecolor = obj_x.wirecolor
+						if DEBUG then format "wirecolor % <-> %\n" obj_x.wirecolor obj_y.wirecolor
 					) catch (
 						format "Error with %\n" obj
 						continue
 					)
+					-- we must not test the object again:
+					append skip_in_next_round x
 				)
 				
 				case statuscode of
@@ -166,8 +198,6 @@ rollout InstanceIdenticalObjectsRollout "instance identical objects" width:730 h
 					1: (
 						if DEBUG then format "is alrady instanced: % <-> %\n" obj_x.name obj_y.name
 						instances_found_count+=1
-						instance_found_lable.text = "instance found: " + instances_found_count as string
-						instance_found_progress.value = 100.*instances_found_count/all_count
 					)
 					2: (
 						if DEBUG then format "not the same: % <-> %\n" obj_x.name obj_y.name
@@ -187,26 +217,44 @@ rollout InstanceIdenticalObjectsRollout "instance identical objects" width:730 h
 						) else (
 							instanceReplace obj_x obj_y
 						)
-						
 						instances_made_count+=1
-						instance_made_lable.text = "instance made: " + instances_made_count as string
-						instance_made_progress.value = 100.*instances_made_count/all_count
 					)
 				)
-				compare_count += 1
-				total_progress.value = 100.*compare_count/to_compare_count
-				if (statuscode == 1 or statuscode == 3) do (
-					-- we must not test the object again:
- 					deleteItem y_all y 
-					y_all_count -= 1
-					to_compare_count = (compare_count + int((y_all_count) * floor(y_all_count / 2))/2) -- FIXME
-					y = 0 -- exit from while loop ('exit' statement is very slow!)
-				)
-				y -= 1
 			)
-			total_lable.text = "total nodes processed: " + x as string + " (to compare: " + compare_count as string + "/" + to_compare_count as string + ")"
-		)	
-		result.text+="\r\n"+(all_count as string)+ " nodes processed.\r\n"
+		
+			-- remove all instances from the list
+			qsort skip_in_next_round compare reverse:on
+			for i in skip_in_next_round do
+			(
+		-- 		format "remove % (%)\n" i all[i]
+				deleteItem all i
+			)
+
+			current_count = all.count
+			if (current_count==0) then (
+				total_progress.value = 100
+				msg = "total nodes processed: " + compare_count as string + " (total compare: " + total_compare_count as string + ")"
+			) else (
+				to_compare_count = dreieckszahl current_count
+				
+				msg = "total nodes processed: " + compare_count as string + " (to compare: " + total_compare_count as string + "/" + to_compare_count as string + ")"
+				total_lable.text = msg
+				if DEBUG then format "*** %\n" msg
+				format msg
+				total_progress.value = 100.*total_compare_count/to_compare_count
+			)
+			
+			instance_found_lable.text = "instance found: " + instances_found_count as string
+			instance_found_progress.value = 100.*instances_found_count/total_obj_count
+			
+			instance_made_lable.text = "instance made: " + instances_made_count as string
+			instance_made_progress.value = 100.*instances_made_count/total_obj_count
+			format "%s\n" instance_made_progress.value			
+			
+			windows.processPostedMessages()
+		)
+	
+		result.text+="\r\n"+(current_count as string)+ " nodes processed.\r\n"
 		result.text+=(instances_made_count as string)+ " instanced made.\r\n"
 		result.text+=(instances_found_count as string)+ " instanced found.\r\n"
 		result.text+="------------------------------------------------------------------\r\n"
