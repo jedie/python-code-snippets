@@ -43,6 +43,9 @@ macroScript to_%(view_name)sView%(key)s category:"_htFX.de maxscripts"
 
 f = file("ViewportSwitchFix.mcr", "w")
 f.write("-- automatic generated with %s\n" % __file__)
+f.write("--\n")
+f.write("-- copyleft (c) 2011-2012 by htFX, Jens Diemer - http://www.htFX.de\n")
+f.write("--\n")
 
 
 for key, view_name, safeframe, shaded in VIEWS_DATA:

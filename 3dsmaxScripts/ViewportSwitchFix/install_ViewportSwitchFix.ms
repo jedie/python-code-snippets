@@ -1,3 +1,6 @@
+--
+-- copyleft (c) 2011-2012 by htFX, Jens Diemer - http://www.htFX.de
+--
 
 -- actionMan.executeAction 0 "40472"  -- MAX Script: MAXScript Listener
 -- clearListener()
@@ -26,6 +29,7 @@ print "OK"
 str = "Script installed.\n
 1. goto 'Customize/Cusomize User Interface/Keyboard'
 2. assign t,l,f,p,c etc. to '_htFX.de maxscripts'
+3. restart 3dsmax!
 "
 messageBox str title:"Script installed."
 

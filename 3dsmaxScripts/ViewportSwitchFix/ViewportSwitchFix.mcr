@@ -1,4 +1,7 @@
 -- automatic generated with create_mcr.py
+--
+-- copyleft (c) 2011-2012 by htFX, Jens Diemer - http://www.htFX.de
+--
 
 macroScript to_topView_T category:"_htFX.de maxscripts"
 (
