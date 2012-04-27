@@ -1,0 +1,11 @@
+
+== blender 3dsmax keymap ==
+
+3dsmax input settings for blender. The goal is that blender should feel like 3dsmax.
+
+Put this file to:
+    ...\blender\2.62\scripts\presets\interaction\3dsmax.py
+
+Go to "File / User Preferences / Input / Presets" and select 3dsmax.
+
+Tested with blender v2.62
