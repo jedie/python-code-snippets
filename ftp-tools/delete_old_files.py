@@ -18,6 +18,7 @@ import datetime
 import posixpath
 
 import ftplib
+from cli import BaseCLI
 
 stdout_encoding = sys.stdout.encoding or sys.getfilesystemencoding()
 
@@ -29,9 +30,6 @@ DRY_RUN = True
 #DRY_RUN = False
 
 now = datetime.datetime.now()
-
-timedelta1 = datetime.timedelta(days=14)
-#~ timedelta1 = datetime.timedelta(days=7)
 
 timedelta2 = datetime.timedelta(days=365) # nur zum validieren
 
@@ -143,9 +141,39 @@ class FTP2(object):
         yield dir, file_entries
 
 
+class CLI(BaseCLI):
+    def __init__(self, description):
+        super(CLI, self).__init__(description)
+        self.parser.add_argument(
+            "-d", "--days", type=int, choices=xrange(7, 20), default=14,
+            help="how many days must a file be old for delete?"
+        )
+
+
 if __name__ == "__main__":
-    ftp = FTP2('ftp.domain.tld', user="the ftp username", passwd="ftp user password")
-    path = "/"
+    cli = CLI(description="Cleanup a FTP Server by deleting the files which are older than X days.")
+    args = cli.parser.parse_args()
+    if args.verbosity >= 2:
+        print args
+        
+    if args.verbosity:
+        print "Delete all files which are older than %s days from %s%s" % (
+            args.days, args.host, args.path
+        )
+    try:
+        use_input = raw_input("continue cleanup ftp server (yes/no) ?")
+    except KeyboardInterrupt:
+        print "OK"
+        sys.exit(1)
+    use_input = use_input.lower()
+    if not (use_input.startswith("y") or use_input.startswith("j")):
+        print "Abort, ok."
+        sys.exit(2)
+        
+    ftp = FTP2(args.host, user=args.username, passwd=args.password)
+    
+    path = args.path
+    timedelta1 = datetime.timedelta(days=args.days)
     
     
     size_info = {}

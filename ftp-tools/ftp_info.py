@@ -18,6 +18,7 @@ import datetime
 import posixpath
 
 import ftplib
+from cli import BaseCLI
 
 stdout_encoding = sys.stdout.encoding or sys.getfilesystemencoding()
 
@@ -113,9 +114,18 @@ class FTP2(object):
         yield dir, file_entries
 
 
+class CLI(BaseCLI):
+    pass
+
+
 if __name__ == "__main__":
-    ftp = FTP2('ftp.domain.tld', user="the ftp username", passwd="ftp user password")
-    path = "/"
+    cli = CLI(description="List information about the biggest files on a FTP server.")
+    args = cli.parser.parse_args()
+    if args.verbosity >= 2:
+        print args
+        
+    ftp = FTP2(args.host, user=args.username, passwd=args.password)
+    path = args.path
     
     
     size_info = {}

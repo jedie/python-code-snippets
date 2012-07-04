@@ -17,10 +17,16 @@ Cleanup a FTP Server by deleting the files which are older than X days.
 * It's not a clean implementation
 * specialised for a MS FTP Server
 * intended for execution under windows
+* min. Python 2.7 needed
 
 
 = DoTo
 
-* Add a CLI interface
 * merge duplicated code parts
 * code cleanup
+
+
+= History
+
+* v0.0.1 - add a CLI
+* v0.0.0 - Initial checkin
