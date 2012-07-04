@@ -1,0 +1,26 @@
+
+Some simple FTP tools.
+
+
+== ftp_info.py
+
+List information about the biggest files on a FTP server.
+
+
+== delete_old_files.py
+
+Cleanup a FTP Server by deleting the files which are older than X days.
+
+
+= Notes
+
+* It's not a clean implementation
+* specialised for a MS FTP Server
+* intended for execution under windows
+
+
+= DoTo
+
+* Add a CLI interface
+* merge duplicated code parts
+* code cleanup
