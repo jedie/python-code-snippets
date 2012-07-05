@@ -9,14 +9,18 @@
     :license: GNU GPL v3 or above
 """
 
+
 import argparse
 import re
 import os
 import pprint
+import sys
+
 
 LOGIN_FAILED = "failed"
 LOGIN_SUCCEEDED = "succeeded"
 LOGIN_INFO_RE = re.compile(r".*? login attempt \[(?P<name>.*?)/(?P<pass>.*?)\] (?P<status>.*?)$")
+REMOTE_IP_RE = re.compile(r".*? New connection: (?P<ip>.*?):(?P<port>.*?) .*?$")
 
 
 def bool_status(groupdict):
@@ -29,28 +33,36 @@ def bool_status(groupdict):
         raise AssertionError("Status %r unknown." % status)
 
 
-def get_login_data(logfile):
-    login_data = []
-    f = file(logfile, "r")
-    for line in f:
-        if not "login attempt" in line:
-            continue
-        
-        match = LOGIN_INFO_RE.match(line)
-        if not match:
-            continue
-        
-        groupdict = match.groupdict()
-        bool_status(groupdict)    
-        login_data.append(groupdict)
-    return login_data
-
-
-def _increase_key(d, key):
+def _increase_dict_key(d, key):
     if not key in d:
         d[key] = 1
     else:
         d[key] += 1
+        
+
+def get_login_data(logfile):
+    ip_data = {}
+    login_data = []
+    lines = 0
+    f = file(logfile, "r")
+    for line in f:
+        lines += 1
+        if "login attempt" in line:     
+            match = LOGIN_INFO_RE.match(line)
+            if match:          
+                groupdict = match.groupdict()
+                bool_status(groupdict)    
+                login_data.append(groupdict)
+        if "New connection" in line:
+            match = REMOTE_IP_RE.match(line)
+            if match:
+                groupdict = match.groupdict()
+                _increase_dict_key(ip_data, groupdict["ip"])
+                
+    if verbosity >= 2:
+        print "%i lines readed." % lines
+    return login_data, ip_data
+
 
 def stat_login_data(login_data):
     login_stats = {
@@ -68,12 +80,12 @@ def stat_login_data(login_data):
         login_stats["count"] += 1
         if login["login_succeed"]:
             login_stats["succeed_count"] += 1
-            _increase_key(login_stats["succeed_user_name_stats"], login["name"])
-            _increase_key(login_stats["succeed_password_stats"], login["pass"])
+            _increase_dict_key(login_stats["succeed_user_name_stats"], login["name"])
+            _increase_dict_key(login_stats["succeed_password_stats"], login["pass"])
         else:
             login_stats["fail_count"] += 1
-            _increase_key(login_stats["fail_user_name_stats"], login["name"])
-            _increase_key(login_stats["fail_password_stats"], login["pass"])
+            _increase_dict_key(login_stats["fail_user_name_stats"], login["name"])
+            _increase_dict_key(login_stats["fail_password_stats"], login["pass"])
     return login_stats          
 
 
@@ -102,6 +114,11 @@ def print_login_stats(login_stats, max_count):
     
     print " * most %i failed passwords" % max_count,
     print_count_list(login_stats["fail_password_stats"], max_count)   
+
+
+def print_ip_data(ip_data, max_count):
+    print " * most %i remote IPs" % max_count,
+    print_count_list(ip_data, max_count)  
 
 
 def get_cli_arguments():
@@ -134,12 +151,24 @@ if __name__ == "__main__":
     logfile = os.path.expanduser(cli_arguments.logfile)
     
 #    logfile = "kippo.log"
+#    verbosity = 2
+    
+    if verbosity >= 2:
+        print "Analyse %r..." % logfile
+    
+    if not os.path.isfile(logfile):
+        sys.stderr.write(
+            "Logfile %r can't read: doesn't exist. Please add/change --logfile parameter!\n" % logfile
+        )
+        sys.exit(1)
         
-    login_data = get_login_data(logfile)
+    login_data, ip_data = get_login_data(logfile)
     if verbosity >= 2:
         print login_data
+        pprint.pprint(ip_data)
     login_stats = stat_login_data(login_data)
     if verbosity >= 2:
         pprint.pprint(login_stats)
     
     print_login_stats(login_stats, cli_arguments.max)
+    print_ip_data(ip_data, cli_arguments.max)
