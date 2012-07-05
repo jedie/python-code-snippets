@@ -106,7 +106,7 @@ def print_login_stats(login_stats, max_count):
 
 def get_cli_arguments():
     parser = argparse.ArgumentParser(
-        description="kippo lgin info",
+        description="simple kippo login statistics",
         epilog="kippo tools copyleft by Jens Diemer, GNU GPL v3 or above"
     )
     parser.add_argument("--logfile", help="path to kippo logfile",
