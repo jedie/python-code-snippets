@@ -21,6 +21,7 @@ LOGIN_FAILED = "failed"
 LOGIN_SUCCEEDED = "succeeded"
 LOGIN_INFO_RE = re.compile(r".*? login attempt \[(?P<name>.*?)/(?P<pass>.*?)\] (?P<status>.*?)$")
 REMOTE_IP_RE = re.compile(r".*? New connection: (?P<ip>.*?):(?P<port>.*?) .*?$")
+SSH_CLIENT_RE = re.compile(r".*? Remote SSH version: (?P<client>.*?)$")
 
 
 def bool_status(groupdict):
@@ -42,6 +43,7 @@ def _increase_dict_key(d, key):
 
 def get_login_data(logfile):
     ip_data = {}
+    client_data = {}
     login_data = []
     lines = 0
     f = file(logfile, "r")
@@ -53,15 +55,20 @@ def get_login_data(logfile):
                 groupdict = match.groupdict()
                 bool_status(groupdict)    
                 login_data.append(groupdict)
-        if "New connection" in line:
+        elif "New connection" in line:
             match = REMOTE_IP_RE.match(line)
             if match:
                 groupdict = match.groupdict()
                 _increase_dict_key(ip_data, groupdict["ip"])
+        elif "Remote SSH version:" in line:
+            match = SSH_CLIENT_RE.match(line)
+            if match:
+                groupdict = match.groupdict()
+                _increase_dict_key(client_data, groupdict["client"])
                 
     if verbosity >= 2:
         print "%i lines readed." % lines
-    return login_data, ip_data
+    return login_data, ip_data, client_data
 
 
 def stat_login_data(login_data):
@@ -121,6 +128,11 @@ def print_ip_data(ip_data, max_count):
     print_count_list(ip_data, max_count)  
 
 
+def print_client_data(client_data, max_count):
+    print " * most %i use SSH client" % max_count,
+    print_count_list(client_data, max_count)  
+
+
 def get_cli_arguments():
     parser = argparse.ArgumentParser(
         description="simple kippo login statistics",
@@ -157,18 +169,22 @@ if __name__ == "__main__":
         print "Analyse %r..." % logfile
     
     if not os.path.isfile(logfile):
-        sys.stderr.write(
-            "Logfile %r can't read: doesn't exist. Please add/change --logfile parameter!\n" % logfile
-        )
+        msg = (
+            "Logfile %r can't read: doesn't exist.\n"
+            " Please add/change --logfile parameter!\n"
+        ) % logfile
+        sys.stderr.write(msg)
         sys.exit(1)
         
-    login_data, ip_data = get_login_data(logfile)
+    login_data, ip_data, client_data = get_login_data(logfile)
     if verbosity >= 2:
         print login_data
         pprint.pprint(ip_data)
+        pprint.pprint(client_data)
     login_stats = stat_login_data(login_data)
     if verbosity >= 2:
         pprint.pprint(login_stats)
     
     print_login_stats(login_stats, cli_arguments.max)
     print_ip_data(ip_data, cli_arguments.max)
+    print_client_data(client_data, cli_arguments.max)
