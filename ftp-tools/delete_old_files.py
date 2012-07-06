@@ -26,8 +26,9 @@ DIRECTORY = "DIR"
 FILE = "FILE"
 DATE_FORMAT = "%m-%d-%y %I:%M%p" # e.g.: 02-14-12 11:44AM
 
-DRY_RUN = True
-#DRY_RUN = False
+# TODO: move to arguments
+#DRY_RUN = True
+DRY_RUN = False
 
 now = datetime.datetime.now()
 
@@ -160,10 +161,12 @@ if __name__ == "__main__":
         print "Delete all files which are older than %s days from %s%s" % (
             args.days, args.host, args.path
         )
+        
+    sys.stderr.write("\ncontinue cleanup ftp server (yes/no) ?\n")
     try:
-        use_input = raw_input("continue cleanup ftp server (yes/no) ?")
+        use_input = raw_input()
     except KeyboardInterrupt:
-        print "OK"
+        print "Abort, ok."
         sys.exit(1)
     use_input = use_input.lower()
     if not (use_input.startswith("y") or use_input.startswith("j")):
@@ -175,7 +178,6 @@ if __name__ == "__main__":
     path = args.path
     timedelta1 = datetime.timedelta(days=args.days)
     
-    
     size_info = {}
     date_info = {}
     total_size = 0
@@ -186,15 +188,13 @@ if __name__ == "__main__":
     cleared_size = 0
     
     start_time = time.time()
-    next_update = start_time + 1
-    
+    next_update = start_time    
     
     def _add_to_dict_list(d, key, value):
         if key not in d:
             d[key] = [value]
         else:
             d[key].append(value)
-    
     
     for root, file_entries in ftp.walk(path):
         dir_count += 1
@@ -205,13 +205,14 @@ if __name__ == "__main__":
     
             if time.time()>next_update:
                 next_update = time.time() + 1
-                print (
-                    "%i files in %i dirs readed"
-                    " - filesize: %s - deleted: %i - cleared: %s..."
+                msg = (
+                    "\r%i files/%i dirs readed"
+                    " - filesize: %s deleted: %i cleared: %s..."
                 ) % (
                     file_count, dir_count, human_filesize(total_size),
                     deleted_files_count, human_filesize(cleared_size),
                 )
+                sys.stderr.write(msg)
     
             size = file_entry.size
             mtime = file_entry.mtime
