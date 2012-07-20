@@ -2,7 +2,10 @@
 
 """
     Extract all pictures from LibreOffice / OpenOffice files
-    
+
+    Sourcecode from:
+    https://github.com/jedie/python-code-snippets/blob/master/CodeSnippets/LibreOffice%20picture%20extractor.py
+
     :copyleft: 2012 by Jens Diemer
     :license: GNU GPL v3 or above
 """
