@@ -34,7 +34,7 @@ def extract(path, exts, min_size):
 
                 info = myzip.getinfo(item)
                 if info.file_size<min_size:
-                    print "Skip file (to small): %s" % info.filename
+                    print "Skip file (too small): %s" % info.filename
                     continue
 
                 count += 1
