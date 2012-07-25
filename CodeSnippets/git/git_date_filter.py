@@ -23,7 +23,7 @@ CLEAN = "clean"
 CLEAN_DATE_STRING = "$date$"
 SMUDGE_DATE_STRING = "$date:%s$"
 SMUDGE_DATE_PREFIX = "$date:"
-SMUDGE_DATE_REGEX = re.compile(r"(\$date:.*?\$)")
+SMUDGE_DATE_REGEX = re.compile(r"(\$date:[0-9]*?\$)")
 
 
 
@@ -32,16 +32,12 @@ def _error(msg):
     sys.stderr.flush()
     sys.exit(1)
 
-def get_commit_timestamp(path=None, format="%m%d"):
-    if path is None:
-        path = os.path.abspath(os.path.dirname(__file__))
-
+def get_commit_timestamp(format="%m%d"):
     try:
         process = subprocess.Popen(
             # %ct: committer date, UNIX timestamp  
             ["/usr/bin/git", "log", "--pretty=format:%ct", "-1", "HEAD"],
-            shell=False, cwd=path,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         )
     except Exception, err:
         return _error("Can't get git hash: %s" % err)
@@ -93,7 +89,7 @@ if __name__ == "__main__":
 #    sys.exit()
 
     if len(sys.argv) < 2:
-        _error("Error: missing commandline parameters!")
+        _error("Error: missing commandline parameters %s or %s!" % (SMUDGE, CLEAN))
 
     if sys.argv[1] == SMUDGE:
         smudge()

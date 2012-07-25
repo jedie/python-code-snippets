@@ -1,16 +1,53 @@
 git filter to change committer date in version info file.
 
-to add:
+store a copy of **git_date_filter.py** into //$PATH//:
 {{{
-$ git config filter.dater.smudge "python git_date_filter.py smudge"
-$ git config filter.dater.clean "python git_date_filter.py clean"
+$ cd ~/bin # or e.g.: /user/local/bin
+~/bin$ wget https://raw.github.com/jedie/python-code-snippets/master/CodeSnippets/git/git_date_filter.py
+~/bin$ chmod +x git_date_filter.py
+}}}
+
+add to git config:
+{{{
+$ git config --global filter.dater.smudge "git_date_filter.py smudge"
+$ git config --global filter.dater.clean "git_date_filter.py clean"
 }}}
 
 add files, e.g:
 {{{
-$ echo 'commit_date="$Date$" # set by gitattributes filter' > commit_date.py
+$ echo 'commit_date="$Date$" # set by .gitattributes filter > commit_date.py
 $ echo 'commit_date.py filter=dater' >> .gitattributes
 }}}
+
+== troubleshooting ==
+to check if it's callable just do call it without any parameter (You will the a error message), e.g.:
+{{{
+$ git_date_filter.py
+
+}}}
+The script is callable if you get this error message:
+{{{
+Error: missing commandline parameters smudge or clean!
+}}}
+
+To test if the git commit date would be used do this:
+{{{
+$ cd /your/repo/
+/your/repo/$ git log --pretty=format:%ci -1 HEAD
+2012-07-25 11:41:47 +0200
+/your/repo/$ echo '$date$' | git_date_filter.py smudge
+$date:0725$
+}}}
+
+to check if it's in git config, run this:
+{{{
+$ git config --list
+...
+filter.dater.smudge=git_date_filter.py smudge
+filter.dater.clean=git_date_filter.py clean
+}}}
+
+== links ==
 
 more info:
 * en: http://git-scm.com/book/en/Customizing-Git-Git-Attributes#Keyword-Expansion
