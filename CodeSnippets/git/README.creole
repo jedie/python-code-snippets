@@ -1,0 +1,17 @@
+git filter to change committer date in version info file.
+
+to add:
+{{{
+$ git config filter.dater.smudge "python git_filter.py smudge"
+$ git config filter.dater.clean "python git_filter.py clean"
+}}}
+
+add files, e.g:
+{{{
+$ echo 'commit_date="$Date$" # set by gitattributes filter' > commit_date.py
+$ echo 'commit_date.py filter=dater' >> .gitattributes
+}}}
+
+more info:
+* en: http://git-scm.com/book/en/Customizing-Git-Git-Attributes#Keyword-Expansion
+* de: http://git-scm.com/book/de/Customizing-Git-Git-Attribute#Schluesselworte-Erweitern
