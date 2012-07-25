@@ -17,13 +17,24 @@ add files, e.g:
 {{{
 $ echo 'commit_date="$Date$" # set by .gitattributes filter > commit_date.py
 $ echo 'commit_date.py filter=dater' >> .gitattributes
+$ git add commit_date.py .gitattributes
+}}}
+
+**Note:** the date exist only after you have deleted and checkout the file again, e.g.:
+{{{
+$ git commit -m "test .gitattributes filter"
+$ cat commit_date.py # see old, unchanged content:
+commit_date="$Date$" # set by .gitattributes filter
+$ rm commit_date.py
+$ git checkout commit_date.py
+$ cat commit_date.py # now the date is inserted:
+commit_date="$date:0725$" # set by .gitattributes filter
 }}}
 
 == troubleshooting ==
 to check if it's callable just do call it without any parameter (You will the a error message), e.g.:
 {{{
 $ git_date_filter.py
-
 }}}
 The script is callable if you get this error message:
 {{{
