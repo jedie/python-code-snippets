@@ -2,8 +2,8 @@ git filter to change committer date in version info file.
 
 to add:
 {{{
-$ git config filter.dater.smudge "python git_filter.py smudge"
-$ git config filter.dater.clean "python git_filter.py clean"
+$ git config filter.dater.smudge "python git_date_filter.py smudge"
+$ git config filter.dater.clean "python git_date_filter.py clean"
 }}}
 
 add files, e.g:
