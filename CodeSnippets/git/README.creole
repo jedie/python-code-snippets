@@ -1,5 +1,19 @@
 git filter to change committer date in version info file.
 
+== via git hook ==
+
+with [[https://github.com/jedie/python-code-snippets/blob/master/CodeSnippets/git/pre-commit.py|pre-commit.py]] you can update a date in python files.
+copy the script to {{{.git/hooks/pre-commit}}} and make is executable.
+
+The hook will only change {{{__init__.py}}} files and the date in this format:
+{{{
+__version__ = (xx, yy, zz, 120726)
+}}}
+(where {{{xx, yy, zz}}} you own version numbers)
+
+
+== via .gitattributes filter ==
+
 store a copy of **git_date_filter.py** into //$PATH//:
 {{{
 $ cd ~/bin # or e.g.: /user/local/bin
@@ -32,6 +46,9 @@ commit_date="$date:0725$" # set by .gitattributes filter
 }}}
 
 == troubleshooting ==
+
+**Note:** Every guy which clone your git repro and doesn't have this filter installed, will get a clean date!
+
 to check if it's callable just do call it without any parameter (You will the a error message), e.g.:
 {{{
 $ git_date_filter.py
