@@ -1,0 +1,82 @@
+git filter to change committer date in version info file.
+
+== via git hook ==
+
+with [[https://github.com/jedie/python-code-snippets/blob/master/CodeSnippets/git/pre-commit.py|pre-commit.py]] you can update a date in python files.
+copy the script to {{{.git/hooks/pre-commit}}} and make is executable.
+
+The hook will only change {{{__init__.py}}} files and the date in this format:
+{{{
+__version__ = (xx, yy, zz, 120726)
+}}}
+(where {{{xx, yy, zz}}} you own version numbers)
+
+
+== via .gitattributes filter ==
+
+store a copy of **git_date_filter.py** into //$PATH//:
+{{{
+$ cd ~/bin # or e.g.: /user/local/bin
+~/bin$ wget https://raw.github.com/jedie/python-code-snippets/master/CodeSnippets/git/git_date_filter.py
+~/bin$ chmod +x git_date_filter.py
+}}}
+
+add to git config:
+{{{
+$ git config --global filter.dater.smudge "git_date_filter.py smudge"
+$ git config --global filter.dater.clean "git_date_filter.py clean"
+}}}
+
+add files, e.g:
+{{{
+$ echo 'commit_date="$Date$" # set by .gitattributes filter > commit_date.py
+$ echo 'commit_date.py filter=dater' >> .gitattributes
+$ git add commit_date.py .gitattributes
+}}}
+
+**Note:** the date exist only after you have deleted and checkout the file again, e.g.:
+{{{
+$ git commit -m "test .gitattributes filter"
+$ cat commit_date.py # see old, unchanged content:
+commit_date="$Date$" # set by .gitattributes filter
+$ rm commit_date.py
+$ git checkout commit_date.py
+$ cat commit_date.py # now the date is inserted:
+commit_date="$date:0725$" # set by .gitattributes filter
+}}}
+
+== troubleshooting ==
+
+**Note:** Every guy which clone your git repro and doesn't have this filter installed, will get a clean date!
+
+to check if it's callable just do call it without any parameter (You will the a error message), e.g.:
+{{{
+$ git_date_filter.py
+}}}
+The script is callable if you get this error message:
+{{{
+Error: missing commandline parameters smudge or clean!
+}}}
+
+To test if the git commit date would be used do this:
+{{{
+$ cd /your/repo/
+/your/repo/$ git log --pretty=format:%ci -1 HEAD
+2012-07-25 11:41:47 +0200
+/your/repo/$ echo '$date$' | git_date_filter.py smudge
+$date:0725$
+}}}
+
+to check if it's in git config, run this:
+{{{
+$ git config --list
+...
+filter.dater.smudge=git_date_filter.py smudge
+filter.dater.clean=git_date_filter.py clean
+}}}
+
+== links ==
+
+more info:
+* en: http://git-scm.com/book/en/Customizing-Git-Git-Attributes#Keyword-Expansion
+* de: http://git-scm.com/book/de/Customizing-Git-Git-Attribute#Schluesselworte-Erweitern
