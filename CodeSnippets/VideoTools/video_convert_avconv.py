@@ -14,6 +14,7 @@
         libavcodec-extra
         mediainfo
         python-kaa-metadata
+        avidemux2_cli
 
     * works only under linux.
     * convert all files (with SOURCE_EXT extension) in the current directory
@@ -221,7 +222,11 @@ class VideoConverter(object):
 
             try:
                 self.mediainfo_to_log(file)
+                self.pentax_bugfix(file)
                 self.convert(file)
+            except subprocess.CalledProcessError, err:
+                print "*** Error: %s" % err
+                self.delete_files([file.out_name])
             except (Exception, KeyboardInterrupt), e:
                 print
                 print
@@ -281,14 +286,8 @@ class VideoConverter(object):
             return
         subprocess.Popen(cmd).wait()
 
-    def convert(self, file):
-        cmd = [
-            "nice",
-            "avconv", "-i", file.filename
-        ] + AVCONV_OPTIONS + [
-            file.out_name,
-            "2>&1 | tee --append", file.log_name,
-        ]
+    def _subprocess(self, cmd, file):
+        cmd += ["2>&1 | tee --append", file.log_name]
         print "_"*79
         cmd = " ".join(cmd)
         print cmd
@@ -297,7 +296,40 @@ class VideoConverter(object):
             print "(simulate only!)"
             return
 
-        subprocess.Popen(cmd, shell=True).wait()
+        subprocess.check_call(cmd, shell=True)
+
+    def pentax_bugfix(self, file):
+        """
+        remove clicking sounds in Pentax K-5 videos, see e.g.:
+        http://www.pentaxforums.com/forums/pentax-k-5/131842-thump-sound-video-3.html#post1939238
+        http://forum.digitalfotonetz.de/viewtopic.php?t=95657 (de)
+        """
+        f = open(file.log_name, "r")
+        log = f.read()
+        f.close()
+        if "PENTAX" not in log:
+            # no fix needed
+            return
+        print "copy Pentax video to remove sound clicking..."
+        new_filename = file.name + "_clickfix" + file.ext
+        cmd = [
+            "avidemux2_cli",
+            "--load", file.filename,
+            "--video-codec", "COPY",
+            "--audio-codec", "COPY",
+            "--save", new_filename
+        ]
+        self._subprocess(cmd, file)
+        file.filename = new_filename
+
+    def convert(self, file):
+        cmd = [
+            "nice",
+            "avconv", "-i", file.filename
+        ] + AVCONV_OPTIONS + [
+            file.out_name
+        ]
+        self._subprocess(cmd, file)
 
 
 
