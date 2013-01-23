@@ -17,10 +17,12 @@ import os, time, fnmatch
 
 
 class search:
-    def __init__(self, path, search_string, file_filter):
+    def __init__(self, path, search_string, file_filter, max_cutouts=20, content_extract = 35):
         self.search_path = path
         self.search_string = search_string
         self.file_filter = file_filter
+        self.max_cutouts = max_cutouts
+        self.content_extract = content_extract
 
         print "Search '%s' in [%s]..." % (
             self.search_string, self.search_path
@@ -55,13 +57,13 @@ class search:
     def cutout_content(self, content):
         current_pos = 0
         search_string_len = len(self.search_string)
-        for i in xrange(max_cutouts):
+        for i in xrange(self.max_cutouts):
             try:
                 pos = content.index(self.search_string, current_pos)
             except ValueError:
                 break
 
-            content_window = content[ pos - content_extract : pos + content_extract ]
+            content_window = content[ pos - self.content_extract : pos + self.content_extract ]
             print ">>>", content_window.encode("String_Escape")
             current_pos += pos + search_string_len
         print
@@ -74,4 +76,4 @@ if __name__ == "__main__":
     content_extract = 35 # Gr��e des Ausschnittes der angezeigt wird
     max_cutouts = 20 # Max. Anzahl an Treffer, die Angezeigt werden sollen
 
-    search(search_path, search_string, file_filter)
+    search(search_path, search_string, file_filter, max_cutouts, content_extract)
