@@ -1,8 +1,14 @@
-
-
+--
+-- copyleft (c) 2007 by htFX, Jens Diemer - http://www.htFX.de
+--
 
 actionMan.executeAction 0 "40472"  -- MAX Script: MAXScript Listener
 clearListener()
+
+
+format "do max hold..."
+max hold
+format "ok\n"
 
 
 -- disableSceneRedraw()
@@ -41,52 +47,58 @@ compare_count = 0
 instance_found = 0
 
 
-
-while (all_count>1) do
-(
-	obj_x = all[all_count]
-	
--- 	random_wirecolor obj_x
-	
-	deleteItem all all_count
-	all_count -= 1
-	
-	to_delete = #()
-	for x =1 to all_count do
+fn instance_same_color all = (
+	while (all_count>1) do
 	(
-		obj_y = all[x]
-		compare_count += 1
+		obj_x = all[all_count]
 		
+	 	random_wirecolor obj_x
 		
--- 		format "compare % <-> %\n" obj_x.name obj_y.name
-		if (areNodesInstances obj_x obj_y) or (obj_x.baseobject == obj_y.baseobject) then (
-			instance_found += 1
-			obj_y.wirecolor = obj_x.wirecolor
-			format "instance found % <-> %\n" obj_x.name obj_y.name
-			append to_delete x
+		deleteItem all all_count
+		all_count -= 1
+		
+		to_delete = #()
+		for x =1 to all_count do
+		(
+			obj_y = all[x]
+			compare_count += 1
+			
+			
+	-- 		format "compare % <-> %\n" obj_x.name obj_y.name
+			if (areNodesInstances obj_x obj_y) or (obj_x.baseobject == obj_y.baseobject) then (
+				instance_found += 1
+				obj_y.wirecolor = obj_x.wirecolor
+				format "instance found % <-> %\n" obj_x.name obj_y.name
+				append to_delete x
+			)
 		)
+		
+		-- remove all instances from the list
+		
+	-- 	format "%\n" to_delete
+		qsort to_delete compare reverse:on
+	-- 	format "%\n" to_delete
+		for i in to_delete do
+		(
+	-- 		format "remove % (%)\n" i all[i]
+			deleteItem all i
+		)
+		
+		all_count = all.count
+		windows.processPostedMessages()
 	)
-	
-	-- remove all instances from the list
-	
--- 	format "%\n" to_delete
-	qsort to_delete compare reverse:on
--- 	format "%\n" to_delete
-	for i in to_delete do
-	(
--- 		format "remove % (%)\n" i all[i]
-		deleteItem all i
-	)
-	
-	all_count = all.count
-	windows.processPostedMessages()
+	format "Compare count: % - Instance found: %\n" compare_count instance_found
 )
 
-format "Compare count: % - Instance found: %\n" compare_count instance_found
 
-format "force garbage collection:"
-gc()
---light:true
-enableSceneRedraw()
+with undo on ( with redraw off (
+	instance_same_color all
+	
+	format "force garbage collection:"
+	gc()
+))
+
+
+-- enableSceneRedraw()
 max views redraw
 format " - END -\n"

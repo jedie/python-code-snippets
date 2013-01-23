@@ -22,6 +22,7 @@ source_obj = all[1]
 
 format "source obj: %\n" source_obj.name
 
+-- for obj in all do
 for x = 1 to all_count do
 (
 	obj = all[x+1]
