@@ -2,14 +2,9 @@
 # coding: ISO-8859-1
 
 """
-    ftp info
-    ~~~~~~~~
-    
-    List information about the biggest files on a FTP server.
+    ftp tools
+    ~~~~~~~~~
 
-    :copyleft: 2012 by Jens Diemer
+    :copyleft: 2012-2013 by htFX.de - Jens Diemer
     :license: GNU GPL v3 or above
 """
-
-__version__ = (0,0,1)
-VERSION_STRING = '.'.join(str(part) for part in __version__)
