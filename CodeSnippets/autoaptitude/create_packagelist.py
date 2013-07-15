@@ -340,3 +340,5 @@ if __name__ == "__main__":
 #     f = sys.stdout
     write_package_list(package_data, f)
     f.close()
+
+    print "\nList file '%s' created." % PACKAGE_FILE
