@@ -4,7 +4,7 @@
 """
     delete old files
     ~~~~~~~~~~~~~~~~
-    
+
     Cleanup a FTP Server by deleting the files which are older than X days.
 
     :copyleft: 2012-2013 by htFX.de - Jens Diemer
@@ -117,7 +117,19 @@ if __name__ == "__main__":
 
             if not args.info:
                 delta = now - mtime
-                assert delta < timedelta2, "Error!!! Filedate is older than %s ?!?!" % timedelta2
+                if delta < timedelta2:
+                    print "Error!!! Filedate is older than %s ?!?!" % timedelta2
+                    print "Check file:", repr(file_entry.filepath)
+                    print "Debug Info:"
+                    print "\tfile mtime:", mtime
+                    print "\tnow:", now
+                    print "\ttimedelta2:", timedelta2
+                    print "\tdelta:", delta
+                    print
+                    print "Abort!"
+                    sys.exit(2)
+                    continue
+
                 if delta > timedelta1:
                     #~ out(
                         #~ " *** %r is older than %s days: %s" % (
