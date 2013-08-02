@@ -2,35 +2,13 @@
 Some simple FTP tools.
 
 
-== ftp_info.py
-
-List information about the biggest files on a FTP server.
-
-{{{
-usage: ftp_info.py [-h] [-p PATH] [-v {0,1,2}] host username password
-
-List information about the biggest files on a FTP server.
-
-positional arguments:
-  host                  FTP server address, e.g.: ftp.domain.tld
-  username              FTP user name
-  password              FTP password
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -p PATH, --path PATH  root path to start the tree walk
-  -v {0,1,2}, --verbosity {0,1,2}
-                        increase output verbosity
-}}}
-(run {{{ python ftp_info.py -h }}} for current arguments/parameters.)
-
-
 == delete_old_files.py
 
 Cleanup a FTP Server by deleting the files which are older than X days.
 
 {{{
-usage: delete_old_files.py [-h] [-p PATH] [-v {0,1,2}]
+usage: delete_old_files.py [-h] [-v] [-p PATH] [--verbosity {0,1,2}]
+                           [--dryrun] [--info]
                            [-d {7,8,9,10,11,12,13,14,15,16,17,18,19}]
                            host username password
 
@@ -43,9 +21,12 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
+  -v, --version         show program's version number and exit
   -p PATH, --path PATH  root path to start the tree walk
-  -v {0,1,2}, --verbosity {0,1,2}
-                        increase output verbosity
+  --verbosity {0,1,2}   increase output verbosity
+  --dryrun              run but don't make any changes
+  --info                Display only information about the files on the FTP
+                        (Don't delete anything)
   -d {7,8,9,10,11,12,13,14,15,16,17,18,19}, --days {7,8,9,10,11,12,13,14,15,16,17,18,19}
                         how many days must a file be old for delete?
 }}}
