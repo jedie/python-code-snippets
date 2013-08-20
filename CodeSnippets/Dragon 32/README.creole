@@ -1,0 +1,5 @@
+== moved
+
+The Python scripts around dragon 32 hase been moved into a seperate git repository:
+
+* https://github.com/jedie/PyDragon32
