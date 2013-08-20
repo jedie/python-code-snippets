@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: ISO-8859-1 -*-
 
-__version__ = "0.0.7"
+__version__ = "0.1.0"
 
 ### History
+# v0.1.0
+#   Neue Statistikausgabe
 # v0.0.7
 #   Einige Verbesserungen zur Linux-Ausführbarkeit umgesetzt
 # v0.0.6
@@ -17,7 +19,20 @@ print """
   %s v%s (GNU General Public License) - by www.jensdiemer.de
 """ % (__file__, __version__)
 
-import os, sys, time, optparse
+import os
+import sys
+import time
+import optparse
+import string
+
+if sys.platform.startswith("win32"):
+    IS_WIN = True
+    # On Windows, the best timer is time.clock()
+    default_timer = time.clock
+else:
+    IS_WIN = False
+    # On most other platforms the best timer is default_timer()
+    default_timer = default_timer
 
 ###
 ### OptionParser "konfigurieren"
@@ -77,6 +92,21 @@ else:
 ### Ein paar Hilfs-Funktionen
 ###
 
+
+def human_time(t):
+    if t > 3600:
+        divisor = 3600.0
+        unit = "h"
+    elif t > 60:
+        divisor = 60.0
+        unit = "min"
+    else:
+        divisor = 1
+        unit = "sec"
+
+    return "%.1f%s" % (round(t / divisor, 2), unit)
+
+
 def DeleteFile( File ):
     "Löscht evtl. vorhandene Datei"
     if os.path.isfile( File ):
@@ -122,15 +152,13 @@ def DeactivateNTFScompression( File ):
     print "-"*80
     print
 
-def WriteBlocks( FileHandle, BlockSize, BlocksToWrite, WritesRandomTrash, TotalStartTime ):
+def WriteBlocks( FileHandle, BlockSize, BytesFree, BlocksToWrite, WritesRandomTrash, TotalStartTime ):
     "Schreibt Blockweise in die Eraser-Datei"
-    NullBytesBlock  = "\x00" * BlockSize
-    BytesWrited     = 0
+    NullBytesBlock = "\x00" * BlockSize
+    bytes_written = old_bytes_written = 0
+    time_threshold = start_time = default_timer()
     for i in xrange( BlocksToWrite ):
-        BytesWrited += BlockSize
-        print "%dMB" % (BytesWrited/1024/1024),
-
-        StartTime       = time.time()
+        bytes_written += BlockSize
 
         if WritesRandomTrash:
             # Schreibt einen Block zufälliger Zeichen
@@ -139,19 +167,38 @@ def WriteBlocks( FileHandle, BlockSize, BlocksToWrite, WritesRandomTrash, TotalS
             # Schreibt einen Block NULL-Bytes
             FileHandle.write( NullBytesBlock )
 
-        CurrentTime = time.time()
+        current_time = default_timer()
+        if current_time > (time_threshold + 0.5):
 
-        CurrentBlockTime = CurrentTime - StartTime
-        TotalTime = (CurrentTime - TotalStartTime)
-        RemainingTime = TotalTime / (i+1) * BlocksToWrite
-        CurrentBytesPerSec = BlockSize / CurrentBlockTime
-        TotalBytesPerSec = BytesWrited / TotalTime
-        print "- current:%.1fMB/s total:%.1fMB/s current:%.1fmin remaining:%.1fmin" % (
-                ( CurrentBytesPerSec / 1024 / 1024 ),
-                ( TotalBytesPerSec / 1024 / 1024 ),
-                ( TotalTime / 60 ),
-                ( RemainingTime / 60 )
-            )
+            elapsed = float(current_time - start_time)      # Vergangene Zeit
+            estimated = elapsed / bytes_written * BytesFree # Geschätzte Zeit
+            remain = estimated - elapsed
+
+            diff_bytes = bytes_written - old_bytes_written
+            diff_time = current_time - time_threshold
+            performance = diff_bytes / diff_time / 1024.0 / 1024.0
+
+            percent = round(float(bytes_written) / BytesFree * 100.0, 2)
+
+            infoline = (
+                "\r%(written)dMB %(percent).1f%%"
+                "  current: %(elapsed)s"
+                "  total: %(estimated)s"
+                "  remain: %(remain)s"
+                "  %(perf).1fMB/sec"
+            ) % {
+                "written"  : (bytes_written/1024/1024),
+                "percent"  : percent,
+                "elapsed"  : human_time(elapsed),
+                "estimated": human_time(estimated),
+                "remain"   : human_time(remain),
+                "perf"     : performance,
+            }
+            sys.stdout.write("\r")
+            sys.stdout.write(string.ljust(infoline, 79))
+
+            time_threshold = current_time
+            old_bytes_written = bytes_written
 
 def WriteRemainingBytes( FileHandle ):
     "Schreibt die restlichen Bytes in die Eraser-Datei"
@@ -195,7 +242,7 @@ DeactivateNTFScompression( EraserFile )
 aborted = False
 try:
     # Schreibt die Eraser-Datei in Blöcken voll
-    WriteBlocks( FileHandle, BlockSize, BlocksToWrite, WritesRandomTrash, TotalStartTime )
+    WriteBlocks( FileHandle, BlockSize, BytesFree, BlocksToWrite, WritesRandomTrash, TotalStartTime )
 
     # Schreibt die Datei randvoll...
     WriteRemainingBytes( FileHandle )
