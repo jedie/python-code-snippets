@@ -29,23 +29,28 @@ for x = 1 to all_count do
 	
 	try (
 		format "instanceReplace: % <-> %\n" obj source_obj
-		instanceReplace obj source_obj
+-- 		instanceReplace obj source_obj
+		
+-- 		obj.baseobject = source_obj.baseobject
+		
+-- 		obj.wirecolor = source_obj.wirecolor
+-- 		obj.parent = source_obj.parent
+		
+		select source_obj
+		maxOps.cloneNodes $ cloneType:#instance newNodes:&new_objs
+		new_obj = new_objs[1]
+		new_obj.transform = obj.transform
+		new_obj.name = obj.name
+		new_obj.parent = obj.parent
+		new_obj.wirecolor = obj.wirecolor
+		delete obj
+		
 	) catch (
 		format "Error with %\n" obj
 		-- http://forums.cgsociety.org/showpost.php?p=6000653&postcount=2
 		format "Replace with a Refecence: % <-> %\n" obj source_obj
 		obj.baseobject = source_obj.baseobject
 	)
-
-	obj.wirecolor = source_obj.wirecolor
-	
--- 	select source_obj
--- 	maxOps.cloneNodes $ cloneType:#instance newNodes:&new_objs
--- 	new_obj = new_objs[1]
--- 	new_obj.transform = obj.transform
--- 	new_obj.name = obj.name
--- 	delete obj
--- 	new_obj.wirecolor = source_obj.wirecolor
 	
 )
 

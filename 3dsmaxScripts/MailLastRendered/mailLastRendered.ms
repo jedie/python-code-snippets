@@ -25,6 +25,8 @@ suffix = "preview"
 seperator = "_"
 ext = ".jpg"
 
+clearlistener()
+actionMan.executeAction 0 "40472"  -- MAX Script: MAXScript Listener
 
 ------------------------------------------------------------------------------
 
@@ -135,6 +137,8 @@ function get_expand_filename source_filename = (
 
 ------------------------------------------------------------------------------
 
+image_file = undefined
+
 function main = (
     if maxFileName == "" then (
         messageBox "Error: You must save the scene first!"
@@ -142,27 +146,34 @@ function main = (
     )
 
     thunderbird_exe = get_mailer_path()
-    print "TB path:"
-    print thunderbird_exe
+	format "TB path: '%'\n" thunderbird_exe
 
     if thunderbird_exe == false then return false
 
     clean_filename = get_clean_maxFileName()
-    print clean_filename
+    format "clean_filename: '%'\n" clean_filename
 
     filename = clean_filename + seperator + suffix + seperator
 
     filename = get_expand_filename(filename)
     abs_path = abs_filename(filename)
-    print filename
+    format "filename: '%'\n" filename
 
-    -- save file dialog
+	format "get the image\n"
+    image_file = GetLastRenderedImage copy:false --share the bitmap
+    if image_file == undefined then (
+-- 		image_file = gw.getViewportDib()
+        messageBox "Error: You must render a picture first!"
+        return false
+    )
+
+	format "save file dialog\n"
     type_filter = "*" + ext + "|*" + ext
     abs_path = getSaveFileName caption:"save rendered pic" filename:abs_path types:type_filter
     if abs_path == undefined then (
         return false
     )
-    print abs_path
+    format "abs_path:\n%\n" abs_path
 
     -- use the filename from the getSaveFileName dialog
     tokens = filterString abs_path "\\"
@@ -174,14 +185,8 @@ function main = (
         return false
     )
 
-    JPEG.setQuality(90)
-    --image_file = gw.getViewportDib()
-    image_file = getLastRenderedImage()
-    if image_file == undefined then (
-        messageBox "Error: You must render a picture first!"
-        return false
-    )
     image_file.filename = abs_path
+    JPEG.setQuality(90)
     save image_file
 
     cmd_string = " -compose \""
@@ -189,7 +194,7 @@ function main = (
     cmd_string += ",body=" + filename
     cmd_string += ",attachment='file:///" + abs_path + "'"
 
-    print cmd_string
+    format "cmd line:\n%\n" cmd_string
 
     shellLaunch thunderbird_exe cmd_string
 )

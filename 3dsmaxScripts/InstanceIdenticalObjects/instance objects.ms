@@ -26,35 +26,32 @@ fn instance_objects obj1 dest_objects copy_type = (
  
 rollout InstanceObjectsRollout "instance objects" --width:730 height:550
 (
-	pickbutton choose_obj1 "source object" width:140
+	pickbutton choose_obj1 "pick source object" width:140
 	radiobuttons copy_type labels:#("instance", "reference")
-	button btn_instanceIt "go: select destination" align:#left width: 120
+	pickbutton choose_obj2 "pick destination object" width:140
 	
-	on choose_obj1 picked obj do
+	on choose_obj1 picked source_object do
 	(
-		if obj != undefined do
+		if source_object != undefined do
 		( -- user did not cancel the picking...
-			choose_obj1.text = obj.name
+			choose_obj1.text = source_object.name
 		)
 	)
 	
-	on btn_instanceIt pressed do
+	on choose_obj2 picked dest_object do
 	(
-		obj1 = choose_obj1.object
-		if (obj1 == undefined) then
+		if (choose_obj1.object == undefined) then
 		(
-			messageBox "Please pick source object!"
+			messageBox "Please pick source object first!"
 		) else (
-			dest_objects = selectByName title:"Select destination objects" buttonText:"make instance" showHidden:false single:false
-			if (dest_objects == undefined or dest_objects.count == 0) then (
-				messageBox "Please select destination objects."
-			) else (
+			if dest_object != undefined do
+			( -- user did not cancel the picking...
 				undo on
 				(
-					instance_objects obj1 dest_objects copy_type.state
+					instance_objects choose_obj1.object dest_object copy_type.state
 				)
-				DestroyDialog InstanceObjectsRollout
-				CreateDialog InstanceObjectsRollout
+-- 				DestroyDialog InstanceObjectsRollout
+-- 				CreateDialog InstanceObjectsRollout
 			)
 		)
 	)
