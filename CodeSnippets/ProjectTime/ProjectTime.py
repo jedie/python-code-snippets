@@ -31,6 +31,11 @@ weekDaysMap = {
     "Sun": "SO"
 }
 
+day_additionals = {
+    "SA":1.5,
+    "SO":1.5,
+}
+
 class TimeStore(dict):
     def add(self, time, filePath):
         if not self.has_key(time):
@@ -49,6 +54,7 @@ class Chronologer:
         projectStart=datetime.datetime(year=1977, month=1, day=1),
         projectEnd=datetime.datetime(year=2200, month=12, day=31),
         exclude_dirs=None,
+        day_additionals=day_additionals,
         debug=False,
             ):
 
@@ -59,13 +65,14 @@ class Chronologer:
         self.projectStart = projectStart
         self.projectEnd = projectEnd
         self.exclude_dirs = exclude_dirs or []
+        self.day_additionals = day_additionals
         self.debug = debug
 
         self.statistics = {}
         self.dayData = {}
         self.timeStore = TimeStore()
 
-        print "read dir...",
+        print "read %r..." % self.projectPath,
         count = self.readDir(self.projectPath)
         print "OK (%s items)" % count
 
@@ -170,6 +177,7 @@ class Chronologer:
         jeden Arbeits-Block
         """
         self.statistics["totalTime"] = 0
+        self.statistics["day_additionals"] = {}
         days = {}
         for block in timeBlocks:
             blockTime = self.blockTime(block)
@@ -177,13 +185,19 @@ class Chronologer:
 
             d = datetime.datetime.fromtimestamp(block[0])
             key = d.strftime("%y%m%d")
+            day_name = weekDaysMap[d.strftime("%a")]
 
-            if self.dayData.has_key(key):
+            if day_name in self.statistics["day_additionals"]:
+                self.statistics["day_additionals"][day_name] += blockTime
+            else:
+                self.statistics["day_additionals"][day_name] = blockTime
+
+            if key in self.dayData:
                 self.dayData[key]["blockTime"] += blockTime
                 self.dayData[key]["block"].append(block)
             else:
                 self.dayData[key] = {
-                    "dayName"   : weekDaysMap[d.strftime("%a")],
+                    "dayName"   : day_name,
                     "week"      : d.strftime("%W"),
                     "dateStr"   : d.strftime("%d.%m.%Y"),
                     "blockTime" : blockTime,
@@ -242,7 +256,7 @@ class Chronologer:
         print "-" * 40
 
         lastWeek = 0
-        totalStd = 0
+        total_hours = 0
         for i, key in enumerate(keys):
             dayName = self.dayData[key]["dayName"]
             week = self.dayData[key]["week"]
@@ -259,13 +273,27 @@ class Chronologer:
             print "%4s - %s, %s:%3i Std ->%4s€" % (
                 i + 1, dayName, dateStr, blockTime, blockTime * self.hourlyRate
             )
-            totalStd += blockTime
+            total_hours += blockTime
             if verbose:
                 self.displayBlock(block, verbose)
 
         print "_" * 40
-        totalCosts = totalStd * self.hourlyRate
-        print " %s Std * %s€ = %s€" % (totalStd, self.hourlyRate, totalCosts)
+        totalCosts = total_hours * self.hourlyRate
+        print " %s Std * %s€ = %s€" % (total_hours, self.hourlyRate, totalCosts)
+
+        print
+        print "day additionals:"
+        for day, factor in self.day_additionals.items():
+            if day in self.statistics["day_additionals"]:
+                day_time = self.statistics["day_additionals"][day]
+                day_hours = day_time / 60.0 / 60.0
+                day_hourly_rate = self.hourlyRate*factor
+                print "\t%s: %s€ * %.1f = %.2f€/Std | %.2fStd. * %.2f€/Std = %.2f€" % (
+                    day,
+                    self.hourlyRate, factor, day_hourly_rate,
+                    day_hours, day_hourly_rate, day_hours*day_hourly_rate,
+                )
+
 
     def displayPushedResults(self, exchangeRatio,
         displayMoneyOnly=False, maxDayTime=14):
@@ -286,7 +314,11 @@ class Chronologer:
         keys.sort()
 
         lastWeek = 0
-        totalStd = 0
+        total_hours = 0
+
+        total_addition_hours = 0
+        additionals = {}
+
         overhang = 0
         for i, key in enumerate(keys):
             dayName = self.dayData[key]["dayName"]
@@ -303,7 +335,7 @@ class Chronologer:
             blockTime = blockTime * self.hourlyRate / exchangeRatio
             pushedTime = int(math.ceil(blockTime / 60.0 / 60.0))
 
-            # Tï¿½gliche Abeitszeit begrenzen
+            # Tägliche Abeitszeit begrenzen
             pushedTime += overhang
             if pushedTime > maxDayTime:
                 overhang = pushedTime - maxDayTime
@@ -311,31 +343,74 @@ class Chronologer:
             else:
                 overhang = 0
 
-            if displayMoneyOnly:
-                print "%3s - %s, %s:%4i€" % (i + 1, dayName, dateStr, pushedTime * exchangeRatio)
+            if dayName in self.day_additionals:
+                factor = self.day_additionals[dayName]
+                additional_time = (pushedTime * factor) - pushedTime
+                total_addition_hours += additional_time
+                if dayName in additionals:
+                    additionals[dayName] += additional_time
+                else:
+                    additionals[dayName] = additional_time
+
+                additional_into = "+%.1fStd (%s Aufschlag)" % (additional_time, dayName)
             else:
-                print "%3s - %s, %s:%3i Std" % (i + 1, dayName, dateStr, pushedTime)
-            totalStd += pushedTime
+                additional_into = ""
+
+            if displayMoneyOnly:
+                print "%3s - %s, %s:%4i€ %s" % (
+                    i + 1, dayName, dateStr, pushedTime * exchangeRatio,
+                    additional_into
+                )
+            else:
+                print "%3s - %s, %s:%3i Std %s" % (
+                    i + 1, dayName, dateStr, pushedTime,
+                    additional_into
+                )
+            total_hours += pushedTime
 
         if overhang > 0:
             print "-> rest overhang: %sStd !!!" % overhang
 
-        print "_" * 40
-        totalCosts = totalStd * exchangeRatio
+        print "_" * 79
+
+        print
+        print "day additionals:"#, additionals
+        for day, factor in self.day_additionals.items():
+            if day in additionals:
+                day_time = additionals[day]
+                day_costs = day_time * exchangeRatio
+                print "\t%s: %sStd * %s€ = %.2f€" % (
+                    day,
+                    day_time, exchangeRatio, day_time * exchangeRatio
+                )
+
+        print
+        totalCosts = total_hours * exchangeRatio
+        total_addition_costs = (total_hours + total_addition_hours) * exchangeRatio
         if displayMoneyOnly:
-            print "%5s€" % totalCosts
+            print "Ohne Aufschlag..: %5s€" % totalCosts
+            print "Mit Aufschlag...: %5s€" % total_addition_costs
         else:
-            print " %s Std * %s€ = %s€" % (totalStd, exchangeRatio, totalCosts)
+            print "Ohne Aufschlag..: %s Std * %s€ = %s€" % (total_hours, exchangeRatio, totalCosts)
+            print "Mit Aufschlag...: %s + %s Std = %s Std * %s€ = %.2f€" % (
+                total_hours, total_addition_hours, (total_hours + total_addition_hours),
+                exchangeRatio, total_addition_costs
+            )
 
 
 if __name__ == "__main__":
+    import tempfile
+    #~ test_path = tempfile.gettempdir()
+
+    test_path = os.path.expanduser("~")
+
     #~ c = Chronologer(
-        #~ projectPath     = r".",
+        #~ projectPath     = test_path,
         #~ hourlyRate      = 80,
     #~ ).displayResults()
 
     c = Chronologer(
-        projectPath=r".",
+        projectPath=test_path,
         hourlyRate=80,
         maxTimeDiff=60 * 60,
         minBlockTime=55 * 60,
@@ -347,22 +422,22 @@ if __name__ == "__main__":
     print "(verbose: 0)"
     c.displayResults()
 
-    print "\n" * 3, "="*79
-    print "(verbose: 1)"
-    c.displayResults(verbose=1)
+    #~ print "\n" * 3, "="*79
+    #~ print "(verbose: 1)"
+    #~ c.displayResults(verbose=1)
 
-    print "\n" * 3, "="*79
-    print "(verbose: 2)"
-    c.displayResults(verbose=2)
+    #~ print "\n" * 3, "="*79
+    #~ print "(verbose: 2)"
+    #~ c.displayResults(verbose=2)
 
-    print "\n" * 3, "="*79
+    #~ print "\n" * 3, "="*79
 
     # Umrechnung auf anderen Stundenlohn
     c.displayPushedResults(exchangeRatio=35)
     print "\n" * 3, "="*79
-    c.displayPushedResults(exchangeRatio=30)
-    print "\n" * 3, "="*79
-    c.displayPushedResults(exchangeRatio=35, displayMoneyOnly=True)
+    #~ c.displayPushedResults(exchangeRatio=30)
+    #~ print "\n" * 3, "="*79
+    #~ c.displayPushedResults(exchangeRatio=35, displayMoneyOnly=True)
 
 
 
