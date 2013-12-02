@@ -2,8 +2,8 @@
 # coding: ISO-8859-1
 
 """
-    Create and compare MD5, SHA1 hashes from file(s)
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Create and compare MD5, SHA1, SHA256 hashes from file(s)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         
     Ich erstelle mir eine Verknüpfung auf dem Desktop.
     Dann kann man eine einzelne Datei, mehrere Dateien oder ein Verzeichnis
@@ -13,20 +13,26 @@
     
     Ist eine *.md5 Datei vorhanden, wird die eine aktuelle MD5sum von der
     Datei erstellt und mit der aus der md5-Datei verglichen.
+
+    :copyleft: 2005-2013 by Jens Diemer
+    :license: GNU GPL v3 or above, see LICENSE for more details.
 """
 
 __author__ = "Jens Diemer"
-__license__ = "GNU General Public License http://www.opensource.org/licenses/gpl-license.php"
+__license__ = "GNU General Public License v3 or above - http://www.opensource.org/licenses/gpl-license.php"
 __info__ = "md5sum_calc"
 __url__ = "http://www.jensdiemer.de"
 
-__version__ = "0.3"
+__version__ = "0.4"
 
 __history__ = """
-v0.3
+v0.4 - 02.12.2013
+    - NEW: Display and compare SHA256 hash, too.
+    - Old .hash files would be updated
+v0.3 - 28.11.2011
     - NEW: Display and compare SHA1 hash, too.
     - Old .md5 files would be updated (New files are named *.hash)
-v0.2.8
+v0.2.8 - 14.11.2008
     - more status information
     - status performance calculated for a short term only
 v0.2.7
@@ -40,12 +46,12 @@ v0.2.5
         -nur "w" statt "wU" filemode beim schreiben der md5 info Datei
         -speichern der mtime mit repr() und umwandeln mit float() beim lesen
     - raw_input() am Ende entfernt, macht ja die pause in der CMD Datei ;)
-v0.2.4
+v0.2.4 - 15.11.2006
     - Bugfix: ZeroDivisionError bei sehr kleinen Dateien und der
         Preformance Berechnung
 v0.2.3
     - NEU: Overall performance ;)
-v0.2.2
+v0.2.2 - 15.12.2005
     - Fehler in Verarbeitung mehrere Dateien behoben (Dateien wurden ausgelassen)
 v0.2.1
     - Fehler bei Abarbeitung eines Verz., wenn sich darin wieder ein Verz. befindet
@@ -65,15 +71,11 @@ import datetime
 import time
 
 
-if sys.version_info >= (2, 5):
-    import hashlib
-    md5_constructor = hashlib.md5
-    sha1_constructor = hashlib.sha1
-else:
-    import md5
-    md5_constructor = md5.new
-    import sha
-    sha1_constructor = sha.new
+import hashlib
+md5_constructor = hashlib.md5
+sha1_constructor = hashlib.sha1
+sha256_constructor = hashlib.sha256
+
 
 
 BUFSIZE = 64 * 1024
@@ -177,7 +179,7 @@ class BaseClass(object):
                 os.system("color 1f")
 
 
-HASHES = ("md5", "sha1")
+HASHES = ("md5", "sha1", "sha256")
 
 class Hasher(dict):
     def __init__(self):
@@ -186,10 +188,12 @@ class Hasher(dict):
 #        dict.__setitem__(self, "sha1", sha1_constructor())
         self["md5"] = md5_constructor()
         self["sha1"] = sha1_constructor()
+        self["sha256"] = sha256_constructor()
 
     def update(self, data):
         self["md5"].update(data)
         self["sha1"].update(data)
+        self["sha256"].update(data)
 
 
 class HashChecker(BaseClass):
@@ -226,6 +230,8 @@ class HashChecker(BaseClass):
             self.process_file(file_name_path)
 
     def process_file(self, file_name_path):
+        self.update_hash_file = False
+
         self.file_name_path = file_name_path
         self.file_path, self.file_name_ext = os.path.split(self.file_name_path)
         self.file_name, self.file_ext = os.path.splitext(self.file_name_ext)
@@ -251,6 +257,7 @@ class HashChecker(BaseClass):
         elif os.path.isfile(self.old_md5_filename):
             # Old .md5 file found
             old_md5_file = True
+            self.update_hash_file = True
             read_func = self.read_md5file
 
         if new_hash_file or old_md5_file:
@@ -265,13 +272,14 @@ class HashChecker(BaseClass):
             else:
                 hashes = self.compare_file(hash_file_data, size, utc_mtime_string)
                 print
-                if old_md5_file and hashes:
-                    # old md5 hash is ok -> delete the old MD5 file and create the new one
-                    self.write_hash_file(hashes)
-                    try:
-                        os.remove(self.old_md5_filename)
-                    except Exception, err:
-                        print "Error: Can't delete old file: %s - %s" % (self.old_md5_filename, err)
+                if self.update_hash_file:
+                    self.write_hash_file(hashes)                    
+                    if old_md5_file:
+                        # old md5 hash is ok -> delete the old MD5 file and create the new one
+                        try:
+                            os.remove(self.old_md5_filename)
+                        except Exception, err:
+                            print "Error: Can't delete old file: %s - %s" % (self.old_md5_filename, err)
                 return
 
         print "Create hashes for '%s'..." % self.file_name_ext
@@ -312,6 +320,13 @@ class HashChecker(BaseClass):
         tests_ok = True
         for hash_type, hash in hash_file_data.items():
             current_hash = hashes[hash_type].hexdigest()
+
+            if hash is None:
+                print "Skip %s compare." % hash_type
+                print "%s %s" % (hash_type, current_hash)
+                self.update_hash_file = True # insert missing hash value
+                continue
+
             if current_hash == hash:
                 print "%s %s is OK." % (hash_type, current_hash)
             else:
@@ -424,6 +439,7 @@ class HashChecker(BaseClass):
 
         config.write(f)
         f.close()
+        print "Hash file %s written." % self.hash_data_filename
 
     def read_hash_file(self):
         f = file(self.hash_data_filename, "rU")
@@ -433,7 +449,11 @@ class HashChecker(BaseClass):
 
         hash_file_data = {}
         for hash_type in HASHES:
-            hash_file_data[hash_type] = config.get("HashChecker", hash_type)
+            try:
+                hash_file_data[hash_type] = config.get("HashChecker", hash_type)
+            except ConfigParser.NoOptionError:
+                sys.stderr.write("WARING: Hash value for '%s' doesn't exists.\n" % hash_type)
+                hash_file_data[hash_type] = None
 
         size = int(config.get("HashChecker", "size"))
 
