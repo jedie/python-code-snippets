@@ -4,13 +4,13 @@
 """
     Create and compare MD5, SHA1, SHA256 hashes from file(s)
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        
+
     Ich erstelle mir eine Verknüpfung auf dem Desktop.
     Dann kann man eine einzelne Datei, mehrere Dateien oder ein Verzeichnis
     per Drag&Drop auf die Verknüpfung ziehen.
-    
+
     Ist keine *.md5 Datei vorhanden, wird diese erstellt.
-    
+
     Ist eine *.md5 Datei vorhanden, wird die eine aktuelle MD5sum von der
     Datei erstellt und mit der aus der md5-Datei verglichen.
 
@@ -23,9 +23,11 @@ __license__ = "GNU General Public License v3 or above - http://www.opensource.or
 __info__ = "md5sum_calc"
 __url__ = "http://www.jensdiemer.de"
 
-__version__ = "0.4"
+__version__ = "0.4.1"
 
 __history__ = """
+v0.4.1 - 18.03.2014
+    - Bugfix in posix systems
 v0.4 - 02.12.2013
     - NEW: Display and compare SHA256 hash, too.
     - Old .hash files would be updated
@@ -70,6 +72,8 @@ import ConfigParser
 import datetime
 import time
 
+# time.clock() on windows and time.time() on linus
+from timeit import default_timer
 
 import hashlib
 md5_constructor = hashlib.md5
@@ -77,18 +81,8 @@ sha1_constructor = hashlib.sha1
 sha256_constructor = hashlib.sha256
 
 
-
 BUFSIZE = 64 * 1024
-
-
-if sys.platform.startswith("win32"):
-    IS_WIN = True
-    # On Windows, the best timer is time.clock()
-    default_timer = time.clock
-else:
-    IS_WIN = False
-    # On most other platforms the best timer is default_timer()
-    default_timer = default_timer
+IS_WIN = sys.platform.startswith("win32")
 
 
 class FileDateTime(object):
@@ -273,7 +267,7 @@ class HashChecker(BaseClass):
                 hashes = self.compare_file(hash_file_data, size, utc_mtime_string)
                 print
                 if self.update_hash_file:
-                    self.write_hash_file(hashes)                    
+                    self.write_hash_file(hashes)
                     if old_md5_file:
                         # old md5 hash is ok -> delete the old MD5 file and create the new one
                         try:
