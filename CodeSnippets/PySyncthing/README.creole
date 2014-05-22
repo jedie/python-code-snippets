@@ -1,0 +1,32 @@
+
+== Some tools around syncthing
+
+=== verify_syncthing_config.py
+
+Test the syncthing config.
+It reads {{{~/.config/syncthing/config.xml}}} and extract the nodes information.
+Then it resolve the given node address to the IP and test if the listening port is open.
+
+The Output looks like this:
+{{{
+~$ ./verify_syncthing_config.py 
+
+Test FooBar1 (address: 'FooBar1.fritz.box:22000'):
+    FooBar1.fritz.box ==> 192.168.1.2
+    Port 22000 is open
+
+
+Test FooBar2 (address: 'FooBar2.fritz.box:22000'):
+    FooBar2.fritz.box ==> 192.168.1.3
+    Port 22000 is open
+
+
+Test FooBar3 (address: 'dynamic'):
+    TODO: 'dynamic' nodes are not supported, yet.
+}}}
+
+== Links:
+* Syncthing:
+** Homepaghe: http://syncthing.net/
+** Sourecode: https://github.com/calmh/syncthing/
+** Forum: http://discourse.syncthing.net/
