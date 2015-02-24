@@ -3,17 +3,26 @@
 
 __version__ = "0.1.0"
 
-### History
-# v0.1.0
-# Neue Statistikausgabe
-# v0.0.7
-#   Einige Verbesserungen zur Linux-Ausführbarkeit umgesetzt
-# v0.0.6
-#   getFreeSpace() auch für posix kompatibel gemacht
-#   Bessere Handhabung beim Programm abbruch (EraserFile wird auch dann gelöscht)
-# v0.0.5
-#   getFreeSpace() dir-Ausgabe mit Parameter /ah (Versteckte Einträge anzeigen)
-#   einige statistische Ausgaben hinzugefügt
+"""
+ History
+
+v0.1.0 - 20.08.2013
+    https://github.com/jedie/python-code-snippets/commit/7b593838afaf7d5245727f77d0a20c22fb6a98d1
+     * Neue Statistikausgabe
+v0.0.7 - 02.02.2007
+    https://github.com/jedie/python-code-snippets/commit/f200b64e61fa4f236891a52c7ae317aee6f8e094
+     * Einige Verbesserungen zur Linux-Ausführbarkeit umgesetzt
+v0.0.6 - 03.03.2005
+     * getFreeSpace() auch für posix kompatibel gemacht
+     * Bessere Handhabung beim Programm abbruch (EraserFile wird auch dann gelöscht)
+v0.0.5 - 03.03.2005
+    http://www.python-forum.de/viewtopic.php?f=1&t=2885
+     * getFreeSpace() dir-Ausgabe mit Parameter /ah (Versteckte Einträge anzeigen)
+     * einige statistische Ausgaben hinzugefügt
+v0 - init - 21.02.2005
+    http://www.python-forum.de/viewtopic.php?f=6&t=2803
+"""
+
 
 print """
   %s v%s (GNU General Public License) - by www.jensdiemer.de
