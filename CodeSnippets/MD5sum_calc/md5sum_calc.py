@@ -14,18 +14,22 @@
     Ist eine *.md5 Datei vorhanden, wird die eine aktuelle MD5sum von der
     Datei erstellt und mit der aus der md5-Datei verglichen.
 
-    :copyleft: 2005-2013 by Jens Diemer
+    :copyleft: 2005-2015 by Jens Diemer
     :license: GNU GPL v3 or above, see LICENSE for more details.
 """
+
+from __future__ import absolute_import, division, print_function
 
 __author__ = "Jens Diemer"
 __license__ = "GNU General Public License v3 or above - http://www.opensource.org/licenses/gpl-license.php"
 __info__ = "md5sum_calc"
 __url__ = "http://www.jensdiemer.de"
 
-__version__ = "0.4.1"
+__version__ = "0.4.2"
 
 __history__ = """
+v0.5.0 - 16.04.2015
+    - Fixes for Python 3 (runs also with Python 2 ;) )
 v0.4.1 - 18.03.2014
     - Bugfix in posix systems
 v0.4 - 02.12.2013
@@ -68,7 +72,10 @@ v0.1
 import sys
 import os
 import string
-import ConfigParser
+try:
+    import configparser # Py3
+except ImportError:
+    import ConfigParser as configparser # Py2
 import datetime
 import time
 
@@ -81,6 +88,7 @@ sha1_constructor = hashlib.sha1
 sha256_constructor = hashlib.sha256
 
 
+CONFIG_HASH_SECTION="HashChecker"
 BUFSIZE = 64 * 1024
 IS_WIN = sys.platform.startswith("win32")
 
@@ -143,8 +151,8 @@ class FileDateTime(object):
 
 
 
-print "_" * 79
-print "  %s v%s\n" % (__info__, __version__)
+print("_" * 79)
+print("  %s v%s\n" % (__info__, __version__))
 
 
 def human_time(t):
@@ -194,7 +202,7 @@ class HashChecker(BaseClass):
     def __init__(self, argv):
         self.overall_performance = []
         if type(argv) != list:
-            print "sys.argv not type list!"
+            print("sys.argv not type list!")
             return
         self.set_color("blue")
         for arg in argv:
@@ -209,14 +217,14 @@ class HashChecker(BaseClass):
             overall_performance = (
                 sum(self.overall_performance) / len(self.overall_performance)
             )
-            print "Overall performance: %.1fMB/sec" % overall_performance
-            print
+            print("Overall performance: %.1fMB/sec" % overall_performance)
+            print()
         except ZeroDivisionError:
             # Evtl. war die Datei so klein, das es in Windeseile fertig war ;)
             pass
 
     def calc_dir(self, dirname):
-        print dirname
+        print(dirname)
         for file_name in os.listdir(dirname):
             file_name_path = os.path.join(dirname, file_name)
             if not os.path.isfile(file_name_path):
@@ -255,36 +263,36 @@ class HashChecker(BaseClass):
             read_func = self.read_md5file
 
         if new_hash_file or old_md5_file:
-            print "Compare hashes for '%s'..." % self.file_name_ext
+            print("Compare hashes for '%s'..." % self.file_name_ext)
             try:
                 hash_file_data, size, utc_mtime_string = read_func()
-            except Exception, e:
+            except Exception as e:
                 self.set_color("red")
                 sys.stderr.write("ERROR: Can't read md5-file: %s\n" % e)
                 import traceback
-                print traceback.format_exc()
+                print(traceback.format_exc())
             else:
                 hashes = self.compare_file(hash_file_data, size, utc_mtime_string)
-                print
+                print()
                 if self.update_hash_file:
                     self.write_hash_file(hashes)
                     if old_md5_file:
                         # old md5 hash is ok -> delete the old MD5 file and create the new one
                         try:
                             os.remove(self.old_md5_filename)
-                        except Exception, err:
-                            print "Error: Can't delete old file: %s - %s" % (self.old_md5_filename, err)
+                        except Exception as err:
+                            print("Error: Can't delete old file: %s - %s" % (self.old_md5_filename, err))
                 return
 
-        print "Create hashes for '%s'..." % self.file_name_ext
+        print("Create hashes for '%s'..." % self.file_name_ext)
 
         hashes = self.create_hashes()
         if not hashes:
             # Something went wrong
             return
 
-        for hash_type, hash in hashes.items():
-            print "%s: %s" % (hash_type, hash.hexdigest())
+        for hash_type, hash in list(hashes.items()):
+            print("%s: %s" % (hash_type, hash.hexdigest()))
 
         self.write_hash_file(hashes)
 
@@ -294,16 +302,16 @@ class HashChecker(BaseClass):
         if utc_mtime_string:
             fdt = FileDateTime(file_stat)
             if fdt.compare_string(utc_mtime_string) != True:
-                print "Note: Time of last modification not equal:"
-                print "      %r != %r" % (fdt.utc_mtime_string, utc_mtime_string)
+                print("Note: Time of last modification not equal:")
+                print("      %r != %r" % (fdt.utc_mtime_string, utc_mtime_string))
         else:
-            print "Info: Skip file modification time compare."
+            print("Info: Skip file modification time compare.")
 
         if file_stat.st_size != size:
             self.set_color("red")
-            print "ERROR: Size is not equal (diff: %iBytes)" % (
+            print("ERROR: Size is not equal (diff: %iBytes)" % (
                 file_stat.st_size - size
-            )
+            ))
             return
 
         hashes = self.create_hashes()
@@ -312,21 +320,21 @@ class HashChecker(BaseClass):
             return
 
         tests_ok = True
-        for hash_type, hash in hash_file_data.items():
+        for hash_type, hash in list(hash_file_data.items()):
             current_hash = hashes[hash_type].hexdigest()
 
             if hash is None:
-                print "Skip %s compare." % hash_type
-                print "%s %s" % (hash_type, current_hash)
+                print("Skip %s compare." % hash_type)
+                print("%s %s" % (hash_type, current_hash))
                 self.update_hash_file = True # insert missing hash value
                 continue
 
             if current_hash == hash:
-                print "%s %s is OK." % (hash_type, current_hash)
+                print("%s %s is OK." % (hash_type, current_hash))
             else:
                 self.set_color("red")
-                print "ERROR: %s checksum wrong:" % hash_type
-                print "%s (currrent) is not %s (saved)" % (current_hash, hash)
+                print("ERROR: %s checksum wrong:" % hash_type)
+                print("%s (currrent) is not %s (saved)" % (current_hash, hash))
                 tests_ok = False
 
         if tests_ok:
@@ -338,70 +346,68 @@ class HashChecker(BaseClass):
         time_threshold = start_time = default_timer()
         hashes = Hasher()
         try:
-            f = file(self.file_name_path, "rb")
+            with open(self.file_name_path, "rb") as f:
+                bytesreaded = old_readed = 0
+                threshold = file_size / 10
+                while 1:
+                    data = f.read(BUFSIZE)
+                    bytesreaded += BUFSIZE
+                    if not data:
+                        break
 
-            bytesreaded = old_readed = 0
-            threshold = file_size / 10
-            while 1:
-                data = f.read(BUFSIZE)
-                bytesreaded += BUFSIZE
-                if not data:
-                    break
+                    current_time = default_timer()
+                    if current_time > (time_threshold + 0.5):
 
-                current_time = default_timer()
-                if current_time > (time_threshold + 0.5):
+                        elapsed = float(current_time - start_time)      # Vergangene Zeit
+                        estimated = elapsed / bytesreaded * file_size # Geschätzte Zeit
+                        remain = estimated - elapsed
 
-                    elapsed = float(current_time - start_time)      # Vergangene Zeit
-                    estimated = elapsed / bytesreaded * file_size # Geschätzte Zeit
-                    remain = estimated - elapsed
+                        diff_bytes = bytesreaded - old_readed
+                        diff_time = current_time - time_threshold
+                        performance = diff_bytes / diff_time / 1024.0 / 1024.0
 
-                    diff_bytes = bytesreaded - old_readed
-                    diff_time = current_time - time_threshold
-                    performance = diff_bytes / diff_time / 1024.0 / 1024.0
+                        percent = round(float(bytesreaded) / file_size * 100.0, 2)
 
-                    percent = round(float(bytesreaded) / file_size * 100.0, 2)
+                        infoline = (
+                            "   "
+                            "%(percent).1f%%"
+                            " - current: %(elapsed)s"
+                            " - total: %(estimated)s"
+                            " - remain: %(remain)s"
+                            " - %(perf).1fMB/sec"
+                            "   "
+                        ) % {
+                            "percent"  : percent,
+                            "elapsed"  : human_time(elapsed),
+                            "estimated": human_time(estimated),
+                            "remain"   : human_time(remain),
+                            "perf"     : performance,
+                        }
+                        sys.stdout.write("\r")
+                        sys.stdout.write(string.center(infoline, 79))
 
-                    infoline = (
-                        "   "
-                        "%(percent).1f%%"
-                        " - current: %(elapsed)s"
-                        " - total: %(estimated)s"
-                        " - remain: %(remain)s"
-                        " - %(perf).1fMB/sec"
-                        "   "
-                    ) % {
-                        "percent"  : percent,
-                        "elapsed"  : human_time(elapsed),
-                        "estimated": human_time(estimated),
-                        "remain"   : human_time(remain),
-                        "perf"     : performance,
-                    }
-                    sys.stdout.write("\r")
-                    sys.stdout.write(string.center(infoline, 79))
+                        time_threshold = current_time
+                        old_readed = bytesreaded
 
-                    time_threshold = current_time
-                    old_readed = bytesreaded
+                    hashes.update(data)
 
-                hashes.update(data)
+                end_time = default_timer()
+                try:
+                    performance = float(file_size) / (end_time - start_time) / 1024 / 1024
+                except ZeroDivisionError as err:
+                    print("Warning: %s" % err)
+                    print(end_time, start_time, (end_time - start_time))
 
-            end_time = default_timer()
-            try:
-                performance = float(file_size) / (end_time - start_time) / 1024 / 1024
-            except ZeroDivisionError, err:
-                print "Warning: %s" % err
-                print end_time, start_time, (end_time - start_time)
+                self.overall_performance.append(performance)
 
-            self.overall_performance.append(performance)
+                sys.stdout.write("\r")
+                sys.stdout.write(" "*79) # Zeile "löschen"
+                sys.stdout.write("\r")
 
-            sys.stdout.write("\r")
-            sys.stdout.write(" "*79) # Zeile "löschen"
-            sys.stdout.write("\r")
-            f.close()
-
-            print "Performance: %.1fMB/sec" % performance
+            print("Performance: %.1fMB/sec" % performance)
 
             return hashes
-        except IOError, e:
+        except IOError as e:
             sys.stderr.write("%s: IOError, Can't create HashChecker: %s\n" % (self.file_name_ext, e))
         except KeyboardInterrupt:
             try:
@@ -412,49 +418,47 @@ class HashChecker(BaseClass):
     def write_hash_file(self, hashes):
         file_stat = os.stat(self.file_name_path)
 
-        f = file(self.hash_data_filename, "w")
-        config = ConfigParser.ConfigParser()
-        config.add_section("HashChecker")
+        with open(self.hash_data_filename, 'w') as configfile:
+           config = configparser.ConfigParser()
+           config.add_section(CONFIG_HASH_SECTION)
 
-        config.set("HashChecker", "filename", self.file_name_ext)
-        for hash_type, hash in hashes.items():
-            config.set("HashChecker", hash_type, hash.hexdigest())
-        config.set("HashChecker", "size", file_stat.st_size)
+           config.set(CONFIG_HASH_SECTION, "filename", self.file_name_ext)
+           for hash_type, hash in list(hashes.items()):
+                config.set(CONFIG_HASH_SECTION, hash_type, hash.hexdigest())
+           config.set(CONFIG_HASH_SECTION, "size", "%s" % file_stat.st_size)
 
-        fdt = FileDateTime(file_stat)
+           fdt = FileDateTime(file_stat)
 
-        utc_mtime_string = fdt.utc_mtime_string # 'Fri, 05 Sep 2008 16:18:23'
-        config.set("HashChecker", "utc_mtime_string", utc_mtime_string)
+           utc_mtime_string = fdt.utc_mtime_string # 'Fri, 05 Sep 2008 16:18:23'
+           config.set(CONFIG_HASH_SECTION, "utc_mtime_string", utc_mtime_string)
 
-        tzinfo = fdt.get_offset_info() # u'+02:00 (Mitteleuropäische Sommerzeit)'
-        config.set("HashChecker", "timezone_info", tzinfo)
+           tzinfo = fdt.get_offset_info() # u'+02:00 (Mitteleuropäische Sommerzeit)'
+           config.set(CONFIG_HASH_SECTION, "timezone_info", tzinfo)
 
-#        config.set("HashChecker", "mtime", repr(file_stat.st_mtime))
+           # config.set(CONFIG_HASH_SECTION, "mtime", repr(file_stat.st_mtime))
 
-        config.write(f)
-        f.close()
-        print "Hash file %s written." % self.hash_data_filename
+           config.write(configfile)
+
+        print("Hash file %s written." % self.hash_data_filename)
 
     def read_hash_file(self):
-        f = file(self.hash_data_filename, "rU")
-        config = ConfigParser.ConfigParser()
-        config.readfp(f)
-        f.close()
-
+        config = configparser.ConfigParser()
+        config.read(self.hash_data_filename)
+        
         hash_file_data = {}
         for hash_type in HASHES:
             try:
-                hash_file_data[hash_type] = config.get("HashChecker", hash_type)
-            except ConfigParser.NoOptionError:
+                hash_file_data[hash_type] = config.get(CONFIG_HASH_SECTION, hash_type)
+            except (configparser.NoOptionError, configparser.NoSectionError):
                 sys.stderr.write("WARING: Hash value for '%s' doesn't exists.\n" % hash_type)
                 hash_file_data[hash_type] = None
 
-        size = int(config.get("HashChecker", "size"))
+        size = int(config.get(CONFIG_HASH_SECTION, "size"))
 
         try:
-            utc_mtime_string = config.get("HashChecker", "utc_mtime_string")
-        except ConfigParser.NoOptionError:
-            print "Info: .md5 sum file has the old mtime information."
+            utc_mtime_string = config.get(CONFIG_HASH_SECTION, "utc_mtime_string")
+        except configparser.NoOptionError:
+            print("Info: .md5 sum file has the old mtime information.")
             utc_mtime_string = None
 
         return hash_file_data, size, utc_mtime_string
@@ -463,18 +467,16 @@ class HashChecker(BaseClass):
         """
         read old .md5 file
         """
-        f = file(self.old_md5_filename, "rU")
-        config = ConfigParser.ConfigParser()
-        config.readfp(f)
-        f.close()
+        config = configparser.ConfigParser()
+        config.read(self.old_md5_filename)
 
         hash_file_data = {"md5sum": config.get("md5sum", "md5sum")}
         size = int(config.get("md5sum", "size"))
 
         try:
             utc_mtime_string = config.get("md5sum", "utc_mtime_string")
-        except ConfigParser.NoOptionError:
-            print "Info: .md5 sum file has the old mtime information."
+        except configparser.NoOptionError:
+            print("Info: .md5 sum file has the old mtime information.")
             utc_mtime_string = None
 
         return hash_file_data, size, utc_mtime_string
@@ -489,12 +491,13 @@ if __name__ == '__main__':
         # see: http://www.python-forum.de/topic-16615.html (de)
         args = [arg.strip('"') for arg in args]
 
-    HashChecker(args)
+    # HashChecker(args)
 
-#    print "SelfTest"
-#    HashChecker([__file__])
+    print("SelfTest")
+    HashChecker([__file__])
+    os.remove("%s.hash" % __file__)
+    HashChecker([__file__])
 
     # DocTest
-#    import doctest
-#    doctest.testmod(verbose=False)
-#    print "DocTest end."
+    import doctest
+    print("DocTest:", doctest.testmod(verbose=False))
