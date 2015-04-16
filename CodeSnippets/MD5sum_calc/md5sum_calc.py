@@ -1,18 +1,10 @@
 #!/usr/bin/python
-# coding: ISO-8859-1
 
 """
     Create and compare MD5, SHA1, SHA256 hashes from file(s)
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    Ich erstelle mir eine Verknüpfung auf dem Desktop.
-    Dann kann man eine einzelne Datei, mehrere Dateien oder ein Verzeichnis
-    per Drag&Drop auf die Verknüpfung ziehen.
-
-    Ist keine *.md5 Datei vorhanden, wird diese erstellt.
-
-    Ist eine *.md5 Datei vorhanden, wird die eine aktuelle MD5sum von der
-    Datei erstellt und mit der aus der md5-Datei verglichen.
+    Creates a "*.hash" file and use existing "*.hash" file to compare
 
     :copyleft: 2005-2015 by Jens Diemer
     :license: GNU GPL v3 or above, see LICENSE for more details.
@@ -45,8 +37,7 @@ v0.2.7
     - Work-a-round if under Windows only a Driveletter given, see:
         http://www.python-forum.de/topic-16615.html (de)
 v0.2.6
-    - Speichert mtime in einem Hübscheren Format
-        (Updated alte .MD5 Dateien automatisch)
+    - Nicer mtime format (update old has files)
 v0.2.5
     - Bugfix(Dank an Egmont Fritz):
         -nur "w" statt "wU" filemode beim schreiben der md5 info Datei
@@ -63,7 +54,7 @@ v0.2.1
     - Fehler bei Abarbeitung eines Verz., wenn sich darin wieder ein Verz. befindet
     - NEU: andere Dateibenennung der md5-Dateien!
 v0.2
-    - Die Hintergundfarbe ändert sich unter Win, wenn die MD5 summe Falsch ist von blau nach rot
+    - change background color under windows
 v0.1
     - erste Version
 """
@@ -71,7 +62,6 @@ v0.1
 
 import sys
 import os
-import string
 try:
     import configparser # Py3
 except ImportError:
@@ -100,8 +90,8 @@ class FileDateTime(object):
 
     >>> file_stat = os.stat(__file__)
     >>> fdt = FileDateTime(file_stat)
-    >>> info = fdt.get_offset_info() # u'+02:00 (Mitteleuropäische Sommerzeit)'
-    >>> utc_mtime_string = fdt.utc_mtime_string # 'Fri, 05 Sep 2008 16:18:23'
+    >>> info = fdt.get_offset_info()
+    >>> utc_mtime_string = fdt.utc_mtime_string
     >>> fdt.compare_string(utc_mtime_string)
     True
     """
@@ -144,13 +134,6 @@ class FileDateTime(object):
         return self.utc_mtime_string == utc_mtime_string
 
 
-
-
-
-
-
-
-
 print("_" * 79)
 print("  %s v%s\n" % (__info__, __version__))
 
@@ -172,7 +155,7 @@ def human_time(t):
 class BaseClass(object):
     def set_color(self, color):
         """
-        ändert die Komplette Hintergrundfarbe
+        change background color under windows
         """
         if IS_WIN:
             if color == "red":
@@ -358,8 +341,8 @@ class HashChecker(BaseClass):
                     current_time = default_timer()
                     if current_time > (time_threshold + 0.5):
 
-                        elapsed = float(current_time - start_time)      # Vergangene Zeit
-                        estimated = elapsed / bytesreaded * file_size # Geschätzte Zeit
+                        elapsed = float(current_time - start_time)
+                        estimated = elapsed / bytesreaded * file_size
                         remain = estimated - elapsed
 
                         diff_bytes = bytesreaded - old_readed
@@ -384,7 +367,7 @@ class HashChecker(BaseClass):
                             "perf"     : performance,
                         }
                         sys.stdout.write("\r")
-                        sys.stdout.write(string.center(infoline, 79))
+                        sys.stdout.write("\r{:^79}".format(infoline))
 
                         time_threshold = current_time
                         old_readed = bytesreaded
@@ -401,7 +384,7 @@ class HashChecker(BaseClass):
                 self.overall_performance.append(performance)
 
                 sys.stdout.write("\r")
-                sys.stdout.write(" "*79) # Zeile "löschen"
+                sys.stdout.write(" "*79)
                 sys.stdout.write("\r")
 
             print("Performance: %.1fMB/sec" % performance)
@@ -429,10 +412,10 @@ class HashChecker(BaseClass):
 
            fdt = FileDateTime(file_stat)
 
-           utc_mtime_string = fdt.utc_mtime_string # 'Fri, 05 Sep 2008 16:18:23'
+           utc_mtime_string = fdt.utc_mtime_string
            config.set(CONFIG_HASH_SECTION, "utc_mtime_string", utc_mtime_string)
 
-           tzinfo = fdt.get_offset_info() # u'+02:00 (Mitteleuropäische Sommerzeit)'
+           tzinfo = fdt.get_offset_info()
            config.set(CONFIG_HASH_SECTION, "timezone_info", tzinfo)
 
            # config.set(CONFIG_HASH_SECTION, "mtime", repr(file_stat.st_mtime))
@@ -491,13 +474,13 @@ if __name__ == '__main__':
         # see: http://www.python-forum.de/topic-16615.html (de)
         args = [arg.strip('"') for arg in args]
 
-    # HashChecker(args)
+    HashChecker(args)
 
-    print("SelfTest")
-    HashChecker([__file__])
-    os.remove("%s.hash" % __file__)
-    HashChecker([__file__])
+    # print("SelfTest")
+    # HashChecker([__file__])
+    # os.remove("%s.hash" % __file__)
+    # HashChecker([__file__])
 
-    # DocTest
-    import doctest
-    print("DocTest:", doctest.testmod(verbose=False))
+    # # DocTest
+    # import doctest
+    # print("DocTest:", doctest.testmod(verbose=False))
