@@ -1,16 +1,31 @@
-# coding: utf-8
+#!/usr/bin/python
+# coding: UTF-8
 
+from __future__ import absolute_import, division, print_function
+
+import sys
 import time
-import Tkinter as tkinter
 
-WIDTH = 640
-HEIGHT = 480
-LEFT = -2
-RIGHT = 0.5
-TOP = 1.25
-BOTTOM = -1.25
-ITERATIONS = 40
-UPDATE_TIME = 0.75
+PY2 = sys.version_info[0] == 2
+if PY2:
+    # Python 2
+    import Queue as queue
+    import Tkinter as tkinter
+    import tkFileDialog as filedialog
+    import tkMessageBox as messagebox
+    import ScrolledText as scrolledtext
+    import tkFont as TkFont
+    range = xrange
+else:
+    # Python 3
+    import queue
+    import tkinter
+    from tkinter import filedialog
+    from tkinter import messagebox
+    from tkinter import scrolledtext
+    from tkinter import font as TkFont
+
+
 
 
 class HumanDuration(object):
@@ -38,75 +53,296 @@ class HumanDuration(object):
 human_duration = HumanDuration()
 
 
-root = tkinter.Tk()
-image = tkinter.PhotoImage(width=WIDTH, height=HEIGHT)
-lb1 = tkinter.Label(root, image=image)
-lb1.pack()
+def interlace_generator(limit):
+    def gen_pow(limit):
+        interlace_steps = []
+        step=0
+        while True:
+            value = 2**step
+            if value>=limit:
+                return interlace_steps
+            interlace_steps.append(value)
+            step+=1
+    interlace_steps = gen_pow(limit)
+    interlace_steps.reverse()
+    #~ print("interlace_steps:", interlace_steps)
+
+    pos = 0
+    step = 1
+    iteration = 0
+    size = interlace_steps[iteration]
+
+    while True:
+        yield (pos, size, iteration)
+        pos += (size * step)
+
+        if pos>limit:
+            step = 2
+            iteration += 1
+            try:
+                size = interlace_steps[iteration]
+            except IndexError:
+                return
+
+            pos = size
 
 
-start_time = time.time()
-time_threshold = start_time + (UPDATE_TIME / 2)
+class MultiStatusBar(tkinter.Frame):
+    """ code from idlelib.MultiStatusBar.MultiStatusBar """
+    def __init__(self, master, **kw):
+        tkinter.Frame.__init__(self, master, **kw)
+        self.labels = {}
 
-
-pixel_count = 0
-total_count = HEIGHT * WIDTH
-for y in range(HEIGHT):
-    for x in range(WIDTH):
-        z = complex(0, 0)
-        c = complex(LEFT + x * (RIGHT - LEFT) / WIDTH, TOP + y * (BOTTOM - TOP) / HEIGHT)
-        norm = abs(z) ** 2
-        for count in xrange(ITERATIONS):
-            if norm <= 4.0:
-                z = z * z + c
-                norm = abs(z * z)
-            else:
-                break
-
-        if count <= 4:
-            (r, g, b) = (128, 128, 128) # grey
-        elif count <= 8:
-            (r, g, b) = (0, 255, 0) # green
-        elif count <= 10:
-            (r, g, b) = (0, 0, 255) # blue
-        elif count <= 12:
-            (r, g, b) = (255, 0, 0) # red
-        elif count <= 15:
-            (r, g, b) = (255, 255, 0) # yellow
+    def set_label(self, name, text='', side=tkinter.LEFT):
+        if name not in self.labels:
+            label = tkinter.Label(self, bd=1, relief=tkinter.SUNKEN, anchor=tkinter.W)
+            label.pack(side=side)
+            self.labels[name] = label
         else:
-            (r, g, b) = (0, 0, 0) # black
+            label = self.labels[name]
+        label.config(text=text)
 
-        (r, g, b) = (count * 6, 0, 0)
 
-        pixel_count += 1
-        image.put("#%02x%02x%02x" % (r, g, b), (x, y))
+class MandelbrotTk(object):
+    UPDATE_TIME = 0.2
 
-        current_time = time.time()
-        if current_time > (time_threshold + UPDATE_TIME):
+    LEFT = -2
+    RIGHT = 2
+    TOP = 2
+    BOTTOM = -2
 
-            elapsed = float(current_time - start_time)      # Vergangene Zeit
-            estimated = elapsed / pixel_count * total_count # Geschätzte Zeit
-            remain = estimated - elapsed
-            performance = pixel_count / elapsed
-            percent = round(float(pixel_count) / total_count * 100.0, 2)
+    def __init__(self):
+        self.iterations = 40
+        self.width = self.height = 600
 
-            print (
-                "   "
-                "%(percent).1f%%"
-                " - current: %(elapsed)s"
-                " - total: %(estimated)s"
-                " - remain: %(remain)s"
-                " - %(perf).1f pixel/sec"
-                "   "
-            ) % {
-                "percent"  : percent,
-                "elapsed"  : human_duration(elapsed),
-                "estimated": human_duration(estimated),
-                "remain"   : human_duration(remain),
-                "perf"     : performance,
-            }
+        self.root = tkinter.Tk()
+        self.root.title("Mandelbrot in Tk by JensDiemer.de (GPL v3)")
+        self.root.geometry("+%d+%d" % (
+                self.root.winfo_screenwidth() * 0.1, self.root.winfo_screenheight() * 0.1
+        ))
+        self.root.columnconfigure(0, weight=1)
+        self.root.rowconfigure(0, weight=1)
 
-            time_threshold = current_time
+        self.canvas = tkinter.Canvas(self.root,
+            width=self.width,
+            height=self.height,
+            bd=0,  # Border
+            bg="#000000",
+        )
+        self.image = tkinter.PhotoImage(width=self.width, height=self.height)
+        self.canvas.create_image(0,0,
+            image=self.image,
+            state="normal",
+            anchor=tkinter.NW  # NW == NorthWest
+        )
+        self.canvas.grid(row=0, column=0, sticky=tkinter.NSEW)
 
-            root.update()
+        self.status_bar = MultiStatusBar(self.root)
+        if sys.platform == "darwin":
+            # Insert some padding to avoid obscuring some of the statusbar
+            # by the resize widget.
+            self.status_bar.set_label('_padding1', '    ', side=tkinter.RIGHT)
+        self.status_bar.grid(row=1, column=0)
 
-root.mainloop()
+        menubar = tkinter.Menu(self.root)
+
+        filemenu = tkinter.Menu(menubar, tearoff=0)
+        filemenu.add_command(label="Exit", command=self.root.destroy)
+        menubar.add_cascade(label="File", menu=filemenu)
+
+        # help menu
+        helpmenu = tkinter.Menu(menubar, tearoff=0)
+        helpmenu.add_command(label="help", command=self.menu_event_help)
+        helpmenu.add_command(label="about", command=self.menu_event_about)
+        menubar.add_cascade(label="help", menu=helpmenu)
+
+        self.root.config(menu=menubar)
+
+        self.root.bind("<Key>", self.event_key)
+        self.root.update()
+
+        self.render_after_id = None
+        self.stats_after_id = None
+
+    def menu_event_help(self):
+        messagebox.showinfo("Help",
+            "Zoom with: + / -\n"
+            "Navigate with cursor keys!"
+        )
+
+    def menu_event_about(self):
+        messagebox.showinfo("About",
+            "Mandelbrot in Tkinter rendered with Python.\n"
+            "By: Jens Diemer\n"
+            "www.jensdiemer.de\n"
+            "GPL v3"
+        )
+
+    def reset(self):
+        self.horizontal_offset = 0
+        self.vertical_offset = 0
+        self.zoom = 1
+        self.running = True
+
+    def calc_dimensions(self):
+        self.y = 0
+
+        print("horizontal offset..:", self.horizontal_offset)
+        print("vertical offset....:", self.vertical_offset)
+        print("zoom...............:", self.zoom)
+        self.left=(self.LEFT + self.horizontal_offset) * self.zoom
+        self.right=(self.RIGHT + self.horizontal_offset) * self.zoom
+        self.top=(self.TOP + self.vertical_offset) * self.zoom
+        self.bottom=(self.BOTTOM + self.vertical_offset) * self.zoom
+        print("Dimensions:", self.left, self.right, self.top, self.bottom)
+
+        _interlace_generator = interlace_generator(self.height)
+        try:
+            self.interlace_generator_next = _interlace_generator.next # Python 2
+        except AttributeError:
+            self.interlace_generator_next = _interlace_generator.__next__ # Python 3
+        self.done = False
+
+    def event_key(self, event):
+        keysym = event.keysym.lower()
+
+        if keysym == "right":
+            self.horizontal_offset -= 0.1
+        elif keysym == "left":
+            self.horizontal_offset += 0.1
+        elif keysym == "up":
+            self.vertical_offset -= 0.1
+        elif keysym == "down":
+            self.vertical_offset += 0.1
+        elif keysym in ("plus", "kp_add"):
+            self.zoom -= self.zoom * 0.1
+            self.horizontal_offset += self.horizontal_offset * 0.1
+            self.vertical_offset += self.vertical_offset * 0.1
+        elif keysym in ("minus", "kp_subtract"):
+            self.zoom += self.zoom * 0.1
+        else:
+            print("ignore keysym: %r" % keysym)
+            return
+
+        self.start_render_loop()
+
+    def render_callback(self, x, y, count, norm, size):
+        # (r, g, b) = (count * 6, 0, 0)
+
+        # red <-> green color ramp
+        (r, g, b) = (
+            (255 * count) // self.iterations, # red
+            (255 * (self.iterations - count)) // self.iterations, # green
+            0, # blue
+        )
+
+        data = "#%02x%02x%02x" % (r, g, b)
+        for offset in range(size):
+            self.image.put(data, (x, y+offset))
+
+        # Alternative:
+        # But it's slower :(
+        # self.canvas.create_line(x, y, x, y+size, fill=data)
+
+    def _render_line(self, y, left, right, top, bottom, width, height, iterations, size, render_callback):
+        data = ""
+        for x in range(width):
+            z = complex(0, 0)
+            c = complex(left + x * (right - left) / width, top + y * (bottom - top) / height)
+            norm = abs(z) ** 2
+            for count in range(iterations):
+                if norm <= 100:
+                    z = z * z + c
+                    norm = abs(z * z)
+                else:
+                    break
+
+            render_callback(x, y, count, norm, size)
+
+    def status_callback(self, current_line):
+        print("%.1f%%" % (float(current_line) / self.height * 100.0))
+        self.root.update()
+
+    def _render_loop(self):
+        if not self.running or self.done:
+            self._cancel_render_loop()
+            self._cancel_stats_loop()
+            return
+
+        try:
+            (self.y, size, iteration) = self.interlace_generator_next()
+        except StopIteration:
+            self.done = True
+            duration = time.time() - self.start_time
+            msg = "%ix%ipx Rendered in %iSec." % (self.width, self.height, duration)
+            self.status_bar.set_label('process', msg)
+            self._cancel_render_loop()
+            return
+
+        # FIXME: work-a-round for slowiness in render_callback()
+        if size>16:
+            size=16
+
+        self._render_line(
+            self.y,
+            self.left, self.right, self.top, self.bottom,
+            self.width, self.height, self.iterations,
+            size,
+            render_callback = self.render_callback
+        )
+        self.root.update_idletasks()
+        self.render_after_id = self.root.after_idle(func=self._render_loop)
+
+    def _cancel_render_loop(self):
+        print("_cancel_render_loop()")
+        if self.render_after_id is not None:
+            self.root.after_cancel(self.render_after_id)
+            self.render_after_id = None
+        self.running = False
+
+    def init_display_stats(self):
+        print("init_display_stats()")
+        self.last_pos = 0
+        self.start_time = self.last_update = time.time()
+
+    def _cancel_stats_loop(self):
+        print("_cancel_stats_loop()")
+        if self.stats_after_id is not None:
+            self.root.after_cancel(self.stats_after_id)
+            self.stats_after_id = None
+
+    def _display_stats_loop(self):
+        pos = (self.y * self.width)
+        pos_diff = pos - self.last_pos
+        self.last_pos = pos
+
+        duration = time.time() - self.last_update
+        self.last_update = time.time()
+
+        rate = pos_diff / duration
+        percent = 100.0 * self.y / self.height
+        self.status_bar.set_label('process', "%.1f%% (%i Pixel/sec.)" % (percent, rate))
+        self.stats_after_id = self.root.after(ms=500, func=self._display_stats_loop)
+
+    def start_render_loop(self):
+        self._cancel_render_loop()
+        self._cancel_stats_loop()
+
+        self.calc_dimensions()
+        self.init_display_stats()
+
+        self.running = True
+        self._display_stats_loop()
+        self._render_loop()
+
+    def mainloop(self):
+        self.reset()
+        self.start_render_loop()
+        self.root.mainloop()
+
+
+
+
+if __name__ == "__main__":
+    mandelbrot_tk = MandelbrotTk()
+    mandelbrot_tk.mainloop()
