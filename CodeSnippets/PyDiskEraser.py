@@ -127,19 +127,18 @@ def DeleteFile(File):
 
 def getFreeSpace(Drive):
     "Liefert den freien Speicherplatz in Bytes eines Laufwerks/mountpoints zurück"
-    if os.name == "nt":
-        # Benutze DIR-Ausgabe um freinen Speicherplatz zu ermitteln
-        ## Wenn auf dem Laufwerk keine Dateien existieren bzw. alle vorhanden versteckt
-        ## sind, dann funktioniert das parsen der dir-Ausgabe nicht, weil in der Ausgabe
-        ## nicht angezeigt wird, wieviel Bytes frei sind.
-        s = os.popen('dir %s\\ /ah' % Drive)
-        txt = s.readlines()
-        s.close()
-        txt = txt[-1]
-        txt = txt.split(",")[1]
-        txt = txt.split("Bytes")[0]
-        txt = "".join(txt.split("."))
-        return int(txt)
+    if sys.platform.startswith('win'):
+        import ctypes
+
+        _, total, free = (
+            ctypes.c_ulonglong(), ctypes.c_ulonglong(), ctypes.c_ulonglong()
+        )
+        ret = ctypes.windll.kernel32.GetDiskFreeSpaceExA(
+            ctypes.c_wchar_p(Drive), ctypes.byref(_), ctypes.byref(total), ctypes.byref(free)
+        )
+        if ret == 0:
+            raise ctypes.WinError() # WinError() will fetch the last error code.
+        return free.value
     elif os.name == "posix":
         # Unter Linux ist alles einfacher ;)
         stats = os.statvfs(Drive)
