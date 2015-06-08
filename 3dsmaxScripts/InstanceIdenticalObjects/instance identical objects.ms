@@ -9,7 +9,7 @@
 --  * How can we scroll the result edittext field?
 --
 --
--- copyleft (c) 2010 by htFX, Jens Diemer - http://www.htFX.de
+-- copyleft (c) 2010-2015 by htFX, Jens Diemer - http://www.htFX.de
 --
 --
 -- based on scripts:
@@ -267,8 +267,7 @@ rollout InstanceIdenticalObjectsRollout "instance identical objects" width:730 h
 		)
 		
 		format "force garbage collection:"
-		gc()
-		--light:true
+		gc light:true delayed:true
 		enableSceneRedraw()
 		max views redraw
 		format " - END -\n"
