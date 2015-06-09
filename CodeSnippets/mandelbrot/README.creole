@@ -1,0 +1,5 @@
+=== mandelbrot
+
+mandelbrot_pyglet.py
+
+{{https://github.com/jedie/python-code-snippets/raw/master/CodeSnippets/mandelbrot/mandelbrot_pyglet01.PNG|mandelbrot_pyglet01.PNG}}
