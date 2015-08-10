@@ -1,3 +1,19 @@
+
+"""
+    'publish' helper for setup.py
+    copyleft 2015 Jens Diemer - GNU GPL v2+
+"""
+
+import os
+import sys
+import subprocess
+import shutil
+
+
+# from your_package import __version__
+__version__ = None
+
+
 if "publish" in sys.argv:
     """
     Build and upload to PyPi, if...
@@ -13,10 +29,6 @@ if "publish" in sys.argv:
 
     TODO: Look at: https://github.com/zestsoftware/zest.releaser
     """
-    # Imports here, so it's easier to copy&paste this complete code block ;)
-    import subprocess
-    import shutil
-
     try:
         # Test if wheel is installed, otherwise the user will only see:
         #   error: invalid command 'bdist_wheel'
