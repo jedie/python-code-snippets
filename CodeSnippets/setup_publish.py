@@ -34,6 +34,9 @@ if "publish" in sys.argv:
     Source: https://github.com/jedie/python-code-snippets/blob/master/CodeSnippets/setup_publish.py
     copyleft 2015 Jens Diemer - GNU GPL v2+
     """
+    if sys.version_info[0] == 2:
+        input = raw_input
+
     try:
         # Test if wheel is installed, otherwise the user will only see:
         #   error: invalid command 'bdist_wheel'
