@@ -16,6 +16,8 @@ __version__ = None
 
 if "publish" in sys.argv:
     """
+    'publish' helper for setup.py
+
     Build and upload to PyPi, if...
         ... __version__ doesn't contains "dev"
         ... we are on git 'master' branch
@@ -28,6 +30,9 @@ if "publish" in sys.argv:
      * use testpypi................: ./setup.py publish --repository=test
 
     TODO: Look at: https://github.com/zestsoftware/zest.releaser
+
+    Source: https://github.com/jedie/python-code-snippets/blob/master/CodeSnippets/setup_publish.py
+    copyleft 2015 Jens Diemer - GNU GPL v2+
     """
     try:
         # Test if wheel is installed, otherwise the user will only see:
