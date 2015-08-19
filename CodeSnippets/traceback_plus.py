@@ -18,17 +18,25 @@ import os
 import sys
 import traceback
 
+try:
+    import click
+except ImportError as err:
+    msg=("Import error: %s - Please install 'click' !" % err)
+    raise ImportError(msg)
+
+MAX_CHARS = 256
+
 
 def print_exc_plus():
     """
     Print the usual traceback information, followed by a listing of all the
     local variables in each frame.
     """
-    sys.stderr.flush()
-    sys.stdout.flush()
+    sys.stderr.flush() # for eclipse
+    sys.stdout.flush() # for eclipse
 
     tb = sys.exc_info()[2]
-    while 1:
+    while True:
         if not tb.tb_next:
             break
         tb = tb.tb_next
@@ -37,29 +45,50 @@ def print_exc_plus():
     while f:
         stack.append(f)
         f = f.f_back
-    stack.reverse()
-    print("="*79)
-    traceback.print_exc()
-    print(" -"*40)
-    print("Locals by frame, innermost last")
-    for frame in stack[1:]:
-        print("\n *** Frame %s in %s at line %s" % (
-            frame.f_code.co_name,
+
+    txt = traceback.format_exc()
+    txt_lines = txt.splitlines()
+    first_line = txt_lines.pop(0)
+    last_line = txt_lines.pop(-1)
+    click.secho(first_line, fg="red")
+    for line in txt_lines:
+        if line.strip().startswith("File"):
+            click.echo(line)
+        else:
+            click.secho(line, fg="white", bold=True)
+    click.secho(last_line, fg="red")
+
+    click.echo()
+    click.secho(
+        "Locals by frame, most recent call first:",
+        fg="blue", bold=True
+    )
+    for frame in stack:
+        msg = 'File "%s", line %i, in %s' % (
             frame.f_code.co_filename,
-            frame.f_lineno)
+            frame.f_lineno,
+            frame.f_code.co_name,
         )
-        for key, value in frame.f_locals.items():
-            if key.startswith("__"):
-                continue
-            print("\t%20s = " % key, end="")
-            #We have to be careful not to cause a new error in our error
-            #printer! Calling str() on an unknown object could cause an
-            #error we don't want.
+        msg = click.style(msg, fg="white", bold=True, underline=True)
+        click.echo("\n *** %s" % msg)
+
+        for key, value in list(frame.f_locals.items()):
+            click.echo("%30s = " % click.style(key, bold=True), nl=False)
+            # We have to be careful not to cause a new error in our error
+            # printer! Calling str() on an unknown object could cause an
+            # error we don't want.
+            if isinstance(value, int):
+                value = "$%x (decimal: %i)" % (value, value)
+            else:
+                value = repr(value)
+
+            if len(value) > MAX_CHARS:
+                value = "%s..." % value[:MAX_CHARS]
+
             try:
-                print(repr(value))
+                click.echo(value)
             except:
-                print("<ERROR WHILE PRINTING VALUE>")
-    print("="*79)
+                click.echo("<ERROR WHILE PRINTING VALUE>")
 
 
 def demo():
