@@ -83,7 +83,18 @@ def update_env(path):
     click.echo("Update %r..." % path)
     src_path = os.path.join(path, "src")
     if not os.path.isdir(src_path):
-        click.echo("Error!")
+        click.echo("Error: Path not found: %r" % src_path)
+
+    activate_file = os.path.join(path, "bin", "activate_this.py")
+    if not os.path.isfile(activate_file):
+        click.echo("Error: File not found: %r" % activate_file)
+
+    print("Activate env with: %r" % activate_file)
+    with open(activate_file, "rb") as f:
+        content = f.read()
+    exec(compile(content, activate_file, 'exec'), {"__file__":activate_file})
+    print("sys.real_prefix:", sys.real_prefix)
+    print("sys.prefix:", sys.prefix)
 
     for path in os.listdir(src_path):
         abs_path = os.path.join(src_path, path)
@@ -110,6 +121,8 @@ def update_env(path):
             pull_args += ["origin", branch]
 
         verbose_call(*pull_args, cwd=abs_path)
+
+        verbose_call("pip", "install", "-e", ".", "--no-deps", cwd=abs_path)
 
 
 if __name__ == "__main__":
