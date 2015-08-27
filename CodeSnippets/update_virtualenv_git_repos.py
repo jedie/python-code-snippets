@@ -96,6 +96,9 @@ def update_env(path):
     print("sys.real_prefix:", sys.real_prefix)
     print("sys.prefix:", sys.prefix)
 
+    click.secho("Update pip:", bold=True)
+    verbose_call("pip", "install", "--upgrade", "pip", cwd=src_path)
+
     for path in os.listdir(src_path):
         abs_path = os.path.join(src_path, path)
         if not os.path.isdir(abs_path):
