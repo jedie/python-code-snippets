@@ -39,7 +39,13 @@ def verbose_check_output(*args, **kwargs):
 
 
 def verbose_call(*args, **kwargs):
-    click.echo(click.style("\tcall: %s" % " ".join(args), fg="blue"))
+    click.echo(
+        "".join([
+            "\n",
+            click.style("%s $ " % kwargs.get("cwd", "."), fg="white"),
+            click.style(" ".join(args), fg="blue", bold=True),
+        ])
+    )
     returncode = subprocess.call(args, **kwargs)
     if returncode==0:
         color="green"
@@ -80,6 +86,8 @@ def update_env(path):
     """
     Update a virtualenv by Jens Diemer - GPL v3
     """
+    click.clear() # clear screen
+
     click.echo("Update %r..." % path)
     src_path = os.path.join(path, "src")
     if not os.path.isdir(src_path):
@@ -98,6 +106,8 @@ def update_env(path):
 
     click.secho("Update pip:", bold=True)
     verbose_call("pip", "install", "--upgrade", "pip", cwd=src_path)
+    click.secho("Update setuptools:", bold=True)
+    verbose_call("pip", "install", "--upgrade", "setuptools", cwd=src_path)
 
     for path in os.listdir(src_path):
         abs_path = os.path.join(src_path, path)
