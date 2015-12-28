@@ -2,6 +2,9 @@
 """
     'publish' helper for setup.py
     copyleft 2015 Jens Diemer - GNU GPL v2+
+    
+    Sourcecode can be found here:
+    https://github.com/jedie/python-code-snippets/blob/master/CodeSnippets/setup_publish.py
 """
 
 import os
