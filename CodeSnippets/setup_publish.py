@@ -40,6 +40,7 @@ if "publish" in sys.argv:
     if sys.version_info[0] == 2:
         input = raw_input
 
+    import_error = False
     try:
         # Test if wheel is installed, otherwise the user will only see:
         #   error: invalid command 'bdist_wheel'
@@ -50,7 +51,7 @@ if "publish" in sys.argv:
         print("e.g.:")
         print("    ~/your/env/$ source bin/activate")
         print("    ~/your/env/$ pip install wheel")
-        sys.exit(-1)
+        import_error = True
 
     try:
         import twine
@@ -60,6 +61,9 @@ if "publish" in sys.argv:
         print("e.g.:")
         print("    ~/your/env/$ source bin/activate")
         print("    ~/your/env/$ pip install twine")
+        import_error = True
+
+    if import_error:
         sys.exit(-1)
 
     def verbose_check_output(*args):
