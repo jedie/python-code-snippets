@@ -89,7 +89,7 @@ if __name__ == "__main__":
 
         for file_entry in file_entries:
             file_count += 1
-            #~ print "***", repr(file_entry),
+            # ~ print "***", repr(file_entry),
 
             if time.time() > next_update:
                 next_update = time.time() + 1
@@ -116,26 +116,32 @@ if __name__ == "__main__":
             mtime = file_entry.mtime
 
             if not args.info:
+                if mtime > now:
+                    print " *** Skip file:", repr(file_entry.filepath)
+                    print "File date is in the future:"
+                    print "\tfile mtime:", mtime
+                    print "\tnow:", now
+                    print
+                    continue
+
                 delta = now - mtime
-                if delta < timedelta2:
-                    print "Error!!! Filedate is older than %s ?!?!" % timedelta2
-                    print "Check file:", repr(file_entry.filepath)
+                if delta > timedelta2:
+                    print " *** Skipt file:", repr(file_entry.filepath)
+                    print "Filedate is older than %s ?!?!" % timedelta2
                     print "Debug Info:"
                     print "\tfile mtime:", mtime
                     print "\tnow:", now
                     print "\ttimedelta2:", timedelta2
                     print "\tdelta:", delta
                     print
-                    print "Abort!"
-                    sys.exit(2)
                     continue
 
                 if delta > timedelta1:
-                    #~ out(
-                        #~ " *** %r is older than %s days: %s" % (
-                            #~ file_entry.filepath, timedelta1.days, mtime
-                        #~ )
-                    #~ )
+                    # ~ out(
+                        # ~ " *** %r is older than %s days: %s" % (
+                            # ~ file_entry.filepath, timedelta1.days, mtime
+                        # ~ )
+                    # ~ )
                     _add_to_dict_list(delete_info, size, file_entry)
                     cleared_size += file_entry.size
                     file_entry.delete(dryrun=args.dryrun)
@@ -201,8 +207,8 @@ if __name__ == "__main__":
             count += 1
             if count >= 30:
                 break
-            #~ mtime = file_entry.mtime.strftime("%d.%m.%y %H:%M")
-            #~ print "%s - %s" % (mtime, repr(file_entry))
+            # ~ mtime = file_entry.mtime.strftime("%d.%m.%y %H:%M")
+            # ~ print "%s - %s" % (mtime, repr(file_entry))
             delta = now - file_entry.mtime
             out(u"%-23s - %s" % (human_timedelta(delta), unicode(file_entry)))
         if count >= 30:

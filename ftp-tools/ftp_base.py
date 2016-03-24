@@ -10,17 +10,20 @@
 """
 
 
-import sys
 import datetime
 import ftplib
+import logging
 import posixpath
+import sys
 
 from utils import human_filesize, stdout_encoding, out
 
 
 DIRECTORY = "DIR"
 FILE = "FILE"
-DATE_FORMAT = "%m-%d-%y %I:%M%p" # e.g.: 02-14-12 11:44AM
+DATE_FORMAT = "%m-%d-%y %I:%M%p"  # e.g.: 02-14-12 11:44AM
+
+log = logging.getLogger("ftp-tools")
 
 
 class FtpFileItem(object):
@@ -30,9 +33,9 @@ class FtpFileItem(object):
         self.dir = dir
         self.filepath = filepath
 
-        datetime_string = "%s %s" % (date_string, time_string) # e.g.: 02-16-12 01:11PM
+        datetime_string = "%s %s" % (date_string, time_string)  # e.g.: 02-16-12 01:11PM
         self.mtime = datetime.datetime.strptime(datetime_string, DATE_FORMAT)
-        #~ print datetime_string, self.mtime
+        # ~ print datetime_string, self.mtime
 
         self.size = size
 
@@ -61,15 +64,15 @@ class FTP2(object):
         self.ftp = ftplib.FTP(url)
         self.ftp.login(user=user, passwd=passwd)
         welcome = self.ftp.getwelcome()
-        sys.stderr.write("OK\n%s\n" % welcome)
-        print welcome
-        print self.ftp.sendcmd("OPTS UTF8 ON")
-        #~ print self.ftp.sendcmd("FEAT")
-        #~ sys.exit()
-        sys.stderr.write("Waiting for file listing...")
+        log.info("OK\n%s\n" % welcome)
+        log.info(welcome)
+        log.info(self.ftp.sendcmd("OPTS UTF8 ON"))
+        # ~ print self.ftp.sendcmd("FEAT")
+        # ~ sys.exit()
+        log.info("Waiting for file listing...")
 
     def walk(self, dir):
-        #~ print "list dir", dir.encode(stdout_encoding)
+        # ~ print "list dir", dir.encode(stdout_encoding)
 
         if isinstance(dir, unicode):
             dir2 = dir.encode("utf-8")
@@ -81,24 +84,25 @@ class FTP2(object):
         try:
             self.ftp.cwd(dir2)
         except ftplib.error_perm, err:
-            print " *** Error on %s: %s" % (dir, err)
+            log.error(" *** Error on %s: %s" % (dir, err))
             return
 
         listing = []
         try:
             self.ftp.dir(".", listing.append)
         except Exception, err:
-            print " *** Error on %s: %s" % (dir, err)
+            log.error(" *** Error on %s: %s" % (dir, err))
+            sys.exit()
 
-        #~ print listing
+        # ~ print listing
 
         file_entries = []
         for line in listing:
-            #~ print repr(line)
+            # ~ print repr(line)
             line = line.decode("utf-8")
 
             cols = line.split(None, 3)
-            #~ print cols
+            # ~ print cols
             item_date, item_time, item_type, item_name = cols
 
             path = posixpath.join(dir, item_name)
