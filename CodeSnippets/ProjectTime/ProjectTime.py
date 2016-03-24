@@ -19,7 +19,7 @@ v0.1
     - erste Version
 """
 
-import os, datetime, math
+import os, datetime, time, math
 
 weekDaysMap = {
     "Mon": "MO",
@@ -61,6 +61,7 @@ class Chronologer:
         day_additionals=day_additionals,
         time_additionals=time_additionals,
         debug=False,
+        only_mtime=False,
             ):
 
         self.projectPath = projectPath
@@ -73,13 +74,14 @@ class Chronologer:
         self.day_additionals = day_additionals
         self.time_additionals = time_additionals
         self.debug = debug
+        self.only_mtime = only_mtime
 
         self.total_costs = None
         self.statistics = {}
         self.dayData = {}
         self.timeStore = TimeStore()
 
-        print("read %r..." % self.projectPath, end="")
+        print("read %r..." % self.projectPath)
         count = self.readDir(self.projectPath)
         print("OK (%s items)" % count)
 
@@ -105,6 +107,8 @@ class Chronologer:
                     return True
             return False
 
+        next_update = time.time() + 1
+
         count = 0
         if not os.path.isdir(path):
             raise SystemError("Path '%s' not found!" % path)
@@ -120,6 +124,11 @@ class Chronologer:
             for fileName in files:
                 count += 1
                 self.statFile(os.path.join(root, fileName))
+
+            if time.time()>next_update:
+                print("%i dir items readed..." % count)
+                next_update = time.time() + 1
+
         return count
 
     def statFile(self, path):
@@ -139,8 +148,9 @@ class Chronologer:
             print("last access time: %r" % datetime.datetime.fromtimestamp(lastAccess))
             print("last modify time: %r" % datetime.datetime.fromtimestamp(lastModification))
 
-        self.timeStore.add(creationTime, path)
-        self.timeStore.add(lastAccess, path)
+        if not self.only_mtime:
+            self.timeStore.add(creationTime, path)
+            self.timeStore.add(lastAccess, path)
         self.timeStore.add(lastModification, path)
 
     def makeBlocks(self):
@@ -308,7 +318,9 @@ class Chronologer:
 
         print("_" * 40)
         totalCosts = total_hours * self.hourlyRate
-        print(" %s Std * %s EUR = %s EUR" % (total_hours, self.hourlyRate, totalCosts))
+        print(" %s Std * %s EUR (an %i Tage) = %s EUR" % (
+            total_hours, self.hourlyRate, len(self.dayData), totalCosts
+        ))
 
         print()
         print("day additionals:")
