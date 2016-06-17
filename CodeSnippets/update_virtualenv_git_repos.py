@@ -3,6 +3,11 @@
 """
     Update all git repositories in a virtualenv.
 
+    usage:
+        ~$ cd foobar_env
+        ~/foobar_env$ source bin/activate
+        (foobar_env) ~/foobar_env$ ./update_virtualenv_git_repos.py
+
     copyleft by Jens Diemer
     release under GPL v3+
 """
@@ -76,33 +81,25 @@ def get_git_branch(path, verbose=False):
 
 
 @click.command(context_settings=CONTEXT_SETTINGS)
-@click.argument("path", type=click.Path(
-    exists=True,
-    file_okay=False, dir_okay=True,
-    writable=False, readable=True,
-    resolve_path=True
-))
-def update_env(path):
+def update_env():
     """
     Update a virtualenv by Jens Diemer - GPL v3
     """
     click.clear() # clear screen
 
-    click.echo("Update %r..." % path)
+    try:
+        path = os.environ["VIRTUAL_ENV"]
+    except KeyError as err:
+        click.echo(click.style("ERROR: Not called in a activates Virtual Environment!", fg="red"))
+        print("Please activate first!")
+        print("(Origin error: %s)" % err)
+        sys.exit(-1)
+    else:
+        click.echo("Update %r..." % path)
+
     src_path = os.path.join(path, "src")
     if not os.path.isdir(src_path):
         click.echo("Error: Path not found: %r" % src_path)
-
-    activate_file = os.path.join(path, "bin", "activate_this.py")
-    if not os.path.isfile(activate_file):
-        click.echo("Error: File not found: %r" % activate_file)
-
-    print("Activate env with: %r" % activate_file)
-    with open(activate_file, "rb") as f:
-        content = f.read()
-    exec(compile(content, activate_file, 'exec'), {"__file__":activate_file})
-    print("sys.real_prefix:", sys.real_prefix)
-    print("sys.prefix:", sys.prefix)
 
     click.secho("Update pip:", bold=True)
     verbose_call("pip", "install", "--upgrade", "pip", cwd=src_path)
