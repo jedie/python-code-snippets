@@ -6,7 +6,7 @@
 
     Creates a "*.hash" file and use existing "*.hash" file to compare
 
-    :copyleft: 2005-2015 by Jens Diemer
+    :copyleft: 2005-2016 by Jens Diemer
     :license: GNU GPL v3 or above, see LICENSE for more details.
 """
 
@@ -17,9 +17,11 @@ __license__ = "GNU General Public License v3 or above - http://www.opensource.or
 __info__ = "md5sum_calc"
 __url__ = "http://www.jensdiemer.de"
 
-__version__ = "0.4.2"
+__version__ = "0.5.1"
 
 __history__ = """
+v0.5.1 - 07.10.2016
+    - Display online scanner urls.
 v0.5.0 - 16.04.2015
     - Fixes for Python 3 (runs also with Python 2 ;) )
 v0.4.1 - 18.03.2014
@@ -81,7 +83,10 @@ sha256_constructor = hashlib.sha256
 CONFIG_HASH_SECTION="HashChecker"
 BUFSIZE = 64 * 1024
 IS_WIN = sys.platform.startswith("win32")
-
+URLS=(
+    "https://www.virustotal.com/en/file/{sha256}/analysis/",
+    "https://virusscan.jotti.org/en/search/hash/{sha256}",
+)
 
 class FileDateTime(object):
     """
@@ -274,10 +279,19 @@ class HashChecker(BaseClass):
             # Something went wrong
             return
 
-        for hash_type, hash in list(hashes.items()):
-            print("%s: %s" % (hash_type, hash.hexdigest()))
+        hash_file_data = {}
+        for hash_type, hash in sorted(hashes.items()):
+            hexdigest = hash.hexdigest()
+            hash_file_data[hash_type]=hexdigest
+            print("%s: %s" % (hash_type, hexdigest))
+
+        self.print_links(hash_file_data)
 
         self.write_hash_file(hashes)
+
+    def print_links(self, hash_file_data):
+        for url in URLS:
+            print(url.format(**hash_file_data))
 
     def compare_file(self, hash_file_data, size, utc_mtime_string):
         file_stat = os.stat(self.file_name_path)
@@ -303,7 +317,7 @@ class HashChecker(BaseClass):
             return
 
         tests_ok = True
-        for hash_type, hash in list(hash_file_data.items()):
+        for hash_type, hash in sorted(hash_file_data.items()):
             current_hash = hashes[hash_type].hexdigest()
 
             if hash is None:
@@ -319,6 +333,8 @@ class HashChecker(BaseClass):
                 print("ERROR: %s checksum wrong:" % hash_type)
                 print("%s (currrent) is not %s (saved)" % (current_hash, hash))
                 tests_ok = False
+
+        self.print_links(hash_file_data)
 
         if tests_ok:
             return hashes
@@ -427,7 +443,7 @@ class HashChecker(BaseClass):
     def read_hash_file(self):
         config = configparser.ConfigParser()
         config.read(self.hash_data_filename)
-        
+
         hash_file_data = {}
         for hash_type in HASHES:
             try:
@@ -476,11 +492,11 @@ if __name__ == '__main__':
 
     HashChecker(args)
 
-    # print("SelfTest")
-    # HashChecker([__file__])
-    # os.remove("%s.hash" % __file__)
-    # HashChecker([__file__])
+    #~ print("SelfTest")
+    #~ HashChecker([__file__])
+    #~ os.remove("%s.hash" % __file__)
+    #~ HashChecker([__file__])
 
-    # # DocTest
-    # import doctest
-    # print("DocTest:", doctest.testmod(verbose=False))
+    #~ # DocTest
+    #~ import doctest
+    #~ print("DocTest:", doctest.testmod(verbose=False))
