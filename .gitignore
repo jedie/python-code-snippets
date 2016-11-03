@@ -1,5 +1,6 @@
+.*
 *.py[c|d]
 *.log
 *~
-*.db3
-CodeSnippets/Dragon 32/pypy-2.1
+!.gitkeep
+!.editorconfig
