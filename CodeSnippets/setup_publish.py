@@ -1,7 +1,7 @@
 
 """
     'publish' helper for setup.py
-    copyleft 2015-2017 Jens Diemer - GNU GPL v2+
+    copyleft 2015-2018 Jens Diemer - GNU GPL v2+
     
     Sourcecode can be found here:
     https://github.com/jedie/python-code-snippets/blob/master/CodeSnippets/setup_publish.py
@@ -47,7 +47,7 @@ if "publish" in sys.argv:
         import wheel
     except ImportError as err:
         print("\nError: %s" % err)
-        print("\nMaybe https://pypi.python.org/pypi/wheel is not installed or virtualenv not activated?!?")
+        print("\nMaybe https://pypi.org/project/wheel is not installed or virtualenv not activated?!?")
         print("e.g.:")
         print("    ~/your/env/$ source bin/activate")
         print("    ~/your/env/$ pip install wheel")
@@ -57,7 +57,7 @@ if "publish" in sys.argv:
         import twine
     except ImportError as err:
         print("\nError: %s" % err)
-        print("\nMaybe https://pypi.python.org/pypi/twine is not installed or virtualenv not activated?!?")
+        print("\nMaybe https://pypi.org/project/twine is not installed or virtualenv not activated?!?")
         print("e.g.:")
         print("    ~/your/env/$ source bin/activate")
         print("    ~/your/env/$ pip install twine")
