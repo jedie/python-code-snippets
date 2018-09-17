@@ -105,7 +105,11 @@ class SearchAndReplace(object):
             for filename in filelist:
                 for file_filter in self.file_filter:
                     if fnmatch.fnmatch(filename, file_filter):
-                        self.search_file(os.path.join(root, filename))
+                        try:
+                            self.search_file(os.path.join(root, filename))
+                        except FileNotFoundError as err:
+                            print("Skip: %s" % err)
+                            continue
                         file_count += 1
         return file_count
 
