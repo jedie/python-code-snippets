@@ -1,41 +1,22 @@
-#!/usr/bin/python
-# coding: UTF-8
-
-from __future__ import absolute_import, division, print_function
+#!/usr/bin/python3
 
 import sys
 import time
+import tkinter
+from tkinter import messagebox
 
-PY2 = sys.version_info[0] == 2
-if PY2:
-    # Python 2
-    import Queue as queue
-    import Tkinter as tkinter
-    import tkFileDialog as filedialog
-    import tkMessageBox as messagebox
-    import ScrolledText as scrolledtext
-    import tkFont as TkFont
-    range = xrange
-else:
-    # Python 3
-    import queue
-    import tkinter
-    from tkinter import filedialog
-    from tkinter import messagebox
-    from tkinter import scrolledtext
-    from tkinter import font as TkFont
-
-
+assert sys.version_info[0] > 2, "Python v3 is needed!"
 
 
 class HumanDuration(object):
     CHUNKS = (
-      (60 * 60 * 24 * 365, 'years'),
-      (60 * 60 * 24 * 30, 'months'),
-      (60 * 60 * 24 * 7, 'weeks'),
-      (60 * 60 * 24, 'days'),
-      (60 * 60, 'hours'),
+        (60 * 60 * 24 * 365, "years"),
+        (60 * 60 * 24 * 30, "months"),
+        (60 * 60 * 24 * 7, "weeks"),
+        (60 * 60 * 24, "days"),
+        (60 * 60, "hours"),
     )
+
     def __call__(self, t):
         if t < 1:
             return "%.1f ms" % round(t * 1000, 1)
@@ -50,22 +31,32 @@ class HumanDuration(object):
                 count = round(count, 1)
                 break
         return "%.1f %s" % (count, name)
+
+
 human_duration = HumanDuration()
 
 
+def gen_pow(limit, reverse=True):
+
+    interlace_steps = []
+    step = 0
+    while True:
+        value = 2 ** step
+        if value >= limit:
+            break
+        interlace_steps.append(value)
+        step += 1
+
+    if reverse:
+        interlace_steps.reverse()
+    return tuple(interlace_steps)
+
+
 def interlace_generator(limit):
-    def gen_pow(limit):
-        interlace_steps = []
-        step=0
-        while True:
-            value = 2**step
-            if value>=limit:
-                return interlace_steps
-            interlace_steps.append(value)
-            step+=1
-    interlace_steps = gen_pow(limit)
-    interlace_steps.reverse()
-    #~ print("interlace_steps:", interlace_steps)
+
+    interlace_steps = gen_pow(limit, reverse=True)
+
+    # ~ print("interlace_steps:", interlace_steps)
 
     pos = 0
     step = 1
@@ -73,10 +64,10 @@ def interlace_generator(limit):
     size = interlace_steps[iteration]
 
     while True:
-        yield (pos, size, iteration)
-        pos += (size * step)
+        yield pos, size
+        pos += size * step
 
-        if pos>limit:
+        if pos > limit:
             step = 2
             iteration += 1
             try:
@@ -89,11 +80,12 @@ def interlace_generator(limit):
 
 class MultiStatusBar(tkinter.Frame):
     """ code from idlelib.MultiStatusBar.MultiStatusBar """
+
     def __init__(self, master, **kw):
         tkinter.Frame.__init__(self, master, **kw)
         self.labels = {}
 
-    def set_label(self, name, text='', side=tkinter.LEFT):
+    def set_label(self, name, text="", side=tkinter.LEFT):
         if name not in self.labels:
             label = tkinter.Label(self, bd=1, relief=tkinter.SUNKEN, anchor=tkinter.W)
             label.pack(side=side)
@@ -117,31 +109,20 @@ class MandelbrotTk(object):
 
         self.root = tkinter.Tk()
         self.root.title("Mandelbrot in Tk by JensDiemer.de (GPL v3)")
-        self.root.geometry("+%d+%d" % (
-                self.root.winfo_screenwidth() * 0.1, self.root.winfo_screenheight() * 0.1
-        ))
+        self.root.geometry("+%d+%d" % (self.root.winfo_screenwidth() * 0.1, self.root.winfo_screenheight() * 0.1))
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
 
-        self.canvas = tkinter.Canvas(self.root,
-            width=self.width,
-            height=self.height,
-            bd=0,  # Border
-            bg="#000000",
-        )
+        self.canvas = tkinter.Canvas(self.root, width=self.width, height=self.height, bd=0, bg="#000000")  # Border
         self.image = tkinter.PhotoImage(width=self.width, height=self.height)
-        self.canvas.create_image(0,0,
-            image=self.image,
-            state="normal",
-            anchor=tkinter.NW  # NW == NorthWest
-        )
+        self.canvas.create_image(0, 0, image=self.image, state="normal", anchor=tkinter.NW)  # NW == NorthWest
         self.canvas.grid(row=0, column=0, sticky=tkinter.NSEW)
 
         self.status_bar = MultiStatusBar(self.root)
         if sys.platform == "darwin":
             # Insert some padding to avoid obscuring some of the statusbar
             # by the resize widget.
-            self.status_bar.set_label('_padding1', '    ', side=tkinter.RIGHT)
+            self.status_bar.set_label("_padding1", "    ", side=tkinter.RIGHT)
         self.status_bar.grid(row=1, column=0)
 
         menubar = tkinter.Menu(self.root)
@@ -165,17 +146,11 @@ class MandelbrotTk(object):
         self.stats_after_id = None
 
     def menu_event_help(self):
-        messagebox.showinfo("Help",
-            "Zoom with: + / -\n"
-            "Navigate with cursor keys!"
-        )
+        messagebox.showinfo("Help", "Zoom with: + / -\n" "Navigate with cursor keys!")
 
     def menu_event_about(self):
-        messagebox.showinfo("About",
-            "Mandelbrot in Tkinter rendered with Python.\n"
-            "By: Jens Diemer\n"
-            "www.jensdiemer.de\n"
-            "GPL v3"
+        messagebox.showinfo(
+            "About", "Mandelbrot in Tkinter rendered with Python.\n" "By: Jens Diemer\n" "www.jensdiemer.de\n" "GPL v3"
         )
 
     def reset(self):
@@ -190,17 +165,13 @@ class MandelbrotTk(object):
         print("horizontal offset..:", self.horizontal_offset)
         print("vertical offset....:", self.vertical_offset)
         print("zoom...............:", self.zoom)
-        self.left=(self.LEFT + self.horizontal_offset) * self.zoom
-        self.right=(self.RIGHT + self.horizontal_offset) * self.zoom
-        self.top=(self.TOP + self.vertical_offset) * self.zoom
-        self.bottom=(self.BOTTOM + self.vertical_offset) * self.zoom
+        self.left = (self.LEFT + self.horizontal_offset) * self.zoom
+        self.right = (self.RIGHT + self.horizontal_offset) * self.zoom
+        self.top = (self.TOP + self.vertical_offset) * self.zoom
+        self.bottom = (self.BOTTOM + self.vertical_offset) * self.zoom
         print("Dimensions:", self.left, self.right, self.top, self.bottom)
 
-        _interlace_generator = interlace_generator(self.height)
-        try:
-            self.interlace_generator_next = _interlace_generator.next # Python 2
-        except AttributeError:
-            self.interlace_generator_next = _interlace_generator.__next__ # Python 3
+        self.interlace_generator_next = interlace_generator(self.height).__next__  # Python 3
         self.done = False
 
     def event_key(self, event):
@@ -226,19 +197,19 @@ class MandelbrotTk(object):
 
         self.start_render_loop()
 
-    def render_callback(self, x, y, count, norm, size):
+    def render_callback(self, x, y, count, size):
         # (r, g, b) = (count * 6, 0, 0)
 
         # red <-> green color ramp
         (r, g, b) = (
-            (255 * count) // self.iterations, # red
-            (255 * (self.iterations - count)) // self.iterations, # green
-            0, # blue
+            (255 * count) // self.iterations,  # red
+            (255 * (self.iterations - count)) // self.iterations,  # green
+            0,  # blue
         )
 
         data = "#%02x%02x%02x" % (r, g, b)
         for offset in range(size):
-            self.image.put(data, (x, y+offset))
+            self.image.put(data, (x, y + offset))
 
         # Alternative:
         # But it's slower :(
@@ -257,7 +228,7 @@ class MandelbrotTk(object):
                 else:
                     break
 
-            render_callback(x, y, count, norm, size)
+            render_callback(x, y, count, size)
 
     def status_callback(self, current_line):
         print("%.1f%%" % (float(current_line) / self.height * 100.0))
@@ -270,25 +241,30 @@ class MandelbrotTk(object):
             return
 
         try:
-            (self.y, size, iteration) = self.interlace_generator_next()
+            self.y, size = self.interlace_generator_next()
         except StopIteration:
             self.done = True
             duration = time.time() - self.start_time
             msg = "%ix%ipx Rendered in %iSec." % (self.width, self.height, duration)
-            self.status_bar.set_label('process', msg)
+            self.status_bar.set_label("process", msg)
             self._cancel_render_loop()
             return
 
         # FIXME: work-a-round for slowiness in render_callback()
-        if size>16:
-            size=16
+        if size > 16:
+            size = 16
 
         self._render_line(
             self.y,
-            self.left, self.right, self.top, self.bottom,
-            self.width, self.height, self.iterations,
+            self.left,
+            self.right,
+            self.top,
+            self.bottom,
+            self.width,
+            self.height,
+            self.iterations,
             size,
-            render_callback = self.render_callback
+            render_callback=self.render_callback,
         )
         self.root.update_idletasks()
         self.render_after_id = self.root.after_idle(func=self._render_loop)
@@ -312,7 +288,7 @@ class MandelbrotTk(object):
             self.stats_after_id = None
 
     def _display_stats_loop(self):
-        pos = (self.y * self.width)
+        pos = self.y * self.width
         pos_diff = pos - self.last_pos
         self.last_pos = pos
 
@@ -321,7 +297,7 @@ class MandelbrotTk(object):
 
         rate = pos_diff / duration
         percent = 100.0 * self.y / self.height
-        self.status_bar.set_label('process', "%.1f%% (%i Pixel/sec.)" % (percent, rate))
+        self.status_bar.set_label("process", "%.1f%% (%i Pixel/sec.)" % (percent, rate))
         self.stats_after_id = self.root.after(ms=500, func=self._display_stats_loop)
 
     def start_render_loop(self):
@@ -339,8 +315,6 @@ class MandelbrotTk(object):
         self.reset()
         self.start_render_loop()
         self.root.mainloop()
-
-
 
 
 if __name__ == "__main__":
