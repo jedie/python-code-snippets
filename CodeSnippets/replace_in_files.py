@@ -55,11 +55,12 @@ __author__ = "Jens Diemer"
 __license__ = """GNU General Public License v3 or above -
  http://www.opensource.org/licenses/gpl-license.php"""
 __url__ = "http://www.jensdiemer.de"
-__version__ = "0.3"
+__version__ = "0.4"
 
 import io
 import os
 import re
+import sys
 import time
 import fnmatch
 import difflib
@@ -107,8 +108,8 @@ class SearchAndReplace(object):
                     if fnmatch.fnmatch(filename, file_filter):
                         try:
                             self.search_file(os.path.join(root, filename))
-                        except FileNotFoundError as err:
-                            print("Skip: %s" % err)
+                        except (FileNotFoundError, PermissionError) as err:
+                            print("Skip: %s" % err, file=sys.stderr)
                             continue
                         file_count += 1
         return file_count
