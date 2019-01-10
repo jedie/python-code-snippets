@@ -88,13 +88,14 @@ class HashChecker:
             return False
 
     def create_hash(self, file_path, hash_file_path):
-        log.info("Create %s", hash_file_path)
+        print("\tCreate %s" % hash_file_path)
 
         current_hash = self._get_file_hash(file_path)
 
         with hash_file_path.open("w") as f:
             f.write("%s  %s" % (current_hash, file_path.name))
 
+        print("\t%s: %s" % (self.hash_name, current_hash))
 
 class Md5Checker(HashChecker):
     hash_name = "md5"
