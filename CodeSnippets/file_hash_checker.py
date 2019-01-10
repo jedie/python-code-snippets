@@ -2,7 +2,7 @@
 
 """
     Simple file hash checker:
-    
+
         * Compare existing .md5 and .sha256 files
         * Create .md5 and .sha256 files if not exists
 
@@ -25,32 +25,33 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 
+SKIP_EXTENSIONS = list(hashlib.algorithms_available)
+SKIP_EXTENSIONS += ["%ssum" % name for name in hashlib.algorithms_available]
+
+OWN_FILE_PATH = Path(__file__).resolve()
+
+
 class HashChecker:
     chunk_size = 5 * 1024
     hash_name = None
-    own_file_path = Path(__file__).resolve()
 
     def __init__(self):
         self.hasher = hashlib.new(self.hash_name)
 
     def check(self, file_path):
-        file_extension = file_path.suffix.lstrip(".")
-        if file_extension in hashlib.algorithms_available:
-            logging.info("Skip: %s", file_path)
-            return
-
-        if file_path == self.own_file_path:
-            logging.info("Skip: %s", file_path)
-            return
-
-        print("Check: %s" % file_path)
 
         hash_file_path = Path("%s.%s" % (file_path, self.hash_name))
+
         if hash_file_path.is_file():
             # hash file exists: compare
             return self.compare(file_path, hash_file_path)
-        else:
-            return self.create_hash(file_path, hash_file_path)
+
+        alternative_hash_file_path = Path("%s.%ssum" % (file_path, self.hash_name))
+        if alternative_hash_file_path.is_file():
+            # hash file exists: compare
+            return self.compare(file_path, alternative_hash_file_path)
+
+        return self.create_hash(file_path, hash_file_path)
 
     def _get_file_hash(self, file_path):
         log.debug("Calculate %s from: %s" % (self.hash_name, file_path))
@@ -76,13 +77,13 @@ class HashChecker:
         current_hash = self._get_file_hash(file_path)
 
         if current_hash == reference_hash:
-            print("\t%s -> OK\n" % current_hash)
+            print("\t%s: %s -> OK" % (self.hash_name, current_hash))
             return True
         else:
-            print("%s hash error in file: %s" % (self.hash_name, file_path), file=sys.stderr)
-            print("Reference from: %s is:" % hash_file_path, file=sys.stderr)
+            print(" *** ERROR in file: %s *** " % file_path, file=sys.stderr)
+            print("Reference %s from: %s is:" % (self.hash_name, hash_file_path), file=sys.stderr)
             print("\t%s: %s" % (self.hash_name, reference_hash), file=sys.stderr)
-            print("Current calculates hash:", file=sys.stderr)
+            print("Current calculated %s:" % self.hash_name, file=sys.stderr)
             print("\t%s: %s\n" % (self.hash_name, current_hash), file=sys.stderr)
             return False
 
@@ -107,6 +108,17 @@ def check_file_checksum(file_path):
     file_path = file_path.resolve()
 
     assert file_path.is_file(), "File not found: %s" % file_path
+
+    file_extension = file_path.suffix.lstrip(".")
+    if file_extension in SKIP_EXTENSIONS:
+        logging.info("Skip: %s", file_path)
+        return
+
+    if file_path == OWN_FILE_PATH:
+        logging.info("Skip: %s", file_path)
+        return
+
+    print("\nCheck: %s" % file_path)
 
     Md5Checker().check(file_path)
     Sha256Checker().check(file_path)
