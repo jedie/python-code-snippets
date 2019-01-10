@@ -16,7 +16,7 @@ __version__ = "0.1"
 import os, time, fnmatch
 
 
-class search:
+class Search:
     def __init__(self, path, search_string, file_filter, max_cutouts=20, content_extract = 35):
         self.search_path = path
         self.search_string = search_string
@@ -76,4 +76,4 @@ if __name__ == "__main__":
     content_extract = 35 # Gr��e des Ausschnittes der angezeigt wird
     max_cutouts = 20 # Max. Anzahl an Treffer, die Angezeigt werden sollen
 
-    search(search_path, search_string, file_filter, max_cutouts, content_extract)
+    Search(search_path, search_string, file_filter, max_cutouts, content_extract)
