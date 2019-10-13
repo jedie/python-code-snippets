@@ -43,20 +43,26 @@ if "publish" in sys.argv:
     try:
         # Test if wheel is installed, otherwise the user will only see:
         #   error: invalid command 'bdist_wheel'
-        import wheel
+        import wheel  # noqa
     except ImportError as err:
-        print("\nError: %s" % err)
-        print("\nMaybe https://pypi.org/project/wheel is not installed or virtualenv not activated?!?")
+        print("\nError: %s\n" % err)
+        print(
+            "Maybe https://pypi.org/project/wheel is not installed"
+            " or virtualenv not activated?!?"
+        )
         print("e.g.:")
         print("    ~/your/env/$ source bin/activate")
         print("    ~/your/env/$ pip install wheel")
         import_error = True
 
     try:
-        import twine
+        import twine  # noqa
     except ImportError as err:
-        print("\nError: %s" % err)
-        print("\nMaybe https://pypi.org/project/twine is not installed or virtualenv not activated?!?")
+        print("\nError: %s\n" % err)
+        print(
+            "Maybe https://pypi.org/project/twine is not installed"
+            " or virtualenv not activated?!?"
+        )
         print("e.g.:")
         print("    ~/your/env/$ source bin/activate")
         print("    ~/your/env/$ pip install twine")
@@ -69,7 +75,8 @@ if "publish" in sys.argv:
         """ 'verbose' version of subprocess.check_output() """
         call_info = "Call: %r" % " ".join(args)
         try:
-            output = subprocess.check_output(args, universal_newlines=True, stderr=subprocess.STDOUT)
+            output = subprocess.check_output(
+                args, universal_newlines=True, stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as err:
             print("\n***ERROR:")
             print(err.output)
@@ -131,6 +138,7 @@ if "publish" in sys.argv:
     verbose_check_call("git", "push")
 
     print("\nCleanup old builds:")
+
     def rmtree(path):
         path = os.path.abspath(path)
         if os.path.isdir(path):
@@ -140,7 +148,7 @@ if "publish" in sys.argv:
     rmtree("./build")
 
     print("\nbuild but don't upload...")
-    log_filename="build.log"
+    log_filename = "build.log"
     with open(log_filename, "a") as log:
         call_info, output = verbose_check_output(
             sys.executable or "python",
@@ -151,7 +159,7 @@ if "publish" in sys.argv:
         log.write(output)
     print("Build output is in log file: %r" % log_filename)
 
-    git_tag="v%s" % __version__
+    git_tag = "v%s" % __version__
 
     print("\ncheck git tag")
     call_info, output = verbose_check_output("git", "log", "HEAD..origin/master", "--oneline")
